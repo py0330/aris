@@ -22,7 +22,7 @@ namespace aris::sensor
 		auto data() const->const SensorData & { return *data_; }
 		auto operator->()const -> const SensorData * { return data_; }
 		auto operator*()const -> const SensorData & { return std::ref(*data_); }
-		auto operator=(SensorDataProtector && other)->SensorDataProtector & { std::swap(*this, other); return *this; }
+		//auto operator=(SensorDataProtector && other)->SensorDataProtector & { std::swap(*this, other); return *this; }
 
 		~SensorDataProtector() = default;
 		SensorDataProtector() : sensor_(nullptr), data_(nullptr) {}

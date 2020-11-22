@@ -656,12 +656,10 @@ namespace aris::server
 		std::vector<std::shared_ptr<Imp::InternalData>> internal_data;
 		std::vector<std::shared_ptr<aris::plan::Plan>> ret_plan;
 		static std::uint64_t cmd_id{ 0 };
-		for (auto &[str, post_callback] : cmd_vec)
-		{
+		for (auto &[str, post_callback] : cmd_vec){
 			internal_data.push_back(std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(nullptr), post_callback }));
 			auto &plan = internal_data.back()->plan_;
-			try
-			{
+			try	{
 				std::vector<char> cmd_str_local(str.size());
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
@@ -691,8 +689,7 @@ namespace aris::server
 				std::fill_n(plan->imp_->ret_msg, 1024, '\0');
 				ret_plan.push_back(plan);
 			}
-			catch (std::exception &e)
-			{
+			catch (std::exception &e){
 				for (auto &p : ret_plan)p->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
 				plan = std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				plan->imp_->ret_code = aris::plan::Plan::PARSE_EXCEPTION;
@@ -701,8 +698,7 @@ namespace aris::server
 				ret_plan.push_back(plan);
 
 				// 确保每个输入str都有输出plan //
-				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i)
-				{
+				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i)	{
 					ret_plan.push_back(std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan));
 					ret_plan.back()->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
 				}
@@ -713,19 +709,15 @@ namespace aris::server
 
 		// step 2.  prepare //
 		bool prepare_error = false;
-		for (auto p = internal_data.begin(); p < internal_data.end(); ++p)
-		{
+		for (auto p = internal_data.begin(); p < internal_data.end(); ++p){
 			auto &plan = (*p)->plan_;
-			try
-			{
+			try	{
 				LOG_INFO << "server prepare cmd " << std::to_string(plan->cmdId()) << std::endl;
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
 			}
-			catch (std::exception &e)
-			{
-				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp)
-				{
+			catch (std::exception &e){
+				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp){
 					(*pp)->plan_->imp_->ret_code = pp < p ? aris::plan::Plan::EXECUTE_CANCELLED : aris::plan::Plan::PREPARE_CANCELLED;
 				}
 				plan->imp_->ret_code = aris::plan::Plan::PREPARE_EXCEPTION;
@@ -769,21 +761,21 @@ namespace aris::server
 		for (auto p = internal_data.begin(); p < internal_data.end(); ++p)
 		{
 			auto &plan = (*p)->plan_;
-			try
-			{
+			try{
 				if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)){
-					// 查看是否处于错误状态 //
+					// 检查 server 是否处于错误状态 //
 					if (this->errorCode()){
 						plan->imp_->ret_code = aris::plan::Plan::SERVER_IN_ERROR;
 						LOG_AND_THROW(std::runtime_error("server in error, use cl to clear"));
 					}
 
-					// 只有实时循环才需要 server 已经在运行
+					// 检查 server 是否已经在运行 //
 					if (!imp_->is_running_)	{
 						plan->imp_->ret_code = aris::plan::Plan::SERVER_NOT_STARTED;
 						LOG_AND_THROW(std::runtime_error("server not started, use cs_start to start"));
 					}
 
+					// 检查 server 指令是否已满 //
 					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE){//原子操作(cmd_now)
 						plan->imp_->ret_code = aris::plan::Plan::COMMAND_POOL_IS_FULL;
 						LOG_AND_THROW(std::runtime_error("command pool is full"));
@@ -858,9 +850,9 @@ namespace aris::server
 		imp_->idle_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->idle_mot_check_options_);
 		std::fill_n(imp_->idle_mot_check_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
-		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::int64_t(0));
+		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::uint64_t(0));
 		imp_->mem_transfer_pvaf_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_pvaf_);
-		std::fill_n(imp_->mem_transfer_pvaf_, model().motionDim() * 4, std::int64_t(0));
+		std::fill_n(imp_->mem_transfer_pvaf_, model().motionDim() * 4, 0.0);
 
 		// 赋予初值 //
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//

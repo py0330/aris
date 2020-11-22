@@ -26,7 +26,7 @@ int main()
 	auto &m = cs.model();
 	auto &inv = m.solverPool()[0];
 	auto &fwd = m.solverPool()[1];
-	auto &ee = m.generalMotionPool()[0];
+	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool()[0]);
 
 	// new with yaw //
 	double mid_pe[6]{ 0, -0.0103, 0.513, 0, 0, 0 };

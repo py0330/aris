@@ -107,7 +107,7 @@ void test_puma_inverse_solver()
 	
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
 	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
-	auto &ee = m->generalMotionPool().at(0);
+	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
 	
 	double ee_pm[16];
 	aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.1, 0.3, 0.2}.data(), ee_pm);
@@ -140,7 +140,7 @@ void test_puma_inverse_solver()
 		auto new_m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(new_m->solverPool().at(0));
 		auto &new_fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(new_m->solverPool().at(1));
-		auto &new_ee = new_m->generalMotionPool().at(0);
+		auto &new_ee = dynamic_cast<aris::dynamic::GeneralMotion&>(new_m->generalMotionPool().at(0));
 
 		for (int i = 0; i < 8; ++i)
 		{
@@ -149,7 +149,7 @@ void test_puma_inverse_solver()
 			if (new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
 
 			if (new_fwd.kinPos())std::cout << "forward failed" << std::endl;
-			new_ee.updMpm();
+			new_ee.updMp();
 			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
 			{
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;
@@ -170,7 +170,7 @@ void test_model_solver_puma()
 
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
 	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
-	auto &ee = m->generalMotionPool().at(0);
+	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
 
 	double ee_pm[16];
 	aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.6, 0.3, 0.2}.data(), ee_pm);
@@ -252,7 +252,7 @@ void test_model_solver_puma()
 	};
 	auto m1 = aris::dynamic::createModelPuma(param);
 
-	m1->generalMotionPool().at(0).setMpe(std::array<double, 6>{0.38453, 0, 0.6294, 0.0001, 0 + aris::PI/2, 0}.data(), "321");
+	dynamic_cast<aris::dynamic::GeneralMotion&>(m1->generalMotionPool().at(0)).setMpe(std::array<double, 6>{0.38453, 0, 0.6294, 0.0001, 0 + aris::PI/2, 0}.data(), "321");
 	m1->solverPool().at(0).kinPos();
 
 	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;

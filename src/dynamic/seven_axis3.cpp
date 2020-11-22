@@ -218,7 +218,7 @@ namespace aris::dynamic
 		}
 
 		// 求 q5 q6 q7 //
-		double rm_E_wrt_4[9], rm4[9], tem[9], re_tem[3]{ q[0], q[1] + q[2], q[3] };
+		double rm_E_wrt_4[9], rm4[9], re_tem[3]{ q[0], q[1] + q[2], q[3] };
 		s_re2rm(re_tem, rm4, "321");
 		s_mm(3, 3, 3, rm4, ColMajor(3), D_in_A, 4, rm_E_wrt_4, 3);
 		s_rm2re(rm_E_wrt_4, q + 4, "321");
@@ -289,7 +289,7 @@ namespace aris::dynamic
 		imp_->M6 = &model()->motionPool().at(5);
 		imp_->M7 = &model()->motionPool().at(6);
 
-		imp_->ee = &model()->generalMotionPool().at(0);
+		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 
 		auto &p = imp_->seven_axis_param;
 

@@ -5,13 +5,13 @@ namespace aris::dynamic
 {
 	class ARIS_API EndEffector{
 	public:
-		//auto virtual dim()->Size = 0;
-		//auto virtual pos()->double* = 0;
-		//auto virtual setPos(double *pos)->void = 0;
-		//auto virtual vel()->double* = 0;
-		//auto virtual setVel(double *vel)->void = 0;
-		//auto virtual acc()->double* = 0;
-		//auto virtual setAcc(double *acc)->void = 0;
+		auto virtual dim()->Size { return 0; };
+		auto virtual pos()->double* { return nullptr; }
+		auto virtual setPos(double *pos)->void { }
+		auto virtual vel()->double* { return nullptr; }
+		auto virtual setVel(double *vel)->void { }
+		auto virtual acc()->double* { return nullptr; }
+		auto virtual setAcc(double *acc)->void { }
 	};
 
 	class ARIS_API ModelBase{
@@ -39,8 +39,6 @@ namespace aris::dynamic
 		auto virtual endEffectorSize()->Size { return 0; }
 		auto virtual endEffector(Size i = 0)->EndEffector* { return nullptr; }
 	};
-
-	
 }
 
 #endif

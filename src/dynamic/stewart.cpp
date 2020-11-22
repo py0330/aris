@@ -250,7 +250,7 @@ namespace aris::dynamic
 	}
 	auto StewartInverseKinematicSolver::kinPos()->int
 	{
-		model()->generalMotionPool()[0].makI()->setPm(*model()->generalMotionPool()[0].makJ(), *model()->generalMotionPool()[0].mpm());
+		model()->generalMotionPool()[0].makI()->setPm(*model()->generalMotionPool()[0].makJ(), *dynamic_cast<GeneralMotion&>(model()->generalMotionPool()[0]).mpm());
 		
 		for (auto i = 0; i < 6; ++i)
 		{

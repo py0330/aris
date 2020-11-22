@@ -216,7 +216,7 @@ namespace aris::dynamic
 		imp_->M1 = &model()->motionPool().at(0);
 		imp_->M2 = &model()->motionPool().at(1);
 		imp_->M3 = &model()->motionPool().at(2);
-		imp_->ee = &model()->generalMotionPool().at(0);
+		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 	}
 	auto Serial3InverseKinematicSolver::kinPos()->int
 	{
@@ -287,7 +287,7 @@ namespace aris::dynamic
 				}
 
 				// 更新位姿 //
-				imp_->ee->updMpm();
+				imp_->ee->updMp();
 
 				return 0;
 			
@@ -352,7 +352,7 @@ namespace aris::dynamic
 			}
 
 			// 更新位姿 //
-			imp_->ee->updMpm();
+			imp_->ee->updMp();
 
 			return 0;
 		}
@@ -387,7 +387,7 @@ namespace aris::dynamic
 				}
 
 				// 更新位姿 //
-				imp_->ee->updMpm();
+				imp_->ee->updMp();
 
 				return 0;
 			}

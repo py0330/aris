@@ -32,7 +32,7 @@ public:
 		pe[3] = 0.3 + 4 * PI*count() / 1000;
 
 		// 设置末端位置 //
-		model()->generalMotionPool().front().setMpe(pe, "321");
+		dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().front()).setMpe(pe, "321");
 
 		// 求反解 //
 		model()->solverPool()[0].kinPos();

@@ -1009,9 +1009,9 @@ namespace aris::dynamic
 		}
 		if (dynamic_cast<GeneralMotion*>(&constraint()))
 		{
-			dynamic_cast<GeneralMotion*>(&constraint())->updMpm();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMvs();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMas();
+			dynamic_cast<GeneralMotion*>(&constraint())->updMp();
+			dynamic_cast<GeneralMotion*>(&constraint())->updMv();
+			dynamic_cast<GeneralMotion*>(&constraint())->updMa();
 		}
 	}
 	SimResult::ConstraintResult::~ConstraintResult() = default;
@@ -1217,23 +1217,21 @@ namespace aris::dynamic
 		std::vector<double> time(result.size() + 1);
 		std::vector<std::vector<double>> mot_akima(model()->motionPool().size(), std::vector<double>(result.size() + 1));
 		std::vector<std::vector<std::array<double, 6>>> gm_akima(model()->generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
-		if (pos == -1)
-		{
+		if (pos == -1){
 			if (result.size() < 4)THROW_FILE_LINE("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
 
-			for (Size i(-1); ++i < result.size() + 1;)
-			{
+			for (Size i(-1); ++i < result.size() + 1;){
 				result.restore(i);
 				time.at(i) = model()->time();
-				for (Size j(-1); ++j < model()->motionPool().size();)
-				{
+				for (Size j(-1); ++j < model()->motionPool().size();){
 					model()->motionPool().at(j).updMp();
 					mot_akima.at(j).at(i) = model()->motionPool().at(j).mpInternal();
 				}
-				for (Size j(-1); ++j < model()->generalMotionPool().size();)
-				{
-					model()->generalMotionPool().at(j).updMpm();
-					model()->generalMotionPool().at(j).getMpe(gm_akima.at(j).at(i).data(), "123");
+				for (Size j(-1); ++j < model()->generalMotionPool().size();){
+					if (auto gm = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(j))){
+						gm->updMp();
+						gm->getMpe(gm_akima.at(j).at(i).data(), "123");
+					}
 				}
 			}
 		}
@@ -1454,82 +1452,84 @@ namespace aris::dynamic
 				<< "    function = \"" << (pos == -1 ? akima_func : polynomial_func) << "\"  \r\n"
 				<< "!\r\n";
 		}
-		for (auto &gm : model()->generalMotionPool())
-		{
-			file << "ude create instance  &\r\n"
-				<< "    instance_name = ." << model_name << "." << gm.name() << "  &\r\n"
-				<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
-				<< "    location = 0.0, 0.0, 0.0  &\r\n"
-				<< "    orientation = 0.0, 0.0, 0.0  \r\n"
-				<< "!\r\n";
+		for (auto &gmb : model()->generalMotionPool()){
+			if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
 
-			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model_name << "." << gm.name() << ".i_marker  &\r\n"
-				<< "	object_value = ." << model_name << "." << gm.makI()->fatherPart().name() << "." << gm.makI()->name() << " \r\n"
-				<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gm->name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gm->makI()->fatherPart().name() << "." << gm->makI()->name() << " \r\n"
+					<< "!\r\n";
 
-			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model_name << "." << gm.name() << ".j_marker  &\r\n"
-				<< "	object_value = ." << model_name << "." << gm.makJ()->fatherPart().name() << "." << gm.makJ()->name() << " \r\n"
-				<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gm->name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gm->makJ()->fatherPart().name() << "." << gm->makJ()->name() << " \r\n"
+					<< "!\r\n";
 
-			std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
 
-			double pe123[6], ve123[6], ae123[6];
-			gm.getMpe(pe123, "123");
-			gm.getMve(ve123, "123");
-			gm.getMae(ae123, "123");
-			for (Size i = 0; i < 6; ++i)
-			{
-				std::string akima = gm.name() + "_" + axis_names[i] + "_akima";
-				std::string akima_func = "AKISPL(time,0," + akima + ")";
-				std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
-				std::string func = pos == -1 ? akima_func : polynomial_func;
-
-				// 构建akima曲线 //
-				if (pos == -1)
+				double pe123[6], ve123[6], ae123[6];
+				gm->getMpe(pe123, "123");
+				gm->getMve(ve123, "123");
+				gm->getMae(ae123, "123");
+				for (Size i = 0; i < 6; ++i)
 				{
-					file << "data_element create spline &\r\n"
-						<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
-						<< "    adams_id = " << model()->motionPool().size() + adamsID(gm) * 6 + i << "  &\r\n"
-						<< "    units = m &\r\n"
-						<< "    x = " << time.at(0);
-					for (auto p = time.begin() + 1; p < time.end(); ++p)
+					std::string akima = gm->name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
+
+					// 构建akima曲线 //
+					if (pos == -1)
 					{
-						file << "," << *p;
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gm) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p)
+						{
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gm->id()).at(0).at(i);
+						for (auto p = gm_akima.at(gm->id()).begin() + 1; p < gm_akima.at(gm->id()).end(); ++p)
+						{
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
 					}
-					file << "    y = " << gm_akima.at(gm.id()).at(0).at(i);
-					for (auto p = gm_akima.at(gm.id()).begin() + 1; p < gm_akima.at(gm.id()).end(); ++p)
-					{
-						file << "," << p->at(i);
-					}
-					file << " \r\n!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = 1 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
 				}
 
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_type  &\r\n"
-					<< "	integer_value = 1 \r\n"
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model_name << "." << gm->name() << "\r\n"
 					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_func  &\r\n"
-					<< "	string_value = \"" + func + "\" \r\n"
-					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_ic_disp  &\r\n"
-					<< "	real_value = 0.0 \r\n"
-					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_ic_velo  &\r\n"
-					<< "	real_value = 0.0 \r\n"
-					<< "!\r\n";
+			
 			}
-
-			file << "ude modify instance  &\r\n"
-				<< "	instance_name = ." << model_name << "." << gm.name() << "\r\n"
-				<< "!\r\n";
 		}
 		for (auto &force : model()->forcePool())
 		{

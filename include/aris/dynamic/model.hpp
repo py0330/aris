@@ -260,9 +260,9 @@ namespace aris::dynamic{
 		auto motionPool()->aris::core::PointerArray<Motion, Element>&;
 		auto motionPool()const->const aris::core::PointerArray<Motion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		
-		auto resetGeneralMotionPool(aris::core::PointerArray<GeneralMotion, Element> *pool)->void;
-		auto generalMotionPool()->aris::core::PointerArray<GeneralMotion, Element>&;
-		auto generalMotionPool()const->const aris::core::PointerArray<GeneralMotion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
+		auto resetGeneralMotionPool(aris::core::PointerArray<GeneralMotionBase, Element> *pool)->void;
+		auto generalMotionPool()->aris::core::PointerArray<GeneralMotionBase, Element>&;
+		auto generalMotionPool()const->const aris::core::PointerArray<GeneralMotionBase, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
 		
 		auto resetForcePool(aris::core::PointerArray<Force, Element> *pool)->void;
 		auto forcePool()->aris::core::PointerArray<Force, Element>&;

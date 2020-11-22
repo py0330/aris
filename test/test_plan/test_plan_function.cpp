@@ -212,16 +212,17 @@ void test_optimal()
 		std::vector<double> pq, dpq_ds, ddpq_ds2;
 		planner.plan(node.s, node.ds, pq, dpq_ds, ddpq_ds2);
 
-		for (aris::Size i = 0; i < planner.model->generalMotionPool().size(); ++i)
-		{
+		for (aris::Size i = 0; i < planner.model->generalMotionPool().size(); ++i){
+			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(planner.model->generalMotionPool().at(i));
+
 			double vs[6], as[6];
 			aris::dynamic::s_aq2as(pq.data() + 7 * i, dpq_ds.data() + 7 * i, ddpq_ds2.data() + 7 * i, as, vs);
 
 			double real_vs[6];
 			aris::dynamic::s_vc(6, node.ds, vs, real_vs);
 
-			planner.model->generalMotionPool().at(i).setMpq(pq.data() + 7 * i);
-			planner.model->generalMotionPool().at(i).setMvs(real_vs);
+			gm.setMpq(pq.data() + 7 * i);
+			gm.setMvs(real_vs);
 		}
 
 		planner.solver->kinPos();

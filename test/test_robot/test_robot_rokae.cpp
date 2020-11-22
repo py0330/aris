@@ -11,7 +11,7 @@ void test_rokae_solver()
 {
 	auto m = aris::robot::createModelRokaeXB4();
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
-	auto &ee = m->generalMotionPool().at(0);
+	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
 
 	ee.setMpq(std::array<double, 7>{0.32,0.0,0.6295,0,0,0,1}.data());
 

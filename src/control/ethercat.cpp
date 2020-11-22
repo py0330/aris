@@ -402,7 +402,7 @@ namespace aris::control
 				}
 				else if (std::string(ele->Name()) == "RxPdo" || std::string(ele->Name()) == "TxPdo")
 				{
-					auto sm_id = ele->Attribute("Sm") ? std::stoll(ele->Attribute("Sm"), nullptr, 0) : last_sm_id;
+					auto sm_id = ele->Attribute("Sm") ? std::stoi(ele->Attribute("Sm"), nullptr, 0) : last_sm_id;
 					last_sm_id = sm_id;
 
 					auto pdo_name = ele->FirstChildElement("Name") ? ele->FirstChildElement("Name")->GetText() : "";

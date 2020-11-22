@@ -1704,19 +1704,19 @@ namespace aris::dynamic
 	auto ForwardKinematicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMpm();
+		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMp();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardKinematicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->generalMotionPool())m.updMvs();
+		for (auto &m : model()->generalMotionPool())m.updMv();
 		return 0;
 	}
 	auto ForwardKinematicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMas();
+		for (auto &m : model()->generalMotionPool())m.updMa();
 		return 0;
 	}
 	auto ForwardKinematicSolver::cptJacobi() noexcept->void
@@ -1860,19 +1860,19 @@ namespace aris::dynamic
 	auto ForwardDynamicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMpm();
+		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMp();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardDynamicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->generalMotionPool())m.updMvs();
+		for (auto &m : model()->generalMotionPool())m.updMv();
 		return 0;
 	}
 	auto ForwardDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMas();
+		for (auto &m : model()->generalMotionPool())m.updMa();
 		return 0;
 	}
 	ForwardDynamicSolver::~ForwardDynamicSolver() = default;
@@ -1903,7 +1903,7 @@ namespace aris::dynamic
 	auto InverseDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMas();
+		for (auto &m : model()->generalMotionPool())m.updMa();
 		return 0;
 	}
 	InverseDynamicSolver::~InverseDynamicSolver() = default;

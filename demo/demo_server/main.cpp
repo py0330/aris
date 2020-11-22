@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 
 	model5->init();
 	cs.model().init();
-
+	/*
 	model5->motionPool()[5].setMp(0.5);
 
 	model5->generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
 	cs.model().solverPool()[1].kinPos();
 	cs.model().generalMotionPool()[0].updMpm();
 	aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
-
+	*/
 	//aris::server::MakeBlockly make_block;
 	//make_block.make("D:\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\program\\daiyi\\gongxu1.aris");
 

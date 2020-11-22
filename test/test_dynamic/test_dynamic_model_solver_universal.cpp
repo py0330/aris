@@ -89,7 +89,7 @@ void test_servo_press_universal()
 	if (universal_solver.kinPos())std::cout << "failed3" << std::endl;
 	universal_solver.kinVel();
 
-	ee.updMpm();
+	ee.updMp();
 
 	double cmI[36], cmJ[36];
 	ee.cptGlbCm(cmI, cmJ);

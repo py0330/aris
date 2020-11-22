@@ -75,7 +75,7 @@ namespace aris::plan
 	auto Plan::beginGlobalCount()->std::int64_t { return imp_->begin_global_count_; }
 	auto Plan::rtStastic()->aris::control::Master::RtStasticsData & { return imp_->rt_stastic_; }
 	auto Plan::doubleParam(std::string_view param_name)->double { return std::stod(std::string(cmdParams().at(param_name))); }
-	auto Plan::floatParam(std::string_view param_name)->float { return std::stod(std::string(cmdParams().at(param_name))); }
+	auto Plan::floatParam(std::string_view param_name)->float { return static_cast<float>(std::stod(std::string(cmdParams().at(param_name)))); }
 	auto Plan::int32Param(std::string_view param_name)->std::int32_t { return std::stol(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::int64Param(std::string_view param_name)->std::int64_t { return std::stoll(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
@@ -902,7 +902,7 @@ namespace aris::plan
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
 	}
-	auto Sleep::executeRT()->int { return imp_->count - count(); }
+	auto Sleep::executeRT()->int { return imp_->count - static_cast<int>(count()); }
 	Sleep::~Sleep() = default;
 	Sleep::Sleep(const std::string &name) :imp_(new Imp)
 	{
@@ -969,7 +969,7 @@ namespace aris::plan
 			}
 		}
 
-		return total_count - count();
+		return total_count - static_cast<int>(count());
 	}
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) :imp_(new Imp)
@@ -1143,10 +1143,12 @@ namespace aris::plan
 		static Size max_total_count;
 		if (count() == 1)
 		{
+			auto gm = dynamic_cast<aris::dynamic::GeneralMotion*>(&model()->generalMotionPool().at(0));
+			
 			// inverse kinematic //
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvj_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).setMpm(end_pm);
+			gm->setMpm(end_pm);
 			if (model()->solverPool().at(0).kinPos())return -1;
 
 			// init joint_pos //
@@ -1172,7 +1174,7 @@ namespace aris::plan
 			controller()->motionPool()[i].setTargetPos(p);
 		}
 
-		return max_total_count == 0 ? 0 : max_total_count - count();
+		return max_total_count == 0 ? 0 : static_cast<int>(max_total_count - count());
 	}
 	MoveJ::~MoveJ() = default;
 	MoveJ::MoveJ(const std::string &name) :imp_(new Imp)
@@ -1260,10 +1262,12 @@ namespace aris::plan
 		aris::Size pos_total_count, ori_total_count;
 		if (count() == 1)
 		{
+			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvl_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).updMpm();
-			model()->generalMotionPool().at(0).getMpm(begin_pm);
+			gm.updMp();
+			gm.getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 
 			// relative_pa //
@@ -1293,8 +1297,10 @@ namespace aris::plan
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 		// 反解计算电机位置 //
-		model()->generalMotionPool().at(0).setMpm(pm2);
+		gm.setMpm(pm2);
 		if (model()->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
@@ -1310,7 +1316,7 @@ namespace aris::plan
 		//////////////////////////////////////////////////////////////////////////////////
 
 
-		return std::max(pos_total_count, ori_total_count) > count() ? 1 : 0;
+		return std::max(pos_total_count, ori_total_count) > aris::Size(count()) ? 1 : 0;
 	}
 	MoveL::~MoveL() = default;
 	MoveL::MoveL(const std::string &name) :imp_(new Imp)
@@ -1443,17 +1449,17 @@ namespace aris::plan
 	auto AutoMove::executeRT()->int
 	{
 		auto param = std::any_cast<AutoMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
 
-		if (count() == 1)
-		{
-			model()->generalMotionPool()[0].setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
+		if (count() == 1){
+			gm.setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
 		}
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i)if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// get target pe //
@@ -1474,9 +1480,9 @@ namespace aris::plan
 				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
 		}
 
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 
 		static int i = 0;
 		if (++i % 1000 == 0)
@@ -1610,12 +1616,13 @@ namespace aris::plan
 	auto ManualMove::executeRT()->int
 	{
 		auto param = std::any_cast<ManualMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i) if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// init status //
@@ -1642,7 +1649,7 @@ namespace aris::plan
 		}
 
 		// check if target_pe is valid //
-		model()->generalMotionPool()[0].setMpe(target_pe_new.data(), imp_->eul_type.c_str());
+		gm.setMpe(target_pe_new.data(), imp_->eul_type.c_str());
 		auto check_motion_limit = [&]()->bool
 		{
 			auto c = controller();
@@ -1669,9 +1676,9 @@ namespace aris::plan
 		}
 
 		// set everything //
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 		model()->solverPool()[0].kinPos();
 		model()->solverPool()[0].kinVel();
 

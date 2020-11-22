@@ -331,7 +331,7 @@ namespace aris::dynamic
 		imp_->M5 = &model()->motionPool().at(4);
 		imp_->M6 = &model()->motionPool().at(5);
 
-		imp_->ee = &model()->generalMotionPool().at(0);
+		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 
 		auto R1_mak_on_GR = &imp_->R1->makI()->fatherPart() == imp_->GR ? imp_->R1->makI() : imp_->R1->makJ();
 		auto R1_mak_on_L1 = &imp_->R1->makI()->fatherPart() == imp_->L1 ? imp_->R1->makI() : imp_->R1->makJ();

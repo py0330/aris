@@ -283,7 +283,7 @@ namespace aris::dynamic
 		imp_->M6 = &model()->motionPool().at(5);
 		imp_->M7 = &model()->motionPool().at(6);
 
-		imp_->ee = &model()->generalMotionPool().at(0);
+		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 
 
 		auto &p = imp_->seven_axis_param;

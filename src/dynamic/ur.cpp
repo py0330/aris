@@ -432,7 +432,7 @@ namespace aris::dynamic
 		Joint *R5 = &m.jointPool().at(4);
 		Joint *R6 = &m.jointPool().at(5);
 
-		GeneralMotion *ee = &m.generalMotionPool().at(0);
+		GeneralMotion *ee = &dynamic_cast<GeneralMotion&>(m.generalMotionPool().at(0));
 
 		// UR的机构有如下特点：
 		// 1轴和2轴垂直且交于一点： A点

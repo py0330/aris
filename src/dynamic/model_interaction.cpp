@@ -14,8 +14,8 @@
 
 #include "aris/dynamic/model.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
+
 	auto Interaction::prtNameM()const->std::string { return prt_name_M_; }
 	auto Interaction::setPrtNameM(std::string_view name)->void { prt_name_M_ = name; }
 	auto Interaction::prtNameN()const->std::string { return prt_name_N_; }
@@ -35,23 +35,20 @@ namespace aris::dynamic
 	struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
 	auto Constraint::cf() const noexcept->const double* { return imp_->cf_; }
 	auto Constraint::setCf(const double *cf) noexcept->void { return s_vc(dim(), cf, imp_->cf_); }
-	auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
-	{
+	auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 		double pm_j2i[16], ps_j2i[6];
 		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
 		s_pm2ps(pm_j2i, ps_j2i);
 		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 	}
-	auto Constraint::cptCv(double *cv)const noexcept->void
-	{
+	auto Constraint::cptCv(double *cv)const noexcept->void{
 		double dv[6], dv_in_I[6];
 		s_vc(6, makJ()->vs(), dv);
 		s_vs(6, makI()->vs(), dv);
 		s_inv_tv(*makI()->pm(), dv, dv_in_I);
 		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
 	};
-	auto Constraint::cptCa(double *ca)const noexcept->void
-	{
+	auto Constraint::cptCa(double *ca)const noexcept->void{
 		double vi_cross_vj[6], tem[6];
 		s_cv(makI()->vs(), makJ()->vs(), vi_cross_vj);
 		s_inv_tv(*makI()->pm(), vi_cross_vj, tem);
@@ -153,16 +150,17 @@ namespace aris::dynamic
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
+	GeneralMotionBase::GeneralMotionBase(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotionBase);
+
 	struct GeneralMotion::Imp {
 		double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
 	};
-	auto GeneralMotion::locCmI() const noexcept->const double*
-	{
+	auto GeneralMotion::locCmI() const noexcept->const double*{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 		return loc_cm_I;
 	}
-	auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
-	{
+	auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 		// Pi : mak I 的实际位置
 		// Pj : mak J 的实际位置
 		// Pit: mak I 应该达到的位置
@@ -184,10 +182,17 @@ namespace aris::dynamic
 		// locCmI为单位矩阵，此时无需相乘
 		s_vc(6, ps_c, cp);
 	}
+	auto GeneralMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
 	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
-	auto GeneralMotion::updMpm() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
+	auto GeneralMotion::updMp() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
+	auto GeneralMotion::updMv() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
+	auto GeneralMotion::updMa() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
 	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
 	auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
 	auto GeneralMotion::setMpm(const double* pm) noexcept->void { s_vc(16, pm, *imp_->mpm_); }
@@ -195,7 +200,6 @@ namespace aris::dynamic
 	auto GeneralMotion::getMpq(double* pq)const noexcept->void { s_pm2pq(*imp_->mpm_, pq); }
 	auto GeneralMotion::getMpm(double* pm)const noexcept->void { s_vc(16, *imp_->mpm_, pm); }
 	auto GeneralMotion::mvs()const noexcept->const double6& { return imp_->mvs_; }
-	auto GeneralMotion::updMvs() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
 	auto GeneralMotion::setMve(const double* ve, const char *type) noexcept->void {
 		double pe[6];
 		s_pm2pe(*mpm(), pe, type);
@@ -231,7 +235,6 @@ namespace aris::dynamic
 	}
 	auto GeneralMotion::getMvs(double* vs)const noexcept->void { s_vc(6, imp_->mvs_, vs); }
 	auto GeneralMotion::mas()const noexcept->const double6& { return imp_->mas_; }
-	auto GeneralMotion::updMas() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
 	auto GeneralMotion::setMae(const double* ae, const char *type) noexcept->void {
 		double pe[6], ve[6];
 		s_pm2pe(*mpm(), pe, type);
@@ -275,8 +278,11 @@ namespace aris::dynamic
 	auto GeneralMotion::getMas(double* as)const noexcept->void { s_vc(6, imp_->mas_, as); }
 	auto GeneralMotion::mfs() const noexcept->const double6& { return Constraint::imp_->cf_; }
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
+	
+
+
 	GeneralMotion::~GeneralMotion() = default;
-	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
+	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :GeneralMotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
@@ -510,8 +516,12 @@ namespace aris::dynamic
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
-		aris::core::class_<GeneralMotion>("GeneralMotion")
+		aris::core::class_<GeneralMotionBase>("GeneralMotionBase")
 			.inherit<aris::dynamic::Constraint>()
+			;
+
+		aris::core::class_<GeneralMotion>("GeneralMotion")
+			.inherit<aris::dynamic::GeneralMotionBase>()
 			;
 
 		aris::core::class_<Joint>("Joint")
