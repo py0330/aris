@@ -1159,7 +1159,7 @@ namespace aris::server
 								};
 
 								std::string_view input = str;
-								if (auto var = cut_str(input, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
+								if (auto var = cut_str(input, " "); var.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 								input = trim_left(input, " ");
 
 								auto type = cut_str(input, " ");
