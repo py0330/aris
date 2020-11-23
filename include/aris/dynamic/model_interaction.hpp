@@ -300,17 +300,13 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	/*class ARIS_API PointMotion final :public GeneralMotionBase{
+	class ARIS_API PointMotion final :public GeneralMotionBase{
 	public:
 		static auto Dim()->Size { return 3; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override {
-			double pm[16];
-			s_inv_pm(makI_pm, pm);
-			s_tmf(pm, dm);
-		}
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 		auto virtual updMp() noexcept->void override;
@@ -330,7 +326,7 @@ namespace aris::dynamic
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
-	};*/
+	};
 
 	class ARIS_API GeneralForce final :public Force{
 	public:

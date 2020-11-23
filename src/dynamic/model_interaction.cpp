@@ -189,10 +189,10 @@ namespace aris::dynamic{
 	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
 	auto GeneralMotion::updMp() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
 	auto GeneralMotion::updMv() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
 	auto GeneralMotion::updMa() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
+	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
 	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
 	auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
 	auto GeneralMotion::setMpm(const double* pm) noexcept->void { s_vc(16, pm, *imp_->mpm_); }
@@ -278,12 +278,70 @@ namespace aris::dynamic{
 	auto GeneralMotion::getMas(double* as)const noexcept->void { s_vc(6, imp_->mas_, as); }
 	auto GeneralMotion::mfs() const noexcept->const double6& { return Constraint::imp_->cf_; }
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
-	
-
-
 	GeneralMotion::~GeneralMotion() = default;
 	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :GeneralMotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
+
+	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
+	auto PointMotion::locCmI() const noexcept->const double* {
+		static const double loc_cm_I[18]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0 };
+		return loc_cm_I;
+	}
+	auto PointMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+		// Pi : mak I 的实际位置
+		// Pj : mak J 的实际位置
+		// Pit: mak I 应该达到的位置
+		// Pc : 需补偿的位姿
+		// 理论上应该有：
+		// Pi = Pj * mpm
+		// 那么就有：
+		// Pit = Pj * mpm
+		// 于是：
+		// Pc = Pi^-1 * Pit
+
+		//double pm_it[16];
+		//s_pm_dot_pm(makJ_pm, *mpm(), pm_it);
+
+		//double pm_c[16], ps_c[6];
+		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		//s_pm2ps(pm_c, ps_c);
+
+		//// locCmI为单位矩阵，此时无需相乘
+		//s_vc(6, ps_c, cp);
+	}
+	auto PointMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
+	auto PointMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
+	auto PointMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
+	auto PointMotion::updMp() noexcept->void { 
+		double pp[3];
+		s_pm2pp(*makI()->pm(), pp);
+		s_inv_pp2pp(*makJ()->pm(), pp, imp_->mp_);
+	}
+	auto PointMotion::setMp(const double *mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
+	auto PointMotion::getMp(double *mp) noexcept->void { s_vc(3, imp_->mp_, mp); }
+	auto PointMotion::updMv() noexcept->void { 
+		double vs[6], pp[3];
+		s_pm2pp(*makI()->pm(), pp);
+		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
+		s_vs2vp(vs, pp, imp_->vp_);
+	}
+	auto PointMotion::setMv(const double *mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
+	auto PointMotion::getMv(double *mv) noexcept->void { s_vc(3, imp_->vp_, mv); }
+	auto PointMotion::updMa() noexcept->void { 
+		double as[6], vs[6], pp[3];
+		s_pm2pp(*makI()->pm(), pp);
+		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
+		s_as2ap(vs, as, pp, imp_->ap_);
+	}
+	auto PointMotion::setMa(const double *ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
+	auto PointMotion::getMa(double *ma) noexcept->void { s_vc(3, imp_->ap_, ma); }
+	PointMotion::~PointMotion() = default;
+	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :GeneralMotionBase(name, makI, makJ, active) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[30] {
