@@ -1642,13 +1642,16 @@ namespace aris::dynamic
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &gm : model()->generalMotionPool())
+		for (auto &gmb : model()->generalMotionPool())
 		{
-			if (!gm.active())
+			if (!gmb.active())
 			{
-				file << "ude attributes  &\r\n"
-					<< "    instance_name = ." << model_name << "." << gm.name() << "  &\r\n"
-					<< "    active = off \r\n!\r\n";
+				if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
+
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
 			}
 		}
 		for (auto &fce : model()->forcePool())

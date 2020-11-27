@@ -334,8 +334,7 @@ namespace aris::dynamic
 		return ret;
 	}
 	Model::~Model() = default;
-	Model::Model()
-	{
+	Model::Model(){
 		imp_->variable_pool_.reset(new aris::core::PointerArray<Variable, Element>);
 		imp_->part_pool_.reset(new aris::core::PointerArray<Part, Element>);
 		imp_->joint_pool_.reset(new aris::core::PointerArray<Joint, Element>);

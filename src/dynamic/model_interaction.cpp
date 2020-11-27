@@ -189,8 +189,11 @@ namespace aris::dynamic{
 	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
+	auto GeneralMotion::mp()const noexcept->const double* { return *imp_->mpm_; }
 	auto GeneralMotion::updMp() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
+	auto GeneralMotion::mv()const noexcept->const double* { return imp_->mvs_; }
 	auto GeneralMotion::updMv() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
+	auto GeneralMotion::ma()const noexcept->const double* { return imp_->mas_; }
 	auto GeneralMotion::updMa() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
 	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
 	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
@@ -298,24 +301,42 @@ namespace aris::dynamic{
 		// Pit = Pj * mpm
 		// 于是：
 		// Pc = Pi^-1 * Pit
+		
+		double pp_mp_in_ground[3];
+		s_pp2pp(makJ_pm, imp_->mp_, pp_mp_in_ground);
 
-		//double pm_it[16];
-		//s_pm_dot_pm(makJ_pm, *mpm(), pm_it);
+		double pp_c_in_ground[3]{ pp_mp_in_ground[0] - makI_pm[3], pp_mp_in_ground[1] - makJ_pm[7], pp_mp_in_ground[2] - makJ_pm[11]};
+		
+		double pp_c_in_makI[3];
+		s_inv_pm_dot_v3(makI_pm, pp_mp_in_ground, pp_c_in_makI);
 
-		//double pm_c[16], ps_c[6];
-		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
-		//s_pm2ps(pm_c, ps_c);
-
-		//// locCmI为单位矩阵，此时无需相乘
-		//s_vc(6, ps_c, cp);
+		// locCmI为单位矩阵，此时无需相乘
+		s_vc(3, pp_c_in_makI, cp);
 	}
 	auto PointMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
 		double pm[16];
 		s_inv_pm(makI_pm, pm);
 		s_tmf(pm, dm);
 	}
-	auto PointMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
-	auto PointMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
+	auto PointMotion::cptCv(double *cv)const noexcept->void { 
+		Constraint::cptCv(cv);
+
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		s_va(3, vp_in_makI, cv);
+	}
+	auto PointMotion::cptCa(double *ca)const noexcept->void { 
+		Constraint::cptCa(ca); 
+		
+		double ap_in_makI[3], ap_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, ap_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
+
+		s_va(3, ap_in_ground, ca);
+	}
+	auto PointMotion::mp()const noexcept->const double* { return imp_->mp_; }
 	auto PointMotion::updMp() noexcept->void { 
 		double pp[3];
 		s_pm2pp(*makI()->pm(), pp);
@@ -323,6 +344,7 @@ namespace aris::dynamic{
 	}
 	auto PointMotion::setMp(const double *mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
 	auto PointMotion::getMp(double *mp) noexcept->void { s_vc(3, imp_->mp_, mp); }
+	auto PointMotion::mv()const noexcept->const double* { return imp_->vp_; }
 	auto PointMotion::updMv() noexcept->void { 
 		double vs[6], pp[3];
 		s_pm2pp(*makI()->pm(), pp);
@@ -331,6 +353,7 @@ namespace aris::dynamic{
 	}
 	auto PointMotion::setMv(const double *mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
 	auto PointMotion::getMv(double *mv) noexcept->void { s_vc(3, imp_->vp_, mv); }
+	auto PointMotion::ma()const noexcept->const double* { return imp_->ap_; }
 	auto PointMotion::updMa() noexcept->void { 
 		double as[6], vs[6], pp[3];
 		s_pm2pp(*makI()->pm(), pp);
@@ -544,8 +567,7 @@ namespace aris::dynamic{
 	}
 	SingleComponentForce::SingleComponentForce(const std::string &name, Marker* makI, Marker* makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Interaction>("Interaction")
 			.inherit<aris::dynamic::DynEle>()
 			.prop("prt_m", &Interaction::setPrtNameM, &Interaction::prtNameM)

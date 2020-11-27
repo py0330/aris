@@ -917,23 +917,19 @@ namespace aris::dynamic
 
 			// make relation pool //
 			std::vector<LocalRelation> relation_pool;
-			for (auto c : cp)
-			{
+			for (auto c : cp){
 				if (c->makI() == nullptr || c->makJ() == nullptr) continue;
 				
-				auto ret = std::find_if(relation_pool.begin(), relation_pool.end(), [&c](auto &relation)
-				{
+				auto ret = std::find_if(relation_pool.begin(), relation_pool.end(), [&c](auto &relation){
 					auto ri{ relation.prtI_ }, rj{ relation.prtJ_ }, ci{ &c->makI()->fatherPart() }, cj{ &c->makJ()->fatherPart() };
 					return ((ri == ci) && (rj == cj)) || ((ri == cj) && (rj == ci));
 				});
 
-				if (ret == relation_pool.end())
-				{
+				if (ret == relation_pool.end()){
 					relation_pool.push_back(LocalRelation{ &c->makI()->fatherPart(), &c->makJ()->fatherPart(), c->dim(), c->dim() });
 					relation_pool.back().cst_pool_.push_back({ c, true });
 				}
-				else
-				{
+				else{
 					ret->cst_pool_.push_back({ c, &c->makI()->fatherPart() == ret->prtI_ });
 					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](auto& a, auto& b){return a.cst_->dim() > b.cst_->dim();});//这里把大的约束往前放
 					ret->size_ += c->dim();
@@ -942,23 +938,18 @@ namespace aris::dynamic
 			}
 
 			// 划分出相关的Part和Relation //
-			while (active_part_pool.size() > 1)
-			{
+			while (active_part_pool.size() > 1){
 				std::function<void(std::vector<const Part *> &part_pool_, std::vector<const Part *> &left_part_pool, std::vector<LocalRelation> &relation_pool, const Part *part)> addPart;
-				addPart = [&](std::vector<const Part *> &part_pool_, std::vector<const Part *> &left_part_pool, std::vector<LocalRelation> &relation_pool, const Part *part)->void
-				{
+				addPart = [&](std::vector<const Part *> &part_pool_, std::vector<const Part *> &left_part_pool, std::vector<LocalRelation> &relation_pool, const Part *part)->void	{
 					if (std::find(part_pool_.begin(), part_pool_.end(), part) != part_pool_.end())return;
 
 					part_pool_.push_back(part);
 
 					// 如果不是地面，那么抹掉该杆件，同时添加该杆件的相关杆件 //
-					if (part != left_part_pool.front())
-					{
+					if (part != left_part_pool.front())	{
 						left_part_pool.erase(std::find(left_part_pool.begin(), left_part_pool.end(), part));
-						for (auto &rel : relation_pool)
-						{
-							if (rel.prtI_ == part || rel.prtJ_ == part)
-							{
+						for (auto &rel : relation_pool)	{
+							if (rel.prtI_ == part || rel.prtJ_ == part)	{
 								addPart(part_pool_, left_part_pool, relation_pool, rel.prtI_ == part ? rel.prtJ_ : rel.prtI_);
 							}
 						}
@@ -975,8 +966,7 @@ namespace aris::dynamic
 				addPart(prt_vec, active_part_pool, relation_pool, active_part_pool.at(1));
 
 				// add related relation //
-				for (auto &rel : relation_pool)
-				{
+				for (auto &rel : relation_pool)	{
 					if (std::find_if(prt_vec.begin(), prt_vec.end(), [&rel, this](const Part *prt) { return prt != &(this->model()->ground()) && (prt == rel.prtI_ || prt == rel.prtJ_); }) != prt_vec.end())
 					{
 						rel_vec.push_back(rel);
@@ -984,11 +974,9 @@ namespace aris::dynamic
 				}
 
 				// 对sys的part和relation排序 //
-				for (Size i = 0; i < std::min(prt_vec.size(), rel_vec.size()); ++i)
-				{
+				for (Size i = 0; i < std::min(prt_vec.size(), rel_vec.size()); ++i)	{
 					// 先对part排序，找出下一个跟上一个part联系的part
-					std::sort(prt_vec.begin() + i, prt_vec.end(), [i, this, &rel_vec](const Part* a, const Part* b)
-					{
+					std::sort(prt_vec.begin() + i, prt_vec.end(), [i, this, &rel_vec](const Part* a, const Part* b)	{
 						if (a == &this->model()->ground()) return true; // 地面最优先
 						if (b == &this->model()->ground()) return false; // 地面最优先
 						if (i == 0)return a->id() < b->id();// 第一轮先找地面或其他地面，防止下面的索引i-1出错
@@ -999,8 +987,7 @@ namespace aris::dynamic
 						return a->id() < b->id();
 					});
 					// 再插入连接新part的relation
-					std::sort(rel_vec.begin() + i, rel_vec.end(), [i, this, &prt_vec](Relation a, Relation b)
-					{
+					std::sort(rel_vec.begin() + i, rel_vec.end(), [i, this, &prt_vec](Relation a, Relation b){
 						auto pend = prt_vec.begin() + i + 1;
 						auto a_part_i = std::find_if(prt_vec.begin(), pend, [a](const Part* p)->bool { return p == a.prtI_; });
 						auto a_part_j = std::find_if(prt_vec.begin(), pend, [a](const Part* p)->bool { return p == a.prtJ_; });
@@ -1030,8 +1017,7 @@ namespace aris::dynamic
 		std::vector<std::vector<Diag>> d_vec_vec;
 		std::vector<std::vector<LocalRemainder>> r_vec_vec;
 		Size max_F_size{ 0 }, max_fm{ 0 }, max_fn{ 0 }, max_G_size{ 0 }, max_gm{ 0 }, max_gn{ 0 }, max_cm_size{ 0 };
-		for (int i = 0; i < prt_vec_vec.size(); ++i)
-		{
+		for (int i = 0; i < prt_vec_vec.size(); ++i){
 			auto &prt_vec = prt_vec_vec[i];
 			auto &rel_vec = rel_vec_vec[i];
 
@@ -1047,14 +1033,12 @@ namespace aris::dynamic
 			auto &d_vec = d_vec_vec.back();
 			d_vec.resize(prt_vec.size());
 			d_vec[0].part_ = prt_vec[0];
-			for (Size i = 1; i < d_vec.size(); ++i)
-			{
+			for (Size i = 1; i < d_vec.size(); ++i)	{
 				auto &diag = d_vec[i];
 				auto &rel = rel_vec[i - 1];
 
 				// 根据diag更改是否为I part
-				if (rel.prtI_ != prt_vec.at(i))
-				{
+				if (rel.prtI_ != prt_vec.at(i))	{
 					std::swap(rel.prtI_, rel.prtJ_);
 					for (auto &c : rel.cst_pool_)c.is_I_ = !c.is_I_;
 				}
@@ -1073,9 +1057,8 @@ namespace aris::dynamic
 
 				// 以下优化dm矩阵的计算，因为优化会改变系统所需内存的计算，因此必须放到这里 //
 				{
-					// 针对约束仅仅有一个时的优化 //
-					if (rel.cst_pool_.size() == 1)
-					{
+					
+					if (rel.cst_pool_.size() == 1){ // 针对约束仅仅有一个时的优化 //
 						diag.upd_d_and_cp_ = Imp::one_constraint_upd_d_and_cp;
 					}
 					// 针对转动副加转动电机 //
