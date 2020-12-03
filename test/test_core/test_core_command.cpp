@@ -303,12 +303,53 @@ void test_command_code()
 		std::cout << e.what() << std::endl;
 	}
 }
+void test_language_parser() {
+	try {
+	
+	
+	LanguageParser parser;
+
+	std::string file1 = "1:\n"
+"2:main\n"
+"3:if (1+2)\n"
+"4:mvl --tool=tool0 --wobj=wobj1\n"
+"5:endif\n"
+"6:aaaa(1,2)\n"
+"7:endmain\n"
+"8:\n"
+"9:function aaaa(Number a, Matrix b)\n"
+"10:mvl --tool=a --wobj=wobj1\n"
+"11:a++\n"
+"12:endfunction\n";
+
+
+	std::map<std::string,std::string> program;
+	program["main"] = file1;
+
+	parser.setProgram(program);
+	parser.parseLanguage();
+	parser.gotoMain();
+
+	while (!parser.isEnd()){
+		parser.forward();
+		std::cout << parser.currentCmd() << std::endl;
+	}
+
+	}
+	catch (std::exception&e){
+		std::cout << e.what() << std::endl;
+	}
+
+
+}
+
 
 void test_command()
 {
 	std::cout << std::endl << "-----------------test command---------------------" << std::endl;
 	test_command_xml();
 	test_command_code();
+	test_language_parser();
 	std::cout << "-----------------test command finished------------" << std::endl << std::endl;
 }
 

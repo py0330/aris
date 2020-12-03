@@ -209,16 +209,16 @@ namespace aris::core
 		auto gotoMain()->void;
 		auto gotoFileLine(std::string file, int line)->void;
 		auto forward(bool is_this_cmd_successful = true)->void;
-		// 返回整句话，同时 trim 两侧 //
-		auto currentCmd()const->const std::string&;
 		// 返回当前的行号 //
 		auto currentLine()const->int;
 		// 返回当前的文件 //
 		auto currentFile()const->std::string;
+		// 返回整句话，同时 trim 两侧 //
+		auto currentCmd()const->std::string;
 		// 返回当前行的 word //
-		auto currentWord()const->std::string_view;
+		auto currentWord()const->std::string;
 		// 返回当前行出去 word 后的部分 //
-		auto currentParamStr()const->std::string_view;
+		auto currentParamStr()const->std::string;
 		auto isCurrentLineKeyWord()const->bool;
 		auto isCurrentLineFunction()const->bool;
 		auto isEnd()const->bool;
