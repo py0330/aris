@@ -1332,7 +1332,7 @@ namespace aris::server
 						}
 						else
 						{
-							auto &cmd = imp_->language_parser_.currentCmd();
+							auto cmd = imp_->language_parser_.currentCmd();
 							auto current_line = imp_->language_parser_.currentLine();
 							imp_->language_parser_.forward();
 							auto next_line = imp_->language_parser_.currentLine();
@@ -1534,7 +1534,7 @@ namespace aris::server
 								}
 								else
 								{
-									auto &cmd = imp_->language_parser_.currentCmd();
+									auto cmd = imp_->language_parser_.currentCmd();
 									auto current_line = imp_->language_parser_.currentLine();
 									imp_->language_parser_.forward();
 									auto next_line = imp_->language_parser_.currentLine();

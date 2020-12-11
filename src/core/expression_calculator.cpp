@@ -7,6 +7,7 @@
 #include <list>
 #include <cmath>
 #include <any>
+#include <regex>
 
 #include "aris/core/expression_calculator.hpp"
 #include "aris/core/reflection.hpp"
@@ -90,7 +91,6 @@ namespace aris::core
 		bool is_row_major_;
 		std::vector<double> data_vec_;
 	};
-	
 	auto Matrix::empty() const->bool { return imp_->data_vec_.empty(); }
 	auto Matrix::size() const->Size { return m()*n(); }
 	auto Matrix::data()->double * { return imp_->data_vec_.data(); }
@@ -416,8 +416,7 @@ namespace aris::core
 			std::string name;
 			std::vector<std::tuple<std::vector<std::string>, std::string, Calculator::BuiltInFunction>> funs_;
 		};
-		class Token
-		{
+		class Token{
 		public:
 			enum Type
 			{
@@ -463,8 +462,7 @@ namespace aris::core
 			if (next_pos == std::string_view::npos)return std::string_view();
 
 			// get number //
-			if (input[0] <= '9' && input[0] >= '0')
-			{
+			if (input[0] <= '9' && input[0] >= '0'){
 				bool has_scientific = false;
 				int i;
 				for (i = 1; i < input.size(); ++i)
@@ -486,15 +484,13 @@ namespace aris::core
 				return ret;
 			}
 			// get seperator //
-			else if (seperateStr.find(input[0]) != seperateStr.npos)
-			{
+			else if (seperateStr.find(input[0]) != seperateStr.npos){
 				auto ret = input.substr(0, 1);
 				input = 1 == input.size() ? std::string_view() : input.substr(1);
 				return ret;
 			}
 			// get operator //
-			else if (operatorStr.find(input[0]) != operatorStr.npos)
-			{
+			else if (operatorStr.find(input[0]) != operatorStr.npos){
 				int i;
 				for (i = 1; i < input.size() && operatorStr.find(input[i]) != std::string_view::npos; ++i);
 
@@ -503,8 +499,7 @@ namespace aris::core
 				return ret;
 			}
 			// get string //
-			else if (input[0] == '\"')
-			{
+			else if (input[0] == '\"'){
 				int i;
 				for (i = 1; i < input.size() && !(input[i] == '\"' && input[i - 1] != '\\'); ++i);
 
@@ -513,8 +508,7 @@ namespace aris::core
 				return ret;
 			}
 			// get word //
-			else
-			{
+			else{
 				int i;
 				for (i = 1; i < input.size() && varStr.find(input[i]) != std::string_view::npos; ++i);
 
@@ -566,35 +560,30 @@ namespace aris::core
 			
 			default:
 				// 字符串
-				if (token.word.data()[0] == '\"')
-				{
+				if (token.word.data()[0] == '\"'){
 					if (token.word.back() != '\"')THROW_FILE_LINE("invalid string:" + std::string(token.word));
 					token.type = Token::STRING;
 					break;
 				}
 				// 数字
-				if (std::stringstream(std::string(token.word)) >> token.num)
-				{
+				if (std::stringstream(std::string(token.word)) >> token.num){
 					token.type = Token::NUMBER;
 					break;
 				}
 				// 操作符
-				if (operator_map_.find(token.word) != operator_map_.end())
-				{
+				if (operator_map_.find(token.word) != operator_map_.end()){
 					token.type = Token::OPERATOR;
 					token.opr = &operator_map_.find(token.word)->second;
 					break;
 				}
 				// 变量
-				if (variable_map_.find(token.word) != variable_map_.end())
-				{
+				if (variable_map_.find(token.word) != variable_map_.end()){
 					token.type = Token::VARIABLE;
 					token.var = &variable_map_.find(token.word)->second;
 					break;
 				}
 				// 函数
-				if (function_map_.find(token.word) != function_map_.end())
-				{
+				if (function_map_.find(token.word) != function_map_.end()){
 					token.type = Token::FUNCTION;
 					token.fun = &function_map_.find(token.word)->second;
 					break;
@@ -1120,13 +1109,26 @@ namespace aris::core
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Calculator);
 	
-	struct LanguageParser::Imp
-	{
-		struct CmdInfo
-		{
+	struct LanguageParser::Imp{
+		struct CmdInfo{
 			std::string cmd;
 			int next_cmd_true_, next_cmd_false_;
 		};
+
+		struct FuncParamData { std::string type_, name_, value_; };
+
+		struct FuncData {
+			std::string file_;
+			int line_;
+			std::vector<FuncParamData> params_;
+		};
+		struct FuncStackData {
+			std::string file_;
+			int line_;
+			std::vector<FuncParamData> params_;
+		};
+		
+		
 
 		// 关键词 //
 		static inline const char *MAIN         = "main";
@@ -1142,43 +1144,78 @@ namespace aris::core
 		static inline const char *ENDWHILE     = "endwhile";
 
 		using Iterator = std::map<int, CmdInfo>::iterator;
-		auto parseEnvironment(std::string file_name, Iterator b, Iterator e)->Iterator
-		{
-			for (auto i = b; i != e; ++i)
-			{
+		auto parseEnvironment(std::string file_name, Iterator b, Iterator e)->Iterator{
+			for (auto i = b; i != e; ++i){
 				auto id = i->first;
 				auto &info = i->second;
 				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
 
 				if (auto l = { ENDMAIN, ENDWHILE, IF, ELSEIF, ELSE, ENDIF, WHILE, ENDWHILE };
-				std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; }))
-				{
+				std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; })){
 					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
 					THROW_FILE_LINE(err);
 				}
-				else if (cmd_name == VAR)
-				{
+				else if (cmd_name == VAR){
 					variables_.push_back(info.cmd);
 				}
-				else if (cmd_name == MAIN)
-				{
+				else if (cmd_name == MAIN){
 					if (main_line_)THROW_FILE_LINE("program has more than 1 main function");
 					main_line_ = i->first;
 					main_file_ = file_name;
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
 					i = parseMain(std::next(i), e);
 				}
-				else if (cmd_name == FUNCTION)
-				{
+				else if (cmd_name == FUNCTION){
 					if (info.cmd.find_first_of(" \t\n\r\f\v(") == std::string::npos)	THROW_FILE_LINE("function does not have name in line: " + std::to_string(i->first));
-					auto func = info.cmd.substr(info.cmd.find_first_of(" \t\n\r\f\v("), std::string::npos);
-					func.erase(0, func.find_first_not_of(" \t\n\r\f\v"));
-					auto funcname = func.substr(0, func.find_first_of(" \t\n\r\f\v("));
-					if (functions_.find(funcname) != functions_.end())
-					{
+					// func string //
+					auto func_body = info.cmd.substr(info.cmd.find_first_of(" \t\n\r\f\v("), std::string::npos);
+					func_body.erase(0, func_body.find_first_not_of(" \t\n\r\f\v"));
+					func_body.erase(func_body.find_last_not_of(" \t\n\r\f\v") + 1);
+					// func name //
+					auto func_name = func_body.substr(0, func_body.find_first_of(" \t\n\r\f\v("));
+					if (functions_.find(func_name) != functions_.end()){
 						THROW_FILE_LINE("function already exist in line " + std::to_string(i->first));
 					}
-					functions_.insert(std::make_pair(funcname, std::make_pair(file_name, i->first)));
+					// func params //
+					FuncData func_data{ file_name, i->first,{} };
+
+					auto func_param = func_body.substr(func_body.find_first_of(" \t\n\r\f\v("), std::string::npos);
+					if (func_param.size() < 2 || func_param.front()!='(' || func_param.back()!=')')
+						THROW_FILE_LINE("function format not correct in line " + std::to_string(i->first));
+
+					// 获取参数 //
+					auto params = func_param.substr(1, func_param.size() - 2);
+					auto find_param_type_and_name = [&](std::size_t start, std::size_t end) {
+						static const std::string param_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789"); // 和之前的var name相比少一个.
+
+						auto type_and_name = params.substr(start, end - start);
+						type_and_name.erase(0, type_and_name.find_first_not_of(" \t\n\r\f\v"));
+						type_and_name.erase(type_and_name.find_last_not_of(" \t\n\r\f\v") + 1);
+
+						if (type_and_name.find_first_of(" \t\n\r\f\v") == std::string::npos)
+							THROW_FILE_LINE("function format not correct in line " + std::to_string(i->first));
+
+						auto type = type_and_name.substr(0, type_and_name.find_first_of(" \t\n\r\f\v"));
+						auto name = type_and_name.substr(type_and_name.find_first_of(" \t\n\r\f\v"), std::string::npos);
+
+						name.erase(0, name.find_first_not_of(" \t\n\r\f\v"));
+						name.erase(name.find_last_not_of(" \t\n\r\f\v") + 1);
+
+						func_data.params_.push_back(FuncParamData{ type, name });
+					};
+					std::size_t start = 0U, end = params.find(",");
+					for (; 
+						end != std::string::npos; 
+						start = end + 1, end = params.find(",", start)) 
+					{
+						find_param_type_and_name(start, end);
+					}
+					if (start < params.size())find_param_type_and_name(start, params.size());
+
+
+
+					// insert //
+					functions_.insert(std::make_pair(func_name, func_data));
 
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
 					i = parseFunction(std::next(i), e);
@@ -1190,20 +1227,15 @@ namespace aris::core
 				}
 			}
 
-			
-
 			return e;
 		}
-		auto parseMain(Iterator b, Iterator e)->Iterator
-		{
-			for (auto i = b; i != e; ++i)
-			{
+		auto parseMain(Iterator b, Iterator e)->Iterator{
+			for (auto i = b; i != e; ++i){
 				auto id = i->first;
 				auto &info = i->second;
 				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
 
-				if (cmd_name == ENDMAIN)
-				{
+				if (cmd_name == ENDMAIN){
 					auto ret = parseCode(b, i);
 					std::prev(i)->second.next_cmd_true_ = i->first;
 					end_main_line_ = id;
@@ -1211,21 +1243,18 @@ namespace aris::core
 				}
 			}
 
-			std::string err = "no endfuncion for function in line " + std::to_string(b->first);
+			std::string err = "no endmain for main function in line " + std::to_string(b->first);
 			THROW_FILE_LINE(err);
 
 			return e;
 		}
-		auto parseFunction(Iterator b, Iterator e)->Iterator
-		{
-			for (auto i = b; i != e; ++i)
-			{
+		auto parseFunction(Iterator b, Iterator e)->Iterator{
+			for (auto i = b; i != e; ++i){
 				auto id = i->first;
 				auto &info = i->second;
 				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
 
-				if (cmd_name == ENDFUNCTION)
-				{
+				if (cmd_name == ENDFUNCTION){
 					auto ret = parseCode(b, i);
 					std::prev(i)->second.next_cmd_true_ = i->first;
 					return ret;
@@ -1237,59 +1266,49 @@ namespace aris::core
 
 			return e;
 		}
-		auto parseCode(Iterator b, Iterator e)->Iterator
-		{
-			for (auto i = b; i != e; ++i)
-			{
+		auto parseCode(Iterator b, Iterator e)->Iterator{
+			for (auto i = b; i != e; ++i){
 				auto id = i->first;
 				auto &info = i->second;
 				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
 
 				if (auto l = { MAIN, ENDMAIN, FUNCTION, ENDFUNCTION, VAR, ELSEIF, ELSE, ENDIF, ENDWHILE };
-				std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; }))
+					std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; }))
 				{
 					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
 					THROW_FILE_LINE(err);
 				}
-				else if (cmd_name == IF)
-				{
+				else if (cmd_name == IF){
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
 					i = parseIf(i, e);
 				}
-				else if (cmd_name == WHILE)
-				{
+				else if (cmd_name == WHILE){
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
 					i = parseWhile(i, e);
 				}
-				else
-				{
+				else{
 					info.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
 				}
 			}
 
 			return e;
 		}
-		auto parseIf(Iterator b, Iterator e)->Iterator
-		{
+		auto parseIf(Iterator b, Iterator e)->Iterator{
 			std::list<Iterator> prev_else_line;
 			Iterator last_if_begin = b;
 
 			int is_end = 1;
 			bool has_else = false;
-			for (auto i = std::next(b); i != e; ++i)
-			{
+			for (auto i = std::next(b); i != e; ++i){
 				auto id = i->first;
 				auto &info = i->second;
 				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
 
-				if (cmd_name == IF)
-				{
+				if (cmd_name == IF){
 					is_end++;
 				}
-				else if (cmd_name == ELSEIF && is_end == 1)
-				{
-					if (has_else)
-					{
+				else if (cmd_name == ELSEIF && is_end == 1){
+					if (has_else){
 						std::string err = "Find elseif after else in line " + std::to_string(i->first);
 						THROW_FILE_LINE(err);
 					}
@@ -1382,13 +1401,13 @@ namespace aris::core
 
 		// 编译结果 //
 		std::map<std::string, std::map<int, CmdInfo>>  cmds_;
-		std::map<std::string, std::pair<std::string, int>> functions_;   //  名字    所在文件  行号
-		std::vector<std::string> variables_;                   //  所在文件  变量定义(定义的时候才取名)
+		std::map<std::string, FuncData> functions_;                      //  名字    所在文件  行号
+		std::vector<std::string> variables_;                             //  所在文件  变量定义(定义的时候才取名)
 		std::string main_file_;
 		int main_line_, end_main_line_;
 
 		// 运行时 //
-		std::list<std::pair<std::string, int>> func_ret_stack_;
+		std::list<FuncStackData> func_ret_stack_;
 		
 		std::string current_file_;
 		int current_line_;
@@ -1453,45 +1472,78 @@ namespace aris::core
 		imp_->current_line_ = line;
 		imp_->func_ret_stack_.clear();
 	}
-	auto LanguageParser::forward(bool is_this_cmd_successful)->void
-	{
+	auto LanguageParser::forward(bool is_this_cmd_successful)->void{
 		auto cmd_str = currentCmd().substr(0, currentCmd().find_first_of(" \t\n\r\f\v("));
 
-		if (auto found = imp_->functions_.find(cmd_str); found != imp_->functions_.end())
-		{
-			imp_->func_ret_stack_.push_back(std::make_pair(imp_->current_file_, imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_true_));
-			imp_->current_file_ = found->second.first;
-			imp_->current_line_ = found->second.second;
-		}
-		else if (cmd_str == "endfunction")
-		{
-			if (imp_->func_ret_stack_.empty()) 
+		if (auto found = imp_->functions_.find(cmd_str); found != imp_->functions_.end()){
+			Imp::FuncStackData stack_data{ imp_->current_file_, imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_true_ ,found->second.params_ };
+			
+			// 获取函数的参数，并传入到函数中 //
+			std::string param_str(currentParamStr());
+			if (param_str.size() < 2 || param_str.front() != '(' || param_str.back() != ')')
+				THROW_FILE_LINE("function format not correct in line " + std::to_string(currentLine()));
+
+			param_str = param_str.substr(1, param_str.size() - 1);
+
+			int id = 0;
+			auto find_param_name = [&](std::size_t start, std::size_t end) {
+				auto param = param_str.substr(start, end - start);
+				param.erase(0, param.find_first_not_of(" \t\n\r\f\v"));
+				param.erase(param.find_last_not_of(" \t\n\r\f\v") + 1);
+
+				stack_data.params_[id].value_ = param;
+				id++;
+			};
+
+			std::size_t start = 0U, end = param_str.find(",");
+			for (;
+				end != std::string::npos;
+				start = end + 1, end = param_str.find(",", start))
 			{
+				find_param_name(start, end);
+			}
+			if (start < param_str.size())find_param_name(start, param_str.size());
+
+			imp_->func_ret_stack_.push_back(stack_data);
+			imp_->current_file_ = found->second.file_;
+			imp_->current_line_ = found->second.line_;
+		}
+		else if (cmd_str == Imp::ENDFUNCTION){
+			if (imp_->func_ret_stack_.empty()){
 				// 什么都不做
 			}
-			else
-			{
-				imp_->current_file_ = imp_->func_ret_stack_.back().first;
-				imp_->current_line_ = imp_->func_ret_stack_.back().second;
+			else{
+				imp_->current_file_ = imp_->func_ret_stack_.back().file_;
+				imp_->current_line_ = imp_->func_ret_stack_.back().line_;
 				imp_->func_ret_stack_.pop_back();
 			}
 		}
-		else
-		{
+		else{
 			imp_->current_line_ = is_this_cmd_successful ? imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_true_ : imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_false_;
 		}
 	}
 	auto LanguageParser::currentLine()const->int { return imp_->current_line_; }
 	auto LanguageParser::currentFile()const->std::string { return imp_->current_file_; }
-	auto LanguageParser::currentCmd()const->const std::string& { return imp_->cmds_.at(imp_->current_file_).at(imp_->current_line_).cmd; }
-	auto LanguageParser::currentWord()const->std::string_view
+	auto LanguageParser::currentCmd()const->std::string { 
+		std::string line = imp_->cmds_.at(imp_->current_file_).at(imp_->current_line_).cmd;
+		
+		if (line.substr(0, line.find_first_of(" \t\n\r\f\v([{}])")) != Imp::FUNCTION && !imp_->func_ret_stack_.empty()) {
+			for (auto &param : imp_->func_ret_stack_.back().params_){
+				std::regex pattern("\\b" + param.name_ + "\\b");
+				line = std::regex_replace(line, pattern, param.value_);
+			}
+		}
+				
+		return line;
+	}
+	auto LanguageParser::currentWord()const->std::string
 	{
-		std::string_view v = currentCmd();
+		std::string v = currentCmd();
 		return v.substr(0, v.find_first_of(" \t\n\r\f\v([{}])"));
 	}
-	auto LanguageParser::currentParamStr()const->std::string_view
+	auto LanguageParser::currentParamStr()const->std::string
 	{
-		std::string_view v = currentCmd();
+		std::string v = currentCmd();
 		return v.substr(v.find_first_of(" \t\n\r\f\v([{}])"));
 	}
 	auto LanguageParser::isCurrentLineKeyWord()const->bool
@@ -1513,18 +1565,16 @@ namespace aris::core
 	LanguageParser::LanguageParser(const std::string &name) :imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<aris::core::Matrix>("Matrix")
-			.textMethod([](Matrix *v)->std::string
-				{
+			.textMethod(
+				[](Matrix *v)->std::string{
 					return v->toString();
-				}, [](Matrix *v, std::string_view str)->void
-				{
+				}, 
+				[](Matrix *v, std::string_view str)->void{
 					static aris::core::Calculator c;
 					static int i = 0;
-					if (i == 0)
-					{
+					if (i == 0)	{
 						c.addVariable("PI", "Number", double(aris::PI));
 						i = 1;
 					}
