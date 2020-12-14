@@ -287,31 +287,28 @@ namespace aris::dynamic{
 
 	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
 	auto PointMotion::locCmI() const noexcept->const double* {
-		static const double loc_cm_I[18]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0 };
+		static const double loc_cm_I[18]
+		{
+			1,0,0,
+			0,1,0,
+			0,0,1,
+			0,0,0,
+			0,0,0,
+			0,0,0,
+		};
 		return loc_cm_I;
 	}
 	auto PointMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
-		// Pi : mak I 的实际位置
-		// Pj : mak J 的实际位置
-		// Pit: mak I 应该达到的位置
-		// Pc : 需补偿的位姿
-		// 理论上应该有：
-		// Pi = Pj * mpm
-		// 那么就有：
-		// Pit = Pj * mpm
-		// 于是：
-		// Pc = Pi^-1 * Pit
+		double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
+		s_inv_pp2pp(makI_pm, pp_j, cp);
 		
-		double pp_mp_in_ground[3];
-		s_pp2pp(makJ_pm, imp_->mp_, pp_mp_in_ground);
-
-		double pp_c_in_ground[3]{ pp_mp_in_ground[0] - makI_pm[3], pp_mp_in_ground[1] - makJ_pm[7], pp_mp_in_ground[2] - makJ_pm[11]};
+		// 把 mp 转到 marker I 坐标系下
+		double mp_in_ground[3], mp_in_I[3];
+		s_pm_dot_v3(makJ_pm, imp_->mp_, mp_in_ground);
+		s_inv_pm_dot_v3(makI_pm, mp_in_ground, mp_in_I);
 		
-		double pp_c_in_makI[3];
-		s_inv_pm_dot_v3(makI_pm, pp_mp_in_ground, pp_c_in_makI);
-
-		// locCmI为单位矩阵，此时无需相乘
-		s_vc(3, pp_c_in_makI, cp);
+		// 因为是 I 想到对于 J，实际上要减去J相对于I的，所以是加法
+		s_va(3, mp_in_I, cp);
 	}
 	auto PointMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
 		double pm[16];

@@ -110,15 +110,7 @@ namespace aris::dynamic
 
 	struct UniversalSolver::Imp
 	{
-		std::vector<Diag *> get_diag_from_part_id_;
-
 		std::vector<SubSystem> subsys_pool_;
-
-		std::vector<double> F_, FU_, FT_, G_, GU_, GT_, S_, QT_DOT_G_, xpf_, xcf_, bpf_, bcf_, beta_, cmI, cmJ, cmU, cmT;
-		std::vector<Size> FP_, GP_;
-
-		std::vector<double> Jg_, cg_;
-		std::vector<double> M_, h_;
 
 		static auto one_constraint_upd_d(Diag *d)noexcept->void
 		{

@@ -941,7 +941,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 
 			aris::Size m = u->model()->partPool().size() * 6;
 			aris::Size n = u->model()->motionPool().size();
-			for (auto &gm : u->model()->generalMotionPool()) n += gm.dim();
+			for (auto &gm : u->model()->generalMotionPool()) n += 6;
 
 			std::vector<double> part_vs(m, 0.0), part_as(m, 0.0);
 			std::vector<double> mot_input(n, 0.0);
@@ -955,12 +955,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			s_mm(m, 1, n, u->Jg(), n, mot_input.data(), 1, part_vs.data(), 1);
-
-			dsp(u->mJg(), u->nJg(), u->Jg());
-			dsp(u->nJg(), 1, mot_input.data());
-
-			//dsp(m, )
-
 			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i){
 				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2])){
 					std::cout << s.id() << "::cptGeneralJacobi() forward failed" << std::endl;
@@ -989,7 +983,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i){
 				if (!s_is_equal(6, u->model()->partPool().at(i).as(), part_as.data() + 6 * i, error[2])){
 					std::cout << s.id() << "::cptGeneralJacobi() forward failed, because cg is not correct" << std::endl;
-
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
 					dsp(1, 6, u->model()->partPool().at(i).as());
 					dsp(1, 6, part_as.data() + 6 * i);
@@ -1061,15 +1054,23 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (auto &mot : m.motionPool())mot.activate(false);
 		for (auto &gm : m.generalMotionPool())gm.activate(true);
 		// set ee origin status //
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
+		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
+			auto &gm = m.generalMotionPool().at(i);
 			
-			gm.setMpm(opo + i*16);
-			gm.setMva(ovo + i*6);
-			gm.setMaa(oao + i*6);
+			gm.setMp(opo + pdim);
+			gm.setMv(ovo + dim);
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->setMaa(oao + dim); else gm.setMa(oao + dim);
+
+			pdim += gm.mpSize();
+			dim += gm.dim();
 		}
 
+		//for (auto &mot : m.jointPool())mot.activate(false);
+
 		// compute origin //
+		//dsp(4, 4, *m.generalMotionPool().back().makJ()->pm());
+		//dsp(4, 4, *m.generalMotionPool().back().makI()->pm());
+
 		m.init();
 		s.kinPos();
 		m.init();
@@ -1077,6 +1078,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
+
+
 
 		// check origin //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
@@ -1209,14 +1212,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			// check cg //
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
-			{
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
 				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
 			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
-			{
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
 				auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(u->model()->generalMotionPool().at(i));
-				
 				s_vc(6, gm.mas(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
@@ -1242,6 +1242,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
 			aris::Size m = u->model()->partPool().size() * 6;
+			
 			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
 
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
@@ -1299,8 +1300,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	int count{ 0 };
 	
 	// pos //
-	std::cout << s.id() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
-	{
+	std::cout << s.id() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&](){
 		if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipt[i]);
 		else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
 
@@ -1321,8 +1321,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	}) << std::endl;
 
 	// vel //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
-	{
+	for (aris::Size i = 0; i < m.motionPool().size(); ++i){
 		m.motionPool().at(i).setMp(ipt[i]);
 		m.motionPool().at(i).setMv(ivt[i]);
 		m.motionPool().at(i).setMa(iat[i]);
@@ -1356,8 +1355,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.id() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
-	{
+	std::cout << s.id() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&](){
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
 			m.motionPool().at(i).setMp(ipt[i]);
 			m.motionPool().at(i).setMv(ivt[i]);
@@ -1375,8 +1373,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	}) << std::endl;
 	
 	// dyn mat //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
-	{
+	for (aris::Size i = 0; i < m.motionPool().size(); ++i){
 		m.motionPool().at(i).setMp(ipt[i]);
 		m.motionPool().at(i).setMv(ivt[i]);
 		m.motionPool().at(i).setMa(iat[i]);
@@ -1430,8 +1427,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMpm(opt);
 	s.kinPos();
 	count = 0;
-	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
-	{
+	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&](){
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMva(ovt + i * 6);
 		s.kinVel();
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMv(); result1[i] = m.motionPool().at(i).mv(); }
@@ -2039,8 +2035,7 @@ void test_multi_systems()
 }
 void bench_3R()
 {
-	try
-	{
+	try	{
 		// over constraint system
 		// 本示例展示3轴SCARA机器人的建模过程，aris可以求解任何机构（串联、并联、混联、过约束、欠约束等）的正逆运动学、正逆动力学等问题
 		// 定义3个杆件的位置与321欧拉角，以及10维的惯量向量
@@ -2224,10 +2219,8 @@ void bench_stewart()
 		std::cout << e.what() << std::endl;
 	}
 }
-void bench_multi_systems()
-{
-	try
-	{
+void bench_multi_systems(){
+	try{
 		const double input_origin_p[15]{ 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
 			,2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };

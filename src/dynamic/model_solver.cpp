@@ -123,15 +123,14 @@ namespace aris::dynamic
 		double *F_, *FU_, *FT_, *G_, *GU_, *GT_, *S_, *QT_DOT_G_, *xpf_, *xcf_, *bpf_, *bcf_, *beta_, *cmI_, *cmJ_, *cmU_, *cmT_;
 		Size *FP_, *GP_;
 		double *Jg_, *cg_, *M_, *h_;
+		Size mJg_, nJg_, nM_;
 	};
-	auto SubSystem::updDmCm(bool cpt_cp)noexcept->void
-	{
+	auto SubSystem::updDmCm(bool cpt_cp)noexcept->void{
 		if (cpt_cp)error_ = 0.0;// error //
 		
 		// upd dm and rel dim
 		fm_ = 0;
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END{
 			d->upd_d_and_cp_(d, cpt_cp);// cp //
 			d->rows_ = fm_;
 			fm_ += 6 - d->rel_.dim_;
@@ -139,11 +138,9 @@ namespace aris::dynamic
 		}
 
 		// upd remainder data //
-		ARIS_LOOP_R
-		{
+		ARIS_LOOP_R{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(r->rel_.)
-			{
+			ARIS_LOOP_BLOCK(r->rel_.){
 				double pmI[16], pmJ[16];
 				s_pm_dot_pm(b->is_I_ ? r->i_diag_->pm_ : r->j_diag_->pm_, *b->cst_->makI()->prtPm(), pmI);
 				s_pm_dot_pm(b->is_I_ ? r->j_diag_->pm_ : r->i_diag_->pm_, *b->cst_->makJ()->prtPm(), pmJ);
@@ -493,8 +490,7 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto SubSystem::kinVel()noexcept->void
-	{
+	auto SubSystem::kinVel()noexcept->void{
 		// make b
 		updCv();
 
@@ -505,8 +501,7 @@ namespace aris::dynamic
 		updF();
 		sovXp();
 	}
-	auto SubSystem::dynAccAndFce()noexcept->void
-	{
+	auto SubSystem::dynAccAndFce()noexcept->void{
 		// upd Iv dm cm and ca  //
 		updDiagIv();
 		updDmCm(false);
@@ -527,8 +522,7 @@ namespace aris::dynamic
 #define ARIS_LOOP_SYS for (auto sys = imp_->pd_->subsys_data_; sys < imp_->pd_->subsys_data_ + imp_->pd_->subsys_size_; ++sys)
 #define ARIS_LOOP_SYS_D for (auto d = sys->d_data_; d < sys->d_data_ + sys->d_size_; ++d)
 #define ARIS_LOOP_SYS_R for (auto r = sys->r_data_; r < sys->r_data_ + sys->r_size_; ++r)
-	struct UniversalSolver::Imp
-	{
+	struct UniversalSolver::Imp{
 		// 动力学计算以下变量的关系
 		// I  ： 惯量矩阵,m x m
 		// C  ： 约束矩阵,m x n
@@ -785,8 +779,7 @@ namespace aris::dynamic
 		PublicData *pd_;
 		std::vector<char> mem_pool_;
 
-		static auto one_constraint_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void
-		{
+		static auto one_constraint_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void{
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
@@ -800,8 +793,7 @@ namespace aris::dynamic
 			// 计算 cp //
 			if (cpt_cp)d->rel_.blk_data_[0].cst_->cptCpFromPm(d->bc_, pmI, pmJ);
 		}
-		static auto revolute_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void
-		{
+		static auto revolute_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void{
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
@@ -833,8 +825,7 @@ namespace aris::dynamic
 				d->bc_[5] = ps_j2i[m->axis()];
 			}
 		}
-		static auto prismatic_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void
-		{
+		static auto prismatic_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void{
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
@@ -846,8 +837,7 @@ namespace aris::dynamic
 			if (!d->rel_.blk_data_[0].is_I_)s_iv(36, d->dm_);
 			
 			// 计算 cp //
-			if (cpt_cp)
-			{
+			if (cpt_cp)	{
 				auto m = static_cast<const Motion*>(d->rel_.blk_data_[1].cst_);
 
 				double pm_j_should_be[16];
@@ -864,11 +854,9 @@ namespace aris::dynamic
 				d->bc_[5] = ps_j2i[m->axis()];
 			}
 		}
-		static auto normal_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void
-		{
+		static auto normal_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void	{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(d->rel_.)
-			{
+			ARIS_LOOP_BLOCK(d->rel_.){
 				// 更新 pm //
 				double pmI[16], pmJ[16];
 				s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI()->prtPm(), pmI);
@@ -902,8 +890,7 @@ namespace aris::dynamic
 
 		// 根据关联拓扑，计算出 part 和 rel 的分组，用于构建subsys
 		std::vector<std::vector<const Part*>> prt_vec_vec;
-		std::vector<std::vector<LocalRelation>> rel_vec_vec;
-		{
+		std::vector<std::vector<LocalRelation>> rel_vec_vec;{
 			// make active part pool //
 			std::vector<const Part*> active_part_pool;
 			active_part_pool.push_back(&model()->ground());
@@ -1170,8 +1157,6 @@ namespace aris::dynamic
 		}
 		core::allocMem(mem_pool_size, pub_data.subsys_data_, sys_vec.size());
 
-		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
-
 		// 计算公共的内存及偏移
 		core::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
@@ -1197,8 +1182,6 @@ namespace aris::dynamic
 
 		// 分配内存
 		imp_->mem_pool_.resize(mem_pool_size);
-
-		//std::cout <<"mem size e:"<< mem_pool_size << std::endl;
 
 		// 更新公共变量区 //
 		{
