@@ -97,6 +97,8 @@ namespace aris::plan
 	auto Plan::setErrMsgRT(const char *msg)->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), const_cast<char*>(controlServer()->errorMsg())); }
 	auto Plan::retCode()->std::int32_t { return imp_->ret_code; }
 	auto Plan::retMsg()->const char * { return imp_->ret_msg; }
+	auto Plan::setRetCode(std::int32_t code)->void { imp_->ret_code = code; }
+	auto Plan::setRetMsg(const char *msg)->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), imp_->ret_msg); }
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :imp_(new Imp) { setName(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);

@@ -49,44 +49,55 @@ namespace aris::plan
 	};
 }
 
-namespace aris::server
-{
+namespace aris::server{
+	//
+	// # 基本规则 #
+	// 1. 每个输入的 str ，一定会有返回的 plan ，一定会在流程结束执行 回调函数 ，即使parse失败
+	// 2. 任何一个 str parse 失败，全部指令的 prepare execute collect 等函数 都不执行，但所有指令的回调依然执行
+	// 3. 若任何一个prepare失败：
+	//    之前的指令错误码为 EXECUTE_CANCELLED  同时   会 执行 collect 函数；
+	//    之后的指令错误码为 PREPARE_CANCELLED  同时 不会 执行 collect 函数；
+	//    
+	//    对于本条出错指令：
+	//    case 3.1 抛异常失败 : 错误码为 PREPARE_EXCEPTION， 同时 不会 执行 collect 函数
+	//    case 3.2 错误码 < 0 : 错误码为 用户设置的错误码 ， 同时   会 执行 collect 函数
+	//
+	//
+	// # 运行流程 #
 	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
 	// 1.   parse list
-	//   ---   all success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
-	//   ---   any throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
+	//   1.1 ---   all success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
+	//   1.2 ---   any throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
 	// 2.   prepare list
-	//   ---   all success : goto 3                                                                    
-	//   ---   any throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
+	//   2.1 ---   all success : goto 3       
+	//   2.2 ---  ret code < 0 : goto 5a  ---err_code : ret_code             ---err_msg : ret_msg          
+	//   2.3 ---   any throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
 	// 3.   execute list Async
-	//   ---   not execute : goto 4a
-	//   ---       success : goto 4b
-	//   ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same
-	//   --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same
-	//   --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same
-	//   ---     RT failed : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
+	//   3.1 ---   not execute : goto 4a
+	//   3.2 ---       success : goto 4b
+	//   3.3 ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same with err_code
+	//   3.4 --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same with err_code
+	//   3.5 --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same with err_code
+	//   3.6 ---    RT ret < 0 : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
 	// 4a.  collect list Sync
-	//   ---   not collect : goto 5a
-	//   ---       success : goto 5a
+	//   4.1 ---   not collect : goto 5a
+	//   4.2 ---       success : goto 5a
 	// 4b.  collect list Async
-	//   ---   not collect : goto 5b
-	//   ---       success : goto 5b
+	//   4.3 ---   not collect : goto 5b
+	//   4.4 ---       success : goto 5b
 	// 5a.  callback Sync  : goto end
 	// 5b.  callback Async : goto end
 	// end
-	struct ControlServer::Imp
-	{
-		struct InternalData
-		{
+	//
+	struct ControlServer::Imp{
+		struct InternalData{
 			std::shared_ptr<aris::plan::Plan> plan_;
 			std::function<void(aris::plan::Plan&)> post_callback_;
 			bool has_prepared_{ false }, has_run_{ false };
 
-			~InternalData()
-			{
+			~InternalData()	{
 				// step 4a. 同步收集4a //
-				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)))
-				{
+				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))){
 					LOG_INFO << "server collect cmd " << plan_->cmdId() << std::endl;
 					plan_->collectNrt();
 				}
@@ -213,8 +224,10 @@ namespace aris::server
 				err_code_and_fixed_.store(err_code_and_fixed);
 
 				// finish //
-				std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
-				plan.imp_->ret_code = err.code;
+				if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
+					std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
+					plan.imp_->ret_code = err.code;
+				}
 				cmd_now_.store(cmd_end);// 原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
@@ -567,38 +580,30 @@ namespace aris::server
 	auto ControlServer::autoLogActive()->bool { return imp_->is_rt_log_started_.load(); }
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
-	auto ControlServer::runCmdLine()->void
-	{
-		auto ret = std::async(std::launch::async, []()->std::string
-		{
+	auto ControlServer::runCmdLine()->void{
+		auto ret = std::async(std::launch::async, []()->std::string{
 			std::string command_in;
 			std::getline(std::cin, command_in);
 			if (command_in.empty())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			return command_in;
 		});
 
-		for (;;)
-		{
+		for (;;){
 			// 检测是否有数据从executeCmdInMain过来
-			if (imp_->cmdline_msg_received_)
-			{
+			if (imp_->cmdline_msg_received_){
 				auto ret_plan = executeCmd(imp_->cmdline_cmd_vec_);
 				imp_->cmdline_msg_received_ = false;
 				imp_->cmdline_execute_promise_->set_value(ret_plan);
 			}
 			// 检测是否有数据从command line过来
-			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-			{
+			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready){
 				// 在linux后台可能getline失败，得到空字符串 //
-				if (auto cmd_str = ret.get(); !cmd_str.empty())
-				{
-					executeCmd(cmd_str, [](aris::plan::Plan &plan)->void
-					{
+				if (auto cmd_str = ret.get(); !cmd_str.empty())	{
+					executeCmd(cmd_str, [](aris::plan::Plan &plan)->void{
 						ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
 						ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
 
-						if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
-						{
+						if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret())){
 							std::cout << aris::server::parse_ret_value(*js) << std::endl;
 						}
 
@@ -606,8 +611,7 @@ namespace aris::server
 					});
 				}
 
-				ret = std::async(std::launch::async, []()->std::string
-				{
+				ret = std::async(std::launch::async, []()->std::string{
 					std::string command_in;
 					std::getline(std::cin, command_in);
 					if (command_in.empty())std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -615,38 +619,34 @@ namespace aris::server
 				});
 			}
 			// 休息
-			else
-			{
+			else{
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 		}
 	}
-	// 1.每个输入的str,一定会有返回的plan，即使parse失败
-	// 2.任何一个str parse失败，全部指令都不执行
-	// 3.任何一个prepare失败，全部指令都不执行
-	// 4.任何一个prepare失败，之前prepare成功的会collect，其他的不会（只有prepare且成功的，才会collect）
 	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
 	{
 		// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
-		// 1.   parse str
-		//   ---       success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
-		//   ---       throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
-		// 2.   prepare plan
-		//   ---       success : goto 3                                                                    
-		//   ---       throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
-		// 3.   execute plan Async
-		//   ---   not execute : goto 4a
-		//   ---       success : goto 4b
-		//   ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same
-		//   --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same
-		//   --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same
-		//   ---     RT failed : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
-		// 4a.  collect plan Sync
-		//   ---   not collect : goto 5a
-		//   ---       success : goto 5a
-		// 4b.  collect plan Async
-		//   ---   not collect : goto 5b
-		//   ---       success : goto 5b
+		// 1.   parse list
+		//   1.1 ---   all success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
+		//   1.2 ---   any throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
+		// 2.   prepare list
+		//   2.1 ---   all success : goto 3       
+		//   2.2 ---  ret code < 0 : goto 5a  ---err_code : ret_code             ---err_msg : ret_msg          
+		//   2.3 ---   any throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
+ 		// 3.   execute list Async
+		//   3.1 ---   not execute : goto 4a
+		//   3.2 ---       success : goto 4b
+		//   3.3 ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same with err_code
+		//   3.4 --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same with err_code
+		//   3.5 --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same with err_code
+		//   3.6 ---    RT ret < 0 : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
+		// 4a.  collect list Sync
+		//   4.1 ---   not collect : goto 5a
+		//   4.2 ---       success : goto 5a
+		// 4b.  collect list Async
+		//   4.3 ---   not collect : goto 5b
+		//   4.4 ---       success : goto 5b
 		// 5a.  callback Sync  : goto end
 		// 5b.  callback Async : goto end
 		// end
@@ -656,12 +656,10 @@ namespace aris::server
 		std::vector<std::shared_ptr<Imp::InternalData>> internal_data;
 		std::vector<std::shared_ptr<aris::plan::Plan>> ret_plan;
 		static std::uint64_t cmd_id{ 0 };
-		for (auto &[str, post_callback] : cmd_vec)
-		{
+		for (auto &[str, post_callback] : cmd_vec){
 			internal_data.push_back(std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(nullptr), post_callback }));
 			auto &plan = internal_data.back()->plan_;
-			try
-			{
+			try{ // case 1.1 : success
 				std::vector<char> cmd_str_local(str.size());
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
@@ -691,8 +689,8 @@ namespace aris::server
 				std::fill_n(plan->imp_->ret_msg, 1024, '\0');
 				ret_plan.push_back(plan);
 			}
-			catch (std::exception &e)
-			{
+			catch (std::exception &e){ // case 1.2 : exception
+				
 				for (auto &p : ret_plan)p->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
 				plan = std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				plan->imp_->ret_code = aris::plan::Plan::PARSE_EXCEPTION;
@@ -701,8 +699,7 @@ namespace aris::server
 				ret_plan.push_back(plan);
 
 				// 确保每个输入str都有输出plan //
-				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i)
-				{
+				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i){
 					ret_plan.push_back(std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan));
 					ret_plan.back()->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
 				}
@@ -716,17 +713,25 @@ namespace aris::server
 		for (auto p = internal_data.begin(); p < internal_data.end(); ++p)
 		{
 			auto &plan = (*p)->plan_;
-			try
-			{
+			try	{
 				LOG_INFO << "server prepare cmd " << std::to_string(plan->cmdId()) << std::endl;
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
+
+				// false : case 2.1    true : case 2.2 
+				if (plan->retCode() < 0) { 
+					for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp) {
+						if (pp < p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
+						if (pp > p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+					}
+					prepare_error = true;
+					break;
+				}
 			}
-			catch (std::exception &e)
-			{
-				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp)
-				{
-					(*pp)->plan_->imp_->ret_code = pp < p ? aris::plan::Plan::EXECUTE_CANCELLED : aris::plan::Plan::PREPARE_CANCELLED;
+			catch (std::exception &e){ // case 2.3
+				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp){
+					if (pp < p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
+					if (pp > p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
 				}
 				plan->imp_->ret_code = aris::plan::Plan::PREPARE_EXCEPTION;
 				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
@@ -766,11 +771,9 @@ namespace aris::server
 		// step 3.  execute //
 		auto cmd_end = imp_->cmd_end_.load();
 		std::vector<std::shared_ptr<Imp::InternalData>> need_run_internal;
-		for (auto p = internal_data.begin(); p < internal_data.end(); ++p)
-		{
+		for (auto p = internal_data.begin(); p < internal_data.end(); ++p){
 			auto &plan = (*p)->plan_;
-			try
-			{
+			try	{
 				if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)){
 					// 查看是否处于错误状态 //
 					if (this->errorCode()){
@@ -784,6 +787,7 @@ namespace aris::server
 						LOG_AND_THROW(std::runtime_error("server not started, use cs_start to start"));
 					}
 
+					// 查看是否 plan 池已满
 					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE){//原子操作(cmd_now)
 						plan->imp_->ret_code = aris::plan::Plan::COMMAND_POOL_IS_FULL;
 						LOG_AND_THROW(std::runtime_error("command pool is full"));

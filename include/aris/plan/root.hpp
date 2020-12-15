@@ -116,12 +116,13 @@ namespace aris::plan
 			PROGRAM_EXCEPTION = -2000,
 		};
 
-		auto name() const->const std::string&;
-		auto setName(const std::string& name) ->void;
-
 		auto virtual prepareNrt()->void { THROW_FILE_LINE("Please use CloneBase for plan inheritance"); }
 		auto virtual executeRT()->int { THROW_FILE_LINE("Please use CloneBase for plan inheritance"); return 0; }
 		auto virtual collectNrt()->void { }
+		
+		auto name() const->const std::string&;
+		auto setName(const std::string& name) ->void;
+		
 		// 指令分析相关 //
 		auto command()->aris::core::Command &;
 		auto command()const->const aris::core::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
@@ -168,6 +169,9 @@ namespace aris::plan
 		auto setErrMsgRT(const char *msg)->void;
 		auto retCode()->std::int32_t;
 		auto retMsg()->const char *;
+		auto setRetCode(std::int32_t code)->void;
+		auto setRetMsg(const char *)->void;
+
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");
