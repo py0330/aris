@@ -175,6 +175,8 @@ namespace aris::dynamic
 		auto virtual updMa() noexcept->void {}
 		auto virtual setMa(const double *mp) noexcept->void {}
 		auto virtual getMa(double *mp) noexcept->void {}
+		auto virtual mf()const noexcept->const double* { return nullptr; }
+		auto virtual setMf(const double *mf) noexcept->void {}
 		
 		explicit GeneralMotionBase(const std::string &name = "general_motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(GeneralMotionBase);
@@ -265,6 +267,9 @@ namespace aris::dynamic
 		auto virtual updMa() noexcept->void override;
 		auto virtual setMa(const double *ma) noexcept->void override { setMas(ma); }
 		auto virtual getMa(double *ma) noexcept->void override { getMas(ma); }
+		auto virtual mf()const noexcept->const double* override { return mfs(); }
+		auto virtual setMf(const double *mf) noexcept->void override { setMfs(mf); }
+
 
 		auto mpm()const noexcept->const double4x4&;
 		auto setMpe(const double* pe, const char *type = "313") noexcept->void;

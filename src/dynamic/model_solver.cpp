@@ -112,8 +112,7 @@ namespace aris::dynamic
 		auto kinVel()noexcept->void;
 		auto dynAccAndFce()noexcept->void;
 	};
-	struct PublicData
-	{
+	struct PublicData{
 		double gravity_[6];
 		
 		SubSystem *subsys_data_;
@@ -158,62 +157,49 @@ namespace aris::dynamic
 		}
 	}
 	auto SubSystem::updDiagIv()noexcept->void { ARIS_LOOP_D s_iv2iv(*d->part_->pm(), d->part_->prtIv(), d->iv_); }
-	auto SubSystem::updCv()noexcept->void
-	{
+	auto SubSystem::updCv()noexcept->void{
 		// bc in diag //
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(d->rel_.)
-			{
+			ARIS_LOOP_BLOCK(d->rel_.){
 				b->cst_->cptCv(d->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
 		// bc in remainder //
-		ARIS_LOOP_R
-		{
+		ARIS_LOOP_R{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(r->rel_.)
-			{
+			ARIS_LOOP_BLOCK(r->rel_.){
 				b->cst_->cptCv(r->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
 	}
-	auto SubSystem::updCa()noexcept->void
-	{
+	auto SubSystem::updCa()noexcept->void{
 		// bc in diag //
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(d->rel_.)
-			{
+			ARIS_LOOP_BLOCK(d->rel_.){
 				b->cst_->cptCa(d->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
 		// bc in remainder //
-		ARIS_LOOP_R
-		{
+		ARIS_LOOP_R{
 			Size pos{ 0 };
-			ARIS_LOOP_BLOCK(r->rel_.)
-			{
+			ARIS_LOOP_BLOCK(r->rel_.){
 				b->cst_->cptCa(r->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
 	}
-	auto SubSystem::updF()noexcept->void
-	{
+	auto SubSystem::updF()noexcept->void{
 		// check F size //
 		s_fill(fm_, fn_, 0.0, pd_->F_);
 
 		Size cols{ 0 };
-		ARIS_LOOP_R
-		{
-			ARIS_LOOP_BLOCK(r->)
-			{
+		ARIS_LOOP_R{
+			ARIS_LOOP_BLOCK(r->){
 				s_mm(6 - b->diag_->rel_.dim_, r->rel_.size_, 6, b->diag_->dm_ + at(b->diag_->rel_.dim_, 0, 6), 6, b->is_I_ ? r->cmI_ : r->cmJ_, r->rel_.size_, pd_->F_ + at(b->diag_->rows_, cols, ColMajor(fm_)), ColMajor(fm_));
 			}
 			cols += r->rel_.size_;
@@ -221,12 +207,10 @@ namespace aris::dynamic
 
 		s_householder_utp(fm_, fn_, pd_->F_, ColMajor(fm_), pd_->FU_, ColMajor(fm_), pd_->FT_, 1, pd_->FP_, fr_, max_error_);
 	}
-	auto SubSystem::sovXp()noexcept->void
-	{
+	auto SubSystem::sovXp()noexcept->void{
 		// 请参考step 4，这里先把xp做个预更新,以及初始化 //
 		std::fill_n(d_data_[0].xp_, 6, 0.0);
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END{
 			// 如果是多个杆件，那么需要重新排序 //
 			s_permutate(d->rel_.size_, 1, d->p_, d->bc_);
 
@@ -236,11 +220,9 @@ namespace aris::dynamic
 
 		// 构造bcf //
 		Size cols{ 0 };
-		ARIS_LOOP_R
-		{
+		ARIS_LOOP_R{
 			s_vc(r->rel_.size_, r->bc_, pd_->bcf_ + cols);
-			ARIS_LOOP_BLOCK(r->)
-			{
+			ARIS_LOOP_BLOCK(r->){
 				auto cm = b->is_I_ ? r->cmJ_ : r->cmI_;//这里是颠倒的，因为加到右侧需要乘-1.0
 				s_mma(r->rel_.size_, 1, 6, cm, ColMajor{ r->rel_.size_ }, b->diag_->xp_, 1, pd_->bcf_ + cols, 1);//请参考step 4，将预更新的东西取出
 			}
@@ -259,15 +241,13 @@ namespace aris::dynamic
 		// 做行变换 //  相当于 P' * (D' * yp)
 		ARIS_LOOP_D_2_TO_END s_va(6, d->rd_->xp_, d->xp_);
 	}
-	auto SubSystem::updG()noexcept->void
-	{
+	auto SubSystem::updG()noexcept->void{
 		gm_ = hasGround() ? fm_ : fm_ + 6;
 		gn_ = hasGround() ? fm_ - fr_ : fm_ - fr_ + 6;
 
 		//////////////////////////////////////////// 求CT * xp = bc 的通解S step 5 //////////////////////////////
 		std::fill_n(pd_->xpf_, fm_, 0.0);
-		for (Size j(-1); ++j < fm_ - fr_;)
-		{
+		for (Size j(-1); ++j < fm_ - fr_;){
 			pd_->xpf_[fr_ + j] = 1.0;
 			s_householder_ut_q_dot(fm_, fn_, 1, pd_->FU_, ColMajor(fm_), pd_->FT_, 1, pd_->xpf_, 1, pd_->S_ + j, fm_ - fr_);
 			pd_->xpf_[fr_ + j] = 0.0;
@@ -276,12 +256,10 @@ namespace aris::dynamic
 		//////////////////////////////////////////// 求G，参考 step 6 //////////////////////////////
 		s_fill(gm_, gn_, 0.0, pd_->G_);
 		// 先求S产生的G
-		for (Size j(-1); ++j < fm_ - fr_;)
-		{
+		for (Size j(-1); ++j < fm_ - fr_;){
 			// 初始化xp并乘以DT
 			std::fill(d_data_[0].xp_, d_data_[0].xp_ + 6, 0.0);
-			ARIS_LOOP_D_2_TO_END
-			{
+			ARIS_LOOP_D_2_TO_END{
 				if (d->rel_.dim_ == 6)std::fill(d->xp_, d->xp_ + 6, 0.0);
 				else s_mm(6, 1, 6 - d->rel_.dim_, d->dm_ + at(0, d->rel_.dim_, ColMajor{ 6 }), ColMajor{ 6 }, pd_->S_ + at(d->rows_, j, fm_ - fr_), fm_ - fr_, d->xp_, 1);
 			}
@@ -290,8 +268,7 @@ namespace aris::dynamic
 			ARIS_LOOP_D_2_TO_END s_va(6, d->rd_->xp_, d->xp_);
 
 			// 乘以I
-			ARIS_LOOP_D_2_TO_END
-			{
+			ARIS_LOOP_D_2_TO_END{
 				double tem[6];
 				s_iv_dot_as(d->iv_, d->xp_, tem);
 				s_vc(6, tem, d->xp_);
@@ -307,10 +284,8 @@ namespace aris::dynamic
 			if (!hasGround())s_vc(6, d_data_->xp_, 1, pd_->G_ + at(fm_, j, fm_ - fr_ + 6), fm_ - fr_ + 6);
 		}
 		// 再求无地处第一个杆件处产生的G
-		if (!hasGround())
-		{
-			for (Size j(-1); ++j < 6;)
-			{
+		if (!hasGround()){
+			for (Size j(-1); ++j < 6;){
 				// 初始化，此时无需乘以DT,因为第一个杆件的DT为单位阵，其他地方的xp为0
 				ARIS_LOOP_D std::fill(d->xp_, d->xp_ + 6, 0.0);
 				d_data_[0].xp_[j] = 1.0;
@@ -319,8 +294,7 @@ namespace aris::dynamic
 				ARIS_LOOP_D_2_TO_END s_va(6, d->rd_->xp_, d->xp_);
 
 				// 乘以I, 因为bp里面储存了外力，因此不能用bp
-				ARIS_LOOP_D
-				{
+				ARIS_LOOP_D	{
 					double tem[6];
 					s_iv_dot_as(d->iv_, d->xp_, tem);
 					s_vc(6, tem, d->xp_);
@@ -335,8 +309,7 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto SubSystem::sovXc()noexcept->void
-	{
+	auto SubSystem::sovXc()noexcept->void{
 		/////////////////////////////////// 求解beta /////////////////////////////////////////////////////////////
 		//// 更新每个杆件的力 pf ////
 		ARIS_LOOP_D	{
@@ -448,11 +421,9 @@ namespace aris::dynamic
 			s_permutate_inv(d->rel_.size_, 1, d->p_, d->xc_);
 		}
 	}
-	auto SubSystem::kinPos()noexcept->void
-	{
+	auto SubSystem::kinPos()noexcept->void{
 		updDmCm(true);
-		for (iter_count_ = 0; iter_count_ < max_iter_count_; ++iter_count_)
-		{
+		for (iter_count_ = 0; iter_count_ < max_iter_count_; ++iter_count_){
 			if (error_ < max_error_) return;
 
 			// solve

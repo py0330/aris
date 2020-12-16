@@ -897,10 +897,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
-		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
-		m.init();
-		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
-
 		// check //
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
@@ -1038,8 +1034,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getMa(result);
 			if (!s_is_equal(gm.dim(), result, oat + dim, error[2])) {
 				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": with force" << std::endl;
-				dsp(1, gm.dim(), result);
-				dsp(1, gm.dim(), oat + dim);
 			}
 
 			dim += gm.dim();
@@ -1053,6 +1047,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (auto &fce : m.forcePool())fce.activate(false);
 		for (auto &mot : m.motionPool())mot.activate(false);
 		for (auto &gm : m.generalMotionPool())gm.activate(true);
+		
 		// set ee origin status //
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
@@ -1064,13 +1059,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			pdim += gm.mpSize();
 			dim += gm.dim();
 		}
-
-		//for (auto &mot : m.jointPool())mot.activate(false);
-
-		// compute origin //
-		//dsp(4, 4, *m.generalMotionPool().back().makJ()->pm());
-		//dsp(4, 4, *m.generalMotionPool().back().makI()->pm());
-
 		m.init();
 		s.kinPos();
 		m.init();
@@ -1078,8 +1066,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
-
-
 
 		// check origin //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
@@ -1109,14 +1095,21 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iao);
 		}
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
-			
-			if (!s_is_equal(6, gm.mfs(), ofo + 6 * i, error[7])) {
+
+		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+		m.init();
+		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
+
+		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
+			auto &gm = m.generalMotionPool().at(i);
+			if (!s_is_equal(gm.dim(), gm.cf(), ofo + dim, error[7])) {
 				std::cout << s.id() << "::dynFce() inverse origin failed at " << i << std::endl;
-				dsp(1, 6, gm.mfs());
-				dsp(1, 6, ofo + 6 * i);
+				dsp(1, gm.dim(), gm.cf());
+				dsp(1, gm.dim(), ofo + dim);
 			}
+
+			pdim += gm.mpSize();
+			dim += gm.dim();
 		}
 		
 		// set ee //
