@@ -227,6 +227,9 @@ namespace aris::server{
 				if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
 					std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
 					plan.imp_->ret_code = err.code;
+				} else {
+					std::copy_n(plan.imp_->ret_msg, 1024, err_msg_);
+					plan.imp_->ret_code = err.code;
 				}
 				cmd_now_.store(cmd_end);// 原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
