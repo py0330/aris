@@ -249,7 +249,6 @@ namespace aris::server{
 					ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.imp_->count_ << " counts\n";
 
 				// finish //
-				plan.imp_->ret_code = aris::plan::Plan::SUCCESS;
 				cmd_now_.store(cmd_now + 1);//原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
