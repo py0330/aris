@@ -235,7 +235,7 @@ namespace aris::server{
 					auto &p = *internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
 					p.imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
 					const char *err= "execute has been cancelled.";
-					std::copy_n(err, sizeof(err), plan.imp_->ret_msg);
+					std::copy_n(err, sizeof(err), p.imp_->ret_msg);
 				}
 
 				cmd_now_.store(cmd_end);// 原子操作
