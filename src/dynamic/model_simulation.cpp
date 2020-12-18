@@ -1504,7 +1504,7 @@ namespace aris::dynamic
 
 					file << "variable modify  &\r\n"
 						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
-						<< "	integer_value = 1 \r\n"
+						<< "	integer_value = " << (i < 3 ? 1 : 0) <<  " \r\n"
 						<< "!\r\n";
 
 					file << "variable modify  &\r\n"
@@ -1647,6 +1647,11 @@ namespace aris::dynamic
 
 					file << "ude attributes  &\r\n"
 						<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+				else if (auto gm2 = dynamic_cast<PointMotion*>(&gmb)) {
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm2->name() << "  &\r\n"
 						<< "    active = off \r\n!\r\n";
 				}
 			}

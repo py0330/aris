@@ -897,6 +897,10 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
+		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+		m.init();
+		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
+
 		// check //
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
@@ -1042,7 +1046,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed when forward dynamic force" << std::endl;
 		}
 
-
 		/////////////////////////////////////////////////////反向，从输出到输入///////////////////////////////////////////////////
 		for (auto &fce : m.forcePool())fce.activate(false);
 		for (auto &mot : m.motionPool())mot.activate(false);
@@ -1053,8 +1056,14 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto &gm = m.generalMotionPool().at(i);
 			
 			gm.setMp(opo + pdim);
-			gm.setMv(ovo + dim);
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->setMaa(oao + dim); else gm.setMa(oao + dim);
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
+				gm_->setMva(ovo + dim);
+				gm_->setMaa(oao + dim);
+			}
+			else {
+				gm.setMv(ovo + dim);
+				gm.setMa(oao + dim);
+			}
 
 			pdim += gm.mpSize();
 			dim += gm.dim();
@@ -1095,11 +1104,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iao);
 		}
-
-		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
-		m.init();
-		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
-
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 			if (!s_is_equal(gm.dim(), gm.cf(), ofo + dim, error[7])) {
@@ -1113,12 +1117,21 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		
 		// set ee //
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
+		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
+			auto &gm = m.generalMotionPool().at(i);
 			
-			gm.setMpm(opt + i * 16);
-			gm.setMva(ovt + i * 6);
-			gm.setMaa(oat + i * 6);
+			gm.setMp(opt + pdim);
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
+				gm_->setMva(ovt + dim);
+				gm_->setMaa(oat + dim);
+			}
+			else {
+				gm.setMv(ovt + dim);
+				gm.setMa(oat + dim);
+			}
+
+			pdim += gm.mpSize();
+			dim += gm.dim();
 		}
 		// compute //
 		m.init();
@@ -1132,6 +1145,10 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
+
+		//auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+		//m.init();
+		//adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
 
 		// check //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
@@ -1753,8 +1770,6 @@ void test_spatial_3R() {
 	auto &mak_j = m.ground().addMarker("ee_j");
 	auto &gm = m.generalMotionPool().add<PointMotion>("pm", &mak_i, &mak_j);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
-
-
 	auto &force1 = m.forcePool().add<SingleComponentForce>("f1", motion1.makI(), motion1.makJ(), 5);
 	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
 	auto &force3 = m.forcePool().add<SingleComponentForce>("f3", motion3.makI(), motion3.makJ(), 5);
@@ -1769,7 +1784,7 @@ void test_spatial_3R() {
 	const double output_origin_mp[3]{ 1,1,0 };
 	const double output_origin_mv[3]{ 0.0 , 0.0 , 0.0 };
 	const double output_origin_ma[3]{ 0.0 , 0.0 , 0.0 };
-	const double output_origin_mf[3]{ 0.0 , -39.2 , 0.0 };
+	const double output_origin_mf[3]{ 0.0 , 19.6 , 0.0 };
 
 	const double input_p[3]{ -0.0648537067263432, -0.4611742608347527,0.5260279675610960 };
 	const double input_v[3]{ 0.2647720948695498, -0.5918279267633222,   0.6270558318937725 };

@@ -287,8 +287,7 @@ namespace aris::dynamic{
 
 	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
 	auto PointMotion::locCmI() const noexcept->const double* {
-		static const double loc_cm_I[18]
-		{
+		static const double loc_cm_I[18]{
 			1,0,0,
 			0,1,0,
 			0,0,1,
@@ -328,10 +327,11 @@ namespace aris::dynamic{
 		Constraint::cptCa(ca); 
 		
 		double ap_in_makI[3], ap_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, ap_in_ground);
+		s_pm_dot_v3(*makJ()->pm(), imp_->ap_, ap_in_ground);
 		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
 
-		s_va(3, ap_in_ground, ca);
+		s_va(3, ap_in_makI, ca);
+		//s_va(3, imp_->ap_, ca);
 	}
 	auto PointMotion::mp()const noexcept->const double* { return imp_->mp_; }
 	auto PointMotion::updMp() noexcept->void { 
