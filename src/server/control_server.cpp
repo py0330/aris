@@ -608,16 +608,7 @@ namespace aris::server{
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready){
 				// 在linux后台可能getline失败，得到空字符串 //
 				if (auto cmd_str = ret.get(); !cmd_str.empty())	{
-					executeCmd(cmd_str, [](aris::plan::Plan &plan)->void{
-						ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
-						ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
-
-						if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret())){
-							std::cout << aris::server::parse_ret_value(*js) << std::endl;
-						}
-
-						LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
-					});
+					imp_->middle_ware_->executeCmd(cmd_str);
 				}
 
 				ret = std::async(std::launch::async, []()->std::string{
