@@ -897,10 +897,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
-		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
-		m.init();
-		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
-
 		// check //
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
@@ -1146,9 +1142,9 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
-		//auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
-		//m.init();
-		//adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
+		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+		m.init();
+		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
 
 		// check //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
@@ -1178,16 +1174,27 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iat);
 		}
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
-			
-			if (!s_is_equal(6, gm.mfs(), oft + 6 * i, error[7])){
+		//for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
+		//	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
+		//	
+		//	if (!s_is_equal(6, gm.mfs(), oft + 6 * i, error[7])){
+		//		std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
+		//		dsp(1, 6, gm.mfs());
+		//		dsp(1, 6, oft + 6 * i);
+		//	}
+		//}
+		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
+			auto &gm = m.generalMotionPool().at(i);
+
+			if (!s_is_equal(gm.dim(), gm.mf(), oft + dim, error[7])) {
 				std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
-				dsp(1, 6, gm.mfs());
-				dsp(1, 6, oft + 6 * i);
+				dsp(1, gm.dim(), gm.mf());
+				dsp(1, gm.dim(), oft + dim);
 			}
+
+			pdim += gm.mpSize();
+			dim += gm.dim();
 		}
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)if (!s_is_equal(6, dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).mfs(), oft + 6 * i, error[7]))std::cout << s.id() << "::dynFce() inverse failed" << std::endl;
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
 			// check Jg //
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
@@ -1200,9 +1207,13 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
 				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
 			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
-				auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(u->model()->generalMotionPool().at(i));
-				s_vc(6, gm.mvs(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
+			for (aris::Size i = 0, pdim = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
+			//for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
+				auto &gm = u->model()->generalMotionPool().at(i);
+				s_vc(gm.dim(), gm.mv(), mot_input.data() + u->model()->motionPool().size() + dim);
+
+				pdim += gm.mpSize();
+				dim += gm.dim();
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_vs.data());
@@ -1788,12 +1799,17 @@ void test_spatial_3R() {
 
 	const double input_p[3]{ -0.0648537067263432, -0.4611742608347527,0.5260279675610960 };
 	const double input_v[3]{ 0.2647720948695498, -0.5918279267633222,   0.6270558318937725 };
+	//const double input_v[3]{ 0, -0,   0 };
 	const double input_a[3]{ 0.8080984807847047, -0.7798913328042270,   0.1717928520195222 };
+	//const double input_a[3]{ 0, -0,   0 };
 	const double input_mf[3]{ 2.38785341840188,   11.67748642234510,   11.88566035434441 };
 	const double output_mp[3]{ 1.44289773536124,   0.95831993644642, - 0.06223788216391 };
 	const double output_mv[3]{ 0.52771694098338, - 0.21125096928605,   0.26852624155161 };
+	//const double output_mv[3]{ 0, -0,   0 };
 	const double output_ma[3]{ 0.58072210209051, - 1.28967595464846,   0.74033932202756 };
-	const double output_mf[3]{ 2.38785341840188,   11.67748642234510,   11.88566035434441 };
+	//const double output_ma[3]{ 0.73782632969798, - 0.90157211109682,   0.83623564656557 };
+	//const double output_ma[3]{ -0.15710422760747, - 0.38810384355164, - 0.09589632453801 };
+	const double output_mf[3]{ 7.14145694781323,   11.88566035434453,   2.48646973518439 };
 
 	const double error[8]{ 1e-9, 1e-9, 1e-8, 1e-8, 1e-9, 1e-9, 1e-8, 1e-8 };
 

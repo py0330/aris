@@ -332,6 +332,8 @@ namespace aris::dynamic
 		auto virtual updMa() noexcept->void override;
 		auto virtual setMa(const double *ma) noexcept->void override;
 		auto virtual getMa(double *ma) noexcept->void override;
+		auto virtual mf()const noexcept->const double* override { return cf(); }
+		auto virtual setMf(const double *mf) noexcept->void override { setCf(mf); }
 
 		virtual ~PointMotion();
 		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
