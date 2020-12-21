@@ -14,6 +14,7 @@ public:
     virtual ~MiddleWare() {}
 
     auto virtual executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int;     // 默认实现仅转发指令到控制器
+    auto virtual executeCmd(std::string cmd_str)->void;
 };
 
 
