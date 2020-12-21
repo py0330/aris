@@ -120,6 +120,9 @@ namespace aris::server{
 
 		ControlServer *server_;
 
+		// 主线程ID
+		std::thread::id main_thread_id_;
+
 		// mem pool //
 		std::vector<char> mempool_;
 
@@ -597,6 +600,8 @@ namespace aris::server{
 			return command_in;
 		});
 
+		imp_->main_thread_id_ = std::this_thread::get_id();
+
 		for (;;){
 			// 检测是否有数据从executeCmdInMain过来
 			if (imp_->cmdline_msg_received_){
@@ -827,12 +832,17 @@ namespace aris::server{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
 
-		imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>>>>();
-		auto ret = imp_->cmdline_execute_promise_->get_future();
-		imp_->cmdline_cmd_vec_ = cmd_vec;
-		imp_->cmdline_msg_received_ = true;
+		const auto &cur_thread_id = std::this_thread::get_id();
+		if (cur_thread_id == imp_->main_thread_id_) {
+			return executeCmd(cmd_vec);
+		} else {
+			imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>>>>();
+			auto ret = imp_->cmdline_execute_promise_->get_future();
+			imp_->cmdline_cmd_vec_ = cmd_vec;
+			imp_->cmdline_msg_received_ = true;
 
-		return ret.get();
+			return ret.get();
+		}
 	}
 	auto ControlServer::executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
