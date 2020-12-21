@@ -59,19 +59,6 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	/*class ARIS_API SevenAxisForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver
-	{
-	public:
-		auto virtual kinPos()->int override;
-
-		virtual ~SevenAxisForwardKinematicSolver();
-		explicit SevenAxisForwardKinematicSolver(const std::string &name = "seven_axis_forward_solver");
-		ARIS_DECLARE_BIG_FOUR(SevenAxisForwardKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};*/
 	///
 	/// @}
 }

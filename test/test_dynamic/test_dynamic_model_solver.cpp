@@ -1174,15 +1174,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iat);
 		}
-		//for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-		//	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
-		//	
-		//	if (!s_is_equal(6, gm.mfs(), oft + 6 * i, error[7])){
-		//		std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
-		//		dsp(1, 6, gm.mfs());
-		//		dsp(1, 6, oft + 6 * i);
-		//	}
-		//}
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 
@@ -1208,20 +1199,17 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
 			}
 			for (aris::Size i = 0, pdim = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
-			//for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
 				auto &gm = u->model()->generalMotionPool().at(i);
 				s_vc(gm.dim(), gm.mv(), mot_input.data() + u->model()->motionPool().size() + dim);
 
 				pdim += gm.mpSize();
-				dim += gm.dim();
+				dim += 6;
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_vs.data());
 
-			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i)
-			{
-				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
-				{
+			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i){
+				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2])){
 					std::cout << s.id() << "::cptGeneralJacobi() inverse failed" << std::endl;
 
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
@@ -1237,8 +1225,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
 			}
 			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
-				auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(u->model()->generalMotionPool().at(i));
-				s_vc(6, gm.mas(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
+				auto &gm = u->model()->generalMotionPool().at(i);
+				s_vc(gm.dim(), gm.ma(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
@@ -1263,9 +1251,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
 			aris::Size m = u->model()->partPool().size() * 6;
-			
 			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
-
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
 			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
@@ -1274,10 +1260,10 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				mf_compare.data()[i] = 0.0;
 			}
 			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
-				auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(u->model()->generalMotionPool().at(i));
+				auto &gm = u->model()->generalMotionPool().at(i);
 				
-				s_vc(6, gm.mas(), ma.data() + u->model()->motionPool().size() + 6 * i);
-				s_vc(6, gm.mfs(), mf_compare.data() + u->model()->motionPool().size() + 6 * i);
+				s_vc(gm.dim(), gm.ma(), ma.data() + u->model()->motionPool().size() + 6 * i);
+				s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
@@ -2550,14 +2536,14 @@ auto test_clb()->void
 void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
-	//test_single_body();
-	//test_float_5_bar();
-	//test_servo_press();
-	//test_3R();
-	//test_ur5();
-	//test_stewart();
-	//test_ur5_on_stewart();
-	//test_multi_systems();
+	test_single_body();
+	test_float_5_bar();
+	test_servo_press();
+	test_3R();
+	test_ur5();
+	test_stewart();
+	test_ur5_on_stewart();
+	test_multi_systems();
 
 	test_spatial_3R();
 

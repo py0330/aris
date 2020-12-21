@@ -1408,6 +1408,22 @@ namespace aris::dynamic
 
 						std::fill(bc, bc + 6, 0.0);
 					}
+					else if (auto gmt = dynamic_cast<const PointMotion*>(b->cst_)) {
+
+						// don't know why, but it works //
+						double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+						gmt->makJ()->getPm(*gmt->makI(), pm);
+
+						for (Size k(-1); ++k < 3;) {
+							// 更新bc，将当前电机的未知量更新为当前c的1.0 //
+							// Tmf^(T) * v //
+							s_vc(3, pm + k,4, bc,1);
+							sys->sovXp();
+							ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + gmt->id() * 6 + k, nJg()), nJg());
+						}
+
+						std::fill(bc, bc + 3, 0.0);
+					}
 
 					pos += b->cst_->dim();
 				}
@@ -1419,14 +1435,33 @@ namespace aris::dynamic
 			sys->updCa();
 			auto clearMotionMa = [&](Relation &rel, double *bc){
 				Size pos = 0;
-				ARIS_LOOP_BLOCK(rel.){
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
+				ARIS_LOOP_BLOCK(rel.) {
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)) {
 						bc[pos] -= mot->ma();
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_))	{
-						s_inv_tva(-1.0, *gm->mpm(), gm->mas(), bc);
+					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_)) {
+						s_inv_tva(-1.0, *gm->mpm(), gm->mas(), bc + pos);
 					}
+					else if (auto gm = dynamic_cast<const PointMotion*>(b->cst_)) {
+						double vp_in_makJ[3], relative_vs[6];
+						gm->makI()->getVs(*gm->makJ(), relative_vs);
 
+						s_c3(-1.0, relative_vs + 3, gm->mv(), vp_in_makJ);
+
+						double vp_in_makI[3], vp_in_ground[3];
+						s_pm_dot_v3(*gm->makJ()->pm(), vp_in_makJ, vp_in_ground);
+						s_inv_pm_dot_v3(*gm->makI()->pm(), vp_in_ground, vp_in_makI);
+
+						//s_vs(3, vp_in_makI, bc + pos);
+
+						// 右侧第二项
+						double ap_in_makI[3], ap_in_ground[3];
+						s_pm_dot_v3(*gm->makJ()->pm(), gm->ma(), ap_in_ground);
+						s_inv_pm_dot_v3(*gm->makI()->pm(), ap_in_ground, ap_in_makI);
+
+						s_vs(3, ap_in_makI, bc + pos);
+					}
+					
 					pos += b->cst_->dim();
 				}
 			};
@@ -1461,13 +1496,10 @@ namespace aris::dynamic
 			sys->updG();
 			sys->updCa();
 
-			auto dynamic = [&]()
-			{
+			auto dynamic = [&](){
 				ARIS_LOOP_SYS ARIS_LOOP_SYS_D std::fill(d->bp_, d->bp_ + 6, 0.0);
-				for (auto &fce : this->model()->forcePool())
-				{
-					if (fce.active())
-					{
+				for (auto &fce : this->model()->forcePool()){
+					if (fce.active()){
 						double fsI[6], fsJ[6];
 						fce.cptGlbFs(fsI, fsJ);
 						s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
@@ -1481,18 +1513,33 @@ namespace aris::dynamic
 
 			// 开始计算h //
 			// 先去掉驱动的加速度, 并计算h
-			auto clearMotionMa = [&](Relation &rel, double *bc)
-			{
+			auto clearMotionMa = [&](Relation &rel, double *bc){
 				Size pos = 0;
-				ARIS_LOOP_BLOCK(rel.)
-				{
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_))
-					{
+				ARIS_LOOP_BLOCK(rel.){
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						bc[pos] -= mot->ma();
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_))
-					{
+					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_)){
 						s_inv_tva(-1.0, *gm->mpm(), gm->mas(), bc);
+					}
+					else if (auto gm = dynamic_cast<const PointMotion*>(b->cst_)) {
+						double vp_in_makJ[3], relative_vs[6];
+						gm->makI()->getVs(*gm->makJ(), relative_vs);
+
+						s_c3(-1.0, relative_vs + 3, gm->mv(), vp_in_makJ);
+
+						double vp_in_makI[3], vp_in_ground[3];
+						s_pm_dot_v3(*gm->makJ()->pm(), vp_in_makJ, vp_in_ground);
+						s_inv_pm_dot_v3(*gm->makI()->pm(), vp_in_ground, vp_in_makI);
+
+						//s_vs(3, vp_in_makI, bc + pos);
+
+						// 右侧第二项
+						double ap_in_makI[3], ap_in_ground[3];
+						s_pm_dot_v3(*gm->makJ()->pm(), gm->ma(), ap_in_ground);
+						s_inv_pm_dot_v3(*gm->makI()->pm(), ap_in_ground, ap_in_makI);
+
+						s_vs(3, ap_in_makI, bc + pos);
 					}
 
 					pos += b->cst_->dim();
@@ -1503,19 +1550,18 @@ namespace aris::dynamic
 
 			// 动力学计算并取出h
 			dynamic();
-			auto getH = [&](Relation &rel, double *xc)
-			{
+			auto getH = [&](Relation &rel, double *xc){
 				Size pos{ 0 };
 				// 将Xcf更新 //
-				ARIS_LOOP_BLOCK(rel.)
-				{
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_))
-					{
+				ARIS_LOOP_BLOCK(rel.){
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						h[mot->id()] = xc[pos];
 					}
-					else if (dynamic_cast<const GeneralMotion*>(b->cst_))
-					{
+					else if (dynamic_cast<const GeneralMotion*>(b->cst_)){
 						s_vc(6, xc + pos, h + this->model()->motionPool().size() + b->cst_->id() * 6);
+					}
+					else if (dynamic_cast<const PointMotion*>(b->cst_)) {
+						s_vc(3, xc + pos, h + this->model()->motionPool().size() + b->cst_->id() * 6);
 					}
 					pos += b->cst_->dim();
 				}
@@ -1524,27 +1570,28 @@ namespace aris::dynamic
 			ARIS_LOOP_SYS_R getH(r->rel_, r->xc_);
 			
 			// 开始计算M //
-			auto getMColumn = [&](const Constraint *c, Size cid)
-			{
+			auto getMColumn = [&](const Constraint *c, Size cid){
 				auto Mn = this->model()->motionPool().size() + this->model()->generalMotionPool().size() * 6;
-				auto getMRow = [&](Relation &rel, double *xc)
-				{
+				auto getMRow = [&](Relation &rel, double *xc){
 					Size pos2{ 0 };
-					ARIS_LOOP_BLOCK(rel.)
-					{
-						if (dynamic_cast<const Motion*>(b->cst_))
-						{
+					ARIS_LOOP_BLOCK(rel.){
+						if (dynamic_cast<const Motion*>(b->cst_)){
 							Size ccid = b->cst_->id();
 							M[at(ccid, cid, Mn)] = xc[pos2] - h[ccid];
 						}
-						else if (dynamic_cast<const GeneralMotion*>(b->cst_))
-						{
+						else if (dynamic_cast<const GeneralMotion*>(b->cst_)){
 							Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
-							for (Size i = 0; i < 6; ++i)
-							{
+							for (Size i = 0; i < 6; ++i){
 								s_vc(6, xc, 1, M + at(ccid, cid, Mn), Mn);
 								s_vs(6, h + ccid, 1, M + at(ccid, cid, Mn), Mn);
 							}
+						}
+						else if (dynamic_cast<const PointMotion*>(b->cst_)) {
+							//Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
+							//for (Size i = 0; i < 6; ++i) {
+							//	s_vc(6, xc, 1, M + at(ccid, cid, Mn), Mn);
+							//	s_vs(6, h + ccid, 1, M + at(ccid, cid, Mn), Mn);
+							//}
 						}
 						pos2 += b->cst_->dim();
 					}
@@ -1552,13 +1599,10 @@ namespace aris::dynamic
 				ARIS_LOOP_SYS_R getMRow(r->rel_, r->xc_);
 				ARIS_LOOP_SYS_D getMRow(d->rel_, d->xc_);
 			};
-			auto getM = [&](Relation &rel, double *bc)
-			{
+			auto getM = [&](Relation &rel, double *bc){
 				Size pos{ 0 };
-				ARIS_LOOP_BLOCK(rel.)
-				{
-					if (dynamic_cast<const Motion*>(b->cst_))
-					{
+				ARIS_LOOP_BLOCK(rel.){
+					if (dynamic_cast<const Motion*>(b->cst_)){
 						bc[pos] += 1.0;
 
 						dynamic();
@@ -1567,12 +1611,10 @@ namespace aris::dynamic
 
 						bc[pos] -= 1.0;
 					}
-					else if (dynamic_cast<const GeneralMotion*>(b->cst_))
-					{
+					else if (dynamic_cast<const GeneralMotion*>(b->cst_)){
 						double tmf[6][6];
 						s_tmf(*dynamic_cast<const GeneralMotion*>(b->cst_)->mpm(), *tmf);
-						for (Size i = 0; i < 6; ++i)
-						{
+						for (Size i = 0; i < 6; ++i){
 							s_va(6, tmf[i], bc);
 
 							dynamic();
