@@ -1246,16 +1246,14 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				}
 			}
 		}
-		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))
-		{
-			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
-
-			aris::Size m = u->model()->partPool().size() * 6;
-			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
+		if (auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
+			aris::Size n = u->nM();
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
-			{
+			dsp(1, n, u->h());
+			dsp(n, n, u->M());
+
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
 				ma.data()[i] = u->model()->motionPool().at(i).ma();
 				mf_compare.data()[i] = 0.0;
 			}

@@ -854,14 +854,14 @@ namespace aris::dynamic
 			s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, d->dm_, 6);
 		}
 	};
-	auto UniversalSolver::allocateMemory()->void
-	{
+	auto UniversalSolver::allocateMemory()->void{
 		// for mem_pool
 		Size mem_pool_size = 0;
 
 		// 根据关联拓扑，计算出 part 和 rel 的分组，用于构建subsys
 		std::vector<std::vector<const Part*>> prt_vec_vec;
-		std::vector<std::vector<LocalRelation>> rel_vec_vec;{
+		std::vector<std::vector<LocalRelation>> rel_vec_vec;
+		{
 			// make active part pool //
 			std::vector<const Part*> active_part_pool;
 			active_part_pool.push_back(&model()->ground());
@@ -1128,7 +1128,18 @@ namespace aris::dynamic
 		}
 		core::allocMem(mem_pool_size, pub_data.subsys_data_, sys_vec.size());
 
-		// 计算公共的内存及偏移
+		// 计算所需公共的内存及偏移
+		Size mJg{ 0 }, nJg{ 0 }, nM{ model()->motionPool().size() };
+		
+		//pub_data.nM_ = 0;
+		//for (auto &mot : model()->motionPool())if (mot.active()) pub_data.nM_ += mot.dim();
+		//for (auto &gmt : model()->generalMotionPool())if (gmt.active()) pub_data.nM_ += gmt.dim();
+
+		pub_data.nM_ = model()->motionPool().size();
+		for (auto &gm : model()->generalMotionPool()){
+			pub_data.nM_ += gm.dim();
+		}
+
 		core::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
@@ -1147,8 +1158,8 @@ namespace aris::dynamic
 		core::allocMem(mem_pool_size, pub_data.bpf_, max_fm);
 		core::allocMem(mem_pool_size, pub_data.Jg_, model()->partPool().size() * 6 * (model()->motionPool().size() + model()->generalMotionPool().size() * 6));
 		core::allocMem(mem_pool_size, pub_data.cg_, model()->partPool().size() * 6);
-		core::allocMem(mem_pool_size, pub_data.M_, (model()->motionPool().size() + model()->generalMotionPool().size() * 6) * (model()->motionPool().size() + model()->generalMotionPool().size() * 6));
-		core::allocMem(mem_pool_size, pub_data.h_, (model()->motionPool().size() + model()->generalMotionPool().size() * 6));
+		core::allocMem(mem_pool_size, pub_data.M_, pub_data.nM_ * pub_data.nM_);
+		core::allocMem(mem_pool_size, pub_data.h_, pub_data.nM_);
 		core::allocMem(mem_pool_size, pub_data.get_diag_from_part_id_, model()->partPool().size());
 
 		// 分配内存
@@ -1519,27 +1530,15 @@ namespace aris::dynamic
 					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						bc[pos] -= mot->ma();
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_)){
-						s_inv_tva(-1.0, *gm->mpm(), gm->mas(), bc);
-					}
-					else if (auto gm = dynamic_cast<const PointMotion*>(b->cst_)) {
-						double vp_in_makJ[3], relative_vs[6];
-						gm->makI()->getVs(*gm->makJ(), relative_vs);
-
-						s_c3(-1.0, relative_vs + 3, gm->mv(), vp_in_makJ);
-
-						double vp_in_makI[3], vp_in_ground[3];
-						s_pm_dot_v3(*gm->makJ()->pm(), vp_in_makJ, vp_in_ground);
-						s_inv_pm_dot_v3(*gm->makI()->pm(), vp_in_ground, vp_in_makI);
-
-						//s_vs(3, vp_in_makI, bc + pos);
-
-						// 右侧第二项
-						double ap_in_makI[3], ap_in_ground[3];
-						s_pm_dot_v3(*gm->makJ()->pm(), gm->ma(), ap_in_ground);
-						s_inv_pm_dot_v3(*gm->makI()->pm(), ap_in_ground, ap_in_makI);
-
-						s_vs(3, ap_in_makI, bc + pos);
+					else if (auto gm = dynamic_cast<const GeneralMotionBase*>(b->cst_)){
+						// 计算驱动导致的ca //
+						double ca1[6], ca2[6];
+						gm->cptCa(ca1);
+						gm->Constraint::cptCa(ca2);
+						s_vs(gm->dim(), ca2, ca1);
+						
+						// 加到 bc 上 //
+						s_vs(gm->dim(), ca1, bc);
 					}
 
 					pos += b->cst_->dim();
@@ -1571,27 +1570,28 @@ namespace aris::dynamic
 			
 			// 开始计算M //
 			auto getMColumn = [&](const Constraint *c, Size cid){
-				auto Mn = this->model()->motionPool().size() + this->model()->generalMotionPool().size() * 6;
+				//auto Mn = this->model()->motionPool().size() + this->model()->generalMotionPool().size() * 6;
+				auto nM = this->nM();
 				auto getMRow = [&](Relation &rel, double *xc){
 					Size pos2{ 0 };
 					ARIS_LOOP_BLOCK(rel.){
 						if (dynamic_cast<const Motion*>(b->cst_)){
 							Size ccid = b->cst_->id();
-							M[at(ccid, cid, Mn)] = xc[pos2] - h[ccid];
+							M[at(ccid, cid, nM)] = xc[pos2] - h[ccid];
 						}
 						else if (dynamic_cast<const GeneralMotion*>(b->cst_)){
 							Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
 							for (Size i = 0; i < 6; ++i){
-								s_vc(6, xc, 1, M + at(ccid, cid, Mn), Mn);
-								s_vs(6, h + ccid, 1, M + at(ccid, cid, Mn), Mn);
+								s_vc(6, xc, 1, M + at(ccid, cid, nM), nM);
+								s_vs(6, h + ccid, 1, M + at(ccid, cid, nM), nM);
 							}
 						}
 						else if (dynamic_cast<const PointMotion*>(b->cst_)) {
-							//Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
-							//for (Size i = 0; i < 6; ++i) {
-							//	s_vc(6, xc, 1, M + at(ccid, cid, Mn), Mn);
-							//	s_vs(6, h + ccid, 1, M + at(ccid, cid, Mn), Mn);
-							//}
+							Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
+							for (Size i = 0; i < 6; ++i) {
+								s_vc(3, xc, 1, M + at(ccid, cid, nM), nM);
+								s_vs(3, h + ccid, 1, M + at(ccid, cid, nM), nM);
+							}
 						}
 						pos2 += b->cst_->dim();
 					}
@@ -1631,7 +1631,9 @@ namespace aris::dynamic
 			ARIS_LOOP_SYS_R getM(r->rel_, r->bc_);
 		}
 	}
-	auto UniversalSolver::nM()const noexcept->Size { return model()->motionPool().size() + model()->generalMotionPool().size() * 6; }
+	auto UniversalSolver::indexOfMotionInM(Size mot_id)->Size { return 0; }
+	auto UniversalSolver::indexOfGeneralMotionInM(Size gm_id)->Size { return 0; }
+	auto UniversalSolver::nM()const noexcept->Size { return imp_->pd_->nM_; }
 	auto UniversalSolver::M()const noexcept->const double * { return imp_->pd_->M_; }
 	auto UniversalSolver::h()const noexcept->const double * { return imp_->pd_->h_; }
 	UniversalSolver::~UniversalSolver() = default;

@@ -43,7 +43,9 @@ namespace aris::dynamic
 		auto Jg()const noexcept->const double *;// dimension : mJ x nJ 
 		auto cg()const noexcept->const double *;// dimension : mJ x 1
 		auto cptGeneralInverseDynamicMatrix() noexcept->void;// torque = M * theta_dot_dot + h
-		auto nM()const noexcept->Size;// = motion_number + general_motion_number x 6
+		auto indexOfMotionInM(Size mot_id)->Size;
+		auto indexOfGeneralMotionInM(Size gm_id)->Size;
+		auto nM()const noexcept->Size;// = sum of all active motion dimension
 		auto M()const noexcept->const double *;// dimension : nM x nM 
 		auto h()const noexcept->const double *;// dimension : nM x 1
 

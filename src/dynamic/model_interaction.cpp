@@ -326,48 +326,17 @@ namespace aris::dynamic{
 	auto PointMotion::cptCa(double *ca)const noexcept->void {
 		Constraint::cptCa(ca);
 
-		// #对于右侧驱动功率导数的计算#
-		// 
-		//   (fc_in_makI * vc_in_makI)'
-		// = fc_in_makI * (R_j2i * vc_in_makJ)'
-		// = fc_in_makI * (w_j2i x R_j2i * vc_in_makJ + R_j2i * ac_in_makJ)
-		//
-		// fc_in_makI为单位力，因此可以不用考虑
-		//
-		// w_j2i x R_j2i * vc_in_makJ + R_j2i * ac_in_makJ
-
-		// 不知为何这段代码不对 //
-		//{
-		//	double vp_in_makJ[3], relative_vs[6];
-		//	makI()->getVs(*makJ(), relative_vs);
-
-		//	double vp_in_makI[3], vp_in_ground[3];
-		//	s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
-		//	s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
-
-		//	double result[3];
-		//	s_c3(relative_vs + 3, vp_in_makI, result);
-		//	s_va(3, vp_in_makI, ca);
-
-		//	dsp(1, 3, result);
-		//}
-
-		// 但是这段貌似是对的 //
-		double vp_in_makJ[3], relative_vs[6];
-		makI()->getVs(*makJ(), relative_vs);
-
-		s_c3(-1.0, relative_vs + 3, imp_->vp_, vp_in_makJ);
-
+		// w x R * dr //
 		double vp_in_makI[3], vp_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), vp_in_makJ, vp_in_ground);
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
 		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
 
-		s_va(3, vp_in_makI, ca);
+		double vs_J_in_I[6];
+		makJ()->getVs(*makI(), vs_J_in_I);
 
+		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
 
-
-
-		// 右侧第二项
+		// R * ddr //
 		double ap_in_makI[3], ap_in_ground[3];
 		s_pm_dot_v3(*makJ()->pm(), imp_->ap_, ap_in_ground);
 		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
