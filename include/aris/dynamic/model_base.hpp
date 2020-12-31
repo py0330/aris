@@ -3,7 +3,7 @@
 
 namespace aris::dynamic
 {
-	class ARIS_API EndEffector{
+	class ARIS_API EndEffectorBase{
 	public:
 		auto virtual dim()->Size { return 0; };
 		auto virtual pos()->double* { return nullptr; }
@@ -37,7 +37,7 @@ namespace aris::dynamic
 
 		// end-effectors //
 		auto virtual endEffectorSize()->Size { return 0; }
-		auto virtual endEffector(Size i = 0)->EndEffector* { return nullptr; }
+		auto virtual endEffector(Size i = 0)->EndEffectorBase* { return nullptr; }
 	};
 }
 

@@ -177,11 +177,9 @@ namespace aris::dynamic
 	//auto Model::setEndEffectorPm(const double *pm, Size which_ee)->void { generalMotionPool()[which_ee].setMpm(pm); }
 	//auto Model::getEndEffectorPm(double *pm, Size which_ee)->void { generalMotionPool()[which_ee].getMpm(pm); }
 	auto Model::endEffectorSize()->Size { return 0; }
-	auto Model::endEffector(Size i)->EndEffector* { return nullptr; }
+	auto Model::endEffector(Size i)->EndEffectorBase* { return nullptr; }
 	
-	auto Model::time()const->double { 
-		return imp_->time_; 
-	}
+	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
 	auto Model::environment()->aris::dynamic::Environment& { return imp_->environment_; }
@@ -203,30 +201,26 @@ namespace aris::dynamic
 	auto Model::simResultPool()->aris::core::PointerArray<SimResult, Element>& { return *imp_->sim_result_pool_; }
 	auto Model::calibratorPool()->aris::core::PointerArray<Calibrator, Element>& { return *imp_->calibrator_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
-	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& 
-	{ 
+	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& { 
 		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addPartByPe(const double*pe, const char* eul_type, const double *prt_im)->Part&
-	{
+	auto Model::addPartByPe(const double*pe, const char* eul_type, const double *prt_im)->Part&{
 		double pm[16];
 		s_pe2pm(pe, pm, eul_type);
 		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addPartByPq(const double*pq, const double *prt_im)->Part&
-	{
+	auto Model::addPartByPq(const double*pq, const double *prt_im)->Part&{
 		double pm[16];
 		s_pq2pm(pq, pm);
 		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&
-	{
+	auto Model::addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&{
 		double glb_pm[16], loc_pm[16];
 		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
@@ -239,8 +233,7 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&
-	{
+	auto Model::addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&{
 		double glb_pm[16], loc_pm[16];
 		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
@@ -253,8 +246,7 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&
-	{
+	auto Model::addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&{
 		double glb_pm[16], loc_pm[16];
 		s_sov_axes2pm(position, first_axis, second_axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
@@ -268,8 +260,7 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&
-	{
+	auto Model::addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&{
 		double glb_pm[16]{ 1,0,0,position[0],0,1,0,position[1],0,0,1,position[2],0,0,0,1 }, loc_pm[16];
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
@@ -280,8 +271,7 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addMotion(Joint &joint)->Motion&
-	{
+	auto Model::addMotion(Joint &joint)->Motion&{
 		Size dim;
 
 		if (dynamic_cast<RevoluteJoint*>(&joint))
@@ -301,14 +291,12 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addMotion()->Motion&
-	{
+	auto Model::addMotion()->Motion&{
 		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), nullptr, nullptr, 0);
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
-	{
+	auto Model::addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&{
 		double pm_prt[16], pm_target_in_ground[16];
 		s_pm_dot_pm(*reference.pm(), pm, pm_target_in_ground);
 		s_inv_pm_dot_pm(*end_effector.pm(), pm_target_in_ground, pm_prt);
@@ -321,14 +309,12 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&
-	{
+	auto Model::addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&{
 		auto &ret = addGeneralMotionByPm(end_effector, reference, s_pe2pm(pe, nullptr, eul_type));
 		ret.Element::model_ = this;
 		return ret;
 	}
-	auto Model::addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&
-	{
+	auto Model::addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&{
 		auto &ret = addGeneralMotionByPm(end_effector, reference, s_pq2pm(pq));
 		ret.Element::model_ = this;
 		return ret;
@@ -351,8 +337,7 @@ namespace aris::dynamic
 	Model::Model(Model&&) = default;
 	Model& Model::operator=(Model&&) = default;
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		typedef Environment&(Model::*EnvironmentFunc)();
 		typedef aris::core::PointerArray<Variable,          Element> &(Model::*VarablePoolFunc)();
 		typedef aris::core::PointerArray<Part,              Element> &(Model::*PartPoolFunc)();

@@ -43,8 +43,7 @@ namespace aris::dynamic
 		auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
 		auto virtual cptCv(double *cv)const noexcept->void;
 		auto virtual cptCa(double *ca)const noexcept->void;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
-		{
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 			double cmI[36], cmJ[36];
 			double U[36], tau[6];
 			double Q[36], R[36];
@@ -117,6 +116,30 @@ namespace aris::dynamic
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
 		ARIS_DEFINE_BIG_FOUR(Joint);
 	};
+	class ARIS_API MotionBase :public Constraint {
+	public:
+		auto virtual mpSize() noexcept->Size { return dim(); }
+		auto virtual mp()const noexcept->const double* { return nullptr; }
+		auto virtual updMp() noexcept->void {}
+		auto virtual setMp(const double *mp) noexcept->void {}
+		auto virtual getMp(double *mp) noexcept->void {}
+		auto virtual mv()const noexcept->const double* { return nullptr; }
+		auto virtual updMv() noexcept->void {}
+		auto virtual setMv(const double *mp) noexcept->void {}
+		auto virtual getMv(double *mp) noexcept->void {}
+		auto virtual ma()const noexcept->const double* { return nullptr; }
+		auto virtual updMa() noexcept->void {}
+		auto virtual setMa(const double *mp) noexcept->void {}
+		auto virtual getMa(double *mp) noexcept->void {}
+		auto virtual mf()const noexcept->const double* { return nullptr; }
+		auto virtual setMf(const double *mf) noexcept->void {}
+
+		virtual ~MotionBase() = default;
+		explicit MotionBase(const std::string &name = "motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
+		ARIS_DEFINE_BIG_FOUR(MotionBase);
+	};
+
+
 	class ARIS_API Motion final :public Constraint{
 	public:
 		static auto Dim()->Size { return 1; }
@@ -126,8 +149,6 @@ namespace aris::dynamic
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 
-		auto setAxis(Size axis)->void;
-		auto axis()const noexcept->Size;
 		auto mp() const noexcept->double;
 		auto updMp() noexcept->void;
 		auto setMp(double mp) noexcept->void;
@@ -139,6 +160,9 @@ namespace aris::dynamic
 		auto setMa(double ma) noexcept->void;
 		auto mf() const noexcept->double;
 		auto setMf(double mf) noexcept->void;
+
+		auto setAxis(Size axis)->void;
+		auto axis()const noexcept->Size;
 		auto mfDyn() const noexcept->double;
 		auto setMfDyn(double mf_dyn) noexcept->void;
 		auto mfFrc() const noexcept->double;
@@ -269,7 +293,6 @@ namespace aris::dynamic
 		auto virtual getMa(double *ma) noexcept->void override { getMas(ma); }
 		auto virtual mf()const noexcept->const double* override { return mfs(); }
 		auto virtual setMf(const double *mf) noexcept->void override { setMfs(mf); }
-
 
 		auto mpm()const noexcept->const double4x4&;
 		auto setMpe(const double* pe, const char *type = "313") noexcept->void;

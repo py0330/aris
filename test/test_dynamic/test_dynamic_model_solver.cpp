@@ -987,24 +987,24 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				}
 			}
 		}
-		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
-			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
-
-			aris::Size m = u->model()->partPool().size() * 6;
-			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
-
+		if (auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
+			aris::Size n = u->nM();
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				ma.data()[i] = u->model()->motionPool().at(i).ma();
-				mf_compare.data()[i] = u->model()->motionPool().at(i).mf();
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
+				if (u->indexOfMotionInM(i) != -1) {
+					ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
+					mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
+				}
 			}
-			for (aris::Size i = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.ma(), ma.data() + u->model()->motionPool().size() + dim);
-				std::fill(mf_compare.data() + u->model()->motionPool().size() + dim, mf_compare.data() + u->model()->motionPool().size() + dim + gm.dim(), 0.0);
-				dim += gm.dim();
+				if (u->indexOfGeneralMotionInM(i) != -1) {
+					s_vc(gm.dim(), gm.ma(), ma.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+				}
 			}
+
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
 			s_va(n, u->h(), mf.data());
@@ -1250,18 +1250,18 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			aris::Size n = u->nM();
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			dsp(1, n, u->h());
-			dsp(n, n, u->M());
-
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				ma.data()[i] = u->model()->motionPool().at(i).ma();
-				mf_compare.data()[i] = 0.0;
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
+				if (u->indexOfMotionInM(i) != -1) {
+					ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
+					mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
+				}
 			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
-				
-				s_vc(gm.dim(), gm.ma(), ma.data() + u->model()->motionPool().size() + 6 * i);
-				s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->model()->motionPool().size() + 6 * i);
+				if (u->indexOfGeneralMotionInM(i) != -1) {
+					s_vc(gm.dim(), gm.ma(), ma.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+				}
 			}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
@@ -1785,15 +1785,16 @@ void test_spatial_3R() {
 	const double input_v[3]{ 0.2647720948695498, -0.5918279267633222,   0.6270558318937725 };
 	//const double input_v[3]{ 0, -0,   0 };
 	const double input_a[3]{ 0.8080984807847047, -0.7798913328042270,   0.1717928520195222 };
-	//const double input_a[3]{ 0, -0,   0 };
+	//const double input_a[3]{ 0.12583793824850, - 0.20983915520481,   0.68529017636600 };
 	const double input_mf[3]{ 2.38785341840188,   11.67748642234510,   11.88566035434441 };
 	const double output_mp[3]{ 1.44289773536124,   0.95831993644642, - 0.06223788216391 };
 	const double output_mv[3]{ 0.52771694098338, - 0.21125096928605,   0.26852624155161 };
 	//const double output_mv[3]{ 0, -0,   0 };
 	const double output_ma[3]{ 0.58072210209051, - 1.28967595464846,   0.74033932202756 };
-	//const double output_ma[3]{ 0.73782632969798, - 0.90157211109682,   0.83623564656557 };
-	//const double output_ma[3]{ -0.15710422760747, - 0.38810384355164, - 0.09589632453801 };
+	//const double output_ma[3]{ 0, - 0,   0 };
+
 	const double output_mf[3]{ 7.14145694781323,   11.88566035434453,   2.48646973518439 };
+	//const double output_mf[3]{ 8.70770033236996,   26.64183070368489,   0.35315337792617 };
 
 	const double error[8]{ 1e-9, 1e-9, 1e-8, 1e-8, 1e-9, 1e-9, 1e-8, 1e-8 };
 
@@ -2542,7 +2543,6 @@ void test_model_solver()
 	test_stewart();
 	test_ur5_on_stewart();
 	test_multi_systems();
-
 	test_spatial_3R();
 
 	//bench_3R();

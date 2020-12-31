@@ -204,6 +204,15 @@ namespace aris::dynamic{
 	/// 
 	/// @{
 	///
+
+	class ARIS_API EndEffector :public EndEffectorBase {
+	public:
+
+
+
+
+	};
+
 	class ARIS_API Model:public ModelBase{
 	public:
 		auto virtual init()->void;
@@ -231,7 +240,7 @@ namespace aris::dynamic{
 		auto virtual setMotionFce(const double *mf)->void override;
 
 		auto virtual endEffectorSize()->Size override;
-		auto virtual endEffector(Size i = 0)->EndEffector* override;
+		auto virtual endEffector(Size i = 0)->EndEffectorBase* override;
 		
 		//auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
 		//auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
@@ -267,8 +276,6 @@ namespace aris::dynamic{
 		auto resetForcePool(aris::core::PointerArray<Force, Element> *pool)->void;
 		auto forcePool()->aris::core::PointerArray<Force, Element>&;
 		auto forcePool()const->const aris::core::PointerArray<Force, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->forcePool(); }
-		
-		
 
 		auto resetSolverPool(aris::core::PointerArray<Solver, Element> *pool)->void;
 		auto solverPool()->aris::core::PointerArray<Solver, Element>&;
