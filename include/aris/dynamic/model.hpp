@@ -205,16 +205,41 @@ namespace aris::dynamic{
 	/// @{
 	///
 
-	class ARIS_API EndEffector :public EndEffectorBase {
-	public:
-
-
-
-
-	};
-
 	class ARIS_API Model:public ModelBase{
 	public:
+		/// @{
+		auto virtual inverseKinematics()noexcept->int override;
+		auto virtual forwardKinematics()noexcept->int override;
+		auto virtual inverseKinematicsVel()noexcept->int override;
+		auto virtual forwardKinematicsVel()noexcept->int override;
+		auto virtual inverseDynamics()noexcept->int override;
+		auto virtual forwardDynamics()noexcept->int override;
+
+		auto virtual inputPosSize()const noexcept->Size override;
+		auto virtual inputDim()const noexcept->Size override;
+		auto virtual getInputPos(double *mp)const noexcept->void override;
+		auto virtual setInputPos(const double *mp)noexcept->void override;
+		auto virtual getInputVel(double *mv)const noexcept->void override;
+		auto virtual setInputVel(const double *mv)noexcept->void override;
+		auto virtual getInputAcc(double *ma)const noexcept->void override;
+		auto virtual setInputAcc(const double *ma)noexcept->void override;
+		auto virtual getInputFce(double *mf)const noexcept->void override;
+		auto virtual setInputFce(const double *mf)noexcept->void override;
+
+		auto virtual outputPosSize()const noexcept->Size override;
+		auto virtual outputDim()const noexcept->Size override;
+		auto virtual getOutputPos(double *mp)const noexcept->void override;
+		auto virtual setOutputPos(const double *mp)noexcept->void override;
+		auto virtual getOutputVel(double *mv)const noexcept->void override;
+		auto virtual setOutputVel(const double *mv)noexcept->void override;
+		auto virtual getOutputAcc(double *ma)const noexcept->void override;
+		auto virtual setOutputAcc(const double *ma)noexcept->void override;
+		auto virtual getOutputFce(double *mf)const noexcept->void override;
+		auto virtual setOutputFce(const double *mf)noexcept->void override;
+
+
+		/// @}
+
 		auto virtual init()->void;
 		/// @{
 		auto findVariable(std::string_view name)->Variable*;
@@ -222,31 +247,12 @@ namespace aris::dynamic{
 		/// @}
 
 		/// @{
-		auto virtual inverseKinematics()->int override;
-		auto virtual forwardKinematics()->int override;
-		auto virtual inverseKinematicsVel()->int override;
-		auto virtual forwardKinematicsVel()->int override;
-		auto virtual inverseDynamics()->int override;
-		auto virtual forwardDynamics()->int override;
-
-		auto virtual motionDim()->Size override;
-		auto virtual getMotionPos(double *mp)const ->void override;
-		auto virtual setMotionPos(const double *mp)->void override;
-		auto virtual getMotionVel(double *mv)const ->void override;
-		auto virtual setMotionVel(const double *mv)->void override;
-		auto virtual getMotionAcc(double *ma)const ->void override;
-		auto virtual setMotionAcc(const double *ma)->void override;
-		auto virtual getMotionFce(double *mf)const ->void override;
-		auto virtual setMotionFce(const double *mf)->void override;
-
-		auto virtual endEffectorSize()->Size override;
-		auto virtual endEffector(Size i = 0)->EndEffectorBase* override;
+		auto actuators()noexcept->std::vector<MotionBase*>&;
+		auto actuators()const noexcept->std::vector<MotionBase*>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->actuators(); }
 		
-		//auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
-		//auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
-		/// @}
+		auto endEffectors()noexcept->std::vector<MotionBase*>&;
+		auto endEffectors()const noexcept->std::vector<MotionBase*>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->endEffectors(); }
 
-		/// @{
 		auto calculator()->aris::core::Calculator&;
 		auto calculator()const ->const aris::core::Calculator& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calculator(); }
 		

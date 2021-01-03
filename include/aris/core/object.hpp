@@ -12,8 +12,7 @@
 
 namespace aris::core
 {
-	template<typename T> class ImpPtr
-	{
+	template<typename T> class ImpPtr{
 	public:
 		auto reset(T* p)->void { data_unique_ptr_.reset(p); }
 		auto get()const->const T* { return data_unique_ptr_.get(); }
@@ -35,8 +34,23 @@ namespace aris::core
 		std::unique_ptr<T> data_unique_ptr_;
 	};
 
-	template <class T, class Pool> class SubRefPool
-	{
+	template <class Base>
+	class CloneBase {public: auto virtual clone() const->Base* { return new Base(static_cast<const Base&>(*this)); }};
+
+	template <class Derived, class Base>
+	class CloneObject : public Base { public:virtual Base * clone() const { return new Derived(static_cast<Derived const&>(*this)); } };
+
+	class ARIS_API NamedObject {
+	public:
+		auto name() const->const std::string& { return name_; }
+		auto setName(const std::string& name) ->void { name_ = name; }
+		NamedObject(const std::string& name = "object") :name_(name) {}
+
+	private:
+		std::string name_;
+	};
+
+	template <class T, class Pool> class SubRefPool{
 	public:
 		using value_type = T;
 		using reference = T & ;
@@ -47,8 +61,7 @@ namespace aris::core
 		using size_type = std::size_t;
 		class const_iterator;
 
-		class iterator
-		{
+		class iterator{
 		public:
 			using difference_type = typename SubRefPool::difference_type;
 			using value_type = typename SubRefPool::value_type;
@@ -88,8 +101,7 @@ namespace aris::core
 			typename std::vector<T*>::iterator iter_;
 			friend class SubRefPool::const_iterator;
 		};
-		class const_iterator
-		{
+		class const_iterator{
 		public:
 			using difference_type = typename SubRefPool::difference_type;
 			using value_type = typename SubRefPool::value_type;
@@ -158,15 +170,10 @@ namespace aris::core
 		auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(*container_.operator[](size)); } //optional
 
 	public:
-		auto findByName(const std::string &name)const->const_iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
-		auto findByName(const std::string &name)->iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
-		auto update() 
-		{
+		auto update() {
 			container_.clear();
-			for (auto &obj : *pool_)
-			{
-				if (auto child = dynamic_cast<T*>(&obj))
-				{
+			for (auto &obj : *pool_){
+				if (auto child = dynamic_cast<T*>(&obj)){
 					container_.push_back(child);
 				}
 			}
@@ -179,8 +186,7 @@ namespace aris::core
 		std::vector<T*> container_;
 		Pool* pool_;
 	};
-	template <class T, class Pool> class ChildRefPool
-	{
+	template <class T, class Pool> class ChildRefPool{
 	public:
 		using value_type = T;
 		using reference = T & ;
@@ -191,8 +197,7 @@ namespace aris::core
 		using size_type = std::size_t;
 		class const_iterator;
 
-		class iterator
-		{
+		class iterator{
 		public:
 			using difference_type = typename ChildRefPool::difference_type;
 			using value_type = typename ChildRefPool::value_type;
@@ -232,8 +237,7 @@ namespace aris::core
 			typename Pool::iterator iter_;
 			friend class ChildRefPool::const_iterator;
 		};
-		class const_iterator
-		{
+		class const_iterator{
 		public:
 			using difference_type = typename ChildRefPool::difference_type;
 			using value_type = typename ChildRefPool::value_type;
@@ -307,8 +311,6 @@ namespace aris::core
 		auto clear()->void { pool_->clear(); } //optional
 
 	public:
-		auto findByName(const std::string &name)const->const_iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
-		auto findByName(const std::string &name)->iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
 		auto add(T *obj)->T & { return dynamic_cast<T&>(pool_->add(obj)); }
 		template<typename TT, typename ...Args>
 		auto add(Args&&... args)->std::enable_if_t<std::is_base_of<T, TT>::value, TT>& { return dynamic_cast<TT&>(pool_->add(new TT(std::forward<Args>(args)...))); }
@@ -321,32 +323,10 @@ namespace aris::core
 		Pool *pool_;
 	};
 
-	template <class Base>
-	class CloneBase 
-	{ 
-	public:
-		auto virtual clone() const->Base* { return new Base(static_cast<const Base&>(*this)); } 
-	};
-
-	template <class Derived, class Base>
-	class CloneObject : public Base { public:virtual Base * clone() const { return new Derived(static_cast<Derived const&>(*this)); } };
-
-	class ARIS_API NamedObject
-	{
-	public:
-		auto name() const->const std::string& {	return name_;}
-		auto setName(const std::string& name) ->void { name_ = name; }
-		NamedObject(const std::string& name = "object") :name_(name) {}
-
-	private:
-		std::string name_;
-	};
-
 	class ARIS_API PointerArrayBase {};
 
 	template <class T, class Base = PointerArrayBase, class A = std::allocator<T>>
-	class PointerArray : public Base
-	{
+	class PointerArray : public Base{
 	public:
 		using pointer_type = std::unique_ptr<T>;
 		using allocator_type = A;
@@ -360,8 +340,7 @@ namespace aris::core
 		class iterator;
 		class const_iterator;
 
-		class iterator
-		{
+		class iterator{
 		public:
 			using difference_type = typename PointerArray::difference_type;
 			using value_type = typename PointerArray::value_type;
@@ -402,8 +381,7 @@ namespace aris::core
 			friend class PointerArray<T, Base, A>;
 			typename std::vector<pointer_type>::iterator iter_;
 		};
-		class const_iterator
-		{
+		class const_iterator{
 		public:
 			using difference_type = typename PointerArray::difference_type;
 			using value_type = typename PointerArray::value_type;

@@ -282,20 +282,20 @@ namespace aris::server{
 		int ret = plan.executeRT();
 
 		// 控制电机 //
-		model_->getMotionPos(mem_transfer_pvaf_);
-		model_->getMotionVel(mem_transfer_pvaf_ + 1 * model_->motionDim());
-		model_->getMotionAcc(mem_transfer_pvaf_ + 2 * model_->motionDim());
-		model_->getMotionFce(mem_transfer_pvaf_ + 3 * model_->motionDim());
+		model_->getInputPos(mem_transfer_pvaf_);
+		model_->getInputVel(mem_transfer_pvaf_ + 1 * model_->inputDim());
+		model_->getInputAcc(mem_transfer_pvaf_ + 2 * model_->inputDim());
+		model_->getInputFce(mem_transfer_pvaf_ + 3 * model_->inputDim());
 
-		for (std::size_t i = 0; i < std::min(model_->motionDim(), controller_->motionPool().size()); ++i)
+		for (std::size_t i = 0; i < std::min(model_->inputDim(), controller_->motionPool().size()); ++i)
 		{
 			auto &cm = controller_->motionPool()[i];
 
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_pvaf_[i + 0 * model_->motionDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_pvaf_[i + 1 * model_->motionDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_pvaf_[i + 3 * model_->motionDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_pvaf_[i + 1 * model_->motionDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_pvaf_[i + 3 * model_->motionDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_pvaf_[i + 0 * model_->inputDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_pvaf_[i + 1 * model_->inputDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_pvaf_[i + 3 * model_->inputDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_pvaf_[i + 1 * model_->inputDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_pvaf_[i + 3 * model_->inputDim()]);
 		}
 
 		return ret;
@@ -852,7 +852,7 @@ namespace aris::server{
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().slavePool().size());
-		core::allocMem(mem_size, imp_->mem_transfer_pvaf_, imp_->model_->motionDim() * 4);
+		core::allocMem(mem_size, imp_->mem_transfer_pvaf_, imp_->model_->inputDim() * 4);
 
 		imp_->mempool_.resize(mem_size, char(0));
 
@@ -863,7 +863,7 @@ namespace aris::server{
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
 		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::uint64_t(0));
 		imp_->mem_transfer_pvaf_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_pvaf_);
-		std::fill_n(imp_->mem_transfer_pvaf_, model().motionDim() * 4, 0.0);
+		std::fill_n(imp_->mem_transfer_pvaf_, model().inputDim() * 4, 0.0);
 
 		// 赋予初值 //
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//

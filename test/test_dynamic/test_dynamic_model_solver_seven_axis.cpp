@@ -105,7 +105,7 @@ void test_seven_axis_inverse_solver2()
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
 	double input[7]{ 0.1, 0.2, 0.3, -0.8, 0.5, 0.6, 0.7 };
-	m->setMotionPos(input);
+	m->setInputPos(input);
 	m->forwardKinematics();
 	gm.updP();
 	gm.getMpe(pe);
@@ -171,7 +171,7 @@ void test_seven_axis_inverse_solver3()
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
 	double input[7]{ 0.1, 0.2, 0.1, 0.4, 0.5, 0.6, 0.7 };
-	m->setMotionPos(input);
+	m->setInputPos(input);
 	m->forwardKinematics();
 	gm.updP();
 	gm.getMpe(pe, "321");

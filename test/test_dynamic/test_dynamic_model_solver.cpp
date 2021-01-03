@@ -87,7 +87,7 @@ const char xml_file_ur5[] =
 "        <Motion name=\"motion_5\" active=\"true\" prt_m=\"L6\" prt_n=\"L5\" mak_i=\"joint_5_i\" mak_j=\"joint_5_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
 "    </MotionPoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" active=\"false\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
 "    </GeneralMotionPoolElement>"
 "	 <ForcePoolElement name=\"force_pool\">"
 "		 <SingleComponentForce name=\"F1\" active=\"true\" prt_m=\"L1\" prt_n=\"ground\" mak_i=\"joint_0_i\" mak_j=\"joint_0_j\" component=\"5\"/>"
@@ -275,7 +275,7 @@ const char xml_file_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee_mot\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -522,8 +522,8 @@ const char xml_file_ur5_on_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" active=\"false\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"        <GeneralMotion name=\"ee_mot\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee_mot\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -792,9 +792,9 @@ const char xml_file_multi[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"general_motion_0\" active=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"		<GeneralMotion name=\"ee_mot\" active=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
-"        <GeneralMotion name=\"ee_mot\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot0\" active=\"true\" is_end_effector=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"		     <GeneralMotion name=\"ee_mot1\" active=\"true\" is_end_effector=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot2\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -824,114 +824,90 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (auto &fce : m.forcePool())fce.activate(false);
 		for (auto &mot : m.motionPool())mot.activate(true);
 		for (auto &gm : m.generalMotionPool())gm.activate(false);
+		
+		
+
 		// set origin //
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).setMp(ipo[i]);
-			m.motionPool().at(i).setMv(ivo[i]);
-			m.motionPool().at(i).setMa(iao[i]);
-		}
+		m.init();
+		m.setInputPos(ipo);
+		m.setInputVel(ivo);
+		m.setInputAcc(iao);
+
 		// compute origin //
-		m.init();
 		s.kinPos();
-		m.init();
 		s.kinVel();
-		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  forward origin" << std::endl;
 
 		// check origin //
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = m.generalMotionPool().at(i);
-			
-			// check pos //
-			gm.updP();
-			gm.getP(result);
-			if (!s_is_equal(gm.pSize(), result, opo + pdim, error[0])) {
-				std::cout << s.id() << "::kinPos() forward origin failed at " << i << std::endl;
-				dsp(1, gm.pSize(), result);
-				dsp(1, gm.pSize(), opo + pdim);
-			}
-			// check vel //
-			gm.updV();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getV(result);
-			if (!s_is_equal(gm.dim(), result, ovo + dim, error[1]))	{
-				std::cout << s.id() << "::kinVel() forward origin failed at " << i << std::endl;
-				dsp(1, gm.dim(), result);
-				dsp(1, gm.dim(), ovo + dim);
-			}
-			// check acc //
-			gm.updA();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
-			if (!s_is_equal(gm.dim(), result, oao + dim, error[2]))	{
-				std::cout << s.id() << "::dynAccAndFce() forward forward origin failed at " << i << ": acc not correct" << std::endl;
-				dsp(1, gm.dim(), result);
-				dsp(1, gm.dim(), oao + dim);
-			}
-
-			pdim += gm.pSize();
-			dim += gm.dim();
+		for (auto ee : m.endEffectors()) { ee->updP();	ee->updV();	ee->updA(); }
+		m.getOutputPos(result);
+		if (!s_is_equal(m.outputPosSize(), result, opo, error[0])) {
+			std::cout << s.id() << "::kinPos() forward origin failed" << std::endl;
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), opo);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
-		if (!s_is_equal(m.motionPool().size(), result, ifo, error[3])){
+		m.getOutputVel(result);
+		if (!s_is_equal(m.outputDim(), result, ovo, error[1])) {
+			std::cout << s.id() << "::kinVel() forward origin failed" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), ovo);
+		}
+		m.getOutputAcc(result);
+		if (!s_is_equal(m.outputDim(), result, oao, error[2])) {
+			std::cout << s.id() << "::dynAccAndFce() forward forward origin failed: acc not correct" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), oao);
+		}
+		m.getInputFce(result);
+		if (!s_is_equal(m.inputDim(), result, ifo, error[3])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward origin failed: fce not correct" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ifo);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), ifo);
 		}
+
 
 		// set input //
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).setMp(ipt[i]);
-			m.motionPool().at(i).setMv(ivt[i]);
-			m.motionPool().at(i).setMa(iat[i]);
-		}
+		m.init();
+		m.setInputPos(ipt);
+		m.setInputVel(ivt);
+		m.setInputAcc(iat);
+		
 		// compute //
-		m.init();
 		s.kinPos();
-		m.init();
 		s.kinVel();
-		m.init();
 		s.dynAccAndFce();
-		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
-		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
 		// check //
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-			
-			gm.updP();
-			gm.getP(result);
-			if (!s_is_equal(gm.pSize(), result, opt + pdim, error[0])){
-				std::cout << s.id() << "::kinPos() forward failed at " << i << std::endl;
-				dsp(1, gm.pSize(), result);
-				dsp(1, gm.pSize(), opt + pdim);
-			}
-			gm.updV();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getV(result);
-			if (!s_is_equal(gm.dim(), result, ovt + dim, error[1])){
-				std::cout << s.id() << "::kinVel() forward failed at " << i << std::endl;
-				dsp(1, gm.dim(), result);
-				dsp(1, gm.dim(), ovt + dim);
-			}
-			gm.updA();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
-			if (!s_is_equal(gm.dim(), result, oat + dim, error[2])){
-				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": acc not correct" << std::endl;
-				dsp(1, gm.dim(), result);
-				dsp(1, gm.dim(), oat + dim);
-			}
-
-			pdim += gm.pSize();
-			dim += gm.dim();
+		for (auto ee : m.endEffectors()) { ee->updP();	ee->updV();	ee->updA(); }
+		m.getOutputPos(result);
+		if (!s_is_equal(m.outputPosSize(), result, opt, error[0])) {
+			std::cout << s.id() << "::kinPos() forward failed" << std::endl;
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), opt);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
-		if (!s_is_equal(m.motionPool().size(), result, ift, error[3])){
+		m.getOutputVel(result);
+		if (!s_is_equal(m.outputDim(), result, ovt, error[1])) {
+			std::cout << s.id() << "::kinVel() forward failed" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), ovt);
+		}
+		m.getOutputAcc(result);
+		if (!s_is_equal(m.outputDim(), result, oat, error[2])) {
+			std::cout << s.id() << "::dynAccAndFce() forward forward failed: acc not correct" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), oat);
+		}
+		m.getInputFce(result);
+		if (!s_is_equal(m.inputDim(), result, ift, error[3])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed: fce not correct" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ift);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), ift);
 		}
+		// check jacobi & general dyn matrix //
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
@@ -1027,20 +1003,17 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		m.init();
 		s.dynAccAndFce();
 		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)after_jnt_cf.push_back(j.cf()[i]);
-		for (aris::Size i = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-
-			gm.updA();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
-			if (!s_is_equal(gm.dim(), result, oat + dim, error[2])) {
-				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": with force" << std::endl;
-			}
-
-			dim += gm.dim();
-		}
-		if (!s_is_equal(before_jnt_cf.size(), before_jnt_cf.data(), after_jnt_cf.data(), error[2]))	{
+		if (!s_is_equal(before_jnt_cf.size(), before_jnt_cf.data(), after_jnt_cf.data(), error[2])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed when forward dynamic force" << std::endl;
 		}
+		for (auto &gm : m.generalMotionPool()) { gm.updP();	gm.updV();	gm.updA(); }
+		m.getOutputAcc(result);
+		if (!s_is_equal(m.outputDim(), result, oat, error[2])) {
+			std::cout << s.id() << "::dynAccAndFce() forward forward failed at: with force" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), oat);
+		}
+
 
 		/////////////////////////////////////////////////////反向，从输出到输入///////////////////////////////////////////////////
 		for (auto &fce : m.forcePool())fce.activate(false);
@@ -1048,143 +1021,83 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (auto &gm : m.generalMotionPool())gm.activate(true);
 		
 		// set ee origin status //
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-			
-			gm.setP(opo + pdim);
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
-				gm_->setMva(ovo + dim);
-				gm_->setMaa(oao + dim);
-			}
-			else {
-				gm.setV(ovo + dim);
-				gm.setA(oao + dim);
-			}
+		m.init();
+		m.setOutputPos(opo);
+		m.setOutputVel(ovo);
+		m.setOutputAcc(oao);
 
-			pdim += gm.pSize();
-			dim += gm.dim();
-		}
-		m.init();
 		s.kinPos();
-		m.init();
 		s.kinVel();
-		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
 
 		// check origin //
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updP();
-			result[i] = m.motionPool().at(i).mp();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, ipo, error[4])) {
+		for (auto &mot:m.actuators()) {	mot->updP();mot->updV();mot->updA();}
+		m.getInputPos(result);
+		if (!s_is_equal(m.inputPosSize(), result, ipo, error[4])) {
 			std::cout << s.id() << "::kinPos() inverse origin failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ipo);
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), ipo);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updV();
-			result[i] = m.motionPool().at(i).mv();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, ivo, error[5])) {
+		m.getInputVel(result);
+		if (!s_is_equal(m.inputDim(), result, ivo, error[5])) {
 			std::cout << s.id() << "::kinVel() inverse origin failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ivo);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), ivo);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updA();
-			result[i] = m.motionPool().at(i).ma();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, iao, error[6])){
+		m.getInputAcc(result);
+		if (!s_is_equal(m.inputDim(), result, iao, error[6])) {
 			std::cout << s.id() << "::kinAcc() inverse origin failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), iao);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), iao);
 		}
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-			if (!s_is_equal(gm.dim(), gm.cf(), ofo + dim, error[7])) {
-				std::cout << s.id() << "::dynFce() inverse origin failed at " << i << std::endl;
-				dsp(1, gm.dim(), gm.cf());
-				dsp(1, gm.dim(), ofo + dim);
-			}
+		m.getOutputFce(result);
+		if (!s_is_equal(m.outputDim(), result, ofo, error[7])) {
+			std::cout << s.id() << "::dynFce() inverse origin failed" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), ofo);
+		}
 
-			pdim += gm.pSize();
-			dim += gm.dim();
-		}
-		
 		// set ee //
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-			
-			gm.setP(opt + pdim);
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
-				gm_->setMva(ovt + dim);
-				gm_->setMaa(oat + dim);
-			}
-			else {
-				gm.setV(ovt + dim);
-				gm.setA(oat + dim);
-			}
+		m.init();
+		m.setOutputPos(opt);
+		m.setOutputVel(ovt);
+		m.setOutputAcc(oat);
 
-			pdim += gm.pSize();
-			dim += gm.dim();
-		}
 		// compute //
-		m.init();
 		s.kinPos();
-		m.init();
 		s.kinVel();
-		m.init();
 		s.dynAccAndFce();
-		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
 		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
-		auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
-		m.init();
-		adams.saveAdams("C:\\Users\\py033\\Desktop\\spatial.cmd");
-
 		// check //
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updP();
-			result[i] = m.motionPool().at(i).mp();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, ipt, error[4])){
+		for (auto &mot : m.actuators()) { mot->updP(); mot->updV(); mot->updA(); }
+		m.getInputPos(result);
+		if (!s_is_equal(m.inputPosSize(), result, ipt, error[4])) {
 			std::cout << s.id() << "::kinPos() inverse failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ipt);
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), ipt);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updV();
-			result[i] = m.motionPool().at(i).mv();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, ivt, error[5])){
+		m.getInputVel(result);
+		if (!s_is_equal(m.inputDim(), result, ivt, error[5])) {
 			std::cout << s.id() << "::kinVel() inverse failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), ivt);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), ivt);
 		}
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updA();
-			result[i] = m.motionPool().at(i).ma();
-		}
-		if (!s_is_equal(m.motionPool().size(), result, iat, error[6])){
+		m.getInputAcc(result);
+		if (!s_is_equal(m.inputDim(), result, iat, error[6])) {
 			std::cout << s.id() << "::kinAcc() inverse failed" << std::endl;
-			dsp(1, m.motionPool().size(), result);
-			dsp(1, m.motionPool().size(), iat);
+			dsp(1, m.inputDim(), result);
+			dsp(1, m.inputDim(), iat);
 		}
-		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
-			auto &gm = m.generalMotionPool().at(i);
-
-			if (!s_is_equal(gm.dim(), gm.f(), oft + dim, error[7])) {
-				std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
-				dsp(1, gm.dim(), gm.f());
-				dsp(1, gm.dim(), oft + dim);
-			}
-
-			pdim += gm.pSize();
-			dim += gm.dim();
+		m.getOutputFce(result);
+		if (!s_is_equal(m.outputDim(), result, oft, error[7])) {
+			std::cout << s.id() << "::dynFce() inverse failed" << std::endl;
+			dsp(1, m.outputDim(), result);
+			dsp(1, m.outputDim(), oft);
 		}
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
 			// check Jg //
@@ -1672,6 +1585,7 @@ void test_3R(){
 
 	// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 	auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
+	end_effector.setIsEndEffector(true);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -1694,8 +1608,8 @@ void test_3R(){
 		0, -1.0 , 0.0, 1.0,
 		0, 0.0 , 1.0, 0.0,
 		0,0,0,1 };
-	const double output_origin_va[6]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0 };
-	const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0 };
+	const double output_origin_vs[6]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0 };
+	const double output_origin_as[6]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0 };
 	const double output_origin_mfs[6]{ 0.0 , -39.2 , 0.0, 0.0 , 0.0 , 39.2 };
 
 	const double input_p[3]{ -0.0648537067263432, - 0.4611742608347527,0.5260279675610960 };
@@ -1706,17 +1620,17 @@ void test_3R(){
 		0.0 , -1.0 , 0.0, 0.8,
 		0.0 , 0.0 , 1.0 , 0.0,
 		0.0 , 0.0 , 0.0 , 1.0 };
-	const double output_va[6]{ 0.3 , -0.2 , 0.0 , 0.0 , 0.0 , 0.3 };
-	const double output_aa[6]{ -0.0056868358720751,0.5326011894967951,0.0000000000000000,0.0000000000000000,0.0000000000000000,0.2000000000000000 };
+	const double output_vs[6]{ 0.54000000000000, -0.35000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.30000000000000 };
+	const double output_as[6]{ 0.09431316412793,   0.34260118949679,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.20000000000000 };
 	const double output_mfs[6]{ -15.8974283255729407, - 49.3379293524304217,0.0000000000000000,0.0000000000000000,0.0000000000000000,51.3379293524304217 };
 
 	const double error[8]{ 1e-9, 1e-9, 1e-8, 1e-8, 1e-9, 1e-9, 1e-8, 1e-8 };
 
 	std::cout << "test 3R robot:" << std::endl;
 	test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-		output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+		output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 		input_p, input_v, input_a, input_mf,
-		output_pm, output_va, output_aa, output_mfs, error);
+		output_pm, output_vs, output_as, output_mfs, error);
 }
 void test_spatial_3R() {
 	// over constraint system
@@ -1764,6 +1678,7 @@ void test_spatial_3R() {
 	auto &mak_i = link3.addMarker("ee_i", std::array<double, 16>{1, 0, 0, 0, 0, 1, 0, 1.0, 0, 0, 1, 0, 0, 0, 0, 1}.data());
 	auto &mak_j = m.ground().addMarker("ee_j");
 	auto &gm = m.generalMotionPool().add<PointMotion>("pm", &mak_i, &mak_j);
+	gm.setIsEndEffector(true);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 	auto &force1 = m.forcePool().add<SingleComponentForce>("f1", motion1.makI(), motion1.makJ(), 5);
 	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
@@ -1818,8 +1733,8 @@ void test_ur5()
 			0.09983341664683,   0.00000000000000,   0.99500416527803,   0.19103884280238,
 			0.47703040785185,   0.87758256189037, - 0.04786268954661, - 0.07577133383697,
 			0.00000000000000,   0.00000000000000,   0.00000000000000,   1.00000000000000 };
-		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_vs[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_as[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_mfs[6]{ 331.41022567419924, - 57.57941566970891,   111.65453524745845, - 305.96717877205936, - 27.27506157298690,   0.00000000000009 };
 
 		const double input_p[6]{ -0.2 , -0.3 , 0.5 , 0.4 , 0.1 , 0.2 };
@@ -1830,8 +1745,8 @@ void test_ur5()
 			0.23350446430995, - 0.16179239408332,   0.95880075425717,   0.03946313726684,
 			0.71459145982812,   0.69726712780982, - 0.05637018730295,   0.05406976046047,
 			0.00000000000000,   0.00000000000000,   0.00000000000000,   1.00000000000000 };
-		const double output_va[6]{ 0.00532701661719,   0.71826926345644,   0.38888755008115,   0.41333575398384, - 1.25976861786569,   1.97742068465392 };
-		const double output_aa[6]{ -1.00962853878322,   0.52234724380448,   0.38786009482355,   0.17228242874921, - 2.42549515902665,   0.80062985749427 };
+		const double output_vs[6]{ 0.15147762793361, - 0.77589387349467, - 0.59355848080298,   0.41333575398384, - 1.25976861786569,   1.97742068465392 };
+		const double output_as[6]{ 1.06334159961043,   0.06785544230672, - 1.78268268805597,   0.17228242874921, - 2.42549515902666,   0.80062985749427 };
 		const double output_mfs[6]{ 147.06728488236050, - 47.85997209760284,   74.93903147977326, - 138.27415845097042,   15.35176588136645, - 0.01337878841486 };
 
 		const double error2[8]{ 1e-10, 1e-10, 1e-10, 1e-9, 1e-10, 1e-10, 1e-9, 1e-9 };
@@ -1843,9 +1758,9 @@ void test_ur5()
 		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+			output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error2);
+			output_pm, output_vs, output_as, output_mfs, error2);
 	}
 	catch (std::exception&e)
 	{
@@ -1864,8 +1779,8 @@ void test_stewart()
 			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
 			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
 			0,0,0,1 };
-		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_vs[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_as[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_mfs[6]{ 27.1911376020517253, 99.2601846909161623, 30.9203302634324899, 5.1114448379402990, -0.6600651170996999, -10.3120957308179584 };
 
 		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
@@ -1876,8 +1791,8 @@ void test_stewart()
 			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
 			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1 };
-		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[6]{ -3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_vs[6]{ 1.54280498347778, - 3.56723226481890,   8.32397818500295, - 4.13258637478804,   0.22970180278509,   2.06026880988204 };
+		const double output_as[6]{ 8.30960459916273, - 12.12718110567433,   13.28720334002706, - 4.70386456087146,   10.22712238559706,   12.77600107191419 };
 		const double output_mfs[6]{ -1752.8168759636657796,-200.8968525620247192, 86.3334906336755807,   -816.6714933354393224, 1685.6093614991480081, 661.2063243054601571 };
 
 		const double error[8]{ 1e-10, 1e-9, 1e-8, 1e-8, 1e-10, 1e-9, 1e-8, 1e-8 };
@@ -1889,9 +1804,9 @@ void test_stewart()
 		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+			output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -1915,9 +1830,9 @@ void test_ur5_on_stewart()
 			0.47703040785185,   0.87758256189037, -0.04786268954661, -0.07577133383697,
 			0.00000000000000,   0.00000000000000,   0.00000000000000,   1.00000000000000
 			,1,0,0,0,0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,0,0,0,1 };
-		const double output_origin_va[12]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
+		const double output_origin_vs[12]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[12]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
+		const double output_origin_as[12]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_mfs[12]{ 331.41005441296738, - 57.57941565538285,   111.65282914193104, - 305.96717869591038, - 27.27504747818914,   0.00000000000034
 			,27.19113760205170,   265.80040464945978,   30.92404622013744,   18.34356297165392, - 0.66137519668830,   48.40251269235812 };
@@ -1938,10 +1853,8 @@ void test_ur5_on_stewart()
 			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
 			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1 };
-		const double output_va[12]{ 0.00532701661719,   0.71826926345644,   0.38888755008115,   0.41333575398384, -1.25976861786569,   1.97742068465392
-			,-1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[12]{ -1.00962853878322,   0.52234724380448,   0.38786009482355,   0.17228242874921, -2.42549515902665,   0.80062985749427
-			,-3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_vs[12]{ 0.15147762793361, - 0.77589387349467, - 0.59355848080298,   0.41333575398384, - 1.25976861786569,   1.97742068465392,   1.54280498347778, - 3.56723226481890,   8.32397818500295, - 4.13258637478804,   0.22970180278509,   2.06026880988204 };
+		const double output_as[12]{ 1.06334159961042,   0.06785544230672, - 1.78268268805598,   0.17228242874921, - 2.42549515902665,   0.80062985749426,   8.30960459916273, - 12.12718110567433,   13.28720334002706, - 4.70386456087146,   10.22712238559706,   12.77600107191419 };
 		const double output_mfs[12]{ 61.71570587230033, - 58.66601320855561,   111.79172160413337, - 59.39130412572584,   8.82357386446111, - 0.03526665204313
 			,-1896.46477427475475, - 193.52698104653490, - 11.32950583387003, - 832.90636926666343,   1751.85130306653605,   677.71751107782461 };
 
@@ -1953,9 +1866,9 @@ void test_ur5_on_stewart()
 		aris::core::fromXmlString(m, xml_file_ur5_on_stewart);
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+			output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -1981,10 +1894,10 @@ void test_multi_systems()
 		const double output_origin_pm[16*3]{ -1.0 ,0.0 ,0.0 ,0.0 ,0.0 , -1.0 , 0.0, 1.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1
 			,1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0
 			,1,0,0,0,0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,0,0,0,1 };
-		const double output_origin_va[18]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0
+		const double output_origin_vs[18]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[18]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0
+		const double output_origin_as[18]{ 0.0 , 0.0 , 0.0, 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0
 			,0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_mfs[18]{ 0.0 , -39.2 , 0.0, 0.0 , 0.0 , 39.2
@@ -2015,12 +1928,12 @@ void test_multi_systems()
 			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
 			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1	};
-		const double output_va[18]{ 0.3 , -0.2 , 0.0 , 0.0 , 0.0 , 0.3 
-			,-1.93242030056314,   0.500930573127293,   0.577926916892486, -0.399682310201935, -0.66053331463003, -0.857440373970742
-			,-1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[18]{ -0.0056868358720751,0.5326011894967951,0.0000000000000000,0.0000000000000000,0.0000000000000000,0.2000000000000000
-			,1.07075600145293,   0.349116022890415,   2.0925775293411, -1.77982973680254, -0.927893632540704,   0.0659817357654945
-			,-3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_vs[18]{ 0.54000000000000, - 0.35000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.30000000000000,
+			- 1.66945301832618,   0.40181673728322,   0.53170168472541, - 0.39968231020193, - 0.66053331463004, - 0.85744037397074,   
+			1.54280498347778, - 3.56723226481890,   8.32397818500295, - 4.13258637478804,   0.22970180278509,   2.06026880988204 };
+		const double output_as[18]{ 0.09431316412792,   0.34260118949679,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.20000000000000,
+			0.95625852429635, - 1.44518727470789,   3.08604580310807, - 1.77982973680254, - 0.92789363254072,   0.06598173576549,   
+			8.30960459916273, - 12.12718110567433,   13.28720334002706, - 4.70386456087146,   10.22712238559706,   12.77600107191419 };
 		const double output_mfs[18]{ -15.8974283255729407, -49.3379293524304217,0.0000000000000000,0.0000000000000000,0.0000000000000000,51.3379293524304217
 			,8.44990411304192, 54.7768126462764, 23.2058019399381, 18.6214939645874,   -51.751313528282, 82.047228392192
 			,-1752.8168759636657796,-200.8968525620247192, 86.3334906336755807,   -816.6714933354393224, 1685.6093614991480081, 661.2063243054601571 };
@@ -2033,9 +1946,9 @@ void test_multi_systems()
 		aris::core::fromXmlString(m, xml_file_multi);
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+			output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{

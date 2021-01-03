@@ -596,6 +596,8 @@ namespace aris::dynamic{
 
 		aris::core::class_<MotionBase>("MotionBase")
 			.inherit<aris::dynamic::Constraint>()
+			.prop("is_actuator", &MotionBase::setIsActuator, &MotionBase::isActuator)
+			.prop("is_end_effector", &MotionBase::setIsEndEffector, &MotionBase::isEndEffector)
 			;
 
 		aris::core::class_<Force>("Force")

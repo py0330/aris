@@ -14,8 +14,7 @@
 #include "aris/dynamic/model.hpp"
 #include "aris/core/reflection.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	struct Solver::Imp{
 		Size max_iter_count_, iter_count_;
 		double max_error_, error_;
@@ -1136,11 +1135,6 @@ namespace aris::dynamic
 		for (auto &mot : model()->motionPool())if (mot.active()) pub_data.nM_ += mot.dim();
 		for (auto &gmt : model()->generalMotionPool())if (gmt.active()) pub_data.nM_ += gmt.dim();
 
-		//pub_data.nM_ = model()->motionPool().size();
-		//for (auto &gm : model()->generalMotionPool()){
-		//	pub_data.nM_ += gm.dim();
-		//}
-
 		core::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
@@ -1313,8 +1307,7 @@ namespace aris::dynamic
 		imp_->pd_->subsys_data_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->subsys_data_);
 		std::copy_n(sys_vec.data(), sys_vec.size(), imp_->pd_->subsys_data_);
 	}
-	auto UniversalSolver::kinPos()->int
-	{
+	auto UniversalSolver::kinPos()->int{
 		double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		s_mc(4, 4, pm, const_cast<double *>(*model()->ground().pm()));
 
@@ -1484,8 +1477,6 @@ namespace aris::dynamic
 						s_pm_dot_v3(*gm->makJ()->pm(), vp_in_makJ, vp_in_ground);
 						s_inv_pm_dot_v3(*gm->makI()->pm(), vp_in_ground, vp_in_makI);
 
-						//s_vs(3, vp_in_makI, bc + pos);
-
 						// 右侧第二项
 						double ap_in_makI[3], ap_in_ground[3];
 						s_pm_dot_v3(*gm->makJ()->pm(), gm->a(), ap_in_ground);
@@ -1547,7 +1538,27 @@ namespace aris::dynamic
 				Size pos = 0;
 				ARIS_LOOP_BLOCK(rel.){
 					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
-						bc[pos] -= mot->ma();
+						auto gm = dynamic_cast<const MotionBase*>(b->cst_);
+						
+						// reserve old value //
+						double ma_old[6];
+						s_vc(gm->dim(), gm->a(), ma_old);
+
+						// 计算驱动导致的ca //
+						double old_ca[6];
+						gm->cptCa(old_ca);
+
+						const_cast<MotionBase*>(gm)->setA(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
+						double ca[6];
+						gm->cptCa(ca);
+
+						s_vs(gm->dim(), ca, old_ca);
+
+						// 加到 bc 上 //
+						s_vs(gm->dim(), old_ca, bc + pos);
+
+						// restore to old value //
+						const_cast<MotionBase*>(gm)->setA(ma_old);
 					}
 					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						// reserve old value //
@@ -1565,7 +1576,7 @@ namespace aris::dynamic
 						s_vs(gm->dim(), ca, old_ca);
 
 						// 加到 bc 上 //
-						s_vs(gm->dim(), old_ca, bc);
+						s_vs(gm->dim(), old_ca, bc + pos);
 
 						// restore to old value //
 						const_cast<MotionBase*>(gm)->setA(ma_old);
@@ -1584,8 +1595,8 @@ namespace aris::dynamic
 				Size pos{ 0 };
 				// 将Xcf更新 //
 				ARIS_LOOP_BLOCK(rel.){
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
-						h[indexOfMotionInM(b->cst_->id())] = xc[pos];
+					if (auto gm = dynamic_cast<const Motion*>(b->cst_)){
+						s_vc(gm->dim(), xc + pos, h + indexOfMotionInM(b->cst_->id()));
 					}
 					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						s_vc(gm->dim(), xc + pos, h + indexOfGeneralMotionInM(b->cst_->id()));
@@ -1602,13 +1613,14 @@ namespace aris::dynamic
 				auto getMRow = [&](Relation &rel, double *xc){
 					Size pos2{ 0 };
 					ARIS_LOOP_BLOCK(rel.){
-						if (dynamic_cast<const Motion*>(b->cst_)){
+						if (auto gm = dynamic_cast<const Motion*>(b->cst_)){
 							Size ccid = indexOfMotionInM(b->cst_->id());
-							M[at(ccid, cid, nM)] = xc[pos2] - h[ccid];
+							s_vc(gm->dim(), xc + pos2, 1, M + at(ccid, cid, nM), nM);
+							s_vs(gm->dim(), h + ccid, 1, M + at(ccid, cid, nM), nM);
 						}
 						else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 							Size ccid = indexOfGeneralMotionInM(b->cst_->id());
-							s_vc(gm->dim(), xc, 1, M + at(ccid, cid, nM), nM);
+							s_vc(gm->dim(), xc + pos2, 1, M + at(ccid, cid, nM), nM);
 							s_vs(gm->dim(), h + ccid, 1, M + at(ccid, cid, nM), nM);
 						}
 						pos2 += b->cst_->dim();
@@ -1620,13 +1632,46 @@ namespace aris::dynamic
 			auto getM = [&](Relation &rel, double *bc){
 				Size pos{ 0 };
 				ARIS_LOOP_BLOCK(rel.){
-					if (dynamic_cast<const Motion*>(b->cst_)){
-						bc[pos] += 1.0;
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
+						//bc[pos] += 1.0;
 
-						dynamic();
-						getMColumn(b->cst_, indexOfMotionInM(b->cst_->id()));
+						//dynamic();
+						//getMColumn(b->cst_, indexOfMotionInM(b->cst_->id()));
 
-						bc[pos] -= 1.0;
+						//bc[pos] -= 1.0;
+
+						auto gm = dynamic_cast<const MotionBase*>(b->cst_);
+
+						// reserve old value //
+						double old_ma[6];
+						s_vc(gm->dim(), gm->a(), old_ma);
+
+						for (Size i = 0; i < gm->dim(); ++i) {
+							// old ca, all 0 //
+							const_cast<MotionBase*>(gm)->setA(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
+							double caa[6];
+							gm->cptCa(caa);
+
+							// new ca, unit //
+							const double ma_unit[11]{ 0,0,0,0,0,1,0,0,0,0,0 };
+							const_cast<MotionBase*>(gm)->setA(ma_unit + 5 - i);
+							double new_ca[6];
+							gm->cptCa(new_ca);
+
+							// diff between old & new //
+							s_vs(gm->dim(), caa, new_ca);
+
+							// 加到 bc 上 //
+							s_va(gm->dim(), new_ca, bc + pos);
+
+							dynamic();
+							getMColumn(b->cst_, indexOfMotionInM(b->cst_->id()) + i);
+
+							s_vs(gm->dim(), new_ca, bc + pos);
+						}
+
+						// restore to old value //
+						const_cast<MotionBase*>(gm)->setA(old_ma);
 					}
 					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						// reserve old value //
@@ -1649,12 +1694,12 @@ namespace aris::dynamic
 							s_vs(gm->dim(), caa, new_ca);
 
 							// 加到 bc 上 //
-							s_va(gm->dim(), new_ca, bc);
+							s_va(gm->dim(), new_ca, bc + pos);
 
 							dynamic();
 							getMColumn(b->cst_, indexOfGeneralMotionInM(b->cst_->id()) + i);
 
-							s_vs(gm->dim(), new_ca, bc);
+							s_vs(gm->dim(), new_ca, bc + pos);
 						}
 
 						// restore to old value //
@@ -1811,8 +1856,7 @@ namespace aris::dynamic
 		if (error() < maxError())for (auto &m : model()->motionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto InverseKinematicSolver::kinVel()->int
-	{
+	auto InverseKinematicSolver::kinVel()->int{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->motionPool())m.updV();
 		return 0;
