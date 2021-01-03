@@ -294,7 +294,7 @@ namespace aris::dynamic
 
 		for (auto &mot : model()->motionPool())
 		{
-			mot.updMp();
+			mot.updP();
 		}
 
 		return 0;

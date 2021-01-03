@@ -221,7 +221,7 @@ int main()
 
 	for (auto &m : r->motionPool()) 
 	{
-		m.updMp();
+		m.updP();
 		std::cout << m.mp() << std::endl;
 	}
 
@@ -241,7 +241,7 @@ int main()
 		r->motionPool().at(i).setMp(pin[i]);
 	}
 	forward_kinematic.kinPos();
-	ee.updMp();
+	ee.updP();
 	dsp(4, 4, *ee.mpm());
 
 

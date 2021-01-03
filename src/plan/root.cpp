@@ -858,10 +858,8 @@ namespace aris::plan
 	{
 		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(this->param());
 
-		if (count() == 1)
-		{
-			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
-			{
+		if (count() == 1){
+			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i){
 				controller()->motionPool()[i].setTargetPos(controller()->motionPool().at(i).actualPos());
 				model()->motionPool()[i].setMp(controller()->motionPool().at(i).actualPos());
 			}
@@ -1157,7 +1155,7 @@ namespace aris::plan
 			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
 			{
 				mvj_param->joint_pos_begin[i] = controller()->motionPool()[i].targetPos();
-				mvj_param->joint_pos_end[i] = model()->motionPool()[i].mp();
+				mvj_param->joint_pos_end[i] = *model()->motionPool()[i].p();
 				aris::plan::moveAbsolute(static_cast<double>(count()), mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i]
 					, mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000
 					, p, v, a, mvj_param->total_count[i]);
@@ -1268,7 +1266,7 @@ namespace aris::plan
 
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvl_param->ee_pq.data(), end_pm);
-			gm.updMp();
+			gm.updP();
 			gm.getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 

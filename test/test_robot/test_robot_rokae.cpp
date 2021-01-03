@@ -22,7 +22,7 @@ void test_rokae_solver()
 
 		for (auto &m : m->motionPool())
 		{
-			m.updMp();
+			m.updP();
 			std::cout << m.mp() << "   ";
 		}
 		std::cout << std::endl;

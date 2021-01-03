@@ -63,7 +63,7 @@ namespace aris::dynamic{
 		Size component_axis_;
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
-		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 };
+		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 }, mf_{ 0 };
 		double loc_cm_I[6];
 		int motor_id_{ -1 };
 	};
@@ -76,7 +76,7 @@ namespace aris::dynamic{
 		if (axis() > 2)//角度
 		{
 			double re[3]{ 0.0 }, rm[9], pm_j_should_be[16];
-			re[axis() - 3] = imp_->mp_;
+			re[axis() - 3] = mpInternal();
 			s_re2rm(re, rm, "123");
 
 			s_vc(16, makJ_pm, pm_j_should_be);
@@ -92,7 +92,7 @@ namespace aris::dynamic{
 		{
 			double pm_j_should_be[16];
 			s_vc(16, makJ_pm, pm_j_should_be);
-			s_va(3, imp_->mp_, pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
+			s_va(3, mpInternal(), pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
 
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
@@ -102,17 +102,28 @@ namespace aris::dynamic{
 	}
 	auto Motion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); cv[0] += mv(); }
 	auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
-	auto Motion::updMp() noexcept->void { imp_->mp_ = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis()); }
-	auto Motion::updMv() noexcept->void	{
+	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
+	auto Motion::updP() noexcept->void { setMpInternal(s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis())); }
+	auto Motion::setP(const double *mp) noexcept->void { imp_->mp_ = *mp;/*imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_;*/ }
+	auto Motion::v() const noexcept->const double* { return &imp_->mv_; }
+	auto Motion::updV() noexcept->void {
 		double vs_i2j[6];
 		makI()->getVs(*makJ(), vs_i2j);
 		setMv(vs_i2j[axis()]);
 	}
-	auto Motion::updMa() noexcept->void	{
+	auto Motion::setV(const double *mv) noexcept->void { imp_->mv_ = *mv; }
+	auto Motion::a() const noexcept->const double* { return &imp_->ma_; }
+	auto Motion::updA() noexcept->void {
 		double as_i2j[6];
 		makI()->getAs(*makJ(), as_i2j);
 		setMa(as_i2j[axis()]);
 	}
+	auto Motion::setA(const double *ma) noexcept->void { imp_->ma_ = *ma; }
+	auto Motion::f() const noexcept->const double* { 
+		const_cast<Motion*>(this)->imp_->mf_ = mfDyn() + mfFrc();
+		return &imp_->mf_; 
+	}
+	auto Motion::setF(const double *mf) noexcept->void { Constraint::imp_->cf_[0] = *mf - mfFrc(); }
 	auto Motion::setAxis(Size axis)->void {
 		imp_->component_axis_ = axis;
 		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
@@ -121,14 +132,6 @@ namespace aris::dynamic{
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
-	auto Motion::mp() const noexcept->double { return imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_; }
-	auto Motion::setMp(double mp) noexcept->void { imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_; }
-	auto Motion::mv() const noexcept->double { return imp_->mv_; }
-	auto Motion::setMv(double mv) noexcept->void { imp_->mv_ = mv; }
-	auto Motion::ma() const noexcept->double { return imp_->ma_; }
-	auto Motion::setMa(double ma) noexcept->void { imp_->ma_ = ma; }
-	auto Motion::mf() const noexcept->double { return mfDyn() + mfFrc(); }
-	auto Motion::setMf(double mf) noexcept->void { Constraint::imp_->cf_[0] = mf - mfFrc(); }
 	auto Motion::mfDyn() const noexcept->double { return Constraint::imp_->cf_[0]; }
 	auto Motion::setMfDyn(double mf_dyn) noexcept->void { Constraint::imp_->cf_[0] = mf_dyn; }
 	auto Motion::mfFrc() const noexcept->double { return s_sgn(imp_->mv_, frcZeroCheck())*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
@@ -136,10 +139,10 @@ namespace aris::dynamic{
 	auto Motion::setMpOffset(double mp_offset)noexcept->void { imp_->mp_offset_ = mp_offset; }
 	auto Motion::mpFactor()const noexcept->double { return imp_->mp_factor_; }
 	auto Motion::setMpFactor(double mp_factor)noexcept->void { imp_->mp_factor_ = mp_factor; }
-	auto Motion::mpInternal()const noexcept->double { return imp_->mp_; }
-	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mp_internal; }
+	auto Motion::mpInternal()const noexcept->double { return (imp_->mp_ + imp_->mp_offset_) * imp_->mp_factor_; }
+	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mp_internal / imp_->mp_factor_ - imp_->mp_offset_; }
 	Motion::~Motion() = default;
-	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
+	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : MotionBase(name, makI, makJ, active)
 	{
 		imp_->mp_offset_ = mp_offset;
 		imp_->mp_factor_ = mp_factor;
@@ -149,9 +152,6 @@ namespace aris::dynamic{
 		setAxis(component_axis);
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
-
-	GeneralMotionBase::GeneralMotionBase(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotionBase);
 
 	struct GeneralMotion::Imp {
 		double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
@@ -189,12 +189,12 @@ namespace aris::dynamic{
 	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-	auto GeneralMotion::mp()const noexcept->const double* { return *imp_->mpm_; }
-	auto GeneralMotion::updMp() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
-	auto GeneralMotion::mv()const noexcept->const double* { return imp_->mvs_; }
-	auto GeneralMotion::updMv() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
-	auto GeneralMotion::ma()const noexcept->const double* { return imp_->mas_; }
-	auto GeneralMotion::updMa() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
+	auto GeneralMotion::p()const noexcept->const double* { return *imp_->mpm_; }
+	auto GeneralMotion::updP() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
+	auto GeneralMotion::v()const noexcept->const double* { return imp_->mvs_; }
+	auto GeneralMotion::updV() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
+	auto GeneralMotion::a()const noexcept->const double* { return imp_->mas_; }
+	auto GeneralMotion::updA() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
 	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
 	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
 	auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
@@ -282,7 +282,7 @@ namespace aris::dynamic{
 	auto GeneralMotion::mfs() const noexcept->const double6& { return Constraint::imp_->cf_; }
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 	GeneralMotion::~GeneralMotion() = default;
-	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :GeneralMotionBase(name, makI, makJ, active) {}
+	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :MotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
@@ -343,34 +343,34 @@ namespace aris::dynamic{
 
 		s_va(3, ap_in_makI, ca);
 	}
-	auto PointMotion::mp()const noexcept->const double* { return imp_->mp_; }
-	auto PointMotion::updMp() noexcept->void { 
+	auto PointMotion::p()const noexcept->const double* { return imp_->mp_; }
+	auto PointMotion::updP() noexcept->void { 
 		double pp[3];
 		s_pm2pp(*makI()->pm(), pp);
 		s_inv_pp2pp(*makJ()->pm(), pp, imp_->mp_);
 	}
-	auto PointMotion::setMp(const double *mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
-	auto PointMotion::getMp(double *mp) noexcept->void { s_vc(3, imp_->mp_, mp); }
-	auto PointMotion::mv()const noexcept->const double* { return imp_->vp_; }
-	auto PointMotion::updMv() noexcept->void { 
+	auto PointMotion::setP(const double *mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
+	auto PointMotion::getP(double *mp) noexcept->void { s_vc(3, imp_->mp_, mp); }
+	auto PointMotion::v()const noexcept->const double* { return imp_->vp_; }
+	auto PointMotion::updV() noexcept->void { 
 		double vs[6], pp[3];
 		s_pm2pp(*makI()->pm(), pp);
 		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
 		s_vs2vp(vs, pp, imp_->vp_);
 	}
-	auto PointMotion::setMv(const double *mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
-	auto PointMotion::getMv(double *mv) noexcept->void { s_vc(3, imp_->vp_, mv); }
-	auto PointMotion::ma()const noexcept->const double* { return imp_->ap_; }
-	auto PointMotion::updMa() noexcept->void { 
+	auto PointMotion::setV(const double *mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
+	auto PointMotion::getV(double *mv) noexcept->void { s_vc(3, imp_->vp_, mv); }
+	auto PointMotion::a()const noexcept->const double* { return imp_->ap_; }
+	auto PointMotion::updA() noexcept->void { 
 		double as[6], vs[6], pp[3];
 		s_pm2pp(*makI()->pm(), pp);
 		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
 		s_as2ap(vs, as, pp, imp_->ap_);
 	}
-	auto PointMotion::setMa(const double *ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
-	auto PointMotion::getMa(double *ma) noexcept->void { s_vc(3, imp_->ap_, ma); }
+	auto PointMotion::setA(const double *ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
+	auto PointMotion::getA(double *ma) noexcept->void { s_vc(3, imp_->ap_, ma); }
 	PointMotion::~PointMotion() = default;
-	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :GeneralMotionBase(name, makI, makJ, active) {}
+	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :MotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
@@ -590,30 +590,18 @@ namespace aris::dynamic{
 			.prop("cf", &setCf, &getCf)
 			;
 
-		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
-		auto getMotionFrc = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 3, c->frcCoe()); };
-		aris::core::class_<Motion>("Motion")
-			.inherit<aris::dynamic::Constraint>()
-			.prop("component", &Motion::setAxis, &Motion::axis)
-			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
-			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
-			.prop("mp", &Motion::setMp, &Motion::mp)
-			.prop("mv", &Motion::setMv, &Motion::mv)
-			.prop("ma", &Motion::setMa, &Motion::ma)
-			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
-			;
-
-		aris::core::class_<GeneralMotionBase>("GeneralMotionBase")
-			.inherit<aris::dynamic::Constraint>()
-			;
-
-		aris::core::class_<GeneralMotion>("GeneralMotion")
-			.inherit<aris::dynamic::GeneralMotionBase>()
-			;
-
 		aris::core::class_<Joint>("Joint")
 			.inherit<aris::dynamic::Constraint>()
 			;
+
+		aris::core::class_<MotionBase>("MotionBase")
+			.inherit<aris::dynamic::Constraint>()
+			;
+
+		aris::core::class_<Force>("Force")
+			.inherit<aris::dynamic::Interaction>()
+			;
+
 
 		aris::core::class_<RevoluteJoint>("RevoluteJoint")
 			.inherit<aris::dynamic::Joint>()
@@ -631,8 +619,27 @@ namespace aris::dynamic{
 			.inherit<aris::dynamic::Joint>()
 			;
 
-		aris::core::class_<Force>("Force")
-			.inherit<aris::dynamic::Interaction>()
+		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
+		auto getMotionFrc = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 3, c->frcCoe()); };
+		auto setMp = [](Motion* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
+		auto getMp = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 1, c->p()); };
+		aris::core::class_<Motion>("Motion")
+			.inherit<aris::dynamic::MotionBase>()
+			.prop("component", &Motion::setAxis, &Motion::axis)
+			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
+			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
+			.prop("mp", &setMp, &getMp)
+			.prop("mv", &Motion::setMv, &Motion::mv)
+			.prop("ma", &Motion::setMa, &Motion::ma)
+			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
+			;
+
+		aris::core::class_<GeneralMotion>("GeneralMotion")
+			.inherit<aris::dynamic::MotionBase>()
+			;
+
+		aris::core::class_<PointMotion>("PointMotion")
+			.inherit<aris::dynamic::MotionBase>()
 			;
 
 		aris::core::class_<GeneralForce>("GeneralForce")

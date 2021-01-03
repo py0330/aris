@@ -928,15 +928,15 @@ namespace aris::dynamic
 		constraint().setCf(imp_->cf_.at(pos).data());
 		if (dynamic_cast<Motion*>(&constraint()))
 		{
-			dynamic_cast<Motion*>(&constraint())->updMp();
-			dynamic_cast<Motion*>(&constraint())->updMv();
-			dynamic_cast<Motion*>(&constraint())->updMa();
+			dynamic_cast<Motion*>(&constraint())->updP();
+			dynamic_cast<Motion*>(&constraint())->updV();
+			dynamic_cast<Motion*>(&constraint())->updA();
 		}
 		if (dynamic_cast<GeneralMotion*>(&constraint()))
 		{
-			dynamic_cast<GeneralMotion*>(&constraint())->updMp();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMv();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMa();
+			dynamic_cast<GeneralMotion*>(&constraint())->updP();
+			dynamic_cast<GeneralMotion*>(&constraint())->updV();
+			dynamic_cast<GeneralMotion*>(&constraint())->updA();
 		}
 	}
 	SimResult::ConstraintResult::~ConstraintResult() = default;
@@ -1148,12 +1148,12 @@ namespace aris::dynamic
 				result.restore(i);
 				time.at(i) = model()->time();
 				for (Size j(-1); ++j < model()->motionPool().size();){
-					model()->motionPool().at(j).updMp();
+					model()->motionPool().at(j).updP();
 					mot_akima.at(j).at(i) = model()->motionPool().at(j).mpInternal();
 				}
 				for (Size j(-1); ++j < model()->generalMotionPool().size();){
 					if (auto gm = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(j))){
-						gm->updMp();
+						gm->updP();
 						gm->getMpe(gm_akima.at(j).at(i).data(), "123");
 					}
 				}
@@ -1474,9 +1474,9 @@ namespace aris::dynamic
 
 				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
 
-				double mp[6]{ gmp->mp()[0],gmp->mp()[1],gmp->mp()[2],0,0,0 };
-				double mv[6]{ gmp->mv()[0],gmp->mv()[1],gmp->mv()[2],0,0,0 };
-				double ma[6]{ gmp->ma()[0],gmp->ma()[1],gmp->ma()[2],0,0,0 };
+				double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,0 };
+				double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,0 };
+				double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,0 };
 
 				for (Size i = 0; i < 6; ++i)
 				{

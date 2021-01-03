@@ -287,7 +287,7 @@ namespace aris::dynamic
 				}
 
 				// 更新位姿 //
-				imp_->ee->updMp();
+				imp_->ee->updP();
 
 				return 0;
 			
@@ -352,7 +352,7 @@ namespace aris::dynamic
 			}
 
 			// 更新位姿 //
-			imp_->ee->updMp();
+			imp_->ee->updP();
 
 			return 0;
 		}
@@ -381,13 +381,13 @@ namespace aris::dynamic
 					}
 
 					double last_mp = imp_->motions[i]->mpInternal();
-					imp_->motions[i]->updMp();
+					imp_->motions[i]->updP();
 					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
 					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}
 
 				// 更新位姿 //
-				imp_->ee->updMp();
+				imp_->ee->updP();
 
 				return 0;
 			}

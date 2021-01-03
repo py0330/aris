@@ -89,7 +89,7 @@ void test_servo_press_universal()
 	if (universal_solver.kinPos())std::cout << "failed3" << std::endl;
 	universal_solver.kinVel();
 
-	ee.updMp();
+	ee.updP();
 
 	double cmI[36], cmJ[36];
 	ee.cptGlbCm(cmI, cmJ);
@@ -140,7 +140,6 @@ void test_float_5_bar_universal()
 	//auto &adams = m.simulatorPool().add<AdamsSimulator>();
 
 	m.init();
-
 	m1.setMp(0.0);
 	m1.setMv(0.1);
 	m1.setMa(0.2);

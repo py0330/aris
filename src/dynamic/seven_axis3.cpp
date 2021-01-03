@@ -325,7 +325,7 @@ namespace aris::dynamic
 	{
 		// 求解轴角 //
 		{
-			this->setAxisAngle(this->model()->motionPool()[3].mp());
+			this->setAxisAngle(*this->model()->motionPool()[3].p());
 		}
 		
 		// 求解 //
@@ -406,7 +406,7 @@ namespace aris::dynamic
 					}
 
 					double last_mp = imp_->motions[i]->mpInternal();
-					imp_->motions[i]->updMp();
+					imp_->motions[i]->updP();
 					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
 					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}

@@ -35,7 +35,7 @@ void test_seven_axis_inverse_solver(){
 		m->solverPool()[1].kinPos();
 
 		double result[6];
-		gm.updMp();
+		gm.updP();
 		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 
@@ -107,7 +107,7 @@ void test_seven_axis_inverse_solver2()
 	double input[7]{ 0.1, 0.2, 0.3, -0.8, 0.5, 0.6, 0.7 };
 	m->setMotionPos(input);
 	m->forwardKinematics();
-	gm.updMp();
+	gm.updP();
 	gm.getMpe(pe);
 
 	aris::dynamic::dsp(4, 4, *gm.mpm());
@@ -126,7 +126,7 @@ void test_seven_axis_inverse_solver2()
 		//m->solverPool()[1].kinPos();
 
 		double result[6];
-		gm.updMp();
+		gm.updP();
 		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 
@@ -173,7 +173,7 @@ void test_seven_axis_inverse_solver3()
 	double input[7]{ 0.1, 0.2, 0.1, 0.4, 0.5, 0.6, 0.7 };
 	m->setMotionPos(input);
 	m->forwardKinematics();
-	gm.updMp();
+	gm.updP();
 	gm.getMpe(pe, "321");
 
 
@@ -194,7 +194,7 @@ void test_seven_axis_inverse_solver3()
 		//m->solverPool()[1].kinPos();
 
 		double result[6];
-		gm.updMp();
+		gm.updP();
 		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 

@@ -1478,7 +1478,7 @@ namespace aris::dynamic
 						double vp_in_makJ[3], relative_vs[6];
 						gm->makI()->getVs(*gm->makJ(), relative_vs);
 
-						s_c3(-1.0, relative_vs + 3, gm->mv(), vp_in_makJ);
+						s_c3(-1.0, relative_vs + 3, gm->v(), vp_in_makJ);
 
 						double vp_in_makI[3], vp_in_ground[3];
 						s_pm_dot_v3(*gm->makJ()->pm(), vp_in_makJ, vp_in_ground);
@@ -1488,7 +1488,7 @@ namespace aris::dynamic
 
 						// 右侧第二项
 						double ap_in_makI[3], ap_in_ground[3];
-						s_pm_dot_v3(*gm->makJ()->pm(), gm->ma(), ap_in_ground);
+						s_pm_dot_v3(*gm->makJ()->pm(), gm->a(), ap_in_ground);
 						s_inv_pm_dot_v3(*gm->makI()->pm(), ap_in_ground, ap_in_makI);
 
 						s_vs(3, ap_in_makI, bc + pos);
@@ -1549,16 +1549,16 @@ namespace aris::dynamic
 					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						bc[pos] -= mot->ma();
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotionBase*>(b->cst_)){
+					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						// reserve old value //
 						double ma_old[6];
-						s_vc(gm->dim(), gm->ma(), ma_old);
+						s_vc(gm->dim(), gm->a(), ma_old);
 
 						// 计算驱动导致的ca //
 						double old_ca[6];
 						gm->cptCa(old_ca);
 
-						const_cast<GeneralMotionBase*>(gm)->setMa(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
+						const_cast<MotionBase*>(gm)->setA(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
 						double ca[6];
 						gm->cptCa(ca);
 
@@ -1568,7 +1568,7 @@ namespace aris::dynamic
 						s_vs(gm->dim(), old_ca, bc);
 
 						// restore to old value //
-						const_cast<GeneralMotionBase*>(gm)->setMa(ma_old);
+						const_cast<MotionBase*>(gm)->setA(ma_old);
 
 					}
 
@@ -1587,7 +1587,7 @@ namespace aris::dynamic
 					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						h[indexOfMotionInM(b->cst_->id())] = xc[pos];
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotionBase*>(b->cst_)){
+					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						s_vc(gm->dim(), xc + pos, h + indexOfGeneralMotionInM(b->cst_->id()));
 					}
 					pos += b->cst_->dim();
@@ -1606,7 +1606,7 @@ namespace aris::dynamic
 							Size ccid = indexOfMotionInM(b->cst_->id());
 							M[at(ccid, cid, nM)] = xc[pos2] - h[ccid];
 						}
-						else if (auto gm = dynamic_cast<const GeneralMotionBase*>(b->cst_)){
+						else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 							Size ccid = indexOfGeneralMotionInM(b->cst_->id());
 							s_vc(gm->dim(), xc, 1, M + at(ccid, cid, nM), nM);
 							s_vs(gm->dim(), h + ccid, 1, M + at(ccid, cid, nM), nM);
@@ -1628,20 +1628,20 @@ namespace aris::dynamic
 
 						bc[pos] -= 1.0;
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotionBase*>(b->cst_)){
+					else if (auto gm = dynamic_cast<const MotionBase*>(b->cst_)){
 						// reserve old value //
 						double old_ma[6];
-						s_vc(gm->dim(), gm->ma(), old_ma);
+						s_vc(gm->dim(), gm->a(), old_ma);
 						
 						for (Size i = 0; i < gm->dim(); ++i){
 							// old ca, all 0 //
-							const_cast<GeneralMotionBase*>(gm)->setMa(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
+							const_cast<MotionBase*>(gm)->setA(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data());
 							double caa[6];
 							gm->cptCa(caa);
 							
 							// new ca, unit //
 							const double ma_unit[11]{ 0,0,0,0,0,1,0,0,0,0,0 };
-							const_cast<GeneralMotionBase*>(gm)->setMa(ma_unit + 5 - i);
+							const_cast<MotionBase*>(gm)->setA(ma_unit + 5 - i);
 							double new_ca[6];
 							gm->cptCa(new_ca);
 
@@ -1658,7 +1658,7 @@ namespace aris::dynamic
 						}
 
 						// restore to old value //
-						const_cast<GeneralMotionBase*>(gm)->setMa(old_ma);
+						const_cast<MotionBase*>(gm)->setA(old_ma);
 					}
 					pos += b->cst_->dim();
 				}
@@ -1721,19 +1721,19 @@ namespace aris::dynamic
 	auto ForwardKinematicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMp();
+		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardKinematicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->generalMotionPool())m.updMv();
+		for (auto &m : model()->generalMotionPool())m.updV();
 		return 0;
 	}
 	auto ForwardKinematicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMa();
+		for (auto &m : model()->generalMotionPool())m.updA();
 		return 0;
 	}
 	auto ForwardKinematicSolver::cptJacobi() noexcept->void
@@ -1808,19 +1808,19 @@ namespace aris::dynamic
 	auto InverseKinematicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->motionPool())m.updMp();
+		if (error() < maxError())for (auto &m : model()->motionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto InverseKinematicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->motionPool())m.updMv();
+		for (auto &m : model()->motionPool())m.updV();
 		return 0;
 	}
 	auto InverseKinematicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->motionPool())m.updMa();
+		for (auto &m : model()->motionPool())m.updA();
 		return 0;
 	}
 	auto InverseKinematicSolver::cptJacobi()noexcept->void
@@ -1877,19 +1877,19 @@ namespace aris::dynamic
 	auto ForwardDynamicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMp();
+		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardDynamicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->generalMotionPool())m.updMv();
+		for (auto &m : model()->generalMotionPool())m.updV();
 		return 0;
 	}
 	auto ForwardDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMa();
+		for (auto &m : model()->generalMotionPool())m.updA();
 		return 0;
 	}
 	ForwardDynamicSolver::~ForwardDynamicSolver() = default;
@@ -1908,19 +1908,19 @@ namespace aris::dynamic
 	auto InverseDynamicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model()->motionPool())m.updMp();
+		if (error() < maxError())for (auto &m : model()->motionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
 	auto InverseDynamicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model()->motionPool())m.updMv();
+		for (auto &m : model()->motionPool())m.updV();
 		return 0;
 	}
 	auto InverseDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model()->generalMotionPool())m.updMa();
+		for (auto &m : model()->generalMotionPool())m.updA();
 		return 0;
 	}
 	InverseDynamicSolver::~InverseDynamicSolver() = default;

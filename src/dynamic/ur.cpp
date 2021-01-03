@@ -577,7 +577,7 @@ namespace aris::dynamic
 
 
 			auto last_mp = m.motionPool().at(i).mpInternal();
-			m.motionPool().at(i).updMp();
+			m.motionPool().at(i).updP();
 			while (m.motionPool().at(i).mpInternal() - last_mp > PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() - 2 * PI);
 			while (m.motionPool().at(i).mpInternal() - last_mp < -PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() + 2 * PI);
 		}

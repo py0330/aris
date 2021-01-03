@@ -149,7 +149,7 @@ void test_puma_inverse_solver()
 			if (new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
 
 			if (new_fwd.kinPos())std::cout << "forward failed" << std::endl;
-			new_ee.updMp();
+			new_ee.updP();
 			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
 			{
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;

@@ -232,7 +232,7 @@ void test_optimal()
 		file << node.s << "  ";
 		for (auto &mot : planner.model->motionPool())
 		{
-			mot.updMp();
+			mot.updP();
 			file << mot.mp() << "  ";
 		}
 		file << "\n";

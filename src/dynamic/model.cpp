@@ -29,7 +29,7 @@ namespace aris::dynamic
 		std::unique_ptr<aris::core::PointerArray<Part,              Element>> part_pool_;
 		std::unique_ptr<aris::core::PointerArray<Joint,             Element>> joint_pool_;
 		std::unique_ptr<aris::core::PointerArray<Motion,            Element>> motion_pool_;
-		std::unique_ptr<aris::core::PointerArray<GeneralMotionBase, Element>> general_motion_pool_;
+		std::unique_ptr<aris::core::PointerArray<MotionBase,        Element>> general_motion_pool_;
 		std::unique_ptr<aris::core::PointerArray<Force,             Element>> force_pool_;
 		std::unique_ptr<aris::core::PointerArray<Solver,            Element>> solver_pool_;
 		std::unique_ptr<aris::core::PointerArray<Simulator,         Element>> simulator_pool_;
@@ -162,7 +162,7 @@ namespace aris::dynamic
 	auto Model::motionDim()->Size { return motionPool().size(); }
 	auto Model::setMotionPos(const double *mp)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMp(mp[i]); }
 	//auto Model::setMotionPos(double mp, Size which_motion)->void { motionPool()[which_motion].setMp(mp); }
-	auto Model::getMotionPos(double *mp)const ->void { for (Size i = 0; i < motionPool().size(); ++i) mp[i] = motionPool()[i].mp(); }
+	auto Model::getMotionPos(double *mp)const ->void { for (Size i = 0; i < motionPool().size(); ++i) mp[i] = *motionPool()[i].p(); }
 	//auto Model::getMotionPos(Size which_motion)->double { return motionPool()[which_motion].mp(); }
 	auto Model::setMotionVel(const double *mv)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMv(mv[i]); }
 	//auto Model::setMotionVel(double mv, Size which_motion)->void { motionPool()[which_motion].setMv(mv); }
@@ -191,8 +191,8 @@ namespace aris::dynamic
 	auto Model::jointPool()->aris::core::PointerArray<Joint, Element>& { return *imp_->joint_pool_; }
 	auto Model::resetMotionPool(aris::core::PointerArray<Motion, Element> *pool)->void { imp_->motion_pool_.reset(pool); }
 	auto Model::motionPool()->aris::core::PointerArray<Motion, Element>& { return *imp_->motion_pool_; }
-	auto Model::resetGeneralMotionPool(aris::core::PointerArray<GeneralMotionBase, Element> *pool)->void { imp_->general_motion_pool_.reset(pool); }
-	auto Model::generalMotionPool()->aris::core::PointerArray<GeneralMotionBase, Element>& { return *imp_->general_motion_pool_; }
+	auto Model::resetGeneralMotionPool(aris::core::PointerArray<MotionBase, Element> *pool)->void { imp_->general_motion_pool_.reset(pool); }
+	auto Model::generalMotionPool()->aris::core::PointerArray<MotionBase, Element>& { return *imp_->general_motion_pool_; }
 	auto Model::resetForcePool(aris::core::PointerArray<Force, Element> *pool)->void { imp_->force_pool_.reset(pool); }
 	auto Model::forcePool()->aris::core::PointerArray<Force, Element>& { return *imp_->force_pool_; }
 	auto Model::resetSolverPool(aris::core::PointerArray<Solver, Element> *pool)->void { imp_->solver_pool_.reset(pool); }
@@ -325,7 +325,7 @@ namespace aris::dynamic
 		imp_->part_pool_.reset(new aris::core::PointerArray<Part, Element>);
 		imp_->joint_pool_.reset(new aris::core::PointerArray<Joint, Element>);
 		imp_->motion_pool_.reset(new aris::core::PointerArray<Motion, Element>);
-		imp_->general_motion_pool_.reset(new aris::core::PointerArray<GeneralMotionBase, Element>);
+		imp_->general_motion_pool_.reset(new aris::core::PointerArray<MotionBase, Element>);
 		imp_->force_pool_.reset(new aris::core::PointerArray<Force, Element>);
 		imp_->solver_pool_.reset(new aris::core::PointerArray<Solver, Element>);
 		imp_->simulator_pool_.reset(new aris::core::PointerArray<Simulator, Element>);
@@ -343,7 +343,7 @@ namespace aris::dynamic
 		typedef aris::core::PointerArray<Part,              Element> &(Model::*PartPoolFunc)();
 		typedef aris::core::PointerArray<Joint,             Element> &(Model::*JointPoolFunc)();
 		typedef aris::core::PointerArray<Motion,            Element> &(Model::*MotionPoolFunc)();
-		typedef aris::core::PointerArray<GeneralMotionBase, Element> &(Model::*GeneralMotionPoolFunc)();
+		typedef aris::core::PointerArray<MotionBase,        Element> &(Model::*GeneralMotionPoolFunc)();
 		typedef aris::core::PointerArray<Force,             Element> &(Model::*ForcePoolFunc)();
 		typedef aris::core::PointerArray<Solver,            Element> &(Model::*SolverPoolFunc)();
 		typedef aris::core::PointerArray<Simulator,         Element> &(Model::*SimulatorPoolFunc)();
@@ -362,7 +362,7 @@ namespace aris::dynamic
 		aris::core::class_<aris::core::PointerArray<Motion, Element>>("MotionPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::PointerArray<GeneralMotionBase, Element>>("GeneralMotionPoolElement")
+		aris::core::class_<aris::core::PointerArray<MotionBase, Element>>("GeneralMotionPoolElement")
 			.asRefArray()
 			;
 		aris::core::class_<aris::core::PointerArray<Force, Element>>("ForcePoolElement")

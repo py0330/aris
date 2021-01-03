@@ -844,31 +844,31 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto &gm = m.generalMotionPool().at(i);
 			
 			// check pos //
-			gm.updMp();
-			gm.getMp(result);
-			if (!s_is_equal(gm.mpSize(), result, opo + pdim, error[0])) {
+			gm.updP();
+			gm.getP(result);
+			if (!s_is_equal(gm.pSize(), result, opo + pdim, error[0])) {
 				std::cout << s.id() << "::kinPos() forward origin failed at " << i << std::endl;
-				dsp(1, gm.mpSize(), result);
-				dsp(1, gm.mpSize(), opo + pdim);
+				dsp(1, gm.pSize(), result);
+				dsp(1, gm.pSize(), opo + pdim);
 			}
 			// check vel //
-			gm.updMv();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getMv(result);
+			gm.updV();
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getV(result);
 			if (!s_is_equal(gm.dim(), result, ovo + dim, error[1]))	{
 				std::cout << s.id() << "::kinVel() forward origin failed at " << i << std::endl;
 				dsp(1, gm.dim(), result);
 				dsp(1, gm.dim(), ovo + dim);
 			}
 			// check acc //
-			gm.updMa();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getMa(result);
+			gm.updA();
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
 			if (!s_is_equal(gm.dim(), result, oao + dim, error[2]))	{
 				std::cout << s.id() << "::dynAccAndFce() forward forward origin failed at " << i << ": acc not correct" << std::endl;
 				dsp(1, gm.dim(), result);
 				dsp(1, gm.dim(), oao + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
@@ -901,29 +901,29 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 			
-			gm.updMp();
-			gm.getMp(result);
-			if (!s_is_equal(gm.mpSize(), result, opt + pdim, error[0])){
+			gm.updP();
+			gm.getP(result);
+			if (!s_is_equal(gm.pSize(), result, opt + pdim, error[0])){
 				std::cout << s.id() << "::kinPos() forward failed at " << i << std::endl;
-				dsp(1, gm.mpSize(), result);
-				dsp(1, gm.mpSize(), opt + pdim);
+				dsp(1, gm.pSize(), result);
+				dsp(1, gm.pSize(), opt + pdim);
 			}
-			gm.updMv();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getMv(result);
+			gm.updV();
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMva(result); else gm.getV(result);
 			if (!s_is_equal(gm.dim(), result, ovt + dim, error[1])){
 				std::cout << s.id() << "::kinVel() forward failed at " << i << std::endl;
 				dsp(1, gm.dim(), result);
 				dsp(1, gm.dim(), ovt + dim);
 			}
-			gm.updMa();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getMa(result);
+			gm.updA();
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
 			if (!s_is_equal(gm.dim(), result, oat + dim, error[2])){
 				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": acc not correct" << std::endl;
 				dsp(1, gm.dim(), result);
 				dsp(1, gm.dim(), oat + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
@@ -946,7 +946,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 			for (aris::Size i = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.mv(), mot_input.data() + u->model()->motionPool().size() + dim);
+				s_vc(gm.dim(), gm.v(), mot_input.data() + u->model()->motionPool().size() + dim);
 				dim += gm.dim();
 			}
 
@@ -969,7 +969,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 			for (aris::Size i = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.ma(), mot_input.data() + u->model()->motionPool().size() + dim);
+				s_vc(gm.dim(), gm.a(), mot_input.data() + u->model()->motionPool().size() + dim);
 				dim += gm.dim();
 			}
 
@@ -1000,8 +1000,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
 				if (u->indexOfGeneralMotionInM(i) != -1) {
-					s_vc(gm.dim(), gm.ma(), ma.data() + u->indexOfGeneralMotionInM(i));
-					s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
 				}
 			}
 
@@ -1030,8 +1030,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 
-			gm.updMa();
-			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getMa(result);
+			gm.updA();
+			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm))gm_->getMaa(result); else gm.getA(result);
 			if (!s_is_equal(gm.dim(), result, oat + dim, error[2])) {
 				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": with force" << std::endl;
 			}
@@ -1051,17 +1051,17 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 			
-			gm.setMp(opo + pdim);
+			gm.setP(opo + pdim);
 			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
 				gm_->setMva(ovo + dim);
 				gm_->setMaa(oao + dim);
 			}
 			else {
-				gm.setMv(ovo + dim);
-				gm.setMa(oao + dim);
+				gm.setV(ovo + dim);
+				gm.setA(oao + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		m.init();
@@ -1074,7 +1074,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 
 		// check origin //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMp();
+			m.motionPool().at(i).updP();
 			result[i] = m.motionPool().at(i).mp();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ipo, error[4])) {
@@ -1083,7 +1083,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), ipo);
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMv();
+			m.motionPool().at(i).updV();
 			result[i] = m.motionPool().at(i).mv();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ivo, error[5])) {
@@ -1092,7 +1092,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), ivo);
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMa();
+			m.motionPool().at(i).updA();
 			result[i] = m.motionPool().at(i).ma();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, iao, error[6])){
@@ -1108,7 +1108,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				dsp(1, gm.dim(), ofo + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		
@@ -1116,17 +1116,17 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 			
-			gm.setMp(opt + pdim);
+			gm.setP(opt + pdim);
 			if (auto gm_ = dynamic_cast<GeneralMotion*>(&gm)) {
 				gm_->setMva(ovt + dim);
 				gm_->setMaa(oat + dim);
 			}
 			else {
-				gm.setMv(ovt + dim);
-				gm.setMa(oat + dim);
+				gm.setV(ovt + dim);
+				gm.setA(oat + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		// compute //
@@ -1148,7 +1148,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 
 		// check //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMp();
+			m.motionPool().at(i).updP();
 			result[i] = m.motionPool().at(i).mp();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ipt, error[4])){
@@ -1157,7 +1157,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), ipt);
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMv();
+			m.motionPool().at(i).updV();
 			result[i] = m.motionPool().at(i).mv();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ivt, error[5])){
@@ -1166,7 +1166,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.motionPool().size(), ivt);
 		}
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).updMa();
+			m.motionPool().at(i).updA();
 			result[i] = m.motionPool().at(i).ma();
 		}
 		if (!s_is_equal(m.motionPool().size(), result, iat, error[6])){
@@ -1177,13 +1177,13 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0, pdim = 0, dim = 0; i < m.generalMotionPool().size(); ++i) {
 			auto &gm = m.generalMotionPool().at(i);
 
-			if (!s_is_equal(gm.dim(), gm.mf(), oft + dim, error[7])) {
+			if (!s_is_equal(gm.dim(), gm.f(), oft + dim, error[7])) {
 				std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
-				dsp(1, gm.dim(), gm.mf());
+				dsp(1, gm.dim(), gm.f());
 				dsp(1, gm.dim(), oft + dim);
 			}
 
-			pdim += gm.mpSize();
+			pdim += gm.pSize();
 			dim += gm.dim();
 		}
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
@@ -1200,9 +1200,9 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 			for (aris::Size i = 0, pdim = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.mv(), mot_input.data() + u->model()->motionPool().size() + dim);
+				s_vc(gm.dim(), gm.v(), mot_input.data() + u->model()->motionPool().size() + dim);
 
-				pdim += gm.mpSize();
+				pdim += gm.pSize();
 				dim += 6;
 			}
 
@@ -1226,7 +1226,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
 				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.ma(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
+				s_vc(gm.dim(), gm.a(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
@@ -1259,8 +1259,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
 				auto &gm = u->model()->generalMotionPool().at(i);
 				if (u->indexOfGeneralMotionInM(i) != -1) {
-					s_vc(gm.dim(), gm.ma(), ma.data() + u->indexOfGeneralMotionInM(i));
-					s_vc(gm.dim(), gm.mf(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
+					s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
 				}
 			}
 
@@ -1314,7 +1314,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 
 			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
 
-			gm.updMp();
+			gm.updP();
 			gm.getMpm(result1);
 
 			if (count < 2 && count % 2 && !s_is_equal(16, result1, opt + i * 16, error[0]))
@@ -1344,7 +1344,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
 			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
 
-			gm.updMv();
+			gm.updV();
 			gm.getMva(result1);
 			if (!s_is_equal(6, result1, ovt + i*6, error[1]))std::cout << s.id() << "::kinVel() forward bench vel failed" << std::endl;
 		}
@@ -1370,7 +1370,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
 			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
 			
-			gm.updMa();
+			gm.updA();
 			gm.getMaa(result1);
 			if (!s_is_equal(6, result1, oat + i*6, error[2]))	std::cout << s.id() << "::kinAcc() forward bench acc failed" << std::endl;
 		}
@@ -1418,7 +1418,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 
 		// compute //
 		s.kinPos();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMp(); result1[i] = m.motionPool().at(i).mp(); }
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updP(); result1[i] = m.motionPool().at(i).mp(); }
 
 		if (count < 2 && count % 2 && !s_is_equal(m.motionPool().size(), result1, ipt, error[4]))
 			std::cout << s.id() << "::kinPos() forward bench failed" << std::endl;
@@ -1435,7 +1435,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&](){
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMva(ovt + i * 6);
 		s.kinVel();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMv(); result1[i] = m.motionPool().at(i).mv(); }
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updV(); result1[i] = m.motionPool().at(i).mv(); }
 		if (!s_is_equal(m.motionPool().size(), result1, ivt, error[5])) std::cout << s.id() << "::kinVel() inverse bench vel failed" << std::endl;
 	}) << std::endl;
 
@@ -1449,7 +1449,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	{
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMaa(oat + i * 6);
 		s.dynAccAndFce();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMa(); result1[i] = m.motionPool().at(i).ma(); }
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updA(); result1[i] = m.motionPool().at(i).ma(); }
 		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	std::cout << s.id() << "::kinAcc() inverse bench acc failed" << std::endl;
 	}) << std::endl;
 	
