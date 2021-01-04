@@ -89,6 +89,7 @@ namespace aris::dynamic
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
+		ee.setIsEndEffector(true);
 
 		// change robot pose wrt ground //
 		double robot_pm[16];

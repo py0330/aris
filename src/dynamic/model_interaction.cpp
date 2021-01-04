@@ -142,7 +142,8 @@ namespace aris::dynamic{
 	auto Motion::mpInternal()const noexcept->double { return (imp_->mp_ + imp_->mp_offset_) * imp_->mp_factor_; }
 	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mp_internal / imp_->mp_factor_ - imp_->mp_offset_; }
 	Motion::~Motion() = default;
-	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : MotionBase(name, makI, makJ, active)
+	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset
+		, double mp_factor, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active)
 	{
 		imp_->mp_offset_ = mp_offset;
 		imp_->mp_factor_ = mp_factor;
@@ -282,7 +283,8 @@ namespace aris::dynamic{
 	auto GeneralMotion::mfs() const noexcept->const double6& { return Constraint::imp_->cf_; }
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 	GeneralMotion::~GeneralMotion() = default;
-	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :MotionBase(name, makI, makJ, active) {}
+	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ
+		, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
@@ -370,7 +372,8 @@ namespace aris::dynamic{
 	auto PointMotion::setA(const double *ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
 	auto PointMotion::getA(double *ma) noexcept->void { s_vc(3, imp_->ap_, ma); }
 	PointMotion::~PointMotion() = default;
-	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :MotionBase(name, makI, makJ, active) {}
+	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ
+		, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {

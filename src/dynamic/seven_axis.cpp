@@ -93,6 +93,8 @@ namespace aris::dynamic
 		auto &makI = p7.addMarker("ee_makI", ee_i_pm);
 		auto &makJ = model->ground().addMarker("ee_makJ", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
+		ee.setIsEndEffector(true);
+		ee.setIsActuator(false);
 
 		// change robot pose wrt ground //
 		double robot_pm[16];

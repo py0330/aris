@@ -255,7 +255,9 @@ namespace aris::dynamic
 		auto setMpInternal(double mp_internal)noexcept->void;
 
 		virtual ~Motion();
-		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
+		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr
+			, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0
+			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(Motion);
 
 	private:
@@ -320,7 +322,8 @@ namespace aris::dynamic
 		auto setMfs(const double * mfs) noexcept->void;
 
 		virtual ~GeneralMotion();
-		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr
+			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
 
 	private:
@@ -352,7 +355,8 @@ namespace aris::dynamic
 		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
 
 		virtual ~PointMotion();
-		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr
+			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(PointMotion);
 
 	private:

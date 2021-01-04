@@ -825,8 +825,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (auto &mot : m.motionPool())mot.activate(true);
 		for (auto &gm : m.generalMotionPool())gm.activate(false);
 		
-		
-
 		// set origin //
 		m.init();
 		m.setInputPos(ipo);
@@ -1069,7 +1067,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.kinVel();
 		s.dynAccAndFce();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
-		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
@@ -1196,7 +1193,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	const double *ipt, const double *ivt, const double *iat, const double *ift,
 	const double *opt, const double *ovt, const double *oat, const double *oft, const double *error)
 {
-	double result1[18];
+	double result1[16*3];
 	auto &s = m.solverPool().at(i);
 
 	// forward, input to ee //
@@ -1206,15 +1203,13 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	m.init();
 
 	// init //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
-	{
-		m.motionPool().at(i).setMp(ipt[i]);
-		m.motionPool().at(i).setMv(ivt[i]);
-		m.motionPool().at(i).setMa(iat[i]);
-	}
+	m.setInputPos(ipt);
+	m.setInputVel(ivt);
+	m.setInputAcc(iat);
+
 	s.kinPos();
 	s.kinVel();
-	s.dynAccAndFce();;
+	s.dynAccAndFce();
 	int count{ 0 };
 	
 	// pos //
@@ -1223,90 +1218,65 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
 
 		s.kinPos();
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
+		for (auto &gm : m.endEffectors())gm->updP();
+		m.getOutputPos(result1);
 
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
+		if (count < 2 && count % 2 && !s_is_equal(m.outputPosSize(), result1, opt, error[0]))
+			throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
+		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.outputPosSize(), result1, opo, error[0]))
+			throw std::runtime_error(s.id() + "::kinPos() forward bench origin pos failed");
 
-			gm.updP();
-			gm.getMpm(result1);
-
-			if (count < 2 && count % 2 && !s_is_equal(16, result1, opt + i * 16, error[0]))
-				throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
-			if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, opo + i*16, error[0]))
-				throw std::runtime_error(s.id() + "::kinPos() forward bench origin pos failed");
-		}
 		++count;
 	}) << std::endl;
 
 	// vel //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-		m.motionPool().at(i).setMp(ipt[i]);
-		m.motionPool().at(i).setMv(ivt[i]);
-		m.motionPool().at(i).setMa(iat[i]);
-	}
+	m.setInputPos(ipt);
+	m.setInputVel(ivt);
+	m.setInputAcc(iat);
 	s.kinPos();
 	count = 0;
 	std::cout << s.id() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&](){
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).setMp(ipt[i]);
-			m.motionPool().at(i).setMv(ivt[i]);
-			m.motionPool().at(i).setMa(iat[i]);
-		}
+		m.setInputPos(ipt);
+		m.setInputVel(ivt);
+		m.setInputAcc(iat);
 		s.kinVel();
 			
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
-
-			gm.updV();
-			gm.getMva(result1);
-			if (!s_is_equal(6, result1, ovt + i*6, error[1]))std::cout << s.id() << "::kinVel() forward bench vel failed" << std::endl;
-		}
+		for (auto &gm : m.endEffectors())gm->updV();
+		m.getOutputVel(result1);
+		if (!s_is_equal(m.outputDim(), result1, ovt, error[1]))
+			throw std::runtime_error(s.id() + "::kinVel() forward bench vel failed");
 	}) << std::endl;
 
 	// dyn //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
-	{
-		m.motionPool().at(i).setMp(ipt[i]);
-		m.motionPool().at(i).setMv(ivt[i]);
-		m.motionPool().at(i).setMa(iat[i]);
-	}
+	m.setInputPos(ipt);
+	m.setInputVel(ivt);
+	m.setInputAcc(iat);
 	s.kinPos();
 	s.kinVel();
 	count = 0;
 	std::cout << s.id() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&](){
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-			m.motionPool().at(i).setMp(ipt[i]);
-			m.motionPool().at(i).setMv(ivt[i]);
-			m.motionPool().at(i).setMa(iat[i]);
-		}
+		m.setInputPos(ipt);
+		m.setInputVel(ivt);
+		m.setInputAcc(iat);
 		s.dynAccAndFce();
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i));
-			
-			gm.updA();
-			gm.getMaa(result1);
-			if (!s_is_equal(6, result1, oat + i*6, error[2]))	std::cout << s.id() << "::kinAcc() forward bench acc failed" << std::endl;
-		}
 
+		for (auto &gm : m.endEffectors())gm->updA();
+		m.getOutputAcc(result1);
+		if (!s_is_equal(m.outputDim(), result1, oat, error[1]))
+			throw std::runtime_error(s.id() + "::kinAcc() forward bench acc failed");
 	}) << std::endl;
 	
 	// dyn mat //
-	for (aris::Size i = 0; i < m.motionPool().size(); ++i){
-		m.motionPool().at(i).setMp(ipt[i]);
-		m.motionPool().at(i).setMv(ivt[i]);
-		m.motionPool().at(i).setMa(iat[i]);
-	}
+	m.setInputPos(ipt);
+	m.setInputVel(ivt);
+	m.setInputAcc(iat);
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.id() << "::forward computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
-	{
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
-		{
-			m.motionPool().at(i).setMp(ipt[i]);
-			m.motionPool().at(i).setMv(ivt[i]);
-			m.motionPool().at(i).setMa(iat[i]);
-		}
+	std::cout << s.id() << "::forward computational dyn mat time:" << aris::core::benchmark(bench_count, [&](){
+		m.setInputPos(ipt);
+		m.setInputVel(ivt);
+		m.setInputAcc(iat);
 		dynamic_cast<aris::dynamic::UniversalSolver&>(s).cptGeneralInverseDynamicMatrix();
 	}) << std::endl;
 
@@ -1315,66 +1285,69 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(true);
 	m.init();
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMpm(opo);
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMva(ovo);
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMva(oao);
+	m.setInputPos(ipo);
+	m.setInputVel(ivo);
+	m.setInputAcc(iao);
 	s.kinPos();
 	s.kinVel();
 	s.dynAccAndFce();;
 	
 	// pos //
-	count =  0;
-	std::cout << s.id() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
-	{
-		if (count % 2)for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMpm(opt + 16 * i);
-		else for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMpm(opo + 16 * i);
+	count = 0;
+	std::cout << s.id() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&](){
+		if (count % 2)m.setOutputPos(opt);
+		else for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.setOutputPos(opo);
 
 		// compute //
 		s.kinPos();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updP(); result1[i] = m.motionPool().at(i).mp(); }
-
-		if (count < 2 && count % 2 && !s_is_equal(m.motionPool().size(), result1, ipt, error[4]))
-			std::cout << s.id() << "::kinPos() forward bench failed" << std::endl;
-		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.motionPool().size(), result1, ipo, error[4]))
-			std::cout << s.id() << "::kinPos() forward bench origin failed" << std::endl;
+		for (auto &mot : m.actuators())mot->updP();
+		m.getInputPos(result1);
+		if (count < 2 && count % 2 && !s_is_equal(m.inputDim(), result1, ipt, error[4]))
+			throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
+		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.inputDim(), result1, ipo, error[4]))
+			throw std::runtime_error(s.id() + "::kinPos() forward bench origin failed");
 
 		++count;
 	}) << std::endl;
 
 	// vel // 
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMpm(opt);
+	m.setOutputPos(opt);
 	s.kinPos();
 	count = 0;
 	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&](){
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMva(ovt + i * 6);
+		m.setOutputVel(ovt);
 		s.kinVel();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updV(); result1[i] = m.motionPool().at(i).mv(); }
-		if (!s_is_equal(m.motionPool().size(), result1, ivt, error[5])) std::cout << s.id() << "::kinVel() inverse bench vel failed" << std::endl;
+		for (auto &mot : m.actuators())mot->updV();
+		m.getInputVel(result1);
+		if (!s_is_equal(m.inputDim(), result1, ivt, error[5])) 
+			throw std::runtime_error(s.id() + "::kinVel() inverse bench vel failed");
 	}) << std::endl;
 
 	// dyn //
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMpm(opt);
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMva(ovt);
+	m.setOutputPos(opt);
+	m.setOutputVel(ovt);
 	s.kinPos();
 	s.kinVel();
 	count = 0;
 	std::cout << s.id() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
 	{
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMaa(oat + i * 6);
+		m.setOutputAcc(oat);
 		s.dynAccAndFce();
-		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updA(); result1[i] = m.motionPool().at(i).ma(); }
-		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	std::cout << s.id() << "::kinAcc() inverse bench acc failed" << std::endl;
+		for (auto &mot : m.actuators())mot->updA();
+		m.getInputAcc(result1);
+		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	
+			throw std::runtime_error(s.id() + "::kinAcc() inverse bench vel failed"); 
 	}) << std::endl;
 	
 	// dyn mat //
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMpm(opt);
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(0)).setMva(ovt);
+	m.setOutputPos(opt);
+	m.setOutputVel(ovt);
 	s.kinPos();
 	s.kinVel();
 	count = 0;
 	std::cout << s.id() << "::inverse computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
 	{
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool().at(i)).setMaa(oat + i * 6);
+		m.setOutputAcc(oat);
 		dynamic_cast<aris::dynamic::UniversalSolver&>(s).cptGeneralInverseDynamicMatrix();
 	}) << std::endl;
 }
@@ -2001,6 +1974,7 @@ void bench_3R()
 
 		// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 		auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
+		end_effector.setIsEndEffector(true);
 		////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -2031,8 +2005,8 @@ void bench_3R()
 			0.0 , -1.0 , 0.0, 0.8,
 			0.0 , 0.0 , 1.0 , 0.0,
 			0.0 , 0.0 , 0.0 , 1.0 };
-		const double output_va[6]{ 0.3 , -0.2 , 0.0 , 0.0 , 0.0 , 0.3 };
-		const double output_aa[6]{ -0.0056868358720751,0.5326011894967951,0.0000000000000000,0.0000000000000000,0.0000000000000000,0.2000000000000000 };
+		const double output_vs[6]{ 0.54000000000000, -0.35000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.30000000000000 };
+		const double output_as[6]{ 0.09431316412793,   0.34260118949679,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.20000000000000 };
 		const double output_mfs[6]{ -15.8974283255729407, -49.3379293524304217,0.0000000000000000,0.0000000000000000,0.0000000000000000,51.3379293524304217 };
 
 		const double error[8]{ 1e-9, 1e-9, 1e-8, 1e-8, 1e-9, 1e-9, 1e-8, 1e-8 };
@@ -2042,7 +2016,7 @@ void bench_3R()
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -2061,8 +2035,8 @@ void bench_ur5()
 			0.09983341664683,   0.00000000000000,   0.99500416527803,   0.19103884280238,
 			0.47703040785185,   0.87758256189037, -0.04786268954661, -0.07577133383697,
 			0.00000000000000,   0.00000000000000,   0.00000000000000,   1.00000000000000 };
-		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_vs[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_as[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_mfs[6]{ 331.41022567419924, -57.57941566970891,   111.65453524745845, -305.96717877205936, -27.27506157298690,   0.00000000000009 };
 
 		const double input_p[6]{ -0.2 , -0.3 , 0.5 , 0.4 , 0.1 , 0.2 };
@@ -2073,8 +2047,8 @@ void bench_ur5()
 			0.23350446430995, -0.16179239408332,   0.95880075425717,   0.03946313726684,
 			0.71459145982812,   0.69726712780982, -0.05637018730295,   0.05406976046047,
 			0.00000000000000,   0.00000000000000,   0.00000000000000,   1.00000000000000 };
-		const double output_va[6]{ 0.00532701661719,   0.71826926345644,   0.38888755008115,   0.41333575398384, -1.25976861786569,   1.97742068465392 };
-		const double output_aa[6]{ -1.00962853878322,   0.52234724380448,   0.38786009482355,   0.17228242874921, -2.42549515902665,   0.80062985749427 };
+		const double output_vs[6]{ 0.15147762793361, -0.77589387349467, -0.59355848080298,   0.41333575398384, -1.25976861786569,   1.97742068465392 };
+		const double output_as[6]{ 1.06334159961043,   0.06785544230672, -1.78268268805597,   0.17228242874921, -2.42549515902666,   0.80062985749427 };
 		const double output_mfs[6]{ 147.06728488236050, -47.85997209760284,   74.93903147977326, -138.27415845097042,   15.35176588136645, -0.01337878841486 };
 
 		const double error[8]{ 1e-10, 1e-10, 1e-10, 1e-9, 1e-8, 1e-8, 1e-8, 1e-8 };
@@ -2085,9 +2059,9 @@ void bench_ur5()
 		aris::core::fromXmlString(m, xml_file_ur5);
 
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+			output_origin_pm, output_origin_vs, output_origin_as, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -2120,8 +2094,8 @@ void bench_stewart()
 			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
 			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1 };
-		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[6]{ -3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_vs[6]{ 1.54280498347778, -3.56723226481890,   8.32397818500295, -4.13258637478804,   0.22970180278509,   2.06026880988204 };
+		const double output_as[6]{ 8.30960459916273, -12.12718110567433,   13.28720334002706, -4.70386456087146,   10.22712238559706,   12.77600107191419 };
 		const double output_mfs[6]{ -1752.8168759636657796,-200.8968525620247192, 86.3334906336755807,   -816.6714933354393224, 1685.6093614991480081, 661.2063243054601571 };
 
 		const double error2[8]{ 1e-10, 1e-9, 1e-8, 1e-8, 1e-10, 1e-9, 1e-8, 1e-8 };
@@ -2134,7 +2108,7 @@ void bench_stewart()
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error2);
+			output_pm, output_vs, output_as, output_mfs, error2);
 	}
 	catch (std::exception&e)
 	{
@@ -2192,12 +2166,12 @@ void bench_multi_systems(){
 			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
 			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1 };
-		const double output_va[18]{ 0.3 , -0.2 , 0.0 , 0.0 , 0.0 , 0.3
-			,-1.93242030056314,   0.500930573127293,   0.577926916892486, -0.399682310201935, -0.66053331463003, -0.857440373970742
-			,-1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[18]{ -0.0056868358720751,0.5326011894967951,0.0000000000000000,0.0000000000000000,0.0000000000000000,0.2000000000000000
-			,1.07075600145293,   0.349116022890415,   2.0925775293411, -1.77982973680254, -0.927893632540704,   0.0659817357654945
-			,-3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_vs[18]{ 0.54000000000000, -0.35000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.30000000000000,
+			-1.66945301832618,   0.40181673728322,   0.53170168472541, -0.39968231020193, -0.66053331463004, -0.85744037397074,
+			1.54280498347778, -3.56723226481890,   8.32397818500295, -4.13258637478804,   0.22970180278509,   2.06026880988204 };
+		const double output_as[18]{ 0.09431316412792,   0.34260118949679,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.20000000000000,
+			0.95625852429635, -1.44518727470789,   3.08604580310807, -1.77982973680254, -0.92789363254072,   0.06598173576549,
+			8.30960459916273, -12.12718110567433,   13.28720334002706, -4.70386456087146,   10.22712238559706,   12.77600107191419 };
 		const double output_mfs[18]{ -15.8974283255729407, -49.3379293524304217,0.0000000000000000,0.0000000000000000,0.0000000000000000,51.3379293524304217
 			,8.44990411304192, 54.7768126462764, 23.2058019399381, 18.6214939645874,   -51.751313528282, 82.047228392192
 			,-1752.8168759636657796,-200.8968525620247192, 86.3334906336755807,   -816.6714933354393224, 1685.6093614991480081, 661.2063243054601571 };
@@ -2212,7 +2186,7 @@ void bench_multi_systems(){
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
 			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+			output_pm, output_vs, output_as, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -2458,10 +2432,10 @@ void test_model_solver()
 	test_multi_systems();
 	test_spatial_3R();
 
-	//bench_3R();
-	//bench_ur5();
-	//bench_stewart();
-	//bench_multi_systems();
+	bench_3R();
+	bench_ur5();
+	bench_stewart();
+	bench_multi_systems();
 
 	//test_ur5_calibration();
 
