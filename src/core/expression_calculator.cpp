@@ -1483,7 +1483,7 @@ namespace aris::core
 			if (param_str.size() < 2 || param_str.front() != '(' || param_str.back() != ')')
 				THROW_FILE_LINE("function format not correct in line " + std::to_string(currentLine()));
 
-			param_str = param_str.substr(1, param_str.size() - 1);
+			param_str = param_str.substr(1, param_str.size() - 2);
 
 			int id = 0;
 			auto find_param_name = [&](std::size_t start, std::size_t end) {
@@ -1502,7 +1502,7 @@ namespace aris::core
 			{
 				find_param_name(start, end);
 			}
-			if (start < param_str.size())find_param_name(start, param_str.size()-1);
+			if (start < param_str.size())find_param_name(start, param_str.size());
 
 			imp_->func_ret_stack_.push_back(stack_data);
 			imp_->current_file_ = found->second.file_;
