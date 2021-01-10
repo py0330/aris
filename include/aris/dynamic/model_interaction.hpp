@@ -246,7 +246,7 @@ namespace aris::dynamic
 		auto mfFrc() const noexcept->double;
 		auto frcCoe() const noexcept ->const double3&;
 		auto setFrcCoe(const double *frc_coe) noexcept->void;
-		auto frcZeroCheck()const noexcept ->double { return 1e-3; }
+		auto frcZeroCheck()const noexcept ->double { return 1e-2; }
 		auto mpOffset()const noexcept->double;
 		auto setMpOffset(double mp_offset)noexcept->void;
 		auto mpFactor()const noexcept->double;

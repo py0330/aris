@@ -172,6 +172,20 @@ namespace aris::dynamic
 		auto x()->double*;
 		auto b()->double*;
 		auto clb()->void;
+		
+		// 设置位置、速度、电流/力矩的index，以及每个电机共记录多少个数据
+		auto setDataIndex(int pos_idx, int vel_idx, int fce_idx, int data_num_per_motor)->void;
+		auto dataIndex()const->std::tuple<int, int, int, int>;
+		auto setFilterWindowSize(int window_size)->void;
+		auto filterWindowSize()const->int;
+
+		auto velocityRatio()const->std::vector<double>;
+		auto setVelocityRatio(std::vector<double> constant)->void;
+
+		auto torqueConstant()const->std::vector<double>;
+		auto setTorqueConstant(std::vector<double> constant)->void;
+
+		// tbd //
 		auto clbFile(const std::string &file_path)->void;
 		auto clbFiles(const std::vector<std::string> &file_paths)->void;
 		auto verifyFiles(const std::vector<std::string> &file_paths)->void;
