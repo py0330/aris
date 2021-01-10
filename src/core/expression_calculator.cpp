@@ -1502,7 +1502,7 @@ namespace aris::core
 			{
 				find_param_name(start, end);
 			}
-			if (start < param_str.size())find_param_name(start, param_str.size());
+			if (start < param_str.size())find_param_name(start, param_str.size()-1);
 
 			imp_->func_ret_stack_.push_back(stack_data);
 			imp_->current_file_ = found->second.file_;
@@ -1528,12 +1528,14 @@ namespace aris::core
 		std::string line = imp_->cmds_.at(imp_->current_file_).at(imp_->current_line_).cmd;
 		
 		if (line.substr(0, line.find_first_of(" \t\n\r\f\v([{}])")) != Imp::FUNCTION && !imp_->func_ret_stack_.empty()) {
+			line = " "+line;	// c++11 regex doesn't support look behind
 			for (auto &param : imp_->func_ret_stack_.back().params_){
-				std::regex pattern("\\b" + param.name_ + "\\b");
-				line = std::regex_replace(line, pattern, param.value_);
+				std::regex pattern("([^\\.])\\b" + param.name_ + "\\b(?!\\.)");
+				line = std::regex_replace(line, pattern, "$1"+param.value_);
 			}
+			line = line.substr(1);
 		}
-				
+		
 		return line;
 	}
 	auto LanguageParser::currentWord()const->std::string
