@@ -17,8 +17,7 @@ namespace aris::dynamic
 	/// @{
 	///
 
-	class ARIS_API SimResult : public Element
-	{
+	class ARIS_API SimResult : public Element{
 	public:
 		class TimeResult : public Element
 		{
@@ -94,8 +93,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API Simulator :public Element
-	{
+	class ARIS_API Simulator :public Element{
 	public:
 		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void;
 
@@ -107,8 +105,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API SolverSimulator : public Simulator
-	{
+	class ARIS_API SolverSimulator : public Simulator{
 	public:
 		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void override;
 		using Simulator::simulate;
@@ -123,8 +120,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API AdamsSimulator :public Simulator
-	{
+	class ARIS_API AdamsSimulator :public Simulator{
 	public:
 		auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
 		auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;

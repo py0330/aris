@@ -308,6 +308,8 @@ namespace aris::dynamic{
 		auto addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
 		auto addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&;
 		auto addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&;
+		auto addPointMotion(Part &end_effector, Part &reference, const double* pos_in_ground)->PointMotion&;
+
 		/// @}
 		auto time()const->double;
 		auto setTime(double time)->void;

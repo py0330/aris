@@ -20,9 +20,8 @@ public:
 	{
 		const double PI = 3.141592653589793;
 		
-		
 		// 设置时间，如果伺服周期为1000Hz，那么每个周期时间递加0.001s //
-		model()->setTime(model()->time() + 0.001);
+		model()->setTime(0.001 * count());
 
 		// 计算末端的位置 //
 		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };

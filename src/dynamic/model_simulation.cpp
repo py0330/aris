@@ -499,22 +499,6 @@ namespace aris::dynamic
 			makeDataset(this, mtx, dataset);
 		}
 		
-		
-		//// make datasets //
-		//std::cout << "making datasets" << std::endl;
-		//std::vector<std::vector<double> > pos(6);
-		//std::vector<std::vector<double> > vel(6);
-		//std::vector<std::vector<double> > acc(6);
-		//std::vector<std::vector<double> > fce(6);
-
-		//for (auto &file : file_paths){
-		//	std::cout << "----loading file:" << file << std::endl;
-		//	auto mtx = aris::dynamic::dlmread(file.c_str());
-		//	std::cout << "----making data" << std::endl;
-		//	std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
-		//	makeDataset(this, mtx, dataset);
-		//}
-
 		// now test datasets //
 		auto num = pos[0].size();
 		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
@@ -1096,7 +1080,7 @@ namespace aris::dynamic
 		result.record();
 		
 		auto p = std::unique_ptr<aris::plan::Plan>(plan.clone());
-		p->imp_->count_ = 0;
+		p->imp_->count_ = 1;
 		p->imp_->model_ = model();
 		p->imp_->master_ = nullptr;
 		p->imp_->controller_ = nullptr;

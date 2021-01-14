@@ -346,6 +346,26 @@ namespace aris::dynamic
 		ret.Element::model_ = this;
 		return ret;
 	}
+	auto Model::addPointMotion(Part &end_effector, Part &reference, const double* pos_in_ground)->PointMotion& {
+		double pm_i[16], pm_j[16], pp_i[3], pp_j[3];
+
+		
+		s_eye(4, pm_j);
+		aris::dynamic::s_inv_pp2pp(*reference.pm(), pos_in_ground, pp_j);
+		s_vc(3, pp_j, 1, pm_j + 3, 4);
+
+		s_eye(4, pm_i);
+		aris::dynamic::s_inv_pp2pp(*end_effector.pm(), pos_in_ground, pp_i);
+		s_vc(3, pp_i, 1, pm_i + 3, 4);
+
+		auto name = "point_motion_" + std::to_string(generalMotionPool().size());
+		auto &mak_i = dynamic_cast<Part&>(end_effector).addMarker(name + "_i", pm_i);
+		auto &mak_j = dynamic_cast<Part&>(reference).addMarker(name + "_j", pm_j);
+
+		auto &ret = generalMotionPool().add<PointMotion>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
+	}
 	Model::~Model() = default;
 	Model::Model(){
 		imp_->variable_pool_.reset(new aris::core::PointerArray<Variable, Element>);
