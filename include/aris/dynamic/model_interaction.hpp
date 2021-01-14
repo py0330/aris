@@ -121,30 +121,23 @@ namespace aris::dynamic
 		auto virtual p()const noexcept->const double* { return nullptr; }
 		auto virtual updP() noexcept->void {}
 		auto virtual setP(const double *p) noexcept->void {}
-		auto virtual getP(double *p) noexcept->void { s_vc(pSize(), this->p(), p); }
+		auto virtual getP(double *p)const noexcept->void { s_vc(pSize(), this->p(), p); }
 		auto virtual v()const noexcept->const double* { return nullptr; }
 		auto virtual updV() noexcept->void {}
 		auto virtual setV(const double *v) noexcept->void {}
-		auto virtual getV(double *v) noexcept->void { s_vc(dim(), this->v(), v); }
+		auto virtual getV(double *v)const noexcept->void { s_vc(dim(), this->v(), v); }
 		auto virtual a()const noexcept->const double* { return nullptr; }
 		auto virtual updA() noexcept->void {}
 		auto virtual setA(const double *a) noexcept->void {}
-		auto virtual getA(double *a) noexcept->void { s_vc(dim(), this->a(), a); }
+		auto virtual getA(double *a)const noexcept->void { s_vc(dim(), this->a(), a); }
 		auto virtual f()const noexcept->const double* { return nullptr; }
 		auto virtual setF(const double *f) noexcept->void {}
-		auto virtual getF(double *f) noexcept->void { s_vc(dim(), this->f(), f); }
-		auto isActuator()const noexcept->bool { return is_actuator_; }
-		auto setIsActuator(bool is_actuator = true)noexcept->void { is_actuator_ = is_actuator; }
-		auto isEndEffector()const noexcept->bool { return is_end_effector_; }
-		auto setIsEndEffector(bool is_ee = true)noexcept->void { is_end_effector_ = is_ee; }
+		auto virtual getF(double *f)const noexcept->void { s_vc(dim(), this->f(), f); }
 
 		virtual ~MotionBase() = default;
-		explicit MotionBase(const std::string &name = "motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_actuator = true, bool is_end_effector = false, bool active = true) 
-		: Constraint(name, makI, makJ, active),is_actuator_(is_actuator), is_end_effector_(is_end_effector) {}
+		explicit MotionBase(const std::string &name = "motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) 
+		: Constraint(name, makI, makJ, active){}
 		ARIS_DEFINE_BIG_FOUR(MotionBase);
-
-	private:
-		bool is_actuator_, is_end_effector_;
 	};
 	class ARIS_API Force :public Interaction{
 	public:
@@ -257,7 +250,7 @@ namespace aris::dynamic
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr
 			, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0
-			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
+			, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(Motion);
 
 	private:
@@ -277,15 +270,15 @@ namespace aris::dynamic
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override { setMpm(mp); }
-		auto virtual getP(double *mp) noexcept->void override { getMpm(mp); }
+		auto virtual getP(double *mp)const noexcept->void override { getMpm(mp); }
 		auto virtual v()const noexcept->const double* override;
 		auto virtual updV() noexcept->void override;
 		auto virtual setV(const double *mv) noexcept->void override { setMvs(mv); }
-		auto virtual getV(double *mv) noexcept->void override { getMvs(mv); }
+		auto virtual getV(double *mv)const noexcept->void override { getMvs(mv); }
 		auto virtual a()const noexcept->const double* override;
 		auto virtual updA() noexcept->void override;
 		auto virtual setA(const double *ma) noexcept->void override { setMas(ma); }
-		auto virtual getA(double *ma) noexcept->void override { getMas(ma); }
+		auto virtual getA(double *ma)const noexcept->void override { getMas(ma); }
 		auto virtual f()const noexcept->const double* override { return mfs(); }
 		auto virtual setF(const double *mf) noexcept->void override { setMfs(mf); }
 
@@ -322,8 +315,7 @@ namespace aris::dynamic
 		auto setMfs(const double * mfs) noexcept->void;
 
 		virtual ~GeneralMotion();
-		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr
-			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
+		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
 
 	private:
@@ -342,21 +334,20 @@ namespace aris::dynamic
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
-		auto virtual getP(double *mp) noexcept->void override;
+		auto virtual getP(double *mp)const noexcept->void override;
 		auto virtual v()const noexcept->const double* override;
 		auto virtual updV() noexcept->void override;
 		auto virtual setV(const double *mv) noexcept->void override;
-		auto virtual getV(double *mv) noexcept->void override;
+		auto virtual getV(double *mv)const noexcept->void override;
 		auto virtual a()const noexcept->const double* override;
 		auto virtual updA() noexcept->void override;
 		auto virtual setA(const double *ma) noexcept->void override;
-		auto virtual getA(double *ma) noexcept->void override;
+		auto virtual getA(double *ma)const noexcept->void override;
 		auto virtual f()const noexcept->const double* override { return cf(); }
 		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
 
 		virtual ~PointMotion();
-		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr
-			, bool is_actuator = true, bool is_end_effector = false, bool active = true);
+		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(PointMotion);
 
 	private:

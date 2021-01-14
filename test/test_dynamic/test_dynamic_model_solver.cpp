@@ -838,7 +838,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		std::cout << "iter count:" << s.iterCount() << "  forward origin" << std::endl;
 
 		// check origin //
-		for (auto ee : m.endEffectors()) { ee->updP();	ee->updV();	ee->updA(); }
+		for (auto &ee : m.generalMotionPool()) { ee.updP();	ee.updV();	ee.updA(); }
 		m.getOutputPos(result);
 		if (!s_is_equal(m.outputPosSize(), result, opo, error[0])) {
 			std::cout << s.id() << "::kinPos() forward origin failed" << std::endl;
@@ -880,7 +880,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
 		// check //
-		for (auto ee : m.endEffectors()) { ee->updP();	ee->updV();	ee->updA(); }
+		for (auto &ee : m.generalMotionPool()) { ee.updP();	ee.updV();	ee.updA(); }
 		m.getOutputPos(result);
 		if (!s_is_equal(m.outputPosSize(), result, opt, error[0])) {
 			std::cout << s.id() << "::kinPos() forward failed" << std::endl;
@@ -1030,7 +1030,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
 
 		// check origin //
-		for (auto &mot:m.actuators()) {	mot->updP();mot->updV();mot->updA();}
+		for (auto &mot:m.motionPool()) {	mot.updP();mot.updV();mot.updA();}
 		m.getInputPos(result);
 		if (!s_is_equal(m.inputPosSize(), result, ipo, error[4])) {
 			std::cout << s.id() << "::kinPos() inverse origin failed" << std::endl;
@@ -1071,7 +1071,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
 		// check //
-		for (auto &mot : m.actuators()) { mot->updP(); mot->updV(); mot->updA(); }
+		for (auto &mot : m.motionPool()) { mot.updP(); mot.updV(); mot.updA(); }
 		m.getInputPos(result);
 		if (!s_is_equal(m.inputPosSize(), result, ipt, error[4])) {
 			std::cout << s.id() << "::kinPos() inverse failed" << std::endl;
@@ -1218,7 +1218,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
 
 		s.kinPos();
-		for (auto &gm : m.endEffectors())gm->updP();
+		for (auto &gm : m.generalMotionPool())gm.updP();
 		m.getOutputPos(result1);
 
 		if (count < 2 && count % 2 && !s_is_equal(m.outputPosSize(), result1, opt, error[0]))
@@ -1241,7 +1241,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		m.setInputAcc(iat);
 		s.kinVel();
 			
-		for (auto &gm : m.endEffectors())gm->updV();
+		for (auto &gm : m.generalMotionPool())gm.updV();
 		m.getOutputVel(result1);
 		if (!s_is_equal(m.outputDim(), result1, ovt, error[1]))
 			throw std::runtime_error(s.id() + "::kinVel() forward bench vel failed");
@@ -1260,7 +1260,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		m.setInputAcc(iat);
 		s.dynAccAndFce();
 
-		for (auto &gm : m.endEffectors())gm->updA();
+		for (auto &gm : m.generalMotionPool())gm.updA();
 		m.getOutputAcc(result1);
 		if (!s_is_equal(m.outputDim(), result1, oat, error[1]))
 			throw std::runtime_error(s.id() + "::kinAcc() forward bench acc failed");
@@ -1300,7 +1300,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 
 		// compute //
 		s.kinPos();
-		for (auto &mot : m.actuators())mot->updP();
+		for (auto &mot : m.motionPool())mot.updP();
 		m.getInputPos(result1);
 		if (count < 2 && count % 2 && !s_is_equal(m.inputDim(), result1, ipt, error[4]))
 			throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
@@ -1317,7 +1317,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&](){
 		m.setOutputVel(ovt);
 		s.kinVel();
-		for (auto &mot : m.actuators())mot->updV();
+		for (auto &mot : m.motionPool())mot.updV();
 		m.getInputVel(result1);
 		if (!s_is_equal(m.inputDim(), result1, ivt, error[5])) 
 			throw std::runtime_error(s.id() + "::kinVel() inverse bench vel failed");
@@ -1333,7 +1333,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	{
 		m.setOutputAcc(oat);
 		s.dynAccAndFce();
-		for (auto &mot : m.actuators())mot->updA();
+		for (auto &mot : m.motionPool())mot.updA();
 		m.getInputAcc(result1);
 		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	
 			throw std::runtime_error(s.id() + "::kinAcc() inverse bench vel failed"); 
@@ -1558,7 +1558,6 @@ void test_3R(){
 
 	// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 	auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
-	end_effector.setIsEndEffector(true);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -1651,7 +1650,7 @@ void test_spatial_3R() {
 	auto &mak_i = link3.addMarker("ee_i", std::array<double, 16>{1, 0, 0, 0, 0, 1, 0, 1.0, 0, 0, 1, 0, 0, 0, 0, 1}.data());
 	auto &mak_j = m.ground().addMarker("ee_j");
 	auto &gm = m.generalMotionPool().add<PointMotion>("pm", &mak_i, &mak_j);
-	gm.setIsEndEffector(true);
+
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 	auto &force1 = m.forcePool().add<SingleComponentForce>("f1", motion1.makI(), motion1.makJ(), 5);
 	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
@@ -1974,7 +1973,6 @@ void bench_3R()
 
 		// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 		auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
-		end_effector.setIsEndEffector(true);
 		////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 

@@ -236,8 +236,6 @@ namespace aris::dynamic{
 		auto virtual setOutputAcc(const double *ma)noexcept->void override;
 		auto virtual getOutputFce(double *mf)const noexcept->void override;
 		auto virtual setOutputFce(const double *mf)noexcept->void override;
-
-
 		/// @}
 
 		auto virtual init()->void;
@@ -247,12 +245,6 @@ namespace aris::dynamic{
 		/// @}
 
 		/// @{
-		auto actuators()noexcept->std::vector<MotionBase*>&;
-		auto actuators()const noexcept->std::vector<MotionBase*>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->actuators(); }
-		
-		auto endEffectors()noexcept->std::vector<MotionBase*>&;
-		auto endEffectors()const noexcept->std::vector<MotionBase*>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->endEffectors(); }
-
 		auto calculator()->aris::core::Calculator&;
 		auto calculator()const ->const aris::core::Calculator& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calculator(); }
 		

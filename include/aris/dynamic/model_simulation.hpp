@@ -160,8 +160,7 @@ namespace aris::dynamic
 	// x为当前的惯量值，注意它并不是辨识出来的结果，它仅仅保存了当前model中各个杆件的惯量和电机参数
 	// b为当前的电机出力
 	// A为观测矩阵
-	class ARIS_API Calibrator :public Element
-	{
+	class ARIS_API Calibrator :public Element{
 	public:
 		auto virtual allocateMemory()->void;
 		auto m()->Size;

@@ -143,7 +143,7 @@ namespace aris::dynamic{
 	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mp_internal / imp_->mp_factor_ - imp_->mp_offset_; }
 	Motion::~Motion() = default;
 	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset
-		, double mp_factor, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active)
+		, double mp_factor, bool active) : MotionBase(name, makI, makJ, active)
 	{
 		imp_->mp_offset_ = mp_offset;
 		imp_->mp_factor_ = mp_factor;
@@ -283,8 +283,7 @@ namespace aris::dynamic{
 	auto GeneralMotion::mfs() const noexcept->const double6& { return Constraint::imp_->cf_; }
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 	GeneralMotion::~GeneralMotion() = default;
-	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ
-		, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active) {}
+	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	struct PointMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
@@ -352,7 +351,7 @@ namespace aris::dynamic{
 		s_inv_pp2pp(*makJ()->pm(), pp, imp_->mp_);
 	}
 	auto PointMotion::setP(const double *mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
-	auto PointMotion::getP(double *mp) noexcept->void { s_vc(3, imp_->mp_, mp); }
+	auto PointMotion::getP(double *mp)const noexcept->void { s_vc(3, imp_->mp_, mp); }
 	auto PointMotion::v()const noexcept->const double* { return imp_->vp_; }
 	auto PointMotion::updV() noexcept->void { 
 		double vs[6], pp[3];
@@ -361,7 +360,7 @@ namespace aris::dynamic{
 		s_vs2vp(vs, pp, imp_->vp_);
 	}
 	auto PointMotion::setV(const double *mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
-	auto PointMotion::getV(double *mv) noexcept->void { s_vc(3, imp_->vp_, mv); }
+	auto PointMotion::getV(double *mv)const noexcept->void { s_vc(3, imp_->vp_, mv); }
 	auto PointMotion::a()const noexcept->const double* { return imp_->ap_; }
 	auto PointMotion::updA() noexcept->void { 
 		double as[6], vs[6], pp[3];
@@ -370,10 +369,9 @@ namespace aris::dynamic{
 		s_as2ap(vs, as, pp, imp_->ap_);
 	}
 	auto PointMotion::setA(const double *ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
-	auto PointMotion::getA(double *ma) noexcept->void { s_vc(3, imp_->ap_, ma); }
+	auto PointMotion::getA(double *ma)const noexcept->void { s_vc(3, imp_->ap_, ma); }
 	PointMotion::~PointMotion() = default;
-	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ
-		, bool is_actuator, bool is_end_effector, bool active) : MotionBase(name, makI, makJ, is_actuator, is_end_effector, active){}
+	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
@@ -599,8 +597,6 @@ namespace aris::dynamic{
 
 		aris::core::class_<MotionBase>("MotionBase")
 			.inherit<aris::dynamic::Constraint>()
-			.prop("is_actuator", &MotionBase::setIsActuator, &MotionBase::isActuator)
-			.prop("is_end_effector", &MotionBase::setIsEndEffector, &MotionBase::isEndEffector)
 			;
 
 		aris::core::class_<Force>("Force")

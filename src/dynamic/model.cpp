@@ -36,7 +36,6 @@ namespace aris::dynamic
 		std::unique_ptr<aris::core::PointerArray<SimResult,         Element>> sim_result_pool_;
 		std::unique_ptr<aris::core::PointerArray<Calibrator,        Element>> calibrator_pool_;
 
-		std::vector<MotionBase*> actuators_, end_effectors_;
 		Size actuator_pos_size_, actuator_dim_, end_effector_pos_size_, end_effector_dim_;
 
 		Part* ground_;
@@ -141,25 +140,25 @@ namespace aris::dynamic
 		}
 		
 		// make actuator & endeffector pool //
-		imp_->actuators_.clear();
+		//imp_->actuators_.clear();
 		imp_->actuator_pos_size_ = 0;
 		imp_->actuator_dim_ = 0;
 		for (auto &m : motionPool()) {
-			if (m.isActuator()) {
-				imp_->actuators_.push_back(&m);
+			//if (m.isActuator()) {
+				//imp_->actuators_.push_back(&m);
 				imp_->actuator_pos_size_ += m.pSize();
 				imp_->actuator_dim_ += m.dim();
-			}		
+			//}		
 		}
-		imp_->end_effectors_.clear();
+		//imp_->end_effectors_.clear();
 		imp_->end_effector_pos_size_ = 0;
 		imp_->end_effector_dim_ = 0;
 		for (auto &m : generalMotionPool()) {
-			if (m.isEndEffector()) {
-				imp_->end_effectors_.push_back(&m);
+			//if (m.isEndEffector()) {
+				//imp_->end_effectors_.push_back(&m);
 				imp_->end_effector_pos_size_ += m.pSize();
 				imp_->end_effector_dim_ += m.dim();
-			}
+			//}
 		}
 
 		// alloc mem for solvers //
@@ -186,32 +185,27 @@ namespace aris::dynamic
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	auto Model::inputPosSize()const noexcept->Size { return imp_->actuator_pos_size_; }
 	auto Model::inputDim()const noexcept->Size { return imp_->actuator_dim_; }
-	auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->pSize(), ++i) actuators()[i]->setP(mp + pos); }
-	auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->pSize(), ++i) actuators()[i]->getP(mp + pos); }
-	auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->setV(mv + pos); }
-	auto Model::getInputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->getV(mv + pos); }
-	auto Model::setInputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->setA(ma + pos); }
-	auto Model::getInputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->getA(ma + pos); }
-	auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->setF(mf + pos); }
-	auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < actuators().size(); pos += actuators()[i]->dim(), ++i) actuators()[i]->getF(mf + pos); }
+	auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
+	auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
+	auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
+	auto Model::getInputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getV(mv + pos); }
+	auto Model::setInputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setA(ma + pos); }
+	auto Model::getInputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getA(ma + pos); }
+	auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
+	auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
 	auto Model::outputDim()const noexcept->Size { return imp_->end_effector_dim_; }
-	auto Model::setOutputPos(const double *mp)noexcept->void 
-	{ 
-		for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->pSize(), ++i) 
-			endEffectors()[i]->setP(mp + pos);
+	auto Model::setOutputPos(const double *mp)noexcept->void { 
+		for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i)
+			generalMotionPool()[i].setP(mp + pos);
 	}
-	auto Model::getOutputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->pSize(), ++i) endEffectors()[i]->getP(mp + pos); }
-	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->setV(mv + pos); }
-	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->getV(mv + pos); }
-	auto Model::setOutputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->setA(ma + pos); }
-	auto Model::getOutputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->getA(ma + pos); }
-	auto Model::setOutputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->setF(mf + pos); }
-	auto Model::getOutputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < endEffectors().size(); pos += endEffectors()[i]->dim(), ++i) endEffectors()[i]->getF(mf + pos); }
-	auto Model::actuators()noexcept->std::vector<MotionBase*>& { return imp_->actuators_; }
-	auto Model::endEffectors()noexcept->std::vector<MotionBase*>& { return imp_->end_effectors_; }
-	//auto Model::endEffectorSize()->Size { return 0; }
-	//auto Model::endEffector(Size i)->EndEffectorBase* { return nullptr; }
+	auto Model::getOutputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].getP(mp + pos); }
+	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setV(mv + pos); }
+	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getV(mv + pos); }
+	auto Model::setOutputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setA(ma + pos); }
+	auto Model::getOutputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getA(ma + pos); }
+	auto Model::setOutputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setF(mf + pos); }
+	auto Model::getOutputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getF(mf + pos); }
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
