@@ -6,8 +6,7 @@
 
 namespace aris::control
 {
-	class ARIS_API Motor : public virtual Slave
-	{
+	class ARIS_API Motor : public virtual Slave	{
 	public:
 		auto motId()const->aris::Size;
 		auto maxPos()const->double;
@@ -76,8 +75,7 @@ namespace aris::control
 
 		friend class Controller;
 	};
-	class ARIS_API Controller : public virtual Master
-	{
+	class ARIS_API Controller : public virtual Master{
 	public:
 		auto virtual init()->void override;
 		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>&;
@@ -88,6 +86,12 @@ namespace aris::control
 		auto motionAtPhy(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
 		auto motionAtAbs(aris::Size id)->Motor&;
 		auto motionAtAbs(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
+
+		auto motorPool()->aris::core::PointerArray<Motor>&;
+		auto motorPool()const->const aris::core::PointerArray<Motor>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motorPool(); }
+
+
+
 
 		virtual ~Controller();
 		Controller(const std::string &name = "controller");
