@@ -11,6 +11,8 @@
 #include <aris/core/command.hpp>
 #include <aris/core/reflection.hpp>
 #include <aris/core/serialization.hpp>
+#include <aris/core/data_structure.hpp>
+#include <aris/core/signal_slots.hpp>
 
 #endif // ARIS_H_
 
