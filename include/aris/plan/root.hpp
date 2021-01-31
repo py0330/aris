@@ -18,7 +18,7 @@
 namespace aris::server { class ControlServer; }
 
 #define ARIS_COUT_PLAN(p) ARIS_COUT << "    " << p->cmdId() << "---"
-#define ARIS_MOUT_PLAN(p) p->controller()->mout() << "RT  " << p->cmdId() << "---"
+#define ARIS_MOUT_PLAN(p) p->master()->mout() << "RT  " << p->cmdId() << "---"
 
 /// \brief 轨迹规划命名空间
 /// \ingroup aris
@@ -41,24 +41,17 @@ namespace aris::plan
 	// executeRT :返回小于0的数，并且可以通过 setErrMsgRT 来设置当前错误信息
 	// collect   :不要报错，这个相当于析构函数，只要 prepare 不抛异常而且未设置NOT_RUN_COLLECT_FUNCTION，就一定会执行
 	// 
-	class ARIS_API Plan : public aris::core::CloneBase<Plan>
-	{
+	class ARIS_API Plan : public aris::core::CloneBase<Plan>{
 	public:
-		enum Option : std::uint64_t
-		{
+		enum Option : std::uint64_t	{
 			NOT_PRINT_CMD_INFO = 0x01ULL << 0,
 			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 1,
 			NOT_LOG_CMD_INFO = 0x01ULL << 2,
 			
 			NOT_RUN_EXECUTE_FUNCTION = 0x01ULL << 3,
 			NOT_RUN_COLLECT_FUNCTION = 0x01ULL << 4,
-
-			WAIT_FOR_EXECUTION = 0x01ULL << 5,
-			WAIT_IF_CMD_POOL_IS_FULL = 0x01ULL << 6,
-			WAIT_FOR_COLLECTION = 0x01ULL << 7,
 		};
-		enum MotorOption : std::uint64_t
-		{
+		enum MotorOption : std::uint64_t{
 			USE_TARGET_POS = 0x01ULL << 16,
 			USE_TARGET_VEL = 0x01ULL << 17,
 			USE_TARGET_TOQ = 0x01ULL << 18,
@@ -81,8 +74,7 @@ namespace aris::plan
 			CHECK_NONE = NOT_CHECK_MODE | NOT_CHECK_ENABLE | NOT_CHECK_POS_MIN | NOT_CHECK_POS_MAX | NOT_CHECK_POS_CONTINUOUS | NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER | NOT_CHECK_POS_FOLLOWING_ERROR |
 				NOT_CHECK_VEL_MIN | NOT_CHECK_VEL_MAX | NOT_CHECK_VEL_CONTINUOUS | NOT_CHECK_VEL_FOLLOWING_ERROR, 
 		};
-		enum RetStatus
-		{
+		enum RetStatus{
 			SUCCESS = 0,
 			PARSE_EXCEPTION = -1,
 			PREPARE_EXCEPTION = -2,
@@ -148,7 +140,6 @@ namespace aris::plan
 		auto master()->aris::control::Master*;
 		auto controller()->aris::control::Controller*;
 		auto ecMaster()->aris::control::EthercatMaster*;
-		auto ecController()->aris::control::EthercatController*;
 		
 		// 日志与打印 //
 		auto lout()->aris::core::MsgStream & { return master()->lout(); }
@@ -183,8 +174,7 @@ namespace aris::plan
 		friend class aris::server::ControlServer;
 		friend class aris::dynamic::Simulator;
 	};
-	class ARIS_API PlanRoot
-	{
+	class ARIS_API PlanRoot{
 	public:
 		auto resetPlanPool(aris::core::PointerArray<Plan> *pool)->void;
 		auto planPool()->aris::core::PointerArray<Plan> &;

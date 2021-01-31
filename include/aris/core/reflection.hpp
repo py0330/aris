@@ -318,7 +318,7 @@ namespace aris::core
 		// espect: Class_Type::setProp(T *v)->void  
 		//         Class_Type::getProp()->T
 		//
-		// note  : set function will responsible for life-time management of v
+		// note  : set function will be responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
 		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
 			std::is_class_v<C>
@@ -354,13 +354,15 @@ namespace aris::core
 
 			return *this;
 		}
+		
+		// to text
 		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
 		{
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			found->setToText(func);
 			return *this;
 		}
-
+		// from text
 		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
 		{
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });

@@ -25,7 +25,6 @@ namespace aris::plan
 		aris::control::Master *master_;
 		aris::control::Controller *controller_;
 		aris::control::EthercatMaster *ec_master_;
-		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
 		std::weak_ptr<Plan> shared_for_this_;
@@ -158,12 +157,9 @@ namespace aris::server{
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		std::unique_ptr<aris::dynamic::Model> model_;
 		std::unique_ptr<aris::control::Controller> controller_;
+		std::unique_ptr<aris::control::Master> master_;
 		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
 		std::unique_ptr<aris::core::PointerArray<aris::server::Interface>> interface_pool_{new aris::core::PointerArray<aris::server::Interface> };
-		aris::sensor::SensorRoot* sensor_root_;
-
-		InterfaceRoot *interface_root_;
-
 		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
 
 		// 打洞，读取数据 //
@@ -211,11 +207,11 @@ namespace aris::server{
 				if (is_rt_log_started_)	{
 					char name[1000];
 					std::sprintf(name, "%" PRId64 "", plan.cmdId());
-					server_->controller().logFile(name);
+					server_->master().logFile(name);
 				}
 
 				// 初始化统计数据 //
-				server_->controller().resetRtStasticData(&plan.rtStastic(), true);
+				server_->master().resetRtStasticData(&plan.rtStastic(), true);
 			}
 
 			// 执行命令
@@ -242,8 +238,8 @@ namespace aris::server{
 				}
 
 				cmd_now_.store(cmd_end);// 原子操作
-				server_->controller().resetRtStasticData(nullptr, false);
-				server_->controller().lout() << std::flush;
+				server_->master().resetRtStasticData(nullptr, false);
+				server_->master().lout() << std::flush;
 			}
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0){
@@ -253,8 +249,8 @@ namespace aris::server{
 
 				// finish //
 				cmd_now_.store(cmd_now + 1);//原子操作
-				server_->controller().resetRtStasticData(nullptr, false);
-				server_->controller().lout() << std::flush;
+				server_->master().resetRtStasticData(nullptr, false);
+				server_->master().lout() << std::flush;
 			}
 			// 命令仍在执行 //
 			else{
@@ -267,7 +263,7 @@ namespace aris::server{
 		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0){
 			err.fix = fixError(true);
 			err_code_and_fixed_.store(err_code_and_fixed);
-			server_->controller().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
+			server_->master().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
 		}
 
 		// 给与外部想要的数据 //
@@ -290,9 +286,9 @@ namespace aris::server{
 		model_->getInputAcc(mem_transfer_pvaf_ + 2 * model_->inputDim());
 		model_->getInputFce(mem_transfer_pvaf_ + 3 * model_->inputDim());
 
-		for (std::size_t i = 0; i < std::min(model_->inputDim(), controller_->motionPool().size()); ++i)
+		for (std::size_t i = 0; i < std::min(model_->inputDim(), controller_->motorPool().size()); ++i)
 		{
-			auto &cm = controller_->motionPool()[i];
+			auto &cm = controller_->motorPool()[i];
 
 			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_pvaf_[i + 0 * model_->inputDim()]);
 			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_pvaf_[i + 1 * model_->inputDim()]);
@@ -308,13 +304,12 @@ namespace aris::server{
 		int error_code = aris::plan::Plan::SUCCESS;
 
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
-		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
-		{
-			const auto &cm = controller_->motionPool()[i];
+		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
+			const auto &cm = controller_->motorPool()[i];
 			const auto &ld = last_pvc_[i];
 			const auto &lld = last_last_pvc_[i];
 			const auto option = mot_options[i];
-			const auto dt = controller_->samplePeriodNs() / 1.0e9;
+			const auto dt = master_->samplePeriodNs() / 1.0e9;
 
 			// 检查使能 //
 			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
@@ -500,11 +495,11 @@ namespace aris::server{
 		}
 
 		// 储存电机指令 //
-		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
 		{
-			last_last_pvc_[i].p = controller_->motionPool()[i].targetPos();
-			last_last_pvc_[i].v = controller_->motionPool()[i].targetVel();
-			last_last_pvc_[i].c = controller_->motionPool()[i].targetToq();
+			last_last_pvc_[i].p = controller_->motorPool()[i].targetPos();
+			last_last_pvc_[i].v = controller_->motorPool()[i].targetVel();
+			last_last_pvc_[i].c = controller_->motorPool()[i].targetToq();
 		}
 		std::swap(last_pvc_, last_last_pvc_);
 		return 0;
@@ -512,10 +507,10 @@ namespace aris::server{
 	auto ControlServer::Imp::fixError(bool is_in_check)->std::int32_t
 	{
 		std::int32_t fix_finished{ 0 };
-		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
 		{
 			// correct
-			auto &cm = controller_->motionPool().at(i);
+			auto &cm = controller_->motorPool().at(i);
 			switch (cm.modeOfOperation())
 			{
 			case 1:
@@ -536,20 +531,17 @@ namespace aris::server{
 			}
 
 			// store correct data
-			last_pvc_[i].p = last_last_pvc_[i].p = controller_->motionPool().at(i).targetPos();
-			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motionPool().at(i).targetVel();
-			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motionPool().at(i).targetToq();
+			last_pvc_[i].p = last_last_pvc_[i].p = controller_->motorPool().at(i).targetPos();
+			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motorPool().at(i).targetVel();
+			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motorPool().at(i).targetToq();
 		}
 
 		return fix_finished;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::resetModel(dynamic::Model *model)->void { imp_->model_.reset(model); }
+	auto ControlServer::resetMaster(control::Master *master)->void { imp_->master_.reset(master); }
 	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
-	auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
-	{
-		imp_->sensor_root_ = sensor_root;
-	}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
 	auto ControlServer::resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void 
 	{
@@ -557,11 +549,10 @@ namespace aris::server{
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
+	auto ControlServer::master()->control::Master& { return *imp_->master_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
-	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
-	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
 	{
@@ -675,15 +666,14 @@ namespace aris::server{
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
 				plan->imp_->count_ = 0;
 				plan->imp_->model_ = imp_->model_.get();
-				plan->imp_->master_ = imp_->controller_.get();
-				plan->imp_->controller_ = dynamic_cast<aris::control::Controller*>(plan->imp_->master_);
+				plan->imp_->master_ = imp_->master_.get();
+				plan->imp_->controller_ = imp_->controller_.get();
 				plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
-				plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
 				plan->imp_->cs_ = this;
 				plan->imp_->shared_for_this_ = plan;
 				plan->imp_->option_ = 0;
-				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motionPool().size(), plan->imp_->mot_options_.data());
+				plan->imp_->mot_options_.resize(plan->imp_->controller_->motorPool().size(), 0);
+				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motorPool().size(), plan->imp_->mot_options_.data());
 				plan->imp_->cmd_str_ = std::move(cmd_str_local);
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
@@ -852,16 +842,17 @@ namespace aris::server{
 	auto ControlServer::init()->void
 	{
 		model().init();
+		master().init();
 		controller().init();
 		planRoot().init();
 
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
 
-		core::allocMem(mem_size, imp_->last_pvc_, controller().slavePool().size());
-		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
-		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().slavePool().size());
-		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->last_pvc_, controller().motorPool().size());
+		core::allocMem(mem_size, imp_->last_last_pvc_, controller().motorPool().size());
+		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().motorPool().size());
+		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->mem_transfer_pvaf_, imp_->model_->inputDim() * 4);
 
 		imp_->mempool_.resize(mem_size, char(0));
@@ -869,14 +860,14 @@ namespace aris::server{
 		imp_->last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
 		imp_->last_last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
 		imp_->idle_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->idle_mot_check_options_);
-		std::fill_n(imp_->idle_mot_check_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
+		std::fill_n(imp_->idle_mot_check_options_, controller().motorPool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
-		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::uint64_t(0));
+		std::fill_n(imp_->global_mot_check_options_, controller().motorPool().size(), std::uint64_t(0));
 		imp_->mem_transfer_pvaf_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_pvaf_);
 		std::fill_n(imp_->mem_transfer_pvaf_, model().inputDim() * 4, 0.0);
 
 		// 赋予初值 //
-		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
+		master().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
 
 		imp_->cmd_now_.store(0);
 		imp_->cmd_end_.store(0);
@@ -950,7 +941,7 @@ namespace aris::server{
 			}
 		});
 
-		controller().start();
+		master().start();
 
 		raii_collector.reset();
 	}
@@ -967,7 +958,7 @@ namespace aris::server{
 		imp_->collect_thread_.join();
 
 		// 停止控制器 //
-		controller().stop();
+		master().stop();
 	}
 	auto ControlServer::waitForAllExecution()->void 
 	{
@@ -1024,7 +1015,7 @@ namespace aris::server{
 				err.err_code = 0;
 				err.is_fixed = 0xFFFF'FFFF;
 				imp_->err_code_and_fixed_ &= err_code_and_fixed;
-				std::this_thread::sleep_for(std::chrono::nanoseconds(controller().samplePeriodNs()));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(master().samplePeriodNs()));
 			}
 
 			std::fill_n(imp_->err_msg_, 1024, '\0');
@@ -1039,15 +1030,9 @@ namespace aris::server{
 	{
 		// create members //
 		makeModel<aris::dynamic::Model>();
+		makeMaster<aris::control::Master>();
 		makeController<aris::control::Controller>("controller");
-		makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");
-		
-		// create ui //
-		//auto ins = new InterfaceRoot;
-		//children().push_back_ptr(ins);
-		//imp_->interface_root_ = ins;
-		//this->interfaceRoot().loadXmlStr("<InterfaceRoot/>");
 	}
 
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
@@ -1721,15 +1706,17 @@ namespace aris::server{
 
 
 	ARIS_REGISTRATION {
-		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
+		typedef aris::control::Master &(ControlServer::*MasterFunc)();
+		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
 
 		aris::core::class_<ControlServer>("ControlServer")
-			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
 			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
+			.prop("master", &ControlServer::resetMaster, MasterFunc(&ControlServer::master))
+			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
 			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
 			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))

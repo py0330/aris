@@ -63,7 +63,7 @@ int main()
 	clb.setFilterWindowSize(30);
 	clb.setTorqueConstant({ 
 		0.7 * 160 / 1000,
-		0.7 * 160 / 1000,
+		-0.7 * 160 / 1000,
 		0.7 * 100 / 1000,
 		0.45 * 100 / 1000,
 		0.45 * 100 / 1000,
@@ -104,6 +104,13 @@ int main()
 			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine18.txt",
 			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine19.txt",
 			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine20.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data0.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data1.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data2.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data3.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data4.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data5.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data6.txt",
 		});
 		//clb.clbFiles({
 		//	"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-17--20-39-37--26.txt",
@@ -113,7 +120,7 @@ int main()
 
 		std::cout << "verify" << std::endl;
 		clb.verifyFiles({
-
+			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data1.txt",
 			"C:\\Users\\py033\\Desktop\\data1.txt"
 			});
 

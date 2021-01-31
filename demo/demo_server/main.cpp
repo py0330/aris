@@ -91,33 +91,28 @@ int main(int argc, char *argv[])
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : std::any_cast<const aris::core::Matrix&>(aris::core::Calculator().calculateExpression(argv[3]).second).data(), robot_pm);
 
 	auto&cs = aris::server::ControlServer::instance();
-	if (robot_name == "ur5")
-	{
+	if (robot_name == "ur5"){
 		cs.resetController(createControllerUr5().release());
 		cs.resetModel(createModelUr5(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootUr5().release());
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
-	else if (robot_name == "rokae_xb4")
-	{
-		cs.resetController(createControllerRokaeXB4().release());
-		cs.resetModel(aris::robot::createModelRokaeXB4(robot_pm).release());
-		cs.resetPlanRoot(createPlanRootRokaeXB4().release());
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	else if (robot_name == "rokae_xb4"){
+		cs.resetModel(aris::robot::rokae::xb4::createModel(robot_pm).release());
+		cs.resetMaster(aris::robot::rokae::xb4::createMaster().release());
+		cs.resetController(aris::robot::rokae::xb4::createController().release());
+		cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
+
+		cs.init();
 	}
-	else if (robot_name == "servo_press")
-	{
+	else if (robot_name == "servo_press"){
 		cs.resetController(createControllerServoPress().release());
 		cs.resetModel(aris::robot::createModelServoPress(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootServoPress().release());
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
-	else if (robot_name == "stewart")
-	{
+	else if (robot_name == "stewart"){
 		cs.resetController(aris::robot::createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(aris::robot::createPlanRootStewart().release());
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
 	else
 	{
@@ -128,6 +123,9 @@ int main(int argc, char *argv[])
 	std::cout << "this server port    :" << std::to_string(port) << std::endl;
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
+
+
+	std::cout << aris::core::toXmlString(cs) << std::endl;
 
 	//std::fstream file1;
 	//file1.open("C:\\Users\\py033\\Desktop\\seri0.xml");
@@ -301,7 +299,7 @@ int main(int argc, char *argv[])
 	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "D:/UI_DarkColor_0628/www");
 
 
-	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
+	//for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 
 	auto model5 = createModelRokaeXB4_5(robot_pm);
 

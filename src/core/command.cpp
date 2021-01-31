@@ -402,8 +402,7 @@ namespace aris::core
 	CommandParser::CommandParser(const std::string &name){}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
 
-	ARIS_REGISTRATION 
-	{
+	ARIS_REGISTRATION {
 		class_<ParamBase>("ParamBase")
 			.prop("name", &ParamBase::setName, &ParamBase::name)
 			;

@@ -195,8 +195,7 @@ namespace aris::control
 		friend class PdoEntry;
 	};
 
-	class ARIS_API EthercatMotor :public EthercatSlave, public Motor
-	{
+	class ARIS_API EthercatMotor :public Motor{
 	public:
 		auto virtual controlWord()const->std::uint16_t override;
 		auto virtual modeOfOperation()const->std::uint8_t override;
@@ -241,9 +240,11 @@ namespace aris::control
 		// require pdo 0x6060 0x6061 //
 		auto virtual mode(std::uint8_t md)->int override;
 
+		auto slave()->EthercatSlave*;
+		auto setSlave(EthercatSlave*)->void;
+
 		virtual ~EthercatMotor();
-		EthercatMotor(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
-			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
+		EthercatMotor(EthercatSlave* slave = nullptr, const std::string &name = "ethercat_motor"
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		EthercatMotor(const EthercatMotor &other) = delete;
@@ -252,43 +253,6 @@ namespace aris::control
 		EthercatMotor& operator=(EthercatMotor &&other) = delete;
 
 	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-	class ARIS_API EthercatController :public EthercatMaster, public Controller
-	{
-	public:
-		using MotionPool = aris::core::SubRefPool<EthercatMotor, aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>>;
-		auto motionPool()->MotionPool&;
-		auto motionPool()const->const MotionPool& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
-		auto motionAtAbs(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtAbs(id)); }
-		auto motionAtAbs(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
-		auto motionAtPhy(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtPhy(id)); }
-		auto motionAtPhy(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
-		auto motionAtSla(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtSla(id)); }
-		auto motionAtSla(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
-
-		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>& { return EthercatMaster::slavePool(); }
-		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
-		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtAbs(id); }
-		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
-		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtPhy(id); }
-		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
-
-		auto virtual start()->void override { EthercatMaster::start(); }
-		virtual ~EthercatController();
-		EthercatController(const std::string &name = "ethercat_controller");
-		EthercatController(const EthercatController &other) = delete;
-		EthercatController(EthercatController &&other) = delete;
-		EthercatController& operator=(const EthercatController &other) = delete;
-		EthercatController& operator=(EthercatController &&other) = delete;
-
-	protected:
-		auto virtual init()->void override;
-		auto virtual send()->void override { EthercatMaster::send(); }
-		auto virtual recv()->void override { EthercatMaster::recv(); }
-		auto virtual release()->void override { EthercatMaster::release(); }
-
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};

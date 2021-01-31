@@ -26,7 +26,6 @@ namespace aris::plan{
 		aris::control::Master *master_;
 		aris::control::Controller *controller_;
 		aris::control::EthercatMaster *ec_master_;
-		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
 		std::weak_ptr<Plan> shared_for_this_;
@@ -454,7 +453,7 @@ namespace aris::dynamic
 			this->clb();
 
 			for (int j = 0; j < model()->motionPool().size(); ++j){
-				if (std::abs(this->model()->motionPool()[j].mv()) < 0.0)continue;
+				if (std::abs(this->model()->motionPool()[j].mv()) < 0.01)continue;
 
 				std::copy_n(this->A() + j * n(), n(), A.data() + rows * n());
 				b[rows] = this->b()[j];
@@ -1085,7 +1084,6 @@ namespace aris::dynamic
 		p->imp_->master_ = nullptr;
 		p->imp_->controller_ = nullptr;
 		p->imp_->ec_master_ = nullptr;
-		p->imp_->ec_controller_ = nullptr;
 		p->imp_->cs_ = nullptr;
 
 		// 记录轨迹中的状态 //

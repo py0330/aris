@@ -10,9 +10,11 @@ void test_elmo_enable()
 {
 	try
 	{
-		aris::control::EthercatController m;
+		aris::control::EthercatMaster m;
 
-		auto &s1 = m.slavePool().add<EthercatMotor>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
+		//auto &s1 = m.slavePool().add<EthercatSlave>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
+
+
 
 		//auto &tx = s1.pdoPool().add<Pdo>("index_1A00", 0x1A00, true);
 		//tx.add<PdoEntry>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
@@ -45,29 +47,29 @@ void test_elmo_enable()
 			switch (state)
 			{
 			case 0:
-				s1.setModeOfOperation(8);
-				ret = s1.enable();
+				//s1.setModeOfOperation(8);
+				//ret = s1.enable();
 				if (ret == 0) 
 				{
-					m.mout() << "enabled at count " << count << std::endl;
+					//m.mout() << "enabled at count " << count << std::endl;
 					state = 1;
 					cos_count = 0;
-					begin_pos = s1.actualPos();
+					//begin_pos = s1.actualPos();
 				}
 				break;
 			case 1:
-				s1.setTargetPos(begin_pos + (1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)) * 65536);
+				//s1.setTargetPos(begin_pos + (1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)) * 65536);
 				if (cos_count == 5000)
 				{
-					m.mout() << "cos finished at count " << count << std::endl;
+					//m.mout() << "cos finished at count " << count << std::endl;
 					state = 2;
 				}
 				break;
 			case 2:
-				ret = s1.disable();
+				//ret = s1.disable();
 				if (ret == 0)
 				{
-					m.mout() << "disabled at count " << count << std::endl;
+					//m.mout() << "disabled at count " << count << std::endl;
 					state = 3;
 				}
 				break;
@@ -77,7 +79,7 @@ void test_elmo_enable()
 
 			if (++count % 1000 == 0) 
 			{
-				m.mout() << "count " << count << " : ret " << ret << '\0';
+				//m.mout() << "count " << count << " : ret " << ret << '\0';
 			}
 
 		});

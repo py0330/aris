@@ -19,6 +19,8 @@
 
 #include "aris/core/tinyxml2.h"
 
+#include "aris/server/control_server.hpp"
+
 namespace aris::control
 {
 	using XmlDocument = tinyxml2::XMLDocument;
@@ -200,39 +202,29 @@ namespace aris::control
 		std::vector<std::filesystem::path> esi_dirs_;
 		std::map<std::uint32_t, std::tuple<std::string, std::map<std::uint32_t, std::tuple<std::string, std::map<int, std::filesystem::path>>>>> vendor_device_revision_map_;
 	};
-	auto EthercatMaster::esiDirStr()->std::string 
-	{
+	auto EthercatMaster::esiDirStr()->std::string {
 		std::stringstream s;
 		for (auto &dir : imp_->esi_dirs_)s << dir.string() << "|";
 		return s.str();
 	}
-	auto EthercatMaster::setEsiDirStr(const std::string &str)->void
-	{
+	auto EthercatMaster::setEsiDirStr(const std::string &str)->void{
 		auto esi_str = str;
 		std::istringstream f(esi_str);
 		for (std::string s; std::getline(f, s, '|');)imp_->esi_dirs_.push_back(s);
 	}
 	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
-	auto EthercatMaster::scanInfoForCurrentSlaves()->void
-	{
+	auto EthercatMaster::scanInfoForCurrentSlaves()->void{
 		for (auto &slave : slavePool())
-		{
 			slave.scanInfoForCurrentSlave();
-		}
 	}
-	auto EthercatMaster::scanPdoForCurrentSlaves()->void
-	{
+	auto EthercatMaster::scanPdoForCurrentSlaves()->void{
 		for (auto &slave : slavePool())
-		{
 			slave.scanPdoForCurrentSlave();
-		}
 	}
-	auto EthercatMaster::init()->void
-	{
+	auto EthercatMaster::init()->void{
 		Master::init();
 		// make pdo map for each slave //
-		for (auto &sla : slavePool())
-		{
+		for (auto &sla : slavePool()){
 			// make PDO map //
 			sla.imp_->pdo_map_.clear();
 			for (auto &sm : sla.smPool()) {
@@ -429,8 +421,7 @@ namespace aris::control
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 
-	struct EthercatMotor::Imp
-	{
+	struct EthercatMotor::Imp{
 		std::uint16_t control_word{ 0 }, status_word_{ 0 };
 		std::uint8_t mode_of_operation{ 0 };
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
@@ -440,6 +431,8 @@ namespace aris::control
 		// home 在用 //
 		int home_count{ 0 };
 		bool need_clear{ true };
+
+		EthercatSlave *slave_;
 	};
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
@@ -448,74 +441,60 @@ namespace aris::control
 	auto EthercatMotor::targetToq()const->double { return imp_->target_toq_; }
 	auto EthercatMotor::offsetVel()const->double { return imp_->offset_vel_; }
 	auto EthercatMotor::offsetCur()const->double { return imp_->offset_toq_; }
-	auto EthercatMotor::setControlWord(std::uint16_t control_word)->void
-	{
+	auto EthercatMotor::setControlWord(std::uint16_t control_word)->void{
 		imp_->control_word = control_word;
-		writePdo(0x6040, 0x00, control_word);
+		imp_->slave_->writePdo(0x6040, 0x00, control_word);
 	}
-	auto EthercatMotor::setModeOfOperation(std::uint8_t mode)->void
-	{
+	auto EthercatMotor::setModeOfOperation(std::uint8_t mode)->void{
 		imp_->mode_of_operation = mode;
-		writePdo(0x6060, 0x00, mode);
+		imp_->slave_->writePdo(0x6060, 0x00, mode);
 	}
-	auto EthercatMotor::setTargetPos(double pos)->void
-	{
+	auto EthercatMotor::setTargetPos(double pos)->void{
 		imp_->target_pos_ = pos;
-		writePdo(0x607A, 0x00, static_cast<std::int32_t>((pos + posOffset()) * posFactor()));
+		imp_->slave_->writePdo(0x607A, 0x00, static_cast<std::int32_t>((pos + posOffset()) * posFactor()));
 	}
-	auto EthercatMotor::setTargetVel(double vel)->void
-	{
+	auto EthercatMotor::setTargetVel(double vel)->void{
 		imp_->target_vel_ = vel;
-		writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor()));
+		imp_->slave_->writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotor::setTargetToq(double toq)->void
-	{
+	auto EthercatMotor::setTargetToq(double toq)->void{
 		imp_->target_toq_ = toq;
-		writePdo(0x6071, 0x00, static_cast<std::int16_t>(toq));
+		imp_->slave_->writePdo(0x6071, 0x00, static_cast<std::int16_t>(toq));
 	}
-	auto EthercatMotor::setOffsetVel(double vel)->void
-	{
+	auto EthercatMotor::setOffsetVel(double vel)->void{
 		imp_->offset_vel_ = vel;
-		writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor()));
+		imp_->slave_->writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotor::setOffsetToq(double cur)->void
-	{
+	auto EthercatMotor::setOffsetToq(double cur)->void{
 		imp_->offset_toq_ = cur;
-		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
+		imp_->slave_->writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
 	}
-	auto EthercatMotor::statusWord()const->std::uint16_t
-	{
+	auto EthercatMotor::statusWord()const->std::uint16_t{
 		std::uint16_t status_word{ 0 };
-		return (isVirtual() || readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
 	}
-	auto EthercatMotor::modeOfDisplay()const->std::uint8_t
-	{
+	auto EthercatMotor::modeOfDisplay()const->std::uint8_t{
 		std::uint8_t mode{ 0 };
-		return (isVirtual() || readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
 	}
-	auto EthercatMotor::actualPos()const->double
-	{
+	auto EthercatMotor::actualPos()const->double{
 		std::int32_t pos_count{ 0 };
-		return (isVirtual() || readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
-	auto EthercatMotor::actualVel()const->double
-	{
+	auto EthercatMotor::actualVel()const->double{
 		std::int32_t vel_count{ 0 };
-		return (isVirtual() || readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
 	}
-	auto EthercatMotor::actualToq()const->double
-	{
+	auto EthercatMotor::actualToq()const->double{
 		std::int16_t fce_count{ 0 };
-		return (isVirtual() || readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
 	}
-	auto EthercatMotor::actualCur()const->double
-	{
+	auto EthercatMotor::actualCur()const->double{
 		std::int16_t cur_count{ 0 };
-		return (isVirtual() || readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
 	}
-	auto EthercatMotor::disable()->int
-	{
-		if (isVirtual()) imp_->status_word_ = 0x40;
+	auto EthercatMotor::disable()->int{
+		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x40;
 
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
@@ -544,69 +523,58 @@ namespace aris::control
 		auto status_word = statusWord();
 
 		// check status A, now transition 1 automatically
-		if ((status_word & 0x4F) == 0x00)
-		{
+		if ((status_word & 0x4F) == 0x00){
 			// this just set the initial control word...
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 1;
 		}
 		// check status B, now keep and return
-		else if ((status_word & 0x4F) == 0x40)
-		{
+		else if ((status_word & 0x4F) == 0x40){
 			// transition 2 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 0;
 		}
 		// check status C, now transition 7
-		else if ((status_word & 0x6F) == 0x21)
-		{
+		else if ((status_word & 0x6F) == 0x21){
 			// transition 3 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 0;
 		}
 		// check status D, now transition 10
-		else if ((status_word & 0x6F) == 0x23)
-		{
-			//writePdo(0x6040, 0x00, std::uint16_t(0x00));
-			writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
+		else if ((status_word & 0x6F) == 0x23){
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
 			return 3;
 		}
 		// check status E, now transition 9
-		else if ((status_word & 0x6F) == 0x27)
-		{
+		else if ((status_word & 0x6F) == 0x27){
 			// transition 5 //
-			//writePdo(0x6040, 0x00, std::uint16_t(0x00));
-			writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
 			return 4;
 		}
 		// check status F, now transition 12
-		else if ((status_word & 0x6F) == 0x07)
-		{
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		else if ((status_word & 0x6F) == 0x07){
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 5;
 		}
 		// check status G, now transition 14
-		else if ((status_word & 0x4F) == 0x0F)
-		{
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		else if ((status_word & 0x4F) == 0x0F){
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 6;
 		}
 		// check status H, now transition 15
-		else if ((status_word & 0x4F) == 0x08)
-		{
+		else if ((status_word & 0x4F) == 0x08){
 			// transition 4 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
 			return 7;
 		}
 		// unknown status
-		else
-		{
+		else{
 			return -1;
 		}
 	}
 	auto EthercatMotor::enable()->int
 	{
-		if (isVirtual()) imp_->status_word_ = 0x27;
+		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x27;
 
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
@@ -635,35 +603,30 @@ namespace aris::control
 		auto status_word = statusWord();
 
 		// check status A
-		if ((status_word & 0x4F) == 0x00)
-		{
+		if ((status_word & 0x4F) == 0x00){
 			return 1;
 		}
 		// check status B, now transition 2
-		else if ((status_word & 0x4F) == 0x40)
-		{
+		else if ((status_word & 0x4F) == 0x40){
 			// transition 2 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x06));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));
 			return 2;
 		}
 		// check status C, now transition 3
-		else if ((status_word & 0x6F) == 0x21)
-		{
+		else if ((status_word & 0x6F) == 0x21){
 			// transition 3 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x07));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));
 			return 3;
 		}
 		// check status D, now transition 4
-		else if ((status_word & 0x6F) == 0x23)
-		{
+		else if ((status_word & 0x6F) == 0x23){
 			// transition 4 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x0F));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x0F));
 			//imp_->waiting_count_left = 20;
 			imp_->waiting_count_left = 1000;//change for cooldriver
 
 			// check mode to set correct pos, vel or cur //
-			switch (modeOfDisplay())
-			{
+			switch (modeOfDisplay()){
 			case 0x08: setTargetPos(actualPos()); break;
 			case 0x09: setTargetVel(0.0); break;
 			case 0x10: setTargetToq(0.0); break;
@@ -673,30 +636,26 @@ namespace aris::control
 			return 4;
 		}
 		// check status E, now keep status
-		else if ((status_word & 0x6F) == 0x27)
-		{
+		else if ((status_word & 0x6F) == 0x27){
 			// check if need wait //
 			if (--imp_->waiting_count_left > 0) return 5;
 			// now return normal
 			else return 0;
 		}
 		// check status F, now transition 12
-		else if ((status_word & 0x6F) == 0x07)
-		{
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		else if ((status_word & 0x6F) == 0x07){
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 6;
 		}
 		// check status G, now transition 14
-		else if ((status_word & 0x4F) == 0x0F)
-		{
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		else if ((status_word & 0x4F) == 0x0F){
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
 			return 7;
 		}
 		// check status H, now transition 15
-		else if ((status_word & 0x4F) == 0x08)
-		{
+		else if ((status_word & 0x4F) == 0x08){
 			// transition 4 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
 			return 8;
 		}
 		// unknown status
@@ -799,30 +758,17 @@ namespace aris::control
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
+	auto EthercatMotor::slave()->EthercatSlave* { return imp_->slave_; }
+	auto EthercatMotor::setSlave(EthercatSlave* slave)->void { imp_->slave_ = slave; }
 	EthercatMotor::~EthercatMotor() = default;
-	EthercatMotor::EthercatMotor(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
+	EthercatMotor::EthercatMotor(EthercatSlave* slave, const std::string &name
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
 		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
-		: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
-		, Motor(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
-		, Slave(name, phy_id), imp_(new Imp)
+		: Motor(name, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
 	{
 	}
 
-	struct EthercatController::Imp { MotionPool motion_pool_{ nullptr }; };
-	auto EthercatController::motionPool()->MotionPool& { return imp_->motion_pool_; }
-	auto EthercatController::init()->void
-	{ 
-		Controller::init();
-		EthercatMaster::init(); 
-		imp_->motion_pool_ = MotionPool(&slavePool());
-		motionPool().update();
-	}
-	EthercatController::~EthercatController() = default;
-	EthercatController::EthercatController(const std::string &name) :imp_(new Imp), EthercatMaster(name), Controller(name), Master(name){}
-
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<PdoEntry>("PdoEntry")
 			.inherit<aris::core::NamedObject>()
 			.prop("index", &PdoEntry::setIndex, &PdoEntry::index)
@@ -865,14 +811,18 @@ namespace aris::control
 			.inherit<Master>()
 			.prop("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
 			;
-		aris::core::class_<EthercatMotor>("EthercatMotor")
-			.inherit<EthercatSlave>()
-			.inherit<Motor>()
-			;
 
-		aris::core::class_<EthercatController>("EthercatController")
-			.inherit<Controller>()
-			.inherit<EthercatMaster>()
+		// espect: setProp(C *obj, T v)->void  
+		//         getProp(C *obj)->T
+		auto setSlave = [](EthercatMotor* ec_mot, int id) {
+			ec_mot->setSlave(&dynamic_cast<EthercatSlave&>(aris::server::ControlServer::instance().master().slavePool().at(id)));
+		};
+		auto getSlave = [](EthercatMotor*ec_mot)->int {
+			return ec_mot->slave()->id();
+		};
+		aris::core::class_<EthercatMotor>("EthercatMotor")
+			.inherit<Motor>()
+			.prop("slave", &setSlave, &getSlave)
 			;
 	}
 

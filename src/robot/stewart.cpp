@@ -9,7 +9,7 @@ namespace aris::robot
 	auto createModelStewart(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model> { return aris::dynamic::createModelStewart(); }
 	auto createControllerStewart()->std::unique_ptr<aris::control::Controller>
 	{
-		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController("controller"));
+		std::unique_ptr<aris::control::Controller> controller(new aris::control::Controller("controller"));
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
@@ -116,8 +116,8 @@ namespace aris::robot
 				"</EthercatMotor>";
 			*/
 				
-			controller->slavePool().push_back(new aris::control::EthercatMotor());
-			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
+			controller->motorPool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->motorPool().back(), xml_str);
 		}
 
 		return controller;

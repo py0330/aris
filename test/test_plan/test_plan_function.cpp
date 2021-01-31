@@ -130,7 +130,7 @@ void test_move()
 }
 void test_optimal()
 {
-	auto m = aris::robot::createModelRokaeXB4();
+	auto m = aris::robot::rokae::xb4::createModel();
 
 	aris::plan::OptimalTrajectory planner;
 

@@ -199,7 +199,7 @@ namespace aris::core
 		auto root_ele = doc.RootElement();
 
 		if(typename_xml2c(root_ele) != ins.type()->name())
-			THROW_FILE_LINE("load xml failed : type not match" );
+			THROW_FILE_LINE("load xml failed : type not match:" + typename_xml2c(root_ele) + "  " + std::string(ins.type()->name()));
 
 		from_xml_ele(ins, root_ele);
 	}

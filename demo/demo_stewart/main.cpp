@@ -14,7 +14,6 @@ int main()
 		cs.resetController(aris::robot::createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart().release());
 		cs.resetPlanRoot(aris::robot::createPlanRootStewart().release());
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
 	catch (std::exception &e)
 	{
