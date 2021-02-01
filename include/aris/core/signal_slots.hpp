@@ -81,7 +81,7 @@ namespace aris::core {
         auto virtual monitoring(const Signal &sig)->void {
             bool triggered = false;
             if (moni_method_) triggered  = moni_method_(sig);
-            if (triggered)  cbk_(sig);
+            if (triggered && cbk_)  cbk_(sig);
             if (sta_method_) sta_method_(info_, sig, triggered);
         }
 
