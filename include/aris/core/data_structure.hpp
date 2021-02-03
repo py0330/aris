@@ -47,32 +47,31 @@ namespace aris::core {
         auto virtual push(const T &val, AccessStrategy strategy)->bool {
             int rear = -1;
             while (true) {
-                rear = rear_.load(std::memory_order_acquire);
-                if (rear_ == kExclude_ || isFull()) {
-                    switch (strategy) {
-                    case AccessStrategy::kAbandon :
-                        return false;
-                    case AccessStrategy::kYield :
-                        std::this_thread::yield();
-                    case AccessStrategy::kForce :
-                        continue;
-                    default :
-                        return false;
+                rear = rear_.exchange(kExclude_);
+                if ( rear != kExclude_) {
+                    if (isFull()) {
+                        rear_.exchange(rear);
+                    } else {
+                        break;
                     }
                 }
 
-                if (rear_.compare_exchange_weak(rear, kExclude_)) {
-                    if (isFull()) {
-                        rear_.compare_exchange_strong(kExclude_, rear);
-                        continue;
-                    }
+                switch (strategy) {
+                case AccessStrategy::kAbandon :
+                    return false;
+                case AccessStrategy::kYield :
+                    std::this_thread::yield();
                     break;
+                case AccessStrategy::kForce :
+                    break;
+                default :
+                    return false;
                 }
             }
 
             data_[rear] = val;
             size_++;
-            rear_.compare_exchange_strong(kExclude_, (rear+1) & (capacity_-1));
+            rear_.exchange((rear+1) & (capacity_-1));
 
             return true;
         }
@@ -80,30 +79,29 @@ namespace aris::core {
         auto virtual pop(T &val, AccessStrategy strategy)->bool {
             int front = -1;
             while (true) {
-                front = front_.load(std::memory_order_acquire);
-                if (front == kExclude_ || isEmpty()) {
-                    switch (strategy) {
-                    case AccessStrategy::kAbandon :
-                        return false;
-                    case AccessStrategy::kYield :
-                        std::this_thread::yield();
-                    case AccessStrategy::kForce :
-                        continue;
+                front = front_.exchange(kExclude_);
+                if (front != kExclude_) {
+                    if (isEmpty()) {
+                        front_.exchange(front);
+                    } else {
+                        break;
                     }
                 }
 
-                if (front_.compare_exchange_weak(front, kExclude_)) {
-                    if (isEmpty()) {
-                        front_.compare_exchange_strong(kExclude_, front);
-                        continue;
-                    }
+                switch (strategy) {
+                case AccessStrategy::kAbandon :
+                    return false;
+                case AccessStrategy::kYield :
+                    std::this_thread::yield();
+                    break;
+                case AccessStrategy::kForce :
                     break;
                 }
             }
 
             val = data_[front];
             size_--;
-            front_.compare_exchange_strong(kExclude_, (front+1) & (capacity_-1));
+            front_.exchange((front+1) & (capacity_-1));
 
             return true;
         }
