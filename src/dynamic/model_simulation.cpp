@@ -477,7 +477,7 @@ namespace aris::dynamic
 		std::cout << "inertia result:" << std::endl;
 		dsp(model()->partPool().size() - 1, 10, x.data());
 		std::cout << "friction result:" << std::endl;
-		dsp(model()->motionPool().size(), 3, x.data() + 60);
+		dsp(model()->motionPool().size(), 3, x.data() + (model()->partPool().size() - 1) * 10);
 
 		// update inertias //
 		updateInertiaParam(x.data());

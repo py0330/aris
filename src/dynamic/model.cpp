@@ -14,8 +14,8 @@
 #include "aris/core/core.hpp"
 #include "aris/dynamic/model.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
+
 	struct Marker::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		double pm_[4][4]{ { 0 } };
@@ -301,16 +301,11 @@ namespace aris::dynamic
 	auto Model::addMotion(Joint &joint)->Motion&{
 		Size dim;
 
-		if (dynamic_cast<RevoluteJoint*>(&joint))
-		{
+		if (dynamic_cast<RevoluteJoint*>(&joint)){
 			dim = 5;
-		}
-		else if (dynamic_cast<PrismaticJoint*>(&joint))
-		{
+		}else if (dynamic_cast<PrismaticJoint*>(&joint)){
 			dim = 2;
-		}
-		else
-		{
+		}else{
 			THROW_FILE_LINE("wrong joint when Model::addMotion(joint)");
 		}
 

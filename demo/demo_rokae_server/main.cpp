@@ -134,9 +134,38 @@ int main(int argc, char *argv[])
 {
 	Quad quad;
 
+	auto &solver = quad.solverPool().add<aris::dynamic::UniversalSolver>();
+	quad.generalMotionPool()[0].activate(false);
+	quad.generalMotionPool()[1].activate(true);
+	quad.generalMotionPool()[2].activate(false);
+	quad.generalMotionPool()[3].activate(false);
+	quad.generalMotionPool()[4].activate(true);
+	solver.allocateMemory();
+
+
+
 	double mp[12]{ 0,-0.7,1.4, 0,-0.7,1.4, 0,-0.7,1.4, 0,-0.7,1.4 };
 	quad.setInputPos(mp);
 	if (quad.forwardKinematics())THROW_FILE_LINE("forward failed");
+
+	double mv[12]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+	quad.setInputVel(mv);
+	quad.forwardKinematicsVel();
+
+	double ma[12]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+	quad.setInputAcc(ma);
+
+	solver.dynAccAndFce();
+
+	double mf[12];
+	quad.getInputFce(mf);
+
+	aris::dynamic::dsp(1, 12, mf);
+
+
+
+
+
 
 
 	auto &adams = dynamic_cast<aris::dynamic::AdamsSimulator&>(quad.simulatorPool().front());
