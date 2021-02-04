@@ -1111,7 +1111,66 @@ namespace aris::dynamic
 	}
 	//auto inline s_svd(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_svd(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
 
+	// find plane using point clouds //
+	//    n : point number
+	//    x : x
+	//    y : y
+	//    z : z
+	//    p : 4 维向量， p1 x + p2 y + p3 z + p4 = 0，其中 p1 p2 p3 为单位向量
+	// tau2 : max(n,m) x 1
+	auto inline s_interp_plane(Size n, const double *x, const double *y, const double *z, double *plane_func)->void {
+		double avg_x{ 0.0 }, avg_y{ 0.0 }, avg_z{ 0.0 };
 
+		for (Size i = 0; i < n; ++i) {
+			avg_x += x[i];
+			avg_y += y[i];
+			avg_z += z[i];
+		}
+		avg_x /= n;
+		avg_y /= n;
+		avg_z /= n;
+
+		double k1{ 0.0 }, k2{ 0.0 }, k3{ 0.0 }, k4{ 0.0 }, k5{ 0.0 }, k6{ 0.0 };
+		for (Size i = 0; i < n; ++i) {
+			auto dx = (x[i] - avg_x);
+			auto dy = (y[i] - avg_y);
+			auto dz = (z[i] - avg_z);
+
+
+			k1 += dx * dx;
+			k2 += dy * dy;
+			k3 += dz * dz;
+			k4 += dx * dy;
+			k5 += dx * dz;
+			k6 += dy * dz;
+		}
+
+		double A[9]{ k1,k4,k5,
+					 k4,k2,k6,
+					 k5,k6,k3 };
+
+		double U[9], tau[3], Q[9], R[9];
+		Size p[3], rank;
+
+		s_householder_utp(3, 3, A, U, tau, p, rank, 1e-10);
+		s_householder_ut2qr(3, 3, U, tau, Q, R);
+		
+		
+		plane_func[0] = Q[2];
+		plane_func[1] = Q[5];
+		plane_func[2] = Q[8];
+		plane_func[3] = -(plane_func[0] * avg_x + plane_func[1] * avg_y + plane_func[2] * avg_z);
+	}
+	auto inline s_interp_plane_error(Size n, const double *x, const double *y, const double *z, const double *plane_func)->double {
+		double error{ 0.0 };
+		for (Size i = 0; i < n; ++i) {
+			auto e = plane_func[0] * x[i] + plane_func[1] * y[i] + plane_func[2] * z[i] + plane_func[3];
+			error += e * e;
+		}
+		error /= n;
+
+		return std::sqrt(error);
+	}
 }
 
 #endif
