@@ -1326,6 +1326,19 @@ void test_interp_plane()
 	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 3.6, -4.5}.data());
 	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -6.5}.data());
 	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -2.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81,0,0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.5}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.91, 0.2, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.11, 0.25, -3.6}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.09, 0.2, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.49, -3.5}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.51, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.21}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.19}.data());
+
 }
 
 

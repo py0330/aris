@@ -1243,6 +1243,29 @@ namespace aris::dynamic
 		return true;
 	}
 
+	// check if point in Cylinder //
+	//    p0  : cylinder origin, center of circle
+	//    dir : direction
+	//    r   : radius
+	//    l   : length
+	//    p  : point need to check
+	auto inline s_is_in_cylinder(const double *p0, const double *dir, double r, double l, const double *p, double zero_check = 1e-10)->bool {
+		double v[3]{ p[0] - p0[0],p[1] - p0[1], p[2] - p0[2] };
+		double dir_norm[3]{ dir[0],dir[1],dir[2] };
+		if (s_norm(3, dir_norm) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, dir_norm), dir_norm);
+
+
+
+		auto dis = s_vv(3, v, dir_norm);
+		if (dis > std::max(0.0, l) || dis < std::min(0.0, l)) return false;
+
+		auto rad = std::sqrt(std::max(0.0, s_vv(3, v, v) - dis * dis));
+		if (rad > r)return false;
+
+
+		return true;
+	}
 }
 
 #endif
