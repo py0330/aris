@@ -1312,6 +1312,20 @@ void test_interp_plane()
 	s_interp_plane(72, x, y, z, p);
 
 	std::cout << s_interp_plane_error(72, x, y, z, p) << std::endl;
+
+	double p0[3]{ 1.1,0.2,-3.5 };
+	double p1[3]{ 2.1,0.34,-3.2 };
+	double p2[3]{ 1.08,3.2,-3.4 };
+	double p3[3]{ 1.12,0.21,-5.5 };
+
+	auto ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{0.0, 0.0, 0.0}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{5.6, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{0.5, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, -0.4, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 3.6, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -6.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -2.5}.data());
 }
 
 

@@ -1171,6 +1171,78 @@ namespace aris::dynamic
 
 		return std::sqrt(error);
 	}
+
+	// check if point in Parallelepiped //
+	//    p0 : origin
+	//    p1 : first line
+	//    p2 : second line
+	//    p3 : third line
+	//    p  : point need to check
+	//    
+	//       p3 ---- p6
+	//      /       /|
+	//     /       / |
+	//    p0 ---- p2 p5
+	//    |       |  /
+	//    |       | /
+	//    p1 ---- p4
+	//     
+	//    
+	auto inline s_is_in_parallelepiped(const double *p0, const double *p1, const double *p2, const double *p3, const double *p, double zero_check = 1e-10)->bool {
+		// p0-p1-p4-p2  :  plane A
+		// p3-p7-p5-p6  :  plane B
+		// p0-p2-p6-p3  :  plane C
+		// p1-p4-p5-p7  :  plane D
+		// p0-p3-p7-p1  :  plane E
+		// p2-p6-p5-p4  :  plane F
+
+		// v1           :  p1 - p0
+		// v2           :  p2 - p0
+		// v3           :  p3 - p0
+
+		double v1[3]{ p1[0] - p0[0],p1[1] - p0[1], p1[2] - p0[2] },
+			v2[3]{ p2[0] - p0[0],p2[1] - p0[1], p2[2] - p0[2] },
+			v3[3]{ p3[0] - p0[0],p3[1] - p0[1], p3[2] - p0[2] };
+
+		double A[4], B[4], C[4], D[4], E[4], F[4];
+
+		auto s_c3 = [](const double *a, const double *b, double *c_out) {
+			c_out[0] = -a[2] * b[1] + a[1] * b[2];
+			c_out[1] = a[2] * b[0] - a[0] * b[2];
+			c_out[2] = -a[1] * b[0] + a[0] * b[1];
+		};
+
+		// A & B //
+		s_c3(v1, v2, A);
+		if (s_norm(3, A) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, A), A);
+		A[3] = -s_vv(3, p0, A);
+		s_vc(3, A, B);
+		B[3] = -s_vv(3, p3, B);
+
+		// C & D //
+		s_c3(v2, v3, C);
+		if (s_norm(3, C) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, C), C);
+		C[3] = -s_vv(3, p0, C);
+		s_vc(3, C, D);
+		D[3] = -s_vv(3, p1, D);
+
+		// E & F //
+		s_c3(v3, v1, E);
+		if (s_norm(3, E) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, E), E);
+		E[3] = -s_vv(3, p0, E);
+		s_vc(3, E, F);
+		F[3] = -s_vv(3, p2, F);
+
+		if ((s_vv(3, A, p) + A[3]) * (s_vv(3, B, p) + B[3]) > 0.0) return false;
+		if ((s_vv(3, C, p) + C[3]) * (s_vv(3, D, p) + D[3]) > 0.0) return false;
+		if ((s_vv(3, E, p) + E[3]) * (s_vv(3, F, p) + F[3]) > 0.0) return false;
+
+		return true;
+	}
+
 }
 
 #endif
