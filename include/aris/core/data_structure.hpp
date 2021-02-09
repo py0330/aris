@@ -16,7 +16,7 @@ namespace aris::core {
     };
 
     template<typename T>
-    class ARIS_API Queue {
+    class Queue {
     public:
         Queue() {}
         virtual ~Queue() {}
@@ -31,7 +31,7 @@ namespace aris::core {
     };
 
     template<typename T>
-    class ARIS_API LockFreeArrayQueue :public Queue<T> {
+    class LockFreeArrayQueue :public Queue<T> {
     public:
         auto virtual isFull()const->bool override { return size_.load(std::memory_order_acquire) == capacity_; }
         auto virtual isEmpty()const->bool override { return size_.load(std::memory_order_acquire) == 0; }

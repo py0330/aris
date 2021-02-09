@@ -11,7 +11,7 @@
 namespace aris::core {
 
     template<typename Val, typename Attribute = int>  // Val, Attribute must have default constructor
-    class ARIS_API Signal {
+    class Signal {
     public:
         auto virtual attribute()const->const Attribute& { return attr_; }
         auto virtual setAttribute(const Attribute& attr)->void { attr_ = attr; }
@@ -52,7 +52,7 @@ namespace aris::core {
     };
 
     template<typename Val, typename Attribute = int>
-    class ARIS_API NumericalSignal :public Signal<Val, Attribute> {
+    class NumericalSignal :public Signal<Val, Attribute> {
     public:
         auto virtual operator==(const NumericalSignal &t)const->bool { return this->val_ == t.val_; }
         auto virtual operator>(const NumericalSignal &t)const->bool { return this->val_ > t.val_; }
@@ -67,7 +67,7 @@ namespace aris::core {
     };
 
     template<typename Signal, typename StatisticsInfo = int>
-    class ARIS_API SignalMonitor {
+    class SignalMonitor {
     public:
         auto virtual monitoringMethod()const->const std::function<bool(const Signal&)>& { return moni_method_; }
         auto virtual setMonitoringMethod(const std::function<bool(const Signal&)> &method)->void { moni_method_ = method; }
@@ -98,7 +98,7 @@ namespace aris::core {
     };
 
     template<typename Val>
-    class ARIS_API SingleEdgeDetector {
+    class SingleEdgeDetector {
     public:
         auto virtual method(const Val &val)->bool {
             bool left_incr = right_threshold_>left_threshold_? val<=left_threshold_ : val>=left_threshold_;
@@ -142,7 +142,7 @@ namespace aris::core {
     };
 
     template<typename Val>
-    class ARIS_API BothEdgeDetector {
+    class BothEdgeDetector {
     public:
         auto virtual method(const Val &val)->bool {
             if (rising_detector_->method(val) || falling_detector_->method(val)) {
