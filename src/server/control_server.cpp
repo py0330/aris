@@ -196,6 +196,8 @@ namespace aris::server{
 		if (err_code_and_fixed){
 			err.fix = fixError(false);
 			err_code_and_fixed_.store(err_code_and_fixed);
+			server_->controller().resetRtStasticData(nullptr, false);
+			server_->controller().lout() << std::flush;
 			cmd_now_.store(cmd_end);
 		}
 		// 否则执行cmd queue中的cmd //
@@ -241,9 +243,9 @@ namespace aris::server{
 					std::copy_n(err, sizeof(err), p.imp_->ret_msg);
 				}
 
-				cmd_now_.store(cmd_end);// 原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
+				cmd_now_.store(cmd_end);// 原子操作	
 			}
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0){
@@ -252,9 +254,9 @@ namespace aris::server{
 					ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.imp_->count_ << " counts\n";
 
 				// finish //
-				cmd_now_.store(cmd_now + 1);//原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
+				cmd_now_.store(cmd_now + 1);//原子操作	
 			}
 			// 命令仍在执行 //
 			else{
