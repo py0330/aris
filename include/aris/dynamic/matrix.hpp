@@ -1111,7 +1111,161 @@ namespace aris::dynamic
 	}
 	//auto inline s_svd(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_svd(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
 
+	// find plane using point clouds //
+	//    n : point number
+	//    x : x
+	//    y : y
+	//    z : z
+	//    p : 4 维向量， p1 x + p2 y + p3 z + p4 = 0，其中 p1 p2 p3 为单位向量
+	// tau2 : max(n,m) x 1
+	auto inline s_interp_plane(Size n, const double *x, const double *y, const double *z, double *plane_func)->void {
+		double avg_x{ 0.0 }, avg_y{ 0.0 }, avg_z{ 0.0 };
 
+		for (Size i = 0; i < n; ++i) {
+			avg_x += x[i];
+			avg_y += y[i];
+			avg_z += z[i];
+		}
+		avg_x /= n;
+		avg_y /= n;
+		avg_z /= n;
+
+		double k1{ 0.0 }, k2{ 0.0 }, k3{ 0.0 }, k4{ 0.0 }, k5{ 0.0 }, k6{ 0.0 };
+		for (Size i = 0; i < n; ++i) {
+			auto dx = (x[i] - avg_x);
+			auto dy = (y[i] - avg_y);
+			auto dz = (z[i] - avg_z);
+
+
+			k1 += dx * dx;
+			k2 += dy * dy;
+			k3 += dz * dz;
+			k4 += dx * dy;
+			k5 += dx * dz;
+			k6 += dy * dz;
+		}
+
+		double A[9]{ k1,k4,k5,
+					 k4,k2,k6,
+					 k5,k6,k3 };
+
+		double U[9], tau[3], Q[9], R[9];
+		Size p[3], rank;
+
+		s_householder_utp(3, 3, A, U, tau, p, rank, 1e-10);
+		s_householder_ut2qr(3, 3, U, tau, Q, R);
+		
+		
+		plane_func[0] = Q[2];
+		plane_func[1] = Q[5];
+		plane_func[2] = Q[8];
+		plane_func[3] = -(plane_func[0] * avg_x + plane_func[1] * avg_y + plane_func[2] * avg_z);
+	}
+	auto inline s_interp_plane_error(Size n, const double *x, const double *y, const double *z, const double *plane_func)->double {
+		double error{ 0.0 };
+		for (Size i = 0; i < n; ++i) {
+			auto e = plane_func[0] * x[i] + plane_func[1] * y[i] + plane_func[2] * z[i] + plane_func[3];
+			error += e * e;
+		}
+		error /= n;
+
+		return std::sqrt(error);
+	}
+
+	// check if point in Parallelepiped //
+	//    p0 : origin
+	//    p1 : first line
+	//    p2 : second line
+	//    p3 : third line
+	//    p  : point need to check
+	//    
+	//       p3 ---- p6
+	//      /       /|
+	//     /       / |
+	//    p0 ---- p2 p5
+	//    |       |  /
+	//    |       | /
+	//    p1 ---- p4
+	//     
+	//    
+	auto inline s_is_in_parallelepiped(const double *p0, const double *p1, const double *p2, const double *p3, const double *p, double zero_check = 1e-10)->bool {
+		// p0-p1-p4-p2  :  plane A
+		// p3-p7-p5-p6  :  plane B
+		// p0-p2-p6-p3  :  plane C
+		// p1-p4-p5-p7  :  plane D
+		// p0-p3-p7-p1  :  plane E
+		// p2-p6-p5-p4  :  plane F
+
+		// v1           :  p1 - p0
+		// v2           :  p2 - p0
+		// v3           :  p3 - p0
+
+		double v1[3]{ p1[0] - p0[0],p1[1] - p0[1], p1[2] - p0[2] },
+			v2[3]{ p2[0] - p0[0],p2[1] - p0[1], p2[2] - p0[2] },
+			v3[3]{ p3[0] - p0[0],p3[1] - p0[1], p3[2] - p0[2] };
+
+		double A[4], B[4], C[4], D[4], E[4], F[4];
+
+		auto s_c3 = [](const double *a, const double *b, double *c_out) {
+			c_out[0] = -a[2] * b[1] + a[1] * b[2];
+			c_out[1] = a[2] * b[0] - a[0] * b[2];
+			c_out[2] = -a[1] * b[0] + a[0] * b[1];
+		};
+
+		// A & B //
+		s_c3(v1, v2, A);
+		if (s_norm(3, A) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, A), A);
+		A[3] = -s_vv(3, p0, A);
+		s_vc(3, A, B);
+		B[3] = -s_vv(3, p3, B);
+
+		// C & D //
+		s_c3(v2, v3, C);
+		if (s_norm(3, C) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, C), C);
+		C[3] = -s_vv(3, p0, C);
+		s_vc(3, C, D);
+		D[3] = -s_vv(3, p1, D);
+
+		// E & F //
+		s_c3(v3, v1, E);
+		if (s_norm(3, E) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, E), E);
+		E[3] = -s_vv(3, p0, E);
+		s_vc(3, E, F);
+		F[3] = -s_vv(3, p2, F);
+
+		if ((s_vv(3, A, p) + A[3]) * (s_vv(3, B, p) + B[3]) > 0.0) return false;
+		if ((s_vv(3, C, p) + C[3]) * (s_vv(3, D, p) + D[3]) > 0.0) return false;
+		if ((s_vv(3, E, p) + E[3]) * (s_vv(3, F, p) + F[3]) > 0.0) return false;
+
+		return true;
+	}
+
+	// check if point in Cylinder //
+	//    p0  : cylinder origin, center of circle
+	//    dir : direction
+	//    r   : radius
+	//    l   : length
+	//    p  : point need to check
+	auto inline s_is_in_cylinder(const double *p0, const double *dir, double r, double l, const double *p, double zero_check = 1e-10)->bool {
+		double v[3]{ p[0] - p0[0],p[1] - p0[1], p[2] - p0[2] };
+		double dir_norm[3]{ dir[0],dir[1],dir[2] };
+		if (s_norm(3, dir_norm) < zero_check)return false;
+		s_nv(3, 1.0 / s_norm(3, dir_norm), dir_norm);
+
+
+
+		auto dis = s_vv(3, v, dir_norm);
+		if (dis > std::max(0.0, l) || dis < std::min(0.0, l)) return false;
+
+		auto rad = std::sqrt(std::max(0.0, s_vv(3, v, v) - dis * dis));
+		if (rad > r)return false;
+
+
+		return true;
+	}
 }
 
 #endif
