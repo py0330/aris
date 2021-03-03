@@ -451,7 +451,7 @@ namespace aris::core
 		static auto getWord(std::string_view &input)->std::string_view
 		{
 			static const std::string seperateStr("()[]{},;");
-			static const std::string operatorStr("*+-/\\^|<>=");
+			static const std::string operatorStr("*+-/\\^|<>=&!");
 			static const std::string spaceStr(" \t\n\r\f\v");
 			static const std::string numStr("0123456789.");
 			static const std::string varStr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789.");
