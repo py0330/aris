@@ -107,25 +107,21 @@ namespace aris::dynamic
 
 	auto inline s_is_equal(double a, double b, double error)noexcept { return std::abs(a - b) < error; }
 	template <typename V1Type, typename V2Type>
-	auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool
-	{
+	auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool{
 		for (Size i = 0; i < n; ++i)if (!s_is_equal(v1[at(i, v1_t)], v2[at(i, v2_t)], error))return false;
 		return true;
 	}
 	auto inline s_is_equal(Size n, const double *v1, const double *v2, double error) noexcept->bool { return s_is_equal(n, v1, 1, v2, 1, error); };
 	template <typename M1Type, typename M2Type>
-	auto inline s_is_equal(Size m, Size n, const double *m1, M1Type m1_t, const double *m2, M2Type m2_t, double error) noexcept->bool
-	{
+	auto inline s_is_equal(Size m, Size n, const double *m1, M1Type m1_t, const double *m2, M2Type m2_t, double error) noexcept->bool{
 		for (Size i = 0; i < m; ++i)for (Size j = 0; j < n; ++j)if (!s_is_equal(m1[at(i, j, m1_t)], m2[at(i, j, m2_t)], error)) return false;
 		return true;
 	}
 	auto inline s_is_equal(Size m, Size n, const double *m1, const double *m2, double error) noexcept->bool { return s_is_equal(m, n, m1, n, m2, n, error); };
 
 	template <typename AType>
-	auto inline s_eye(Size m, double *A, AType a_t) noexcept->void
-	{
-		for (Size i(-1), ai0{ 0 }, aii{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), aii = next_d(aii, a_t))
-		{
+	auto inline s_eye(Size m, double *A, AType a_t) noexcept->void{
+		for (Size i(-1), ai0{ 0 }, aii{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), aii = next_d(aii, a_t)){
 			for (Size j(-1), aij{ ai0 }; ++j < m; aij = next_c(aij, a_t))
 				A[aij] = 0.0;
 			A[aii] = 1.0;
@@ -133,8 +129,7 @@ namespace aris::dynamic
 	}
 	auto inline s_eye(Size m, double *A) noexcept->void { return s_eye(m, A, m); }
 	template <typename AType>
-	auto inline s_rmx(double angle, double *A, AType a_t) noexcept->void
-	{
+	auto inline s_rmx(double angle, double *A, AType a_t) noexcept->void{
 		A[at(0, 0, a_t)] = 1.0;
 		A[at(0, 1, a_t)] = 0.0;
 		A[at(0, 2, a_t)] = 0.0;
@@ -147,8 +142,7 @@ namespace aris::dynamic
 	}
 	auto inline s_rmx(double angle, double *A) noexcept->void { return s_rmx(angle, A, 3); }
 	template <typename AType>
-	auto inline s_rmy(double angle, double *A, AType a_t) noexcept->void
-	{
+	auto inline s_rmy(double angle, double *A, AType a_t) noexcept->void{
 		A[at(0, 0, a_t)] = std::cos(angle);
 		A[at(0, 1, a_t)] = 0.0;
 		A[at(0, 2, a_t)] = std::sin(angle);
@@ -161,8 +155,7 @@ namespace aris::dynamic
 	}
 	auto inline s_rmy(double angle, double *A) noexcept->void { return s_rmy(angle, A, 3); }
 	template <typename AType>
-	auto inline s_rmz(double angle, double *A, AType a_t) noexcept->void
-	{
+	auto inline s_rmz(double angle, double *A, AType a_t) noexcept->void{
 		A[at(0, 0, a_t)] = std::cos(angle);
 		A[at(0, 1, a_t)] = -std::sin(angle);
 		A[at(0, 2, a_t)] = 0.0;
@@ -1032,6 +1025,187 @@ namespace aris::dynamic
 	template<typename AType, typename UType, typename TauType, typename TauType2>
 	auto inline s_svd(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, double *tau2, TauType2 tau2_t, Size *p, double zero_check = 1e-10)noexcept->void
 	{
+		////////// 以下维数计算不对，tbd /////////////////////
+		
+		
+		/* 迭代 
+		[U S V] = dvc(A)
+		S&A: n+1 x n   
+		U  : n+1 x n+1
+		V  :   n x n
+		S 和 A 位于同一片内存
+
+		A 为 双对角矩阵：
+		[ *                   ]
+		| * *                 |
+		|   * *               |
+		|     * *             |
+		|         ... ...     |
+		|                     |
+		|                 * * |
+		[                   * ]
+
+
+		但是在内存中储存为，记做 A_：
+		[ * *  ... * ]
+		| * *  ... * |            
+		|            |
+		[            ]
+
+
+		step 1：递归调用
+		h = n/2, n为偶数，或 (n+1)/2, n为奇数
+		[U2 S2 V2] = dvc(A( h+2:n+1 , h+2:n ));
+		[U1,S1,V1] = dvc(A(   1:h+1 , 1:h   ));
+
+		各矩阵维度：  U1:h+1 x h+1    S1:h+1 x h        V1:    h x h
+		              U2:n-h x n-h    S2:n-h x n-h-1    V2:n-h-1 x n-h-1
+
+
+		调用前的内存布局：
+			--------------------------------------------
+			U：
+			[ EMPTY ]
+			--------------------------------------------
+			S：
+			      h   1   n-h-1 
+			2   [ A1  ek  A2   ]
+			n-1 [ EMPTY....... ]
+			--------------------------------------------
+			V:
+			[ empty ]
+			--------------------------------------------
+		调用后的内存布局：
+			--------------------------------------------
+			U：
+				   n-h-1  h+1   
+			h+1 [ EMPTY   U1  ]              
+			n-h [ EMPTY   U2  ]
+				    h     n-h
+			--------------------------------------------
+			S：
+			 	     h    1  n-h-1        
+			     1 [ d1   0  d2   ]
+			n-h  | EMPTY...       |         注：此处最小应为4，否则采用Jacobi方法;h 永远大于 n-h-1
+			     h [ V1   0  V2   ] n-h-1
+
+				     h    1  n-h-1        
+			     1 [ d1   0  d2   ]
+			n-h  | EMPTY...       |         注：此处最小应为4，否则采用Jacobi方法;h 永远大于 n-h-1
+			     h [ V1   0  V2   ] n-h-1
+
+
+			--------------------------------------------
+			V:
+			[ empty ]
+			--------------------------------------------
+
+			--------------------------------------------
+			U：
+			[ empty ]
+			--------------------------------------------
+			S：
+			h+1  n-h-1
+			h+1 [ U1     0   ]
+			n-h [ U2     0   ]      注：此处最小应为4，否则采用Jacobi方法;h 永远大于 n-h-1
+			n-h    h
+			--------------------------------------------
+			V:
+			n-h-1  h+1
+			h+1 [ EMPTY   V1  ]
+			n-h [ EMPTY   V2  ]
+			h     n-h
+			--------------------------------------------
+
+
+		step 2：构造 d、z、p
+
+		d 和 z 构成了 M：
+		[ z1            ]
+		| z2  d2        |
+		| ...    ...    |
+		[ zn         dn ]
+
+		p 让 d 正序排列，
+		此时内存S有变化，其他不变：
+		S：
+			     1 [ d....       ]
+		           | z....       |        
+			       | p...        |
+				   | mu...       |
+				   | shift ...   |
+			n-h-4  | EMPTY...    |
+			     h [ V1   0  V2  ] n-h-1
+
+		step 3：deflation
+		
+		step 4：计算mu 和 shift
+		mu    ：n x 1
+		shift : n x 1
+
+		step 5：重新计算 z
+
+		step 6：计算V
+			令 vi 位于 U 的第一列，并计算vi 
+			
+			V(1  :h  , p_c(i))      = V1*vi(2:h+1);
+            V(h+1    , p_c(i))      = vi(1);
+            V(h+2:n  , p_c(i))      = V2*vi(h+2:n);
+
+			此后不再需要V1 V2，内存更新为：
+			--------------------------------------------
+			U：
+				   n-h-1  h+1   
+			h+1 [ EMPTY   U1  ]              
+			n-h [ EMPTY   U2  ]
+				    h     n-h
+			--------------------------------------------
+			S：
+			     1 [ d....       ]
+		           | z....       |        
+			       | p...        |
+				   | mu...       |
+				   | shift ...   |
+			n-4    [ EMPTY...    ]
+			--------------------------------------------
+			V:
+			[ RETURN V ]
+			--------------------------------------------
+		step 7：计算U
+			
+			
+			V(1:k, )
+
+
+
+
+		*/
+		
+
+		auto dvc = [](Size n, double *A, AType a_t, double *U, UType u_t, double *V, TauType v_t) {
+			
+			if (n == 1) {
+				auto theta = std::atan2(A(at(2, 1, a_t)), )
+			}
+
+
+
+		}
+		
+		
+		
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		// init u //
 		s_mc(m, n, A, a_t, U, u_t);
 

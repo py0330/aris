@@ -47,8 +47,7 @@ namespace aris::dynamic
 	auto ARIS_API s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
 	auto ARIS_API s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
 	template <typename ...Args>
-	auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->double *
-	{
+	auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->double *{
 		double pm[16];
 		s_pm_dot_pm(pm1, pm2, pm);
 		return s_pm_dot_pm(pm, args...);
@@ -57,8 +56,7 @@ namespace aris::dynamic
 	auto ARIS_API s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out = nullptr) noexcept->double *;
 	auto ARIS_API s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out = nullptr) noexcept->double *;
 	template <typename V3Type1, typename V3Type2>
-	auto s_pm_dot_v3(const double *pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
-	{
+	auto s_pm_dot_v3(const double *pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, v31_t) }, a2{ next_r(a1, v31_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, v32_t) }, b2{ next_r(b1, v32_t) };
 
@@ -68,8 +66,7 @@ namespace aris::dynamic
 	}
 	auto ARIS_API s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out = nullptr) noexcept->double *;
 	template <typename V3Type1, typename V3Type2>
-	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
-	{
+	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, v31_t) }, a2{ next_r(a1, v31_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, v32_t) }, b2{ next_r(b1, v32_t) };
 
@@ -77,6 +74,14 @@ namespace aris::dynamic
 		v3_out[b1] = inv_pm[1] * v3_in[a0] + inv_pm[5] * v3_in[a1] + inv_pm[9] * v3_in[a2];
 		v3_out[b2] = inv_pm[2] * v3_in[a0] + inv_pm[6] * v3_in[a1] + inv_pm[10] * v3_in[a2];
 	}
+
+	auto inline s_pm_dot_plane(const double *pm, const double *plane1, double *plane2)->void {
+		s_pm_dot_v3(pm, plane1, plane2);
+		plane2[3] = plane1[3] - s_vv(3, plane2, 1, pm + 3, 4);
+	}
+
+	//auto inline s_interp_pm_by_planes
+
 
 	auto ARIS_API s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
 	auto ARIS_API s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
@@ -111,8 +116,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -133,8 +137,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -155,8 +158,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3i(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3i(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -177,8 +179,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3a(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3a(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -199,8 +200,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3a(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3a(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -221,8 +221,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto s_c3s(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
-	{
+	auto s_c3s(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void{
 		const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
 		const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
 		const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
@@ -249,8 +248,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cf(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cf(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
@@ -269,8 +267,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cf(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cf(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		s_cf(vs, v_t, fs, f_t, vfs_out, vf_t);
 		s_nv(6, alpha, vfs_out, vf_t);
 	}
@@ -286,8 +283,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cfi(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cfi(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3i(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
@@ -306,8 +302,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cfa(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cfa(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3a(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
@@ -326,8 +321,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cfa(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cfa(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3a(alpha, vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
@@ -346,8 +340,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto s_cfs(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
-	{
+	auto s_cfs(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3s(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
@@ -374,8 +367,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cv(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cv(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
@@ -394,8 +386,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cv(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cv(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		s_cv(vs, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_nv(6, alpha, vvs_out, vv_t);
 	}
@@ -411,8 +402,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cvi(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cvi(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3i(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
@@ -431,8 +421,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cva(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cva(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3a(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
@@ -451,8 +440,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cva(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cva(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3a(alpha, vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
@@ -471,8 +459,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto s_cvs(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
-	{
+	auto s_cvs(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void{
 		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3s(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
@@ -491,8 +478,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -508,8 +494,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3(alpha, a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -525,8 +510,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3i_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3i_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3i(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -542,8 +526,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3a_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3a_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3a(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -559,8 +542,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3a_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3a_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3a(alpha, a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -576,8 +558,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename AType, typename BType, typename CType>
-	auto inline s_c3s_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
-	{
+	auto inline s_c3s_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void{
 		for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 			s_c3s(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 	}
@@ -593,8 +574,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cf_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cf_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cf(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -610,8 +590,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cf_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cf_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cf(alpha, vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -627,8 +606,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cfi_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cfi_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cfi(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -644,8 +622,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cfa_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cfa_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cfa(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -661,8 +638,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cfa_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cfa_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cfa(alpha, vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -678,8 +654,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename FType, typename VFType>
-	auto inline s_cfs_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
-	{
+	auto inline s_cfs_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void{
 		for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 			s_cfs(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 	}
@@ -695,8 +670,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cv_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cv_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cv(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -712,8 +686,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cv_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cv_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cv(alpha, vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -729,8 +702,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cvi_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cvi_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cvi(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -746,8 +718,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cva_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cva_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cva(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -763,8 +734,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cva_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cva_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cva(alpha, vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -780,8 +750,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename VType, typename V2Type, typename VVType>
-	auto inline s_cvs_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
-	{
+	auto inline s_cvs_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void{
 		for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 			s_cvs(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 	}
@@ -803,8 +772,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_tf(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_tf(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		const Size f13_pos{ at(3, f1_t) }, f23_pos{ at(3,f2_t) };
 
 		s_pm_dot_v3(pm, fs, f1_t, fs_out, f2_t);
@@ -823,8 +791,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_tf(double alpha, const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_tf(double alpha, const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		s_tf(pm, fs, f1_t, fs_out, f2_t);
 		s_nv(6, alpha, fs_out, f2_t);
 	}
@@ -840,8 +807,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_tfa(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_tfa(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		double tem[6];
 		s_tf(pm, fs, f1_t, tem, 1);
 		s_va(6, tem, 1, fs_out, f2_t);
@@ -858,8 +824,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_tfa(double alpha, const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_tfa(double alpha, const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		double tem[6];
 		s_tf(pm, fs, f1_t, tem, 1);
 		s_va(6, alpha, tem, 1, fs_out, f2_t);
@@ -876,8 +841,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_inv_tf(const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_inv_tf(const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		s_c3i(inv_pm + 3, 4, fs, f1_t, fs_out, f2_t);
 		s_va(3, fs + at(3, f1_t), f1_t, fs_out, f2_t);
 
@@ -896,8 +860,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		s_inv_tf(inv_pm, fs, f1_t, fs_out, f2_t);
 		s_nv(6, alpha, fs_out, f2_t);
 	}
@@ -913,8 +876,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_inv_tfa(const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_inv_tfa(const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		double tem[6];
 		s_inv_tf(inv_pm, fs, f1_t, tem, 1);
 		s_va(6, tem, 1, fs_out, f2_t);
@@ -931,8 +893,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
-	{
+	auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void{
 		double tem[6];
 		s_inv_tf(inv_pm, fs, f1_t, tem, 1);
 		s_va(6, alpha, tem, 1, fs_out, f2_t);
@@ -955,8 +916,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_tv(const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_tv(const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		s_pm_dot_v3(pm, vs, v1_t, vs_out, v2_t);
 		s_pm_dot_v3(pm, vs + at(3, v1_t), v1_t, vs_out + at(3, v2_t), v2_t);
 		s_c3a(pm + 3, 4, vs_out + at(3, v2_t), v2_t, vs_out, v2_t);
@@ -973,8 +933,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_tv(double alpha, const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_tv(double alpha, const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		s_tv(pm, vs, v1_t, vs_out, v2_t);
 		s_nv(6, alpha, vs_out, v2_t);
 	}
@@ -990,8 +949,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_tva(const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_tva(const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		double tem[6];
 		s_tv(pm, vs, v1_t, tem, 1);
 		s_va(6, tem, 1, vs_out, v2_t);
@@ -1008,8 +966,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_tva(double alpha, const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_tva(double alpha, const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		double tem[6];
 		s_tv(pm, vs, v1_t, tem, 1);
 		s_va(6, alpha, tem, 1, vs_out, v2_t);
@@ -1026,8 +983,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_inv_tv(const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_inv_tv(const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		const double* vs3{ vs + at(3, v1_t) };
 		double* vs_out3{ vs_out + at(3, v2_t) };
 
@@ -1049,8 +1005,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		s_inv_tv(inv_pm, vs, v1_t, vs_out, v2_t);
 		s_nv(6, alpha, vs_out, v2_t);
 	}
@@ -1066,8 +1021,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_inv_tva(const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_inv_tva(const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, v1_t, tem, 1);
 		s_va(6, tem, 1, vs_out, v2_t);
@@ -1084,8 +1038,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
-	{
+	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, v1_t, tem, 1);
 		s_va(6, alpha, tem, 1, vs_out, v2_t);
@@ -1102,8 +1055,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_tf_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_tf_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_tf(pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1119,8 +1071,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_tf_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_tf_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_tf(alpha, pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1136,8 +1087,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_tfa_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_tfa_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_tfa(pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1153,8 +1103,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_tfa_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_tfa_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_tfa(alpha, pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1170,8 +1119,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_inv_tf_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_inv_tf_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_inv_tf(inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1187,8 +1135,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_inv_tf_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_inv_tf_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_inv_tf(alpha, inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1204,8 +1151,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_inv_tfa_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_inv_tfa_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_inv_tfa(inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1221,8 +1167,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename F1Type, typename F2Type>
-	auto inline s_inv_tfa_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
-	{
+	auto inline s_inv_tfa_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void{
 		for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 			s_inv_tfa(alpha, inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 	}
@@ -1238,8 +1183,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_tv_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_tv_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_tv(pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1255,8 +1199,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_tv_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_tv_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_tv(alpha, pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1272,8 +1215,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_tva_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_tva_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_tva(pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1289,8 +1231,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_tva_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_tva_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_tva(alpha, pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1306,8 +1247,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_inv_tv_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_inv_tv_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_inv_tv(inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1323,8 +1263,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_inv_tv_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_inv_tv_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_inv_tv(alpha, inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1340,8 +1279,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_inv_tva_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_inv_tva_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_inv_tva(inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
@@ -1357,8 +1295,7 @@ namespace aris::dynamic
 	///
 	///
 	template<typename V1Type, typename V2Type>
-	auto inline s_inv_tva_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
-	{
+	auto inline s_inv_tva_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void{
 		for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 			s_inv_tva(alpha, inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 	}
