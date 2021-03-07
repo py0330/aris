@@ -1312,6 +1312,48 @@ void test_interp_plane()
 	s_interp_plane(72, x, y, z, p);
 
 	std::cout << s_interp_plane_error(72, x, y, z, p) << std::endl;
+
+	double p0[3]{ 1.1,0.2,-3.5 };
+	double p1[3]{ 2.1,0.34,-3.2 };
+	double p2[3]{ 1.08,3.2,-3.4 };
+	double p3[3]{ 1.12,0.21,-5.5 };
+
+	auto ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{0.0, 0.0, 0.0}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{5.6, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{0.5, 1.2, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, -0.4, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 3.6, -4.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -6.5}.data());
+	ret = s_is_in_parallelepiped(p0, p1, p2, p3, std::array<double, 6>{1.6, 1.2, -2.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81,0,0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.5}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.91, 0.2, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.11, 0.25, -3.6}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.09, 0.2, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.49, -3.5}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.51, -3.5}.data());
+
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.21}.data());
+	ret = s_is_in_cylinder(p0, std::array<double, 3>{0.81, 0, 0}.data(), 0.3, 0.8, std::array<double, 6>{1.89, 0.2, -3.19}.data());
+
+
+	const double pm[]{ 0.879923176281257, -0.0809848294377871 ,        0.468163071209206  ,       0.181716811988644,
+		0.272192135295431      ,   0.893559408727084, -0.35701964169863,         0.619803060100149,
+		-0.389418342308651     ,    0.441580163137156 ,        0.808307066774345, -0.763428560463371,
+		0                      ,   0               ,          0       ,                  1 };
+
+
+	const double plane1[]{ 0.181716811988644,         0.619803060100149 ,- 0.763428560463371,                       4.1 };
+
+	double plane2[4];
+
+	s_pm_dot_plane(pm, plane1, plane2);
+
+	dsp(1, 4, plane2);
+
 }
 
 
