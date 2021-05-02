@@ -1,4 +1,4 @@
-﻿//#include <aris.hpp>
+﻿#include <aris.hpp>
 #include <iostream>
 
 //#define EIGEN_BDCSVD_DEBUG_VERBOSE

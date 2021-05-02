@@ -1,4 +1,6 @@
-﻿#include "test_dynamic_matrix.h"
+﻿#define ARIS_DEBUG
+
+#include "test_dynamic_matrix.h"
 #include <iostream>
 #include <aris/dynamic/dynamic.hpp>
 
@@ -6,6 +8,9 @@ using namespace aris::dynamic;
 
 const double error = 1e-10;
 
+namespace aris::dynamic {
+	double *global_U, *global_V, *global_S;
+}
 
 void test_basic_operation()
 {
@@ -784,6 +789,40 @@ void test_householder()
 		if (!(s_is_equal(n, rhs, r1_, x_t, x, rhs, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
 
 		Size rank;
+
+		s_householder_up(m, n, A, r1_, rp_, rank);
+		if (!(s_is_equal(m, n, r1_, U_p, error) && std::equal(p, p + std::min(m, n), rp_)))std::cout << "\"s_householder_up\" failed" << std::endl;
+
+		s_mc(m, n, A, n, i1_, a_t);
+		s_householder_up(m, n, i1_, a_t, r1_, u_t, rp_, rank);
+		if (!(s_is_equal(m, n, r1_, u_t, U_p, n, error) && std::equal(rp_, rp_ + std::min(m, n), p)))std::cout << "\"s_householder_up ld\" failed" << std::endl;
+
+		s_householder_up_sov(m, n, rhs, rank, U_p, p, b, r1_);
+		if (!(s_is_equal(n, rhs, r1_, x_p, error)))std::cout << "\"s_householder_up_sov\" failed" << std::endl;
+
+		s_mc(m, n, U_p, n, i1_, u_t);
+		s_mc(m, rhs, b, rhs, i3_, b_t);
+		s_householder_up_sov(m, n, rhs, rank, i1_, u_t, p, i3_, b_t, r1_, x_t);
+		if (!(s_is_equal(n, rhs, r1_, x_t, x_p, rhs, error)))std::cout << "\"s_householder_up_sov\" failed" << std::endl;
+
+
+
+		s_householder_up2pinv(m, n, rank, U_p, tau_p, p, r1_, r2_);
+		aris::dynamic::dsp(n, m, r1_);
+		aris::dynamic::dsp(n, m, pinv);
+		if (!(s_is_equal(n, m, r1_, pinv, error)))std::cout << "\"s_householder_up2pinv\" failed" << std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
 		s_householder_utp(m, n, A, r1_, r2_, rp_, rank);
 		if (!(s_is_equal(m, n, r1_, U_p, error) && s_is_equal(std::min({ m - 1, m, n }), r2_, tau_p, error) && std::equal(p, p + std::min(m, n), rp_)))std::cout << "\"s_householder_utp\" failed" << std::endl;
 
@@ -1217,11 +1256,15 @@ void test_svd()
 	const aris::Size m{ 5 }, n{ 6 }, rhs{ 2 };
 	const aris::Size a_t{ 7 }, q_t{ 8 }, r_t{ 10 }, u_t{ 9 }, tau_t{ 2 }, b_t{ 4 }, x_t{ 5 }, ss_t{ n + 3 }, pinv_t{ 12 };
 	const double A[]{
-		0.8147,0.0975,0.1576,0.1419,0.6557,0.7577,
-		0.9058,0.2785,0.9706,0.4218,0.0357,0.7431,
-		0.1270,0.5469,0.9572,0.9157,0.8491,0.3922,
-		0.9134,0.9575,0.4854,0.7922,0.9340,0.6555,
-		0.6324,0.9649,0.8003,0.9595,0.6787,0.1712, };
+		1,0,0,0,0,0,0,0,
+		1,0,0,0,0,0,0,0,
+		0,1,0,0,0,0,0,0,
+		0,0,1,1,0,0,0,0,
+		0,0,0,1,1,0,0,0,
+		0,0,0,0,1,1,0,0,
+		0,0,0,0,0,1,1,0,
+		0,0,0,0,0,0,0,1,
+		0,0,0,0,0,0,0,1 };
 	const double Q[]{
 		-0.492666858742303, -0.480667841387474,0.177953454506114,0.656659986061627,0.25173006035788,
 		-0.547757015648433, -0.358349168353002, -0.57774356601946, -0.475777233310347, -0.106754491874129,
@@ -1234,12 +1277,12 @@ void test_svd()
 		0,0,-0.881556607241129, -0.388478877543586,0.0277046342935185 ,-0.222740227744911,
 		0,0,0,0.178338236974704,0.700634820427496,0.284984865114035,
 		0,0,0,0,-0.0997003640550825,-0.243436850953329, };
-	const double U[]{
-		-1.65365294121832, -1.14046790774039, -1.25697758470928, -1.1757905794716, -1.18325736992819, -1.23799141825475,
-		0.366965349595799,0.966094882200634,0.634107648406748,1.0097398566765,0.763860337732694, -0.128076522148321,
-		0.0514513130919259, -0.423163816226815, -0.881556607241129, -0.388478877543586,0.0277046342935185, -0.222740227744911,
-		0.370044325812324, -0.437343928487383, -0.0698283162531727,0.178338236974704,0.700634820427497,0.284984865114035,
-		0.256203231490819, -0.567244456473452,0.197960951688692,0.489745227556259, -0.0997003640550822, -0.243436850953329 };
+	//const double U[]{
+	//	-1.65365294121832, -1.14046790774039, -1.25697758470928, -1.1757905794716, -1.18325736992819, -1.23799141825475,
+	//	0.366965349595799,0.966094882200634,0.634107648406748,1.0097398566765,0.763860337732694, -0.128076522148321,
+	//	0.0514513130919259, -0.423163816226815, -0.881556607241129, -0.388478877543586,0.0277046342935185, -0.222740227744911,
+	//	0.370044325812324, -0.437343928487383, -0.0698283162531727,0.178338236974704,0.700634820427497,0.284984865114035,
+	//	0.256203231490819, -0.567244456473452,0.197960951688692,0.489745227556259, -0.0997003640550822, -0.243436850953329 };
 	const double tau[]{
 		-1.4926668587423,
 		-1.18196072589879,
@@ -1270,21 +1313,32 @@ void test_svd()
 
 	double U_r[30], tau_r[6], tau2_r[6];
 
-	s_svd(5, 6, A, 6, U_r, 6, tau_r, 1, tau2_r, 1, resultp.data());
+	double U[81], S[72], V[64];
+
+	std::fill_n(U, 81, -99.0);
+	std::fill_n(S, 72, -99.0);
+	std::fill_n(V, 64, -99.0);
+
+	aris::dynamic::global_U = U;
+	aris::dynamic::global_V = V;
+	aris::dynamic::global_S = S;
+
+
+	s_svd(9, 8, A, 8, U, 9, S, 8, V, 8);
 	
-	double Q1[36], Q2[16], Q3[9];
-	s_householder_ut2q(6, 5, U_r, T(6), tau_r, 1, Q1, 6);
-	s_householder_ut2q(4, 6, U_r + 6, 6, tau2_r, 1, Q2, 4);
+	//double Q1[36], Q2[16], Q3[9];
+	//s_householder_ut2q(6, 5, U_r, T(6), tau_r, 1, Q1, 6);
+	//s_householder_ut2q(4, 6, U_r + 6, 6, tau2_r, 1, Q2, 4);
 
-	dsp(5, 6, A);
+	//dsp(5, 6, A);
 
-	double r1[30], r2[30], r3[30];
-	s_mm(5, 6, 6, A, Q1, r1);
+	//double r1[30], r2[30], r3[30];
+	//s_mm(5, 6, 6, A, Q1, r1);
 
-	s_mc(1, 6, r1, r2);
-	s_mm(4, 6, 4, Q2, T(4), r1 + 6, 6, r2 + 6, 6);
+	//s_mc(1, 6, r1, r2);
+	//s_mm(4, 6, 4, Q2, T(4), r1 + 6, 6, r2 + 6, 6);
 
-	dsp(5, 6, r2);
+	//dsp(5, 6, r2);
 }
 void test_interp_plane()
 {
@@ -1311,7 +1365,7 @@ void test_interp_plane()
 	double p[5];
 	s_interp_plane(72, x, y, z, p);
 
-	std::cout << s_interp_plane_error(72, x, y, z, p) << std::endl;
+	//std::cout << s_interp_plane_error(72, x, y, z, p) << std::endl;
 
 	double p0[3]{ 1.1,0.2,-3.5 };
 	double p1[3]{ 2.1,0.34,-3.2 };
@@ -1352,7 +1406,7 @@ void test_interp_plane()
 
 	s_pm_dot_plane(pm, plane1, plane2);
 
-	dsp(1, 4, plane2);
+	//dsp(1, 4, plane2);
 
 }
 
@@ -1361,13 +1415,13 @@ void test_matrix()
 {
 	std::cout << std::endl << "-----------------test matrix--------------------" << std::endl;
 
-	test_basic_operation();
-	test_specific_matrix();
-	test_multiply();
-	test_llt();
-	test_householder();
-	//test_svd();
-	test_interp_plane();
+	//test_basic_operation();
+	//test_specific_matrix();
+	//test_multiply();
+	//test_llt();
+	//test_householder();
+	test_svd();
+	//test_interp_plane();
 
 	std::cout << "-----------------test matrix finished-----------" << std::endl << std::endl;
 }
