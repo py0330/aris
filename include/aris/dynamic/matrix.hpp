@@ -14,49 +14,7 @@
 #include <aris/core/basic_type.hpp>
 
 namespace aris::dynamic{
-	template<typename Type>
-	class RowIterator {
-	public:
-		using size_type = Size; // optional
 
-		using difference_type = std::ptrdiff_t;
-		using value_type = double;
-		using reference = double&;
-		using pointer = double*;
-		using iterator_category = std::random_access_iterator_tag; //or another tag
-		
-		auto operator=(const RowIterator&other)->RowIterator& = default;
-		auto operator==(const RowIterator&other) const->bool { return iter_ == other.iter_; }
-		auto operator!=(const RowIterator&other) const->bool { return iter_ != other.iter_; }
-		auto operator<(const RowIterator&other) const->bool { return iter_ < other.iter_; } //optional
-		auto operator>(const RowIterator&other) const->bool { return iter_ > other.iter_; } //optional
-		auto operator<=(const RowIterator&other) const->bool { return iter_ <= other.iter_; } //optional
-		auto operator>=(const RowIterator&other) const->bool { return iter_ >= other.iter_; } //optional
-
-		auto operator++()->RowIterator& { iter_ += next_c(0, type_); return *this; }
-		auto operator++(int)->RowIterator { RowIterator ret(*this); operator++(); return ret; } //optional
-		auto operator--()->RowIterator& { iter_ -= next_c(0, type_); return *this; } //optional
-		auto operator--(int)->RowIterator { RowIterator ret(*this); operator--(); return ret; } //optional
-		auto operator+=(size_type size)->RowIterator& { iter_ += size * next_c(0, type_); return *this; } //optional
-		auto operator+(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_);} //optional
-		friend auto operator+(size_type size, const RowIterator&iter)->RowIterator { return *iter + size; } //optional
-		auto operator-=(size_type size)->RowIterator& { iter_ -= size * next_c(0, type_); return *this; } //optional
-		auto operator-(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_); } //optional
-		auto operator-(RowIterator iter) const->difference_type { return (iter_ - iter.iter_)/ next_c(0, type_);} //optional
-
-		auto operator*() const->reference { return *iter_; }
-		auto operator->() const->pointer { return iter_; }
-		auto operator[](size_type size) const->reference { return iter_[size*next_c(0, type_)]; } //optional
-
-		~RowIterator() = default;
-		RowIterator() = default;
-		RowIterator(const RowIterator& other) = default;
-		RowIterator(double* iter, Type t) :iter_(iter), type_(t) {} //
-		
-	private:
-		double *iter_;
-		Type type_;
-	};
 
 	
 	
@@ -103,6 +61,61 @@ namespace aris::dynamic{
 	auto inline constexpr last_c(Size at, Stride stride)noexcept->Size { return at - stride.c_ld; }
 	auto inline constexpr next_d(Size at, Stride stride)noexcept->Size { return at + stride.c_ld + stride.r_ld; }
 	auto inline constexpr last_d(Size at, Stride stride)noexcept->Size { return at - stride.c_ld - stride.r_ld; }
+
+	template<typename Type>
+	class RowIterator {
+	public:
+		using size_type = Size; // optional
+
+		using difference_type = std::ptrdiff_t;
+		using value_type = double;
+		using reference = double&;
+		using pointer = double*;
+		using iterator_category = std::random_access_iterator_tag; //or another tag
+
+		auto operator=(const RowIterator&other)->RowIterator& = default;
+		auto operator==(const RowIterator&other) const->bool { return iter_ == other.iter_; }
+		auto operator!=(const RowIterator&other) const->bool { return iter_ != other.iter_; }
+		auto operator<(const RowIterator&other) const->bool { return iter_ < other.iter_; } //optional
+		auto operator>(const RowIterator&other) const->bool { return iter_ > other.iter_; } //optional
+		auto operator<=(const RowIterator&other) const->bool { return iter_ <= other.iter_; } //optional
+		auto operator>=(const RowIterator&other) const->bool { return iter_ >= other.iter_; } //optional
+
+		auto operator++()->RowIterator& { iter_ += next_c(0, type_); return *this; }
+		auto operator++(int)->RowIterator { RowIterator ret(*this); operator++(); return ret; } //optional
+		auto operator--()->RowIterator& { iter_ -= next_c(0, type_); return *this; } //optional
+		auto operator--(int)->RowIterator { RowIterator ret(*this); operator--(); return ret; } //optional
+		auto operator+=(size_type size)->RowIterator& { iter_ += size * next_c(0, type_); return *this; } //optional
+		auto operator+(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_); } //optional
+		friend auto operator+(size_type size, const RowIterator&iter)->RowIterator { return *iter + size; } //optional
+		auto operator-=(size_type size)->RowIterator& { iter_ -= size * next_c(0, type_); return *this; } //optional
+		auto operator-(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_); } //optional
+		auto operator-(RowIterator iter) const->difference_type { return (iter_ - iter.iter_) / next_c(0, type_); } //optional
+
+		auto operator*() const->reference { return *iter_; }
+		auto operator->() const->pointer { return iter_; }
+		auto operator[](size_type size) const->reference { return iter_[size*next_c(0, type_)]; } //optional
+
+		~RowIterator() = default;
+		RowIterator() = default;
+		RowIterator(const RowIterator& other) = default;
+		RowIterator(double* iter, Type t) :iter_(iter), type_(t) {} //
+
+	private:
+		double *iter_;
+		Type type_;
+	};
+
+
+
+
+
+
+
+
+
+
+
 
 	template <typename T, typename TType>
 	auto inline dsp(Size m, Size n, const T *data, TType d_t)noexcept->void
