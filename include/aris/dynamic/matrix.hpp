@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 #include <aris_lib_export.h>
 #include <aris/core/basic_type.hpp>
@@ -18,10 +19,10 @@ namespace aris::dynamic{
 	public:
 		using size_type = Size; // optional
 
-		using difference_type = typename std::ptrdiff_t;
-		using value_type = typename double;
-		using reference = typename double&;
-		using pointer = typename double*;
+		using difference_type = std::ptrdiff_t;
+		using value_type = double;
+		using reference = double&;
+		using pointer = double*;
 		using iterator_category = std::random_access_iterator_tag; //or another tag
 		
 		auto operator=(const RowIterator&other)->RowIterator& = default;
