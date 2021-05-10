@@ -39,7 +39,7 @@ namespace aris::dynamic{
 		auto operator--(int)->RowIterator { RowIterator ret(*this); operator--(); return ret; } //optional
 		auto operator+=(size_type size)->RowIterator& { iter_ += size * next_c(0, type_); return *this; } //optional
 		auto operator+(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_);} //optional
-		friend auto operator+(size_type size, const RowIterator&iter)->RowIterator { return *this + size; } //optional
+		friend auto operator+(size_type size, const RowIterator&iter)->RowIterator { return *iter + size; } //optional
 		auto operator-=(size_type size)->RowIterator& { iter_ -= size * next_c(0, type_); return *this; } //optional
 		auto operator-(size_type size) const->RowIterator { return RowIterator(iter_ + size * next_c(0, type_), type_); } //optional
 		auto operator-(RowIterator iter) const->difference_type { return (iter_ - iter.iter_)/ next_c(0, type_);} //optional
