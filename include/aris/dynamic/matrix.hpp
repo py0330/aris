@@ -1460,7 +1460,8 @@ namespace aris::dynamic{
 		//| * *  ... * |            
 		//|            |
 		//[            ]
-		const auto dvc = [](Size n, double *U, UType u_t, double *S, UType s_t, double *V, VType v_t, const auto&dvc)->void {
+		// 返回q1[0] 和 q1[1] 
+		const auto dvc = [&](Size n, double *U, double*q, UType u_t, double *S, UType s_t, double *V, VType v_t, const auto&dvc)->std::array<double,2> {
 			
 			static int num = 0;
 			int local_num = ++num;
@@ -1469,6 +1470,8 @@ namespace aris::dynamic{
 			dsp(9, 8, global_S);
 			dsp(8, 8, global_V);
 			
+			std::array<double, 2> ret_array{-999,-999};
+
 			if (n == 1) {
 				auto &a1 = S[at(0, 0, s_t)];
 				auto &a2 = S[at(1, 0, s_t)];
@@ -1477,11 +1480,14 @@ namespace aris::dynamic{
 				S[at(0, 0, s_t)] = std::sqrt(a1 * a1 + a2 * a2);
 
 				U[at(0, 0, u_t)] = std::cos(theta);
-				U[at(0, 1, u_t)] = -std::sin(theta);
+				//U[at(0, 1, u_t)] = -std::sin(theta);
 				U[at(1, 0, u_t)] = std::sin(theta);
-				U[at(1, 1, u_t)] = std::cos(theta);
+				//U[at(1, 1, u_t)] = std::cos(theta);
 
 				V[0] = 1;
+
+				ret_array[0] = -std::sin(theta);
+				ret_array[1] = std::cos(theta);
 			}
 			else if (n == 2){
 				auto theta1 = std::atan2(S[at(1, 0, s_t)], S[at(0, 0, s_t)]);
@@ -1502,13 +1508,23 @@ namespace aris::dynamic{
 
 				U[at(0, 0, u_t)] = c1*c3 - c2*s1*s3;
 				U[at(0, 1, u_t)] = -c1*s3 - c2*c3*s1;
-				U[at(0, 2, u_t)] = s1*s2;
+				//U[at(0, 2, u_t)] = s1*s2;
 				U[at(1, 0, u_t)] = c3*s1 + c1*c2*s3;
 				U[at(1, 1, u_t)] = c1*c2*c3 - s1*s3;
-				U[at(1, 2, u_t)] = -c1*s2;
+				//U[at(1, 2, u_t)] = -c1*s2;
 				U[at(2, 0, u_t)] = s2*s3;
 				U[at(2, 1, u_t)] = c3*s2;
-				U[at(2, 2, u_t)] = c2;
+				//U[at(2, 2, u_t)] = c2;
+
+				dsp(3, 2, U, u_t);
+
+				//q[at(at(0, 0, u_t))] = s1 * s2;
+				//q[at(at(1, 0, u_t))] = -c1 * s2;
+				ret_array[0] = s1 * s2;
+				ret_array[1] = -c1 * s2;
+				q[at(2, 0, u_t)] = c2;
+
+				dsp(3, 2, U, u_t);
 
 				auto S1=a*a + b*b + d*d;
 				auto S2=std::sqrt((a*a + b*b - d*d)*(a*a + b*b - d*d) + 4*b*b*d*d);
@@ -1526,6 +1542,8 @@ namespace aris::dynamic{
 				V[at(0, 1, v_t)] = -s_sgn2(s22) * s_p;
 				V[at(1, 0, v_t)] = s_sgn2(s11) * s_p;
 				V[at(1, 1, v_t)] = s_sgn2(s22) * c_p;
+
+				dsp(3, 2, U, u_t);
 			} 
 			else {
 				//  step 1：递归调用
@@ -1581,45 +1599,69 @@ namespace aris::dynamic{
 				//
 				//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
 				//           1      h-1  h      h+1    h+2    n-1 n
-				//      1  [ u1 ... u1   u1     u1     v1 ... v1  v1]
+				//      1  [ u1 ... u1   u1     v1     v1 ... v1  v1]
 				//         | .  ... .    .      .      .  ... .   . |
-				//     h-1 | .  ... .    .      u1     v1 ... v1  v1|
-				//     h+1 | u1 ... u1   u1&v1  u1&u2  u2 ... u2  u2|
-				//     h+2 | v2 ... v2   v1     u2     .  ... .   . |
+				//      h  | .  ... .    u1&q1  v1     v1 ... v1  v1|
+				//     h+1 | u1 ... u1   u1&q1  u2     u2 ... u2  u2|
+				//     h+2 | v2 ... v2   q1     u2     .  ... .   . |
 				//         | .  ... .    .      .      .  ... .   . |
-				//      n  [ v2 ... v2   v1     u2     u2 ... u2  u2]
+				//      n  [ v2 ... v2   q1     u2     u2 ... u2  u2]
 				//
 				/////////////////
 				//   WARNING:  //
 				/////////////////
-				//    此时，V1的最后一列储存中间下方
+				//    此时，U1的最后一列，即q1储存中间下方
+
+				
+				
 
 				auto h    = n / 2;
 				auto U1   = V + at(0,     0,     v_t);
 				auto u1_t = v_t;
 				auto S1   = S + at(0,     0,     s_t);
 				auto s1_t = s_t;
-				auto V1   = V + at(0,     h + 1, v_t);
-				auto v1t  = v_t;
+				auto V1   = V + at(0,     h == n-h ? h : h+1, v_t);
+				auto v1_t = v_t;
 				auto U2   = V + at(h,     h,     v_t);
 				auto u2_t = v_t;
 				auto S2   = S + at(0,     h + 1, s_t);
 				auto s2_t = s_t;
 				auto V2   = V + at(h + 1, 0,     v_t);
-				auto v2t  = v_t;
+				auto v2_t = v_t;
+
+				
+
+				auto q1 = V + (h == n - h ? at(h - 1, h - 1, v_t) : at(0, h, v_t));
+				auto q2 = U2 + at(0, n - h - 1, u2_t);
 
 				//s_mc(2, h,         S + at(0, 0,     u_t), s_t, S1 + at(0, 0, s1_t), s1_t);
 				//s_mc(2, n - h - 1, S + at(0, h + 1, u_t), s_t, S2 + at(0, 0, s2_t), s2_t);
 				
-				constexpr auto a_h_h   = S[at(0, h, s_t)];
-				constexpr auto a_hp1_h = S[at(1, h, s_t)];
+				const auto a_h_h   = S[at(0, h, s_t)];
+				const auto a_hp1_h = S[at(1, h, s_t)];
 
 				//s_fill(n + 1, n, -99.0, S, s_t);
 
 
 
-				dvc(n - h - 1, U2, u2_t, S2, s2_t, V2, v2t, dvc);
-				dvc(h, U1, u1_t, S1, s1_t, V1, v1t, dvc);
+				auto q2_01 = dvc(n - h - 1, U2, q2, u2_t, S2, s2_t, V2, v2_t, dvc);
+				const auto u2_0_0 = U2[at(0, 0, u2_t)];
+				const auto q2_0 = q2_01[0];
+
+
+				auto q1_01 = dvc(h, U1, q1, u1_t, S1, s1_t, V1, v1_t, dvc);
+				const auto u1_e_e = U1[at(h, h, u1_t)];
+				const auto q1_e = h == 1 ? q1_01[1] : q1[at(n - h - 1, 0, u1_t)];
+
+				// 补充U中被q覆盖的部分
+				//q2[at(0, 0, u_t)] = q2_01[0];
+				//q2[at(1, 0, u_t)] = q2_01[1];
+				//if (2 * h == n - 1) {
+				//	q1[at(0, 0, u_t)] = q1_01[0];
+				//	q1[at(1, 0, u_t)] = q1_01[1];
+				//}
+
+
 
 				//step 2：构造 d、z、p
 				//
@@ -1638,29 +1680,40 @@ namespace aris::dynamic{
 				//		   | mu...       |
 				//	       | EMPTY...    |
 				//	   n+1 [    0        ]
-				auto r0 = std::sqrt(a_h_h*a_h_h*U1[at(h, h, u1_t)] * U1[at(h, h, u1_t)] + a_hp1_h * a_hp1_h*U2[at(0, n - h - 1, u2_t)] * U2[at(0, n - h - 1, u2_t)]);
-				auto theta = std::atan2(a_hp1_h*U2[at(0, n - h - 1, u2_t)], a_h_h*U1[at(h, h, u1_t)]);
+				auto r0 = std::sqrt(a_h_h*a_h_h* q1_e*q1_e + a_hp1_h*a_hp1_h * q2_0*q2_0);
+				auto theta = std::atan2(a_hp1_h*q2_0, a_h_h*q1_e);
 				auto c0 = std::cos(theta);
 				auto s0 = std::sin(theta);
 
 				//double p_data_[10];
 				//Size p_t_ = 10;
-				auto d = U;
-				auto d_t = u_t;
-				auto z = U + at(1, 0, u_t);
-				auto z_t = u_t;
-				auto mu = U + at(2, 0, u_t);
-				auto mu_t = u_t;
-				auto p = U + at(3, 0, u_t);
-				auto p_t = u_t;
+				auto d = S;
+				auto d_t = s_t;
+				auto z = S + at(1, 0, s_t);
+				auto z_t = s_t;
+				auto mu = S + at(2, 0, s_t);
+				auto mu_t = s_t;
+				auto p = S + at(3, 0, s_t);
+				auto p_t = s_t;
+
+				s_fill(1, n, 0.0, mu, mu_t);
 				//auto p = &*p_data_;
 				//auto p_t = p_t_;
 
-				d[0] = 0.0;
-				
-				z[0] = r0;
+				// 把S1的内存右移一格
+				for (Size i = h; --i < h;) {
+
+					d[at(0, i + 1, d_t)] = d[at(0, i, d_t)];
+				}
+				d[at(0, 0, d_t)] = 0.0;
+				z[at(0, 0, z_t)] = r0;
+
+
+
 				s_mc(1, h, a_h_h, U1 + at(h, 0, u1_t), z + at(0, 1, z_t));
-				s_mc(1, n - h - 1, a_hp1_h, U2 + at(0, 0, u2_t), z + at(0, h + 1, z_t));
+				s_mc(1, n - h - 2, a_hp1_h, U2 + at(0, 1, u2_t), z + at(0, h + 2, z_t));
+				z[at(0, h + 1, z_t)] = a_hp1_h * u2_0_0;// U2[0,0] 不正确，因为内存重叠
+
 
 				for (auto i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
 				std::sort(RowIterator<UType>(p, p_t), RowIterator<UType>(p, p_t) + n, [&d, &d_t](const auto &left, const auto &right) {
@@ -1669,12 +1722,17 @@ namespace aris::dynamic{
 				// d和z两个一起变换
 				s_permutate(n, 2, RowIterator<UType>(p, p_t), d, T(d_t));
 
+				dsp(1, n, mu, mu_t);
+				dsp(1, n, d, d_t);
+				dsp(1, n, z, z_t);
+				dsp(1, n, p, p_t);
+
 				//step 3：deflation
-				constexpr auto max_abs_z = std::abs(*std::max_element(RowIterator<UType>(z, z_t), RowIterator<UType>(z, z_t) + n, [](const auto &l, const auto &r) {return std::abs(l) < std::abs(r); }));
-				constexpr auto max_d = d[at(0, n - 1, d_t)];
-				constexpr auto consider_zero = std::numeric_limits<double>::min();
-				constexpr auto epsilon_strict = std::max(consider_zero, std::numeric_limits<double>::epsilon() * max_d);
-				constexpr auto epsilon_coarse = std::max(consider_zero, 8.0 * std::numeric_limits<double>::epsilon() * std::max(max_abs_z, max_d));
+				auto max_abs_z = std::abs(*std::max_element(RowIterator<UType>(z, z_t), RowIterator<UType>(z, z_t) + n, [](const auto &l, const auto &r) {return std::abs(l) < std::abs(r); }));
+				auto max_d = d[at(0, n - 1, d_t)];
+				auto consider_zero = std::numeric_limits<double>::min();
+				auto epsilon_strict = std::max(consider_zero, std::numeric_limits<double>::epsilon() * max_d);
+				auto epsilon_coarse = std::max(consider_zero, 8.0 * std::numeric_limits<double>::epsilon() * std::max(max_abs_z, max_d));
 
 				auto Mn = n;
 				for (Size i = 1; i < Mn; ){
@@ -1698,12 +1756,11 @@ namespace aris::dynamic{
 						dsp(1, n, d, d_t);
 						dsp(1, n, z, z_t);
 						dsp(1, n, p, p_t);
-						std::cout << "-----------------------------------" << std::endl;
 
 						continue;
 					}
 					else if(std::abs(d[at(0, i, d_t)])< epsilon_coarse){
-						mu[at(0, Mn, mu_t)] = -1;
+						mu[at(0, Mn-1, mu_t)] = -1;
 						auto z1 = std::sqrt(z[at(0, 0, z_t)] * z[at(0, 0, z_t)] + z[at(0, i, z_t)] * z[at(0, i, z_t)]);
 						auto zi = std::atan2(z[at(0, i, z_t)], z[at(0, 0, z_t)]);
 						z[at(0, 0, z_t)] = z1;
@@ -1725,22 +1782,24 @@ namespace aris::dynamic{
 						dsp(1, n, d, d_t);
 						dsp(1, n, z, z_t);
 						dsp(1, n, p, p_t);
-						std::cout << "-----------------------------------" << std::endl;
 
 						continue;
 					}
 					else if (d[at(0, i, d_t)] - d[at(0, i - 1, d_t)] < epsilon_strict) {
-						mu[at(0, Mn, mu_t)] = i-1;
+						mu[at(0, Mn-1, mu_t)] = i-1;
 						auto z_im1 = std::sqrt(z[at(0, i, z_t)] * z[at(0, i, z_t)] + z[at(0, i - 1, z_t)] * z[at(0, i - 1, z_t)]);
 						auto z_i = std::atan2(z[at(0, i, z_t)], z[at(0, i - 1, z_t)]);
-						z[at(0, z_t)] = z_im1;
-						z[at(i, z_t)] = z_i;
+						z[at(0, i-1, z_t)] = z_im1;
+						z[at(0, i, z_t)] = z_i;
+
 						auto tem = d[at(0, i, d_t)];
 						s_mc(1, Mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
 						d[at(0, Mn - 1, d_t)] = tem;
 						tem = z[at(0, i, z_t)];
 						s_mc(1, Mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+
 						z[at(0, Mn - 1, z_t)] = tem;
+						dsp(1, n, p, p_t);
 						tem = p[at(0, i, d_t)];
 						s_mc(1, Mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
 						p[at(0, Mn - 1, p_t)] = tem;
@@ -1751,7 +1810,6 @@ namespace aris::dynamic{
 						dsp(1, n, d, d_t);
 						dsp(1, n, z, z_t);
 						dsp(1, n, p, p_t);
-						std::cout << "-----------------------------------" << std::endl;
 
 						--Mn;
 					}
@@ -1761,11 +1819,12 @@ namespace aris::dynamic{
 					}
 				}
 
+				auto dn = 0.0;
 				if (Mn == 1){
 					mu[at(0, Mn - 1, mu_t)] = -2;
 					Mn = 0;
 					d[at(0,0, d_t)] = z[at(0, 0, z_t)];
-					d[at(0,n, d_t)] = z[at(0,0, z_t)];
+					dn = z[at(0, 0, z_t)];
 
 					std::cout << "-----------------------------------" << std::endl;
 					std::cout << "deflation 0" << std::endl;
@@ -1778,8 +1837,8 @@ namespace aris::dynamic{
 				else {
 					if (z[at(0,0, z_t)] <= epsilon_coarse)
 						z[at(0,0, z_t)] = epsilon_coarse;
-					
-					d[at(0,n, d_t)] = d[at(0, Mn, d_t)] + s_vv(Mn, z, z_t, z, z_t);
+
+					dn = d[at(0, Mn - 1, d_t)] + std::sqrt(s_vv(Mn, z, T(z_t), z, T(z_t)));
 
 					std::cout << "-----------------------------------" << std::endl;
 					std::cout << "deflation 1" << std::endl;
@@ -1790,10 +1849,15 @@ namespace aris::dynamic{
 					std::cout << "-----------------------------------" << std::endl;
 				}
 
+				dsp(1, n, mu, mu_t);
+				dsp(1, n, d, d_t);
+				dsp(1, n, z, z_t);
+				dsp(1, n, p, p_t);
+
 				//step 4：计算奇异值
 				for (Size i{ 0 }, di{ 0 }; i < Mn; ++i, di = next_c(di, d_t)) {
 					auto left = d[di];
-					auto right = i == Mn-1 ? d[at(0, n, d_t)] : d[next_c(di, d_t)];
+					auto right = i == Mn-1 ? dn : d[next_c(di, d_t)];
 					auto mid = 0.5*(left + right);
 					auto v = 0.0;
 					for (Size j = 0; j < Mn; ++j) {
@@ -1822,7 +1886,7 @@ namespace aris::dynamic{
 
 				//step 5：重新计算 z
 				for (Size i = 0, d_i = 0, z_i = 0; i < Mn; ++i, d_i = next_c(d_i, d_t), z_i = next_c(z_i, z_t)) {
-					auto base = mu[at(0, Mn - 1, mu_t)] < 0.0 ? d[at(0, n, d_t)] : d[at(0, Mn - 1, d_t)];
+					auto base = mu[at(0, Mn - 1, mu_t)] < 0.0 ? dn : d[at(0, Mn - 1, d_t)];
 					auto zi = (base + d[at(0, i, d_t)] + mu[at(0, Mn - 1, mu_t)])*(base - d[at(0, i, d_t)] + mu[at(0, Mn - 1, mu_t)]);
 					
 					for (Size k = 0, mu_k = 0, d_k = 0, d_kp1 = next_c(d_k,d_t); k < i; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)){
@@ -1830,7 +1894,7 @@ namespace aris::dynamic{
 						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_k] - d[d_i]) / (d[d_k] + d[d_i]);
 					}
 
-					for (Size k = i, mu_k = 0, d_k = 0, d_kp1 = next_c(d_k, d_t); k < Mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+					for (Size k = i, mu_k = at(0, k, d_t), d_k = at(0, k, d_t), d_kp1 = next_c(d_k, d_t); k < Mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
 						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
 						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_kp1] - d[d_i]) / (d[d_kp1] + d[d_i]);
 					}
@@ -1838,113 +1902,20 @@ namespace aris::dynamic{
 					z[z_i] = s_sgn2(z[z_i]) * std::sqrt(zi);
 				}
 
-				//dsp(1, n, mu, mu_t);
-				//dsp(1, n, d, d_t);
-				//dsp(1, n, z, z_t);
-				//dsp(1, n, p, p_t);
+				dsp(1, n, mu, mu_t);
+				dsp(1, n, d, d_t);
+				dsp(1, n, z, z_t);
+				dsp(1, n, p, p_t);
 
-				//step 6：计算V
-				//auto vi = V;
-				//auto vi_t = T(v_t);
-				double vi[10];
-				auto vi_t = T(10);
-				for (Size i = 0; i < n; ++i) {
-					if (i < Mn) {
-						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? d[at(0, n, d_t)] : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
-						
-						for (Size j = 1; j < n; ++j) {
-							vi[at(j, 0, vi_t)] = j < Mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
-						}
-					}
-					else {
-						s_fill(n, 1, 0.0, vi, vi_t);
-						vi[at(i, 0, vi_t)] = 1.0;
-					}
-					
-					// apply deflation
-					for (Size j = Mn; j < n; ++j) {
-						
-						if (mu[at(0, j, mu_t)] == -2) {
-						}
-						else if (mu[at(0, j, mu_t)] == -1) {
-							// type 3
-						}
-						else {
-							// type 4
-							auto via = std::cos(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[at(0, j, mu_t)])] - std::sin(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[at(0, j, mu_t)])];
-							auto vib = std::sin(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[at(0, j, mu_t)])] + std::cos(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[at(0, j, mu_t)])];
-							vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
-							vi[at(j, 0, vi_t)] = vib;
-						}
-					}
-
-					// apply permutation
-					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t), vi, vi_t);
-					
-					if (i < Mn) {
-						vi[at(0, 0, vi_t)] = -1.0;
-						s_nm(n, 1, 1.0 / s_norm(n, vi, vi_t), vi, vi_t);
-					}
-					
-					//std::cout << "vi:" << std::endl;
-					//dsp(1, n, vi, T(vi_t));
-					//dsp(1, n, p, p_t);
-					//dsp(n, n, V, v_t);
-
-
-					//V(1  :h, i) = V1 * vi(2:h + 1);
-					//V(h + 1, i) = vi(1);
-					//V(h + 2:n, i) = V2 * vi(h + 2:n);
-					s_mm(h, 1, h, V1, v1t, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
-					V[at(h, i, v_t)] = vi[at(0, 0, vi_t)];
-					s_mm(n - h - 1, 1, n - h - 1, V2, v2t, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
-				}
-				std::cout << "V:" << std::endl;
-				dsp(n, n, V, v_t);
-
-				//step 7: 移动内存置其他位置
-				//s_mc(4, n, U, u_t, S, s_t);
-				//d = S;
-				//auto d_t2 = s_t;
-				//z = S + at(1, 0, s_t);
-				//auto z_t2 = s_t;
-				//mu = S + at(2, 0, s_t);
-				//auto mu_t2 = s_t;
-				//p = U + at(3, 0, u_t);
-				//auto p_t2 = s_t;
-				//p = &*p_data_;
-				//auto p_t2 = p_t_;
-
-
-				double data_dzmup[100];
-				auto dzmup_t = 20;
-				s_mc(4, n, U, u_t, data_dzmup, dzmup_t);
-
-				//dsp(4, n, U, u_t);
-				//dsp(4, n, data_dzmup, dzmup_t);
-
-				d = data_dzmup;
-				auto d_t2 = dzmup_t;
-				z = data_dzmup + at(1, 0, dzmup_t);
-				auto z_t2 = dzmup_t;
-				mu = data_dzmup + at(2, 0, dzmup_t);
-				auto mu_t2 = dzmup_t;
-				p = data_dzmup + at(3, 0, dzmup_t);
-				auto p_t2 = dzmup_t;
-
-
-
-
-
-				//step 8：计算U
+				//step 6：计算U
 				double ui[10];
 				auto ui_t = T(10);
 				for (Size i = 0; i < n; ++i) {
 					if (i < Mn) {
-						auto base = mu[at(0, i, mu_t2)] < 0.0 ? (i == Mn - 1 ? d[at(0, n, d_t2)] : d[at(0, i + 1, d_t2)]) : d[at(0, i, d_t2)];
-						
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
 						for (Size j = 0; j < n; ++j) {
-							ui[at(j, 0, ui_t)] = j < Mn ? z[at(0, j, z_t2)] / (d[at(0, j, d_t2)] - base - mu[at(0, i, mu_t2)]) / (d[at(0, j, d_t2)] + base + mu[at(0, i, mu_t2)]) : 0.0;
+							ui[at(j, 0, ui_t)] = j < Mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
 						}
 					}
 					else {
@@ -1959,21 +1930,21 @@ namespace aris::dynamic{
 					// apply deflation
 					for (Size j = Mn; j < n; ++j) {
 
-						if (mu[at(0, j, mu_t2)] == -2) {
+						if (mu[at(0, j, mu_t)] == -2) {
 						}
-						else if (mu[at(0, j, mu_t2)] == -1) {
+						else if (mu[at(0, j, mu_t)] == -1) {
 							// type 3
-							auto uia = std::cos(z[at(0, j, z_t2)]) * ui[at(0, 0, ui_t)] - sin(z[at(0, j, z_t2)]) * ui[at(j, 0, ui_t)];
-							auto uib = std::sin(z[at(0, j, z_t2)]) * ui[at(0, 0, ui_t)] + cos(z[at(0, j, z_t2)]) * ui[at(j, 0, ui_t)];
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] - sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] + cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
 							ui[at(0, 0, ui_t)] = uia;
 							ui[at(j, 0, ui_t)] = uib;
 						}
 						else {
 							// type 4
-							auto idx = static_cast<Size>(mu[at(0, j, mu_t2)]);
-							
-							auto uia = std::cos(z[at(0, j, z_t2)]) * ui[at(idx, 0, ui_t)] - sin(z[at(0, j, z_t2)]) * ui[at(j, 0, ui_t)];
-							auto uib = std::sin(z[at(0, j, z_t2)]) * ui[at(idx, 0, ui_t)] + cos(z[at(0, j, z_t2)]) * ui[at(j, 0, ui_t)];
+							auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
+
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] - sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] + cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
 							ui[at(idx, 0, ui_t)] = uia;
 							ui[at(j, 0, ui_t)] = uib;
 						}
@@ -1987,7 +1958,7 @@ namespace aris::dynamic{
 
 
 					// apply permutation
-					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t2), ui, ui_t);
+					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t), ui, ui_t);
 
 
 
@@ -1999,78 +1970,216 @@ namespace aris::dynamic{
 					std::cout << "ui3333:" << std::endl;
 					dsp(1, n, ui, T(ui_t));
 
-					dsp(h+1, h+1, U1, u1_t);
-					dsp(n-h, n-h, U2, u2_t);
+					dsp(h + 1, h + 1, U1, u1_t);
+					dsp(n - h, n - h, U2, u2_t);
 #endif
 					//U(1  :h + 1, i) = c0 * U1(:, h + 1)*ui(1) + U1(:, 1 : h)*ui(2   : h + 1);
 					//U(h + 2:n + 1, i) = s0 * U2(:, n - h)*ui(1) + U2(:, 1 : n - h - 1)*ui(h + 2 : n);
 
-					s_mc(h + 1, 1, c0 * ui[at(0, 0, ui_t)], U1 + at(0, h, u1_t), u1_t, U + at(0, i, u_t), u_t);
+					
+					
+					// 使用q之前必须先将前两位设置正确
+					s_mc(2,     1, c0 * ui[at(0, 0, ui_t)], q1_01.data(),               1,    U + at(0, i, u_t), u_t);
+					//dsp(n + 1, n + 1, U, u_t);
+
+					s_mc(h - 1, 1, c0 * ui[at(0, 0, ui_t)], q1 + at(2, 0, u1_t), u1_t, U + at(2, i, u_t), u_t);
+					//dsp(n + 1, n + 1, U, u_t);
+
 					s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
-					
-					
-					s_mc(n - h, 1, s0 * ui[at(0, 0, ui_t)], U2 + at(0, n - h - 1, u2_t), u2_t, U + at(h + 1, i, u_t), u_t);
+					//dsp(n + 1, n + 1, U, u_t);
+
+
+					s_mc(2, 1, s0 * ui[at(0, 0, ui_t)], q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
+					//dsp(n + 1, n + 1, U, u_t);
+
+
+					s_mc(n - h - 2, 1, s0 * ui[at(0, 0, ui_t)], q2 + at(2, 0, u1_t), u2_t, U + at(h + 3, i, u_t), u_t);
 					//dsp(n + 1, n + 1, U, u_t);
 
 					s_mma(n - h, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
-
 					//dsp(n + 1, n + 1, U, u_t);
 				}
-				s_mc(h + 1, 1, -s0, U1 + at(0, h, u1_t), u1_t, U + at(0, n, u_t), u_t);
-				s_mc(n - h, 1, c0, U2 + at(0, n - h - 1, u2_t), u2_t, U + at(h + 1, n, u_t), u_t);
 
+
+				s_mc(2, 1, -s0, q1_01.data(), 1, ret_array.data(), 1);
+				s_mc(h - 1, 1, -s0, q1 + at(2, 0, u1_t), u1_t, q + at(2, 0, u_t), u_t);
+				s_mc(2, 1, c0, q2_01.data(), 1, q + at(h + 1, 0, u_t), u_t);
+				s_mc(n - h - 2, 1, c0, q2 + at(2, 0, u1_t), u2_t, q + at(h + 3, 0, u_t), u_t);
 
 #ifdef ARIS_DEBUG
 				std::cout << "U:" << std::endl;
-				dsp(n + 1, n + 1, U, u_t);
+				dsp(n + 1, n, U, u_t);
+				std::cout << "q:" << std::endl;
+				dsp(2, 1, ret_array.data(), 1);
+				dsp(n-1, 1, q + at(2,0,u_t), u_t);
 #endif
 
+				dsp(n - h - 1, n - h - 1, V2, v2_t);
 
+
+				//step 7：复制V1 & V2到正确位置
+				double v_data[64];
+				std::fill_n(v_data, 64, -9.0);
+				Size v_data_t = 8;
+
+				s_mc(h, h, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+				s_mc(n-h-1, n-h-1, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
+
+				//s_mc(h / 2,         h, V1, T(v1_t), v_data + at(0,         0, v_data_t), v_data_t);
+				//s_mc(h - h / 2 - 1, h, V1, T(v1_t), v_data + at(h / 2 + 1, 0, v_data_t), v_data_t);
+				//s_fill(1, h, h == 1 ? 1.0 : -1.0, v_data + at(h / 2, 0, v_data_t), v_data_t);
+
+				//dsp(8, 8, v_data, v_data_t);
+
+				//s_mc((n - h - 1) / 2,                   (n - h - 1), V2, T(v2_t), v_data + at(0,                   h, v_data_t), v_data_t);
+				//s_mc((n - h - 1) - (n - h - 1) / 2 - 1, (n - h - 1), V2, T(v2_t), v_data + at((n - h - 1) / 2 + 1, h, v_data_t), v_data_t);
+				//s_fill(1, h, h == 1 ? 1.0 : -1.0, v_data + at((n - h - 1) / 2, h, v_data_t), v_data_t);
+
+				//dsp(8, 8, v_data, v_data_t);
+
+				//for (Size i = -1; ++i < h;) {
+				//	s_nm(h, 1, 1.0 / s_norm(h, v_data + at(0, i, v_data_t)), v_data, v_data_t);
+				//}
+				//for (Size i = -1; ++i < (n - h - 1);) {
+				//	s_nm((n - h - 1), 1, 1.0 / s_norm((n - h - 1), v_data + at(0, i + h, v_data_t)), v_data, v_data_t);
+				//}
+
+				//dsp(8, 8, v_data, v_data_t);
+
+				V1 = v_data;
+				V2 = v_data + h;
+				auto v1_t2 = v_data_t;
+				auto v2_t2 = v_data_t;
+
+
+				//dsp(1, n, mu, mu_t);
+				//dsp(1, n, d, d_t);
+				//dsp(1, n, z, z_t);
+				//dsp(1, n, p, p_t);
+
+				//step 8：计算V
+				//auto vi = V;
+				//auto vi_t = T(v_t);
+				double vi[10];
+				auto vi_t = T(10);
+				for (Size i = 0; i < n; ++i) {
+					if (i < Mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						
+						for (Size j = 1; j < n; ++j) {
+							vi[at(j, 0, vi_t)] = j < Mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+						}
+					}
+					else {
+						s_fill(n, 1, 0.0, vi, vi_t);
+						vi[at(i, 0, vi_t)] = 1.0;
+					}
+					
+					std::cout << "vi:" << std::endl;
+					dsp(1, n, vi, T(vi_t));
+
+					// apply deflation
+					for (Size j = Mn; j < n; ++j) {
+						
+						if (mu[at(0, j, mu_t)] == -2) {
+						}
+						else if (mu[at(0, j, mu_t)] == -1) {
+							// type 3
+						}
+						else {
+							// type 4
+							dsp(1, n, mu, mu_t);
+							dsp(1, n, d, d_t);
+							dsp(1, n, z, z_t);
+							dsp(1, n, p, p_t);
+
+							auto via = std::cos(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] - std::sin(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							auto vib = std::sin(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] + std::cos(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
+							vi[at(j, 0, vi_t)] = vib;
+						}
+					}
+
+					std::cout << "vi:" << std::endl;
+					dsp(1, n, vi, T(vi_t));
+
+					// apply permutation
+					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t), vi, vi_t);
+					
+					if (i < Mn) {
+						vi[at(0, 0, vi_t)] = -1.0;
+						s_nm(n, 1, 1.0 / s_norm(n, vi, vi_t), vi, vi_t);
+					}
+					
+					std::cout << "vi:" << std::endl;
+					dsp(1, n, vi, T(vi_t));
+					dsp(1, n, p, p_t);
+					dsp(n - 1, n, V, v_t);
+
+					dsp(h, h, V1, v1_t2);
+					dsp(n - h - 1, n - h - 1, V2, v2_t2);
+
+					//V(1  :h, i) = V1 * vi(2:h + 1);
+					//V(h + 1, i) = vi(1);
+					//V(h + 2:n, i) = V2 * vi(h + 2:n);
+					s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
+					V[at(h, i, v_t)] = vi[at(0, 0, vi_t)];
+					s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
+				}
+
+				//step 7: 移动内存置其他位置
+				//s_mc(4, n, U, u_t, S, s_t);
+				//d = S;
+				//auto d_t = s_t;
+				//z = S + at(1, 0, s_t);
+				//auto z_t = s_t;
+				//mu = S + at(2, 0, s_t);
+				//auto mu_t = s_t;
+				//p = U + at(3, 0, u_t);
+				//auto p_t2 = s_t;
+				//p = &*p_data_;
+				//auto p_t2 = p_t_;
 
 				//step 8：计算S
 				for (Size i = 0; i < n; ++i) {
 					if (i < Mn){
-						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? d[at(0, n, d_t2)] : d[at(0, i + 1, d_t2)]) : d[at(0, i, d_t2)];
-						S[at(0, i, s_t)] = base + mu[at(0, i, mu_t2)];
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? d[at(0, n, d_t)] : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						S[at(0, i, s_t)] = base + mu[at(0, i, mu_t)];
 					}
 					else{
-						S[at(0, i, s_t)] = d[at(0, i, d_t2)];
+						S[at(0, i, s_t)] = d[at(0, i, d_t)];
 					}
 
 				}
 
-				//std::cout << "final s:" << std::endl;
-				//dsp(1, n, S, s_t);
 
-				//s_mm(h, 1, h, U1, u1_t, vi + at(1, 0, vi_t), vi_t);
-				//s_mm(h, 1, h, U1, u1_t, vi + at(1, 0, vi_t), vi_t);
 
-				//std::cout << "vi:" << std::endl;
-				//dsp(1, n, vi, T(vi_t));
-				//dsp(1, n, p, T(p_t));
 
-				//V(1  :h, i) = V1 * vi(2:h + 1);
-				//V(h + 1, i) = vi(1);
-				//V(h + 2:n, i) = V2 * vi(h + 2:n);
+
+
+
 			}
 
 
 			
 
 #ifdef ARIS_DEBUG
-
 			std::cout << "global usv return:" << local_num << std::endl;
 			dsp(9, 9, global_U);
 			dsp(9, 8, global_S);
 			dsp(8, 8, global_V);
 
 
-			std::cout << "return usv:" << std::endl;
-			dsp(n + 1, n + 1, U, u_t);
-			dsp(n + 1, n   , U, u_t);
-			dsp(n    , n   , U, u_t);
+			std::cout << "return uqsv:" << std::endl;
+			dsp(n + 1, n, U, u_t);
+			dsp(2, 1, ret_array.data(), 1);
+			dsp(n - 1, 1, q + at(2, 0, u_t), u_t);
+
+			dsp(n + 1, n    , S, s_t);
+			dsp(n, n    , V, v_t);
 #endif
 
+			return ret_array;
 			
 		};
 		
@@ -2083,7 +2192,7 @@ namespace aris::dynamic{
 		}
 		
 
-		dvc(n, U, u_t, S, s_t, V, v_t, dvc);
+		dvc(n, U, U + at(0, n, u_t), u_t, S, s_t, V, v_t, dvc);
 		
 		
 		/*
