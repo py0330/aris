@@ -41,7 +41,9 @@ namespace aris::robot::rokae::xb4{
 			aris::core::fromXmlString(master->slavePool().back(), xml_str);
 
 #ifndef ARIS_USE_ETHERCAT_SIMULATION
-			dynamic_cast<aris::control::EthercatMotor&>(controller->slavePool().back()).scanInfoForCurrentSlave();
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).scanInfoForCurrentSlave();
+#else
+			//dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
 #endif
 		}
 

@@ -192,8 +192,8 @@ namespace aris::server{
 		if (err_code_and_fixed){
 			err.fix = fixError(false);
 			err_code_and_fixed_.store(err_code_and_fixed);
-			server_->controller().resetRtStasticData(nullptr, false);
-			server_->controller().lout() << std::flush;
+			server_->master().resetRtStasticData(nullptr, false);
+			server_->master().lout() << std::flush;
 			cmd_now_.store(cmd_end);
 		}
 		// 否则执行cmd queue中的cmd //

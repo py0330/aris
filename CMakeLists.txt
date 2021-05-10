@@ -27,6 +27,7 @@ endif(UNIX)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
 
+
 ## set rely libs ##
 # std & socker rely #
 if(UNIX)
