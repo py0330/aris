@@ -6,7 +6,7 @@ using namespace aris::dynamic;
 
 namespace aris::robot::rokae::xb4{
 	auto createMaster()->std::unique_ptr<aris::control::Master> {
-		std::unique_ptr<aris::control::Master> master(new aris::control::Master);
+		std::unique_ptr<aris::control::Master> master(new aris::control::EthercatMaster);
 
 		for (aris::Size i = 0; i < 6; ++i){
 			std::string xml_str =
@@ -43,7 +43,7 @@ namespace aris::robot::rokae::xb4{
 #ifndef ARIS_USE_ETHERCAT_SIMULATION
 			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).scanInfoForCurrentSlave();
 #else
-			//dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
 #endif
 		}
 

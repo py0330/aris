@@ -1477,12 +1477,12 @@ namespace aris::dynamic{
 		// 返回q1[0] 和 q1[1] 
 		const auto dvc = [&](Size n, double *U, double*q, UType u_t, double *S, UType s_t, double *V, VType v_t, const auto&dvc)->std::array<double,2> {
 			
-			static int num = 0;
-			int local_num = ++num;
-			std::cout << "global usv:" << local_num << std::endl;
-			dsp(9, 9, global_U);
-			dsp(9, 8, global_S);
-			dsp(8, 8, global_V);
+			//static int num = 0;
+			//int local_num = ++num;
+			//std::cout << "global usv:" << local_num << std::endl;
+			//dsp(9, 9, global_U);
+			//dsp(9, 8, global_S);
+			//dsp(8, 8, global_V);
 			
 			std::array<double, 2> ret_array{-999,-999};
 
@@ -1626,9 +1626,6 @@ namespace aris::dynamic{
 				/////////////////
 				//    此时，U1的最后一列，即q1储存中间下方
 
-				
-				
-
 				auto h    = n / 2;
 				auto U1   = V + at(0,     0,     v_t);
 				auto u1_t = v_t;
@@ -1643,20 +1640,11 @@ namespace aris::dynamic{
 				auto V2   = V + at(h + 1, 0,     v_t);
 				auto v2_t = v_t;
 
-				
-
 				auto q1 = V + (h == n - h ? at(h - 1, h - 1, v_t) : at(0, h, v_t));
 				auto q2 = U2 + at(0, n - h - 1, u2_t);
 
-				//s_mc(2, h,         S + at(0, 0,     u_t), s_t, S1 + at(0, 0, s1_t), s1_t);
-				//s_mc(2, n - h - 1, S + at(0, h + 1, u_t), s_t, S2 + at(0, 0, s2_t), s2_t);
-				
 				const auto a_h_h   = S[at(0, h, s_t)];
 				const auto a_hp1_h = S[at(1, h, s_t)];
-
-				//s_fill(n + 1, n, -99.0, S, s_t);
-
-
 
 				auto q2_01 = dvc(n - h - 1, U2, q2, u2_t, S2, s2_t, V2, v2_t, dvc);
 				const auto u2_0_0 = U2[at(0, 0, u2_t)];
@@ -1665,17 +1653,7 @@ namespace aris::dynamic{
 
 				auto q1_01 = dvc(h, U1, q1, u1_t, S1, s1_t, V1, v1_t, dvc);
 				const auto u1_e_e = U1[at(h, h, u1_t)];
-				const auto q1_e = h == 1 ? q1_01[1] : q1[at(n - h - 1, 0, u1_t)];
-
-				// 补充U中被q覆盖的部分
-				//q2[at(0, 0, u_t)] = q2_01[0];
-				//q2[at(1, 0, u_t)] = q2_01[1];
-				//if (2 * h == n - 1) {
-				//	q1[at(0, 0, u_t)] = q1_01[0];
-				//	q1[at(1, 0, u_t)] = q1_01[1];
-				//}
-
-
+				const auto q1_e = h == 1 ? q1_01[1] : q1[at(h, 0, u1_t)];
 
 				//step 2：构造 d、z、p
 				//
@@ -1736,6 +1714,7 @@ namespace aris::dynamic{
 				// d和z两个一起变换
 				s_permutate(n, 2, RowIterator<UType>(p, p_t), d, T(d_t));
 
+				std::cout << "mu_d_z_p:" << std::endl;
 				dsp(1, n, mu, mu_t);
 				dsp(1, n, d, d_t);
 				dsp(1, n, z, z_t);
@@ -1937,10 +1916,6 @@ namespace aris::dynamic{
 						ui[at(i, 0, ui_t)] = 1.0;
 					}
 
-#ifdef ARIS_DEBUG
-					std::cout << "ui1111:" << std::endl;
-					dsp(1, n, ui, T(ui_t));
-#endif
 					// apply deflation
 					for (Size j = Mn; j < n; ++j) {
 
@@ -1964,54 +1939,20 @@ namespace aris::dynamic{
 						}
 					}
 
-
-#ifdef ARIS_DEBUG
-					std::cout << "ui2222:" << std::endl;
-					dsp(1, n, ui, T(ui_t));
-#endif
-
-
 					// apply permutation
 					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t), ui, ui_t);
-
-
-
 
 					if (i < Mn) {
 						s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
 					}
-#ifdef ARIS_DEBUG
-					std::cout << "ui3333:" << std::endl;
-					dsp(1, n, ui, T(ui_t));
-
-					dsp(h + 1, h + 1, U1, u1_t);
-					dsp(n - h, n - h, U2, u2_t);
-#endif
-					//U(1  :h + 1, i) = c0 * U1(:, h + 1)*ui(1) + U1(:, 1 : h)*ui(2   : h + 1);
-					//U(h + 2:n + 1, i) = s0 * U2(:, n - h)*ui(1) + U2(:, 1 : n - h - 1)*ui(h + 2 : n);
-
-					
 					
 					// 使用q之前必须先将前两位设置正确
 					s_mc(2,     1, c0 * ui[at(0, 0, ui_t)], q1_01.data(),               1,    U + at(0, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
-
 					s_mc(h - 1, 1, c0 * ui[at(0, 0, ui_t)], q1 + at(2, 0, u1_t), u1_t, U + at(2, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
-
 					s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
-
-
 					s_mc(2, 1, s0 * ui[at(0, 0, ui_t)], q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
-
-
 					s_mc(n - h - 2, 1, s0 * ui[at(0, 0, ui_t)], q2 + at(2, 0, u1_t), u2_t, U + at(h + 3, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
-
 					s_mma(n - h, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
-					//dsp(n + 1, n + 1, U, u_t);
 				}
 
 
@@ -2019,16 +1960,6 @@ namespace aris::dynamic{
 				s_mc(h - 1, 1, -s0, q1 + at(2, 0, u1_t), u1_t, q + at(2, 0, u_t), u_t);
 				s_mc(2, 1, c0, q2_01.data(), 1, q + at(h + 1, 0, u_t), u_t);
 				s_mc(n - h - 2, 1, c0, q2 + at(2, 0, u1_t), u2_t, q + at(h + 3, 0, u_t), u_t);
-
-#ifdef ARIS_DEBUG
-				std::cout << "U:" << std::endl;
-				dsp(n + 1, n, U, u_t);
-				std::cout << "q:" << std::endl;
-				dsp(2, 1, ret_array.data(), 1);
-				dsp(n-1, 1, q + at(2,0,u_t), u_t);
-#endif
-
-				dsp(n - h - 1, n - h - 1, V2, v2_t);
 
 
 				//step 7：复制V1 & V2到正确位置
@@ -2066,11 +1997,6 @@ namespace aris::dynamic{
 				auto v2_t2 = v_data_t;
 
 
-				//dsp(1, n, mu, mu_t);
-				//dsp(1, n, d, d_t);
-				//dsp(1, n, z, z_t);
-				//dsp(1, n, p, p_t);
-
 				//step 8：计算V
 				//auto vi = V;
 				//auto vi_t = T(v_t);
@@ -2089,9 +2015,6 @@ namespace aris::dynamic{
 						vi[at(i, 0, vi_t)] = 1.0;
 					}
 					
-					std::cout << "vi:" << std::endl;
-					dsp(1, n, vi, T(vi_t));
-
 					// apply deflation
 					for (Size j = Mn; j < n; ++j) {
 						
@@ -2114,9 +2037,6 @@ namespace aris::dynamic{
 						}
 					}
 
-					std::cout << "vi:" << std::endl;
-					dsp(1, n, vi, T(vi_t));
-
 					// apply permutation
 					s_permutate_inv(n, 1, RowIterator<UType>(p, p_t), vi, vi_t);
 					
@@ -2125,14 +2045,6 @@ namespace aris::dynamic{
 						s_nm(n, 1, 1.0 / s_norm(n, vi, vi_t), vi, vi_t);
 					}
 					
-					std::cout << "vi:" << std::endl;
-					dsp(1, n, vi, T(vi_t));
-					dsp(1, n, p, p_t);
-					dsp(n - 1, n, V, v_t);
-
-					dsp(h, h, V1, v1_t2);
-					dsp(n - h - 1, n - h - 1, V2, v2_t2);
-
 					//V(1  :h, i) = V1 * vi(2:h + 1);
 					//V(h + 1, i) = vi(1);
 					//V(h + 2:n, i) = V2 * vi(h + 2:n);
@@ -2154,44 +2066,42 @@ namespace aris::dynamic{
 				//p = &*p_data_;
 				//auto p_t2 = p_t_;
 
+				std::cout << "mu_d_z_p final:" << std::endl;
+				dsp(1, n, mu, mu_t);
+				dsp(1, n, d, d_t);
+				dsp(1, n, z, z_t);
+				dsp(1, n, p, p_t);
+
 				//step 8：计算S
 				for (Size i = 0; i < n; ++i) {
 					if (i < Mn){
-						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? d[at(0, n, d_t)] : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == Mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
 						S[at(0, i, s_t)] = base + mu[at(0, i, mu_t)];
 					}
 					else{
 						S[at(0, i, s_t)] = d[at(0, i, d_t)];
 					}
-
 				}
-
-
-
-
-
-
-
 			}
 
 
 			
 
-#ifdef ARIS_DEBUG
-			std::cout << "global usv return:" << local_num << std::endl;
-			dsp(9, 9, global_U);
-			dsp(9, 8, global_S);
-			dsp(8, 8, global_V);
-
-
-			std::cout << "return uqsv:" << std::endl;
-			dsp(n + 1, n, U, u_t);
-			dsp(2, 1, ret_array.data(), 1);
-			dsp(n - 1, 1, q + at(2, 0, u_t), u_t);
-
-			dsp(n + 1, n    , S, s_t);
-			dsp(n, n    , V, v_t);
-#endif
+//#ifdef ARIS_DEBUG
+//			std::cout << "global usv return:" << local_num << std::endl;
+//			dsp(9, 9, global_U);
+//			dsp(9, 8, global_S);
+//			dsp(8, 8, global_V);
+//
+//
+//			std::cout << "return uqsv:" << std::endl;
+//			dsp(n + 1, n, U, u_t);
+//			dsp(2, 1, ret_array.data(), 1);
+//			dsp(n - 1, 1, q + at(2, 0, u_t), u_t);
+//
+//			dsp(n + 1, n    , S, s_t);
+//			dsp(n, n    , V, v_t);
+//#endif
 
 			return ret_array;
 			
@@ -2199,16 +2109,24 @@ namespace aris::dynamic{
 		
 		
 		
-		for (int i = 0; i < n; ++i)
-		{
+		for (int i = 0; i < n; ++i){
 			S[at(0, i, s_t)] = A[at(i, i, a_t)];
 			S[at(1, i, s_t)] = A[at(i + 1, i, a_t)];
 		}
 		
 
-		dvc(n, U, U + at(0, n, u_t), u_t, S, s_t, V, v_t, dvc);
+		auto ret = dvc(n, U, U + at(0, n, u_t), u_t, S, s_t, V, v_t, dvc);
 		
-		
+		U[at(0, n, u_t)] = ret[0];
+		U[at(1, n, u_t)] = ret[1];
+
+		s_fill(n, n, 0.0, S + at(1, 0, s_t), s_t);
+		for (Size i = 0; ++i < n;) {
+			S[at(i, i, s_t)] = S[at(0, i, s_t)];
+		}
+		s_fill(1, n - 1, 0.0, S + at(0, 1, s_t), s_t);
+
+
 		/*
 		u1 3*3 
 		v1 2*2
@@ -2229,8 +2147,9 @@ namespace aris::dynamic{
 		*/
 		
 		
-		
-		
+		dsp(m, m, U, u_t);
+		dsp(m, n, S, s_t);
+		dsp(n, n, V, v_t);
 		
 		
 /*

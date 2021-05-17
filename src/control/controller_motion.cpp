@@ -64,7 +64,6 @@ namespace aris::control
 	Motor& Motor::operator=(const Motor &other) = default;
 
 	struct Controller::Imp { 
-		aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>> motion_pool_{ nullptr };
 		std::unique_ptr<aris::core::PointerArray<Motor>> motor_pool_{ new aris::core::PointerArray<Motor> };
 	};
 	auto Controller::resetMotorPool(aris::core::PointerArray<Motor> *pool) { imp_->motor_pool_.reset(pool); }

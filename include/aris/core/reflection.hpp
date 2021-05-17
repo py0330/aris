@@ -51,8 +51,7 @@ namespace aris::core
 	class Property;
 	class Instance;
 
-	class ARIS_API Property
-	{
+	class ARIS_API Property{
 	public:
 		auto name()const->std::string;
 		auto set(Instance *obj, Instance value)const->void;
@@ -73,8 +72,7 @@ namespace aris::core
 		struct Imp;
 		std::shared_ptr<Imp> imp_;
 	};
-	class ARIS_API Type
-	{
+	class ARIS_API Type{
 	public:
 		static auto isBaseOf(const Type* base, const Type* derived)->bool;
 		static auto getType(std::string_view name)->Type*;
@@ -114,8 +112,7 @@ namespace aris::core
 		struct Imp;
 		std::shared_ptr<Imp> imp_;
 	};
-	class ARIS_API Instance
-	{
+	class ARIS_API Instance{
 	public:
 		auto isEmpty()const->bool;
 		auto isReference()const->bool;
@@ -124,8 +121,7 @@ namespace aris::core
 		auto type()const->const Type*;
 
 		template<typename T>
-		auto castTo()const->T*
-		{
+		auto castTo()const->T*{
 			auto type = &Type::reflect_types().at(typeid(T).hash_code());
 			return reinterpret_cast<T*>(castToType(type));
 		}
@@ -147,8 +143,7 @@ namespace aris::core
 		// 绑定到左值引用, 多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
-		{
+			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t))){
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
@@ -156,8 +151,7 @@ namespace aris::core
 		// 绑定到左值引用，非多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && !std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
-		{
+			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t))){
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
@@ -165,10 +159,12 @@ namespace aris::core
 		// 根据右值来构造 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
-			:Instance(&typeid(t), std::make_shared<std::decay_t<T>>(std::move(t)))
-		{
+			:Instance(&typeid(t), std::make_shared<std::decay_t<T>>(std::move(t))){
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
-			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
+			if (type() == nullptr) {
+				std::cout << std::string("Unrecognized type : ") + typeid(t).name() << std::endl;
+				THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
+			}
 		}
 
 		~Instance();
@@ -191,10 +187,9 @@ namespace aris::core
 	};
 
 	template<typename Class_Type>
-	class class_
-	{
+	class class_{
 	public:
-		// 普通类型 //
+		// 注册普通类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr)
 		{
@@ -207,7 +202,7 @@ namespace aris::core
 			});
 		}
 
-		// 纯虚类型 //
+		// 注册纯虚类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr)
 		{
@@ -217,9 +212,9 @@ namespace aris::core
 		// 别名 //
 		auto alias(std::string_view name) { Type::alias_impl(type_, name); }
 
+		// 继承 //
 		template<typename FatherType>
-		auto inherit()->class_<Class_Type>&
-		{
+		auto inherit()->class_<Class_Type>&{
 			if (!std::is_base_of_v<FatherType, Class_Type>)std::cout << (std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"") << std::endl;
 			if (!std::is_base_of_v<FatherType, Class_Type>)THROW_FILE_LINE(std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"");
 
@@ -228,8 +223,7 @@ namespace aris::core
 			return *this;
 		};
 
-		auto textMethod(std::function<std::string(Class_Type*)> to_string, std::function<void(Class_Type*, std::string_view)> from_string)
-		{
+		auto textMethod(std::function<std::string(Class_Type*)> to_string, std::function<void(Class_Type*, std::string_view)> from_string){
 			type_->text([=](Instance* ins)->std::string	{return to_string(ins->castTo<Class_Type>());},
 						[=](Instance* ins, std::string_view str){from_string(ins->castTo<Class_Type>(), str);});
 			return *this;
@@ -239,8 +233,7 @@ namespace aris::core
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
 		template<typename C = Class_Type>
-		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>
-		{
+		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
 			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<C>()->size();	};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castTo<C>()->at(id);};
 			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<C>()->push_back(value.castTo<typename C::value_type>());	};
@@ -253,8 +246,7 @@ namespace aris::core
 		//         Class_Type::push_back(T)->void
 		//         Class_Type::size()->size_t    
 		template<typename C = Class_Type>
-		auto asArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>
-		{
+		auto asArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
 			auto size_func = [](Instance* ins)->std::size_t	{	return ins->castTo<C>()->size();};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance	{	return ins->castTo<C>()->at(id);};
 			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<C>()->push_back(*value.castTo<typename C::value_type>());	};
@@ -330,7 +322,7 @@ namespace aris::core
 			using T = std::decay_t<decltype((((C*)(nullptr))->*g)())>;
 
 			auto get = [g](Instance *obj)->Instance {	return (obj->castTo<Class_Type>()->*g)();	};
-			auto set = [s](Instance *obj, Instance value) {(obj->castTo<Class_Type>()->*s)(value.castTo<T>()); };
+			auto set = [s](Instance *obj, Instance value) {	(obj->castTo<Class_Type>()->*s)(value.castTo<T>()); };
 			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), true, set, get);
 
 			return *this;

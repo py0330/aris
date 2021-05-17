@@ -572,8 +572,7 @@ namespace aris::control
 			return -1;
 		}
 	}
-	auto EthercatMotor::enable()->int
-	{
+	auto EthercatMotor::enable()->int{
 		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x27;
 
 		// control word
@@ -664,8 +663,7 @@ namespace aris::control
 			return -1;
 		}
 	}
-	auto EthercatMotor::home()->int
-	{
+	auto EthercatMotor::home()->int{
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
 		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3           Switch ON
@@ -753,8 +751,7 @@ namespace aris::control
 			return -3;
 		}
 	}
-	auto EthercatMotor::mode(std::uint8_t md)->int
-	{
+	auto EthercatMotor::mode(std::uint8_t md)->int{
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
