@@ -7,6 +7,12 @@
 #include <iomanip>
 #include <filesystem>
 #include <exception>
+#include <thread>
+#include <set>
+#include <mutex>
+
+#include "sqlite3.h"
+#include "aris/core/data_structure.hpp"
 
 #include <aris_lib_export.h>
 
@@ -84,6 +90,147 @@ namespace aris::core
 	auto ARIS_API logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
 
 	auto ARIS_API cout()->std::ostream&;
+
+	auto ARIS_API dateFormat(const std::chrono::system_clock::time_point &time)->std::string;
+	auto ARIS_API timeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+	auto ARIS_API datetimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+
+	enum class ARIS_API LogType : int {
+		kSystem = 0,
+    	kConfig,
+    	kOperation
+	};
+
+	enum class ARIS_API LogLvl : int {
+		kDebug = 0,
+		kInfo,
+		kWarning,
+		kError
+	};
+
+	class ARIS_API DbLogCell {
+	public:
+		auto setTimeStamp(const std::chrono::system_clock::time_point &tp) { tp_ = tp; }
+		auto timeStamp() const->const std::chrono::system_clock::time_point& { return tp_; }
+		auto logLvl() const->LogLvl { return l_; }
+		auto setLogLvl(LogLvl l)->void { l_ = l; }
+		auto logType() const->LogType { return t_; }
+		auto setLogType(LogType t)->void { t_ = t; }
+		auto code() const->int { return code_; }
+		auto setCode(int code)->void { code_ = code; }
+		auto text() const->const std::string& { return text_; }
+		auto setText(const std::string &text)->void { text_ = text; }
+
+		auto strategy() const->AccessStrategy { return stg_; }
+		auto setStrategy(AccessStrategy stg)->void { stg_ = stg; }
+
+	private:
+		std::chrono::system_clock::time_point tp_{std::chrono::system_clock::now()};
+		LogLvl l_{LogLvl::kInfo};
+		LogType t_{LogType::kSystem};
+		int code_{0};
+		std::string text_;
+
+		AccessStrategy stg_{AccessStrategy::kYield};
+
+	public:
+		DbLogCell() = default;
+		explicit DbLogCell(const std::string &text, 
+						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now(), 
+						   LogLvl l = LogLvl::kInfo, 
+						   LogType t = LogType::kSystem, 
+						   int code = 0, 
+						   AccessStrategy stg = AccessStrategy::kYield) 
+			: text_(text), tp_(tp), l_(l), t_(t), code_(code), stg_(stg) {}
+		virtual ~DbLogCell() = default;
+	};
+
+	auto ARIS_API operator<<(std::ostream &s, const DbLogCell &cell)->std::ostream&;
+
+	class ARIS_API LogFilter {
+	public:
+		struct TimeRule {
+			bool enable{true};
+			std::chrono::system_clock::time_point begin;
+			std::chrono::system_clock::time_point end;
+		};
+
+		struct LvlRule {
+			bool enable{true};
+			std::set<LogLvl> lvls;
+		};
+
+		struct TypeRule {
+			bool enable{true};
+			std::set<LogType> types;
+		};
+
+		struct CodeRule {
+			bool enable{true};
+			int min_code{0};
+			int max_code{0};
+		};
+
+		struct CountRule {
+			bool enable{true};
+			unsigned start{0};
+			unsigned offset{10};
+		};
+
+	public:
+		auto setTimeRule(const TimeRule &rule)->void { time_rule_ = rule; }
+		auto timeRule() const->const TimeRule& { return time_rule_; }
+		auto setLvlRule(const LvlRule &rule)->void { lvl_rule_ = rule; }
+		auto lvlRule() const->const LvlRule& { return lvl_rule_; }
+		auto setTypeRule(const TypeRule &rule)->void { type_rule_ = rule; }
+		auto typeRule() const->const TypeRule& { return type_rule_; }
+		auto setCodeRule(const CodeRule &rule)->void { code_rule_ = rule; }
+		auto codeRule() const->const CodeRule& { return code_rule_; }
+		auto setOrder(bool order)->void { order_ = order; }
+		auto order() const->bool { return order_; }
+		auto setCountRule(const CountRule &rule)->void { count_rule_ = rule; }
+		auto countRule() const->const CountRule& { return count_rule_; }
+		
+	private:
+		TimeRule time_rule_{false};
+		LvlRule lvl_rule_{false};
+		TypeRule type_rule_{false};
+		CodeRule code_rule_{false};
+		bool order_{false};
+		CountRule count_rule_{false};
+	};
+
+	class ARIS_API Sqlite3Log {
+	public:
+		static auto instance()->Sqlite3Log&;
+		auto open(const std::filesystem::path &db_path)->void;
+		auto toDb(const DbLogCell &cell)->void;
+		auto close()->void;
+		auto isOpen() const->bool;
+		auto select(const LogFilter &filter) const->std::vector<DbLogCell>;
+
+	private:
+		sqlite3 *db_{nullptr};
+		bool to_work_{false};
+		std::thread worker_;
+		std::unique_ptr<LockFreeArrayQueue<DbLogCell>> queue_{nullptr};
+		mutable std::recursive_mutex mu_;
+		
+	private:
+		Sqlite3Log() : queue_(new LockFreeArrayQueue<DbLogCell>(1024)) {}
+		~Sqlite3Log();
+	};
+
+#define DBLOG_DEBUG(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code);
+#define DBLOG_INFO(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code);
+#define DBLOG_WARNING(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code);
+#define DBLOG_ERROR(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code);
+#define RT_DBLOG_DEBUG(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_INFO(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_WARNING(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_ERROR(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
 }
+
+using aris::core::operator<<;
 
 #endif
