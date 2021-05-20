@@ -499,4 +499,14 @@ namespace aris::core
 		return ret;
 
 	}
+
+	auto CodeTextTable::getAndFormat(int code, int language, ...) const->std::string {
+		va_list va;
+		va_start(va, language);
+		char buf[1024];
+		vsnprintf(buf, 1023, get(code, language).c_str(), va);
+		va_end(va);
+
+		return std::string(buf);
+	}
 }
