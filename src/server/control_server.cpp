@@ -857,6 +857,7 @@ namespace aris::server{
 		model().init();
 		controller().init();
 		planRoot().init();
+		middleWare().init();
 
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
