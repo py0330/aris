@@ -222,14 +222,14 @@ namespace aris::core
 		~Sqlite3Log();
 	};
 
-#define DBLOG_DEBUG(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code);
-#define DBLOG_INFO(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code);
-#define DBLOG_WARNING(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code);
-#define DBLOG_ERROR(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code);
-#define RT_DBLOG_DEBUG(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_INFO(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_WARNING(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_ERROR(text, code, type) std::cout<<DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
+#define DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code);
+#define DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code);
+#define DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code);
+#define DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code);
+#define RT_DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
 
 	class ARIS_API CodeTextTable {
 #define EN 0

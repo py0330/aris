@@ -350,7 +350,7 @@ namespace aris::core
 
 					char *msg{nullptr};
 					std::string sql = "INSERT INTO SYSLOG (TIME, LEVEL, TYPE, CODE, TEXT) VALUES(";
-					sql += datetimeFormat(cell.timeStamp())+",";
+					sql += "'"+datetimeFormat(cell.timeStamp())+"',";
 					sql += std::to_string((int)cell.logLvl())+",";
 					sql += std::to_string((int)cell.logType())+",";
 					sql += std::to_string(cell.code())+",";
