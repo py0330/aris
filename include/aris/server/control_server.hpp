@@ -18,6 +18,8 @@
 
 namespace aris::server
 {
+	class ARIS_API CustomModule {};
+
 	class ARIS_API ControlServer
 	{
 	public:
@@ -40,6 +42,7 @@ namespace aris::server
 		auto resetPlanRoot(plan::PlanRoot *sensor_root)->void;
 		auto resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void;
 		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
+		auto resetCustomModule(server::CustomModule *custom_module)->void;
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 		auto controller()->control::Controller&;
@@ -54,6 +57,8 @@ namespace aris::server
 		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
 		auto middleWare()->MiddleWare&;
 		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
+		auto customModule()->CustomModule&;
+		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;

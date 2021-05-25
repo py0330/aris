@@ -165,6 +165,7 @@ namespace aris::server{
 		InterfaceRoot *interface_root_;
 
 		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
+		std::unique_ptr<CustomModule> custom_module_{new CustomModule};
 
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
@@ -558,6 +559,7 @@ namespace aris::server{
 		imp_->interface_pool_.reset(pool);
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
+	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
@@ -565,6 +567,7 @@ namespace aris::server{
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
+	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
 	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
@@ -1730,6 +1733,7 @@ namespace aris::server{
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
+		typedef aris::server::CustomModule &(ControlServer::*CustomModuleFunc)();
 
 		aris::core::class_<ControlServer>("ControlServer")
 			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
@@ -1737,6 +1741,7 @@ namespace aris::server{
 			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
 			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
+			.prop("custom_module", &ControlServer::resetCustomModule, CustomModuleFunc(&ControlServer::customModule))
 			;
 		
 		aris::core::class_<ProgramMiddleware>("ProgramMiddleware")
