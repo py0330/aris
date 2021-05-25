@@ -6,6 +6,7 @@
 #include <iostream>
 #include <atomic>
 #include <map>
+#include <sstream>
 
 
 #ifdef UNIX
