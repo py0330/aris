@@ -1728,6 +1728,8 @@ namespace aris::server{
 
 
 	ARIS_REGISTRATION {
+		aris::core::class_<CustomModule>("CustomModule");
+
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
