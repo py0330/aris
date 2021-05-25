@@ -106,6 +106,33 @@ namespace aris::core {
             return true;
         }
 
+        auto virtual clear(AccessStrategy strategy = AccessStrategy::kYield)->bool {
+            int front{-1}, rear{-1};
+            while (true) {
+                front = front_.exchange(kExclude_);
+                rear = rear_.exchange(kExclude_);
+                if (front != kExclude_ && rear_ != kExclude_)
+                    break;
+
+                switch (strategy) {
+                case AccessStrategy::kAbandon :
+                    return false;
+                case AccessStrategy::kYield :
+                    std::this_thread::yield();
+                    break;
+                case AccessStrategy::kForce :
+                    break;
+                }
+            }
+
+            data_.clear();
+            size_.store(0, std::memory_order_release);
+            front_.store(0, std::memory_order_release);
+            rear_.store(0, std::memory_order_release);
+
+            return true;
+        }
+
     public:
         LockFreeArrayQueue() {
             new (this)LockFreeArrayQueue(16);
