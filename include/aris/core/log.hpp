@@ -231,52 +231,82 @@ namespace aris::core
 #define RT_DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
 #define RT_DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
 
-	class ARIS_API CodeTextTable {
+// #define EN 0
+// #define CHS 1
+	// class ARIS_API CodeTextTable {
+	// public:
+	// 	static auto instance()->CodeTextTable& { static CodeTextTable obj; return obj; }
+	// 	auto language() const->int { return language_; }
+	// 	auto setLanguage(int language)->void { language_ = language; }
+	// 	auto add(int code, int language, const std::string &text)->CodeTextTable& {
+	// 		if (tbl_.find(code) == tbl_.end()) tbl_[code] = {};
+	// 		auto &mlang = tbl_.at(code);
+	// 		if (mlang.find(language) != mlang.end())
+	// 			THROW_FILE_LINE("Text has existed -- code:"+std::to_string(code)+" language: "+std::to_string(language));
+	// 		mlang[language] = text;
+	// 		return *this;
+	// 	}
+	// 	auto get(int code, int language) const->const std::string& {
+	// 		auto it_code = tbl_.find(code);
+	// 		if (it_code == tbl_.end()) THROW_FILE_LINE("Code '"+std::to_string(code)+"' doesn't exist.");
+	// 		auto it_lang = it_code->second.find(language);
+	// 		if (it_lang == it_code->second.end()) 
+	// 			THROW_FILE_LINE("Code '"+std::to_string(code)+"' has no language '"+std::to_string(language)+"'.");
+	// 		return it_lang->second;
+	// 	}
+	// 	auto get(int code) const->const std::string& { return get(code, language_); }
+	// 	auto getAndFormat(int code, int language, ...) const->std::string;
+	// 	auto table() const->const std::map<int, std::map<int, std::string>>& { return tbl_; }
+
+	// private:
+	// 	int language_{CHS};
+	// 	std::map<int, std::map<int, std::string>> tbl_;
+
+	// private:
+	// 	CodeTextTable() = default;
+	// 	virtual ~CodeTextTable() = default;
+	// };
+
+// #define EN_TEXT_REGISTER(code, text) aris::core::CodeTextTable::instance().add(code, EN, text)
+// #define CHS_TEXT_REGISTER(code, text) aris::core::CodeTextTable::instance().add(code, CHS, text)
+// #define EN_CHS_TEXT_REGISTER(code, en_text, chs_text) \
+// EN_TEXT_REGISTER(code, en_text);					  \
+// CHS_TEXT_REGISTER(code, chs_text)
+// #define TEXT_GET_AND_FORMAT(code, ...) \
+// aris::core::CodeTextTable::instance().getAndFormat(code, aris::core::CodeTextTable::instance().language(), ##__VA_ARGS__)
+
 #define EN 0
-#define CHS 1
+#define CHN 1
+	class ARIS_API LocaleString {
 	public:
-		static auto instance()->CodeTextTable& { static CodeTextTable obj; return obj; }
-		auto language() const->int { return language_; }
-		auto setLanguage(int language)->void { language_ = language; }
-		auto add(int code, int language, const std::string &text)->CodeTextTable& {
-			if (tbl_.find(code) == tbl_.end()) tbl_[code] = {};
-			auto &mlang = tbl_.at(code);
-			if (mlang.find(language) != mlang.end())
-				THROW_FILE_LINE("Text has existed -- code:"+std::to_string(code)+" language: "+std::to_string(language));
-			mlang[language] = text;
-			return *this;
+		static auto locale()->unsigned { return locale_; }
+		static auto setLocale(unsigned locale)->void { locale_ = locale; }
+		static auto select(std::initializer_list<std::string> strs)->std::string {
+#define LOCALE_STRING_HELPER(id) \
+case id : \
+	if (strs.size() >= id+1) return *(strs.begin()+id); \
+	else if (strs.size() == 1) return *(strs.begin()); \
+	else return "";
+
+			switch (locale_) {
+			LOCALE_STRING_HELPER(EN)
+			LOCALE_STRING_HELPER(CHN)
+			default :
+				if (strs.size() >= 1) return *(strs.begin());
+				else return "";
+			}
+
+#undef LOCALE_STRING_HELPER
+
+			return "";
 		}
-		auto get(int code, int language) const->const std::string& {
-			auto it_code = tbl_.find(code);
-			if (it_code == tbl_.end()) THROW_FILE_LINE("Code '"+std::to_string(code)+"' doesn't exist.");
-			auto it_lang = it_code->second.find(language);
-			if (it_lang == it_code->second.end()) 
-				THROW_FILE_LINE("Code '"+std::to_string(code)+"' has no language '"+std::to_string(language)+"'.");
-			return it_lang->second;
-		}
-		auto get(int code) const->const std::string& { return get(code, language_); }
-		auto getAndFormat(int code, int language, ...) const->std::string;
-		auto table() const->const std::map<int, std::map<int, std::string>>& { return tbl_; }
 
 	private:
-		int language_{CHS};
-		std::map<int, std::map<int, std::string>> tbl_;
-
-	private:
-		CodeTextTable() = default;
-		virtual ~CodeTextTable() = default;
+		static unsigned locale_;
 	};
-
-
-#define EN_TEXT_REGISTER(code, text) aris::core::CodeTextTable::instance().add(code, EN, text)
-#define CHS_TEXT_REGISTER(code, text) aris::core::CodeTextTable::instance().add(code, CHS, text)
-#define EN_CHS_TEXT_REGISTER(code, en_text, chs_text) \
-EN_TEXT_REGISTER(code, en_text);					  \
-CHS_TEXT_REGISTER(code, chs_text)
-#define TEXT_GET_AND_FORMAT(code, ...) \
-aris::core::CodeTextTable::instance().getAndFormat(code, aris::core::CodeTextTable::instance().language(), ##__VA_ARGS__)
 }
 
 using aris::core::operator<<;
+
 
 #endif
