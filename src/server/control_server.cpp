@@ -161,6 +161,7 @@ namespace aris::server{
 		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
 		std::unique_ptr<aris::core::PointerArray<aris::server::Interface>> interface_pool_{new aris::core::PointerArray<aris::server::Interface> };
 		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
+		std::unique_ptr<CustomModule> custom_module_{new CustomModule};
 
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
@@ -550,12 +551,14 @@ namespace aris::server{
 		imp_->interface_pool_.reset(pool);
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
+	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
 	auto ControlServer::master()->control::Master& { return *imp_->master_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
+	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
 	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
@@ -847,6 +850,7 @@ namespace aris::server{
 		master().init();
 		controller().init();
 		planRoot().init();
+		middleWare().init();
 
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
@@ -1708,12 +1712,16 @@ namespace aris::server{
 
 
 	ARIS_REGISTRATION {
+		aris::core::class_<CustomModule>("CustomModule");
+
+		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::control::Master &(ControlServer::*MasterFunc)();
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
+		typedef aris::server::CustomModule &(ControlServer::*CustomModuleFunc)();
 
 		aris::core::class_<ControlServer>("ControlServer")
 			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
@@ -1722,6 +1730,7 @@ namespace aris::server{
 			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
 			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
+			.prop("custom_module", &ControlServer::resetCustomModule, CustomModuleFunc(&ControlServer::customModule))
 			;
 		
 		aris::core::class_<ProgramMiddleware>("ProgramMiddleware")

@@ -97,12 +97,15 @@ ARIS_REGISTRATION{
 	aris::core::class_<std::vector<BaseClass> >("VecBase")
 		.asArray()
 		;
+
+	aris::core::class_<std::vector<int> >("VecInt")
+		.asArray()
+		;
 }
 
 
 int main(){
 	std::cout << std::setiosflags(std::ios::left);
-
 
 	//# 使用反射 #//
 	{
@@ -192,6 +195,8 @@ int main(){
 		std::cout << "-------------------" << std::endl;
 		auto str = aris::core::toXmlString(ins2);
 		std::cout << str << std::endl;
+
+		std::cout << aris::core::toJsonString(ins2) << std::endl;
 		ChildClass value3;
 		aris::core::fromXmlString(value3, str);
 

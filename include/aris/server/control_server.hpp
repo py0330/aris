@@ -18,7 +18,10 @@
 
 namespace aris::server
 {
-	class ARIS_API ControlServer{
+	class ARIS_API CustomModule {};
+
+	class ARIS_API ControlServer
+	{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
 		using PostCallback = std::add_pointer<void(ControlServer&)>::type;
@@ -31,6 +34,10 @@ namespace aris::server
 		auto resetModel(dynamic::Model *model)->void;
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
+
+		auto resetCustomModule(server::CustomModule *custom_module)->void;
+
+
 
 		// master //
 		template<typename T = aris::control::Master, typename... Args>
@@ -62,6 +69,8 @@ namespace aris::server
 		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
 		auto middleWare()->MiddleWare&;
 		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
+		auto customModule()->CustomModule&;
+		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;

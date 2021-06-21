@@ -6,7 +6,9 @@ project(aris VERSION 1.5.0)
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH bin)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE "Release")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 if(UNIX)
 	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}")
 	add_custom_target(uninstall rm -r /usr/aris)
@@ -31,7 +33,7 @@ add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 ## set rely libs ##
 # std & socker rely #
 if(UNIX)
-	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
+	set(RELY_LINK_LIB atomic pthread stdc++fs dl)#pthread is needed for concurrency
 	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
 elseif(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
