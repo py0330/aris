@@ -139,8 +139,7 @@ namespace aris::core
 		return combineColMatrices(mat_col_list);
 	}
 
-	class ARIS_API Calculator
-	{
+	class ARIS_API Calculator{
 	public:
 		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
 		using BinaryOperatorFunction = std::function<std::any(std::any&, std::any&)>;
@@ -170,37 +169,7 @@ namespace aris::core
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	/*class ARIS_API LanguageParser
-	{
-	public:
-		auto setProgram(std::string_view program)->void;
-		auto parseLanguage()->void;
-		auto varPool()->const std::vector<std::string>&;
-		auto gotoMain()->void;
-		auto gotoLine(int line)->void;
-		auto forward(bool is_this_cmd_successful = true)->void;
-		// 返回整句话，同时 trim 两侧 //
-		auto currentCmd()const->const std::string&;
-		// 返回当前的行号 //
-		auto currentLine()const->int;
-		// 返回当前行的 word //
-		auto currentWord()const->std::string_view;
-		// 返回当前行出去 word 后的部分 //
-		auto currentParamStr()const->std::string_view;
-		auto isCurrentLineKeyWord()const->bool;
-		auto isCurrentLineFunction()const->bool;
-		auto isEnd()const->bool;
-
-		virtual ~LanguageParser();
-		explicit LanguageParser(const std::string &name = "language_parser");
-		ARIS_DECLARE_BIG_FOUR(LanguageParser);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};*/
-	class ARIS_API LanguageParser
-	{
+	class ARIS_API LanguageParser{
 	public:
 		auto setProgram(std::map<std::string, std::string> program)->void;
 		auto parseLanguage()->void;

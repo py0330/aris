@@ -218,14 +218,16 @@ namespace aris::plan
 
 			for (Size i = 0; i < model->generalMotionPool().size(); ++i)
 			{
-				double vs[6], as[6];
-				aris::dynamic::s_aq2as(pq.data() + 7 * i, dpq_ds.data() + 7 * i, ddpq_ds2.data() + 7 * i, as, vs);
+				if (auto gm = dynamic_cast<aris::dynamic::GeneralMotion*>(&model->generalMotionPool().at(i))) {
+					double vs[6], as[6];
+					aris::dynamic::s_aq2as(pq.data() + 7 * i, dpq_ds.data() + 7 * i, ddpq_ds2.data() + 7 * i, as, vs);
 
-				double real_vs[6];
-				aris::dynamic::s_vc(6, ds, vs, real_vs);
+					double real_vs[6];
+					aris::dynamic::s_vc(6, ds, vs, real_vs);
 
-				model->generalMotionPool().at(i).setMpq(pq.data() + 7 * i);
-				model->generalMotionPool().at(i).setMvs(real_vs);
+					gm->setMpq(pq.data() + 7 * i);
+					gm->setMvs(real_vs);
+				}
 			}
 
 			solver->kinPos();

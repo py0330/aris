@@ -17,8 +17,7 @@ namespace aris::dynamic
 	/// @{
 	///
 
-	class ARIS_API SimResult : public Element
-	{
+	class ARIS_API SimResult : public Element{
 	public:
 		class TimeResult : public Element
 		{
@@ -94,8 +93,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API Simulator :public Element
-	{
+	class ARIS_API Simulator :public Element{
 	public:
 		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void;
 
@@ -107,8 +105,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API SolverSimulator : public Simulator
-	{
+	class ARIS_API SolverSimulator : public Simulator{
 	public:
 		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void override;
 		using Simulator::simulate;
@@ -123,8 +120,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API AdamsSimulator :public Simulator
-	{
+	class ARIS_API AdamsSimulator :public Simulator{
 	public:
 		auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
 		auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;
@@ -160,8 +156,7 @@ namespace aris::dynamic
 	// x为当前的惯量值，注意它并不是辨识出来的结果，它仅仅保存了当前model中各个杆件的惯量和电机参数
 	// b为当前的电机出力
 	// A为观测矩阵
-	class ARIS_API Calibrator :public Element
-	{
+	class ARIS_API Calibrator :public Element{
 	public:
 		auto virtual allocateMemory()->void;
 		auto m()->Size;
@@ -172,6 +167,20 @@ namespace aris::dynamic
 		auto x()->double*;
 		auto b()->double*;
 		auto clb()->void;
+		
+		// 设置位置、速度、电流/力矩的index，以及每个电机共记录多少个数据
+		auto setDataIndex(int pos_idx, int vel_idx, int fce_idx, int data_num_per_motor)->void;
+		auto dataIndex()const->std::tuple<int, int, int, int>;
+		auto setFilterWindowSize(int window_size)->void;
+		auto filterWindowSize()const->int;
+
+		auto velocityRatio()const->std::vector<double>;
+		auto setVelocityRatio(std::vector<double> constant)->void;
+
+		auto torqueConstant()const->std::vector<double>;
+		auto setTorqueConstant(std::vector<double> constant)->void;
+
+		// tbd //
 		auto clbFile(const std::string &file_path)->void;
 		auto clbFiles(const std::vector<std::string> &file_paths)->void;
 		auto verifyFiles(const std::vector<std::string> &file_paths)->void;

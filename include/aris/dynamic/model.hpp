@@ -204,37 +204,44 @@ namespace aris::dynamic{
 	/// 
 	/// @{
 	///
+
 	class ARIS_API Model:public ModelBase{
 	public:
+		/// @{
+		auto virtual inverseKinematics()noexcept->int override;
+		auto virtual forwardKinematics()noexcept->int override;
+		auto virtual inverseKinematicsVel()noexcept->int override;
+		auto virtual forwardKinematicsVel()noexcept->int override;
+		auto virtual inverseDynamics()noexcept->int override;
+		auto virtual forwardDynamics()noexcept->int override;
+
+		auto virtual inputPosSize()const noexcept->Size override;
+		auto virtual inputDim()const noexcept->Size override;
+		auto virtual getInputPos(double *mp)const noexcept->void override;
+		auto virtual setInputPos(const double *mp)noexcept->void override;
+		auto virtual getInputVel(double *mv)const noexcept->void override;
+		auto virtual setInputVel(const double *mv)noexcept->void override;
+		auto virtual getInputAcc(double *ma)const noexcept->void override;
+		auto virtual setInputAcc(const double *ma)noexcept->void override;
+		auto virtual getInputFce(double *mf)const noexcept->void override;
+		auto virtual setInputFce(const double *mf)noexcept->void override;
+
+		auto virtual outputPosSize()const noexcept->Size override;
+		auto virtual outputDim()const noexcept->Size override;
+		auto virtual getOutputPos(double *mp)const noexcept->void override;
+		auto virtual setOutputPos(const double *mp)noexcept->void override;
+		auto virtual getOutputVel(double *mv)const noexcept->void override;
+		auto virtual setOutputVel(const double *mv)noexcept->void override;
+		auto virtual getOutputAcc(double *ma)const noexcept->void override;
+		auto virtual setOutputAcc(const double *ma)noexcept->void override;
+		auto virtual getOutputFce(double *mf)const noexcept->void override;
+		auto virtual setOutputFce(const double *mf)noexcept->void override;
+		/// @}
+
 		auto virtual init()->void;
 		/// @{
 		auto findVariable(std::string_view name)->Variable*;
 		auto findPart(std::string_view name)->Part*;
-		/// @}
-
-		/// @{
-		auto virtual inverseKinematics()->int override;
-		auto virtual forwardKinematics()->int override;
-		auto virtual inverseKinematicsVel()->int override;
-		auto virtual forwardKinematicsVel()->int override;
-		auto virtual inverseDynamics()->int override;
-		auto virtual forwardDynamics()->int override;
-
-		auto virtual motionDim()->Size override;
-		auto virtual getMotionPos(double *mp)const ->void override;
-		auto virtual setMotionPos(const double *mp)->void override;
-		auto virtual getMotionVel(double *mv)const ->void override;
-		auto virtual setMotionVel(const double *mv)->void override;
-		auto virtual getMotionAcc(double *ma)const ->void override;
-		auto virtual setMotionAcc(const double *ma)->void override;
-		auto virtual getMotionFce(double *mf)const ->void override;
-		auto virtual setMotionFce(const double *mf)->void override;
-
-		auto virtual endEffectorSize()->Size override;
-		auto virtual endEffector(Size i = 0)->EndEffector* override;
-		
-		//auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
-		//auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
 		/// @}
 
 		/// @{
@@ -260,15 +267,13 @@ namespace aris::dynamic{
 		auto motionPool()->aris::core::PointerArray<Motion, Element>&;
 		auto motionPool()const->const aris::core::PointerArray<Motion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		
-		auto resetGeneralMotionPool(aris::core::PointerArray<GeneralMotion, Element> *pool)->void;
-		auto generalMotionPool()->aris::core::PointerArray<GeneralMotion, Element>&;
-		auto generalMotionPool()const->const aris::core::PointerArray<GeneralMotion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
+		auto resetGeneralMotionPool(aris::core::PointerArray<MotionBase, Element> *pool)->void;
+		auto generalMotionPool()->aris::core::PointerArray<MotionBase, Element>&;
+		auto generalMotionPool()const->const aris::core::PointerArray<MotionBase, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
 		
 		auto resetForcePool(aris::core::PointerArray<Force, Element> *pool)->void;
 		auto forcePool()->aris::core::PointerArray<Force, Element>&;
 		auto forcePool()const->const aris::core::PointerArray<Force, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->forcePool(); }
-		
-		
 
 		auto resetSolverPool(aris::core::PointerArray<Solver, Element> *pool)->void;
 		auto solverPool()->aris::core::PointerArray<Solver, Element>&;
@@ -303,6 +308,8 @@ namespace aris::dynamic{
 		auto addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
 		auto addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&;
 		auto addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&;
+		auto addPointMotion(Part &end_effector, Part &reference, const double* pos_in_ground)->PointMotion&;
+
 		/// @}
 		auto time()const->double;
 		auto setTime(double time)->void;

@@ -207,7 +207,7 @@ int main()
 	auto &sim = r->simulatorPool().add<aris::dynamic::Simulator>("sim");
 	auto &result = r->simResultPool().add<aris::dynamic::SimResult>("result");
 
-	auto &ee = r->generalMotionPool().at(0);
+	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(r->generalMotionPool().at(0));
 
 	result.allocateMemory();
 	inverse_kinematic.allocateMemory();
@@ -221,7 +221,7 @@ int main()
 
 	for (auto &m : r->motionPool()) 
 	{
-		m.updMp();
+		m.updP();
 		std::cout << m.mp() << std::endl;
 	}
 
@@ -241,7 +241,7 @@ int main()
 		r->motionPool().at(i).setMp(pin[i]);
 	}
 	forward_kinematic.kinPos();
-	ee.updMpm();
+	ee.updP();
 	dsp(4, 4, *ee.mpm());
 
 

@@ -4,11 +4,54 @@
 
 using namespace aris::dynamic;
 
-namespace aris::robot
-{
-	auto createControllerRokaeXB4()->std::unique_ptr<aris::control::Controller>
+namespace aris::robot::rokae::xb4{
+	auto createMaster()->std::unique_ptr<aris::control::Master> {
+		std::unique_ptr<aris::control::Master> master(new aris::control::EthercatMaster);
+
+		for (aris::Size i = 0; i < 6; ++i){
+			std::string xml_str =
+				"<EthercatSlave phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
+				" vendor_id=\"0x00\" revision_num=\"0x00\" dc_assign_activate=\"0x0300\">"
+				"	<SyncManagerPoolObject>"
+				"		<SyncManager is_tx=\"false\"/>"
+				"		<SyncManager is_tx=\"true\"/>"
+				"		<SyncManager is_tx=\"false\">"
+				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
+				"				<PdoEntry name=\"control_word\" index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_operation\" index=\"0x6060\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"target_pos\" index=\"0x607A\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"target_vel\" index=\"0x60FF\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"targer_toq\" index=\"0x6071\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"offset_vel\" index=\"0x60B1\" subindex=\"0x00\" size=\"32\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"		<SyncManager is_tx=\"true\">"
+				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
+				"				<PdoEntry name=\"status_word\" index=\"0x6041\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_display\" index=\"0x6061\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"pos_actual_value\" index=\"0x6064\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"vel_actual_value\" index=\"0x606c\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"toq_actual_value\" index=\"0x6077\" subindex=\"0x00\" size=\"16\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"	</SyncManagerPoolObject>"
+				"</EthercatSlave>";
+
+			master->slavePool().push_back(new aris::control::EthercatSlave());
+			aris::core::fromXmlString(master->slavePool().back(), xml_str);
+
+#ifndef ARIS_USE_ETHERCAT_SIMULATION
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).scanInfoForCurrentSlave();
+#else
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
+#endif
+		}
+
+		return master;
+	}
+	auto createController()->std::unique_ptr<aris::control::Controller>
 	{
-		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController);
+		std::unique_ptr<aris::control::Controller> controller(new aris::control::Controller);
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
@@ -45,47 +88,18 @@ namespace aris::robot
 			};
 			
 			std::string xml_str =
-				"<EthercatMotor phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
-				" vendor_id=\"0x00\" revision_num=\"0x00\" dc_assign_activate=\"0x0300\""
-				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
+				"<EthercatMotor slave=\"" + std::to_string(i) + "\" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
 				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.1\" max_vel_following_error=\"0.5\""
 				" home_pos=\"0\" pos_factor=\"" + std::to_string(pos_factor[i]) + "\" pos_offset=\"" + std::to_string(pos_offset[i]) + "\">"
-				"	<SyncManagerPoolObject>"
-				"		<SyncManager is_tx=\"false\"/>"
-				"		<SyncManager is_tx=\"true\"/>"
-				"		<SyncManager is_tx=\"false\">"
-				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
-				"				<PdoEntry name=\"control_word\" index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
-				"				<PdoEntry name=\"mode_of_operation\" index=\"0x6060\" subindex=\"0x00\" size=\"8\"/>"
-				"				<PdoEntry name=\"target_pos\" index=\"0x607A\" subindex=\"0x00\" size=\"32\"/>"
-				"				<PdoEntry name=\"target_vel\" index=\"0x60FF\" subindex=\"0x00\" size=\"32\"/>"
-				"				<PdoEntry name=\"targer_toq\" index=\"0x6071\" subindex=\"0x00\" size=\"16\"/>"
-				"				<PdoEntry name=\"offset_vel\" index=\"0x60B1\" subindex=\"0x00\" size=\"32\"/>"
-				"			</Pdo>"
-				"		</SyncManager>"
-				"		<SyncManager is_tx=\"true\">"
-				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
-				"				<PdoEntry name=\"status_word\" index=\"0x6041\" subindex=\"0x00\" size=\"16\"/>"
-				"				<PdoEntry name=\"mode_of_display\" index=\"0x6061\" subindex=\"0x00\" size=\"8\"/>"
-				"				<PdoEntry name=\"pos_actual_value\" index=\"0x6064\" subindex=\"0x00\" size=\"32\"/>"
-				"				<PdoEntry name=\"vel_actual_value\" index=\"0x606c\" subindex=\"0x00\" size=\"32\"/>"
-				"				<PdoEntry name=\"toq_actual_value\" index=\"0x6077\" subindex=\"0x00\" size=\"16\"/>"
-				"			</Pdo>"
-				"		</SyncManager>"
-				"	</SyncManagerPoolObject>"
 				"</EthercatMotor>";
 
-			controller->slavePool().push_back(new aris::control::EthercatMotor());
-			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
-
-#ifndef ARIS_USE_ETHERCAT_SIMULATION
-			dynamic_cast<aris::control::EthercatMotor&>(controller->slavePool().back()).scanInfoForCurrentSlave();
-#endif
+			controller->motorPool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->motorPool().back(), xml_str);
 		}
 
 		return controller;
 	};
-	auto createModelRokaeXB4(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model> 
+	auto createModel(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model> 
 	{ 
 		aris::dynamic::PumaParam param;
 		param.d1 = 0.3295;
@@ -119,7 +133,7 @@ namespace aris::robot
 
 		return aris::dynamic::createModelPuma(param);
 	}
-	auto createPlanRootRokaeXB4()->std::unique_ptr<aris::plan::PlanRoot>
+	auto createPlanRoot()->std::unique_ptr<aris::plan::PlanRoot>
 	{
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
@@ -146,74 +160,5 @@ namespace aris::robot
 		plan_root->planPool().add<aris::plan::Stop>();
 
 		return plan_root;
-	}
-	auto createRokaeXB4Interface()->std::string
-	{
-		return 
-			"<InterfaceRoot >"
-			"    <UiIdPoolObject >"
-			"        <Id name=\"id_1\"  value=\"id_1\"/>"
-			"        <Id name=\"id_2\"  value=\"id_2\"/>"
-			"        <Id name=\"id_3\"  value=\"id_3\"/>"
-			"        <Id name=\"id_4\"  value=\"id_4\"/>"
-			"        <Id name=\"id_5\"  value=\"id_5\"/>"
-			"        <Id name=\"id_6\"  value=\"id_6\"/>"
-			"        <Id name=\"id_7\"  value=\"id_7\"/>"
-			"        <Id name=\"id_8\"  value=\"id_8\"/>"
-			"        <Id name=\"id_9\"  value=\"id_9\"/>"
-			"        <Id name=\"id_10\"  value=\"id_10\"/>"
-			"        <Id name=\"id_11\"  value=\"id_11\"/>"
-			"        <Id name=\"id_12\"  value=\"id_12\"/>"
-			"        <Id name=\"id_13\"  value=\"id_13\"/>"
-			"        <Id name=\"id_14\"  value=\"id_14\"/>"
-			"        <Id name=\"id_15\"  value=\"id_15\"/>"
-			"        <Id name=\"id_16\"  value=\"id_16\"/>"
-			"        <Id name=\"id_17\"  value=\"id_17\"/>"
-			"        <Id name=\"id_18\"  value=\"id_18\"/>"
-			"        <Id name=\"id_19\"  value=\"id_19\"/>"
-			"        <Id name=\"id_20\"  value=\"id_20\"/>"
-			"        <Id name=\"id_21\"  value=\"id_21\"/>"
-			"        <Id name=\"id_22\"  value=\"id_22\"/>"
-			"        <Id name=\"id_23\"  value=\"id_23\"/>"
-			"        <Id name=\"id_24\"  value=\"id_24\"/>"
-			"        <Id name=\"id_25\"  value=\"id_25\"/>"
-			"        <Id name=\"id_26\"  value=\"id_26\"/>"
-			"        <Id name=\"id_27\"  value=\"id_27\"/>"
-			"        <Id name=\"id_28\"  value=\"id_28\"/>"
-			"        <Id name=\"id_29\"  value=\"id_29\"/>"
-			"    </UiIdPoolObject>"
-			"    <CmdInterfacePoolObject>"
-			"        <Panel text=\"Simulator\" id=\"id_20\">"
-			"            <Button text=\"Enable\" id=\"id_21\" cmd=\"mm --stop;am --stop;ds;md;en;rc\" return_attached=\"\"/>"
-			"            <Button text=\"Disable\" id=\"id_22\" cmd=\"mm --stop; am --stop; ds;\" return_attached=\"\"/>"
-			"            <Button text=\"Reset\" id=\"id_23\" cmd=\"mm --stop; am --stop; rs; rc;\" return_attached=\"\"/>"
-			"            <Button text=\"Home\" id=\"id_21\" cmd=\"mm --stop;am --stop;ds;md;en;hm -m=5 --method=17 --high_speed=200;md;en;rc\" return_attached=\"\"/>"
-			"        </Panel>"
-			"        <Panel text=\"Manual\" id=\"id_21\">"
-			"            <Button text=\"Start\" id=\"id_18\" cmd=\"mm --stop; am --stop;mm --start\" return_attached=\"\"/>"
-			"            <Button text=\"Stop\" id=\"id_19\" cmd=\"mm --stop; am --stop;mm --stop\" return_attached=\"\"/>"
-			"            <Panel text=\"Translate\" id=\"id_8\">"
-			"                <Button text=\"Heave+\" id=\"id_2\" repeat=\"0\" rate=\"50\" cmd=\"mm --z=1\" return_attached=\"\" width=\"80\"/>"
-			"                <Button text=\"Heave-\" id=\"id_3\" repeat=\"0\" rate=\"50\"  cmd=\"mm --z=-1\" return_attached=\"\"/>"
-			"                <Button text=\"Sway+\" id=\"id_4\" repeat=\"0\" rate=\"50\"  cmd=\"mm --x=1\" return_attached=\"\"/>"
-			"                <Button text=\"Sway-\" id=\"id_5\" repeat=\"0\"  rate=\"50\" cmd=\"mm --x=-1\" return_attached=\"\"/>"
-			"                <Button text=\"Surge+\" id=\"id_6\" repeat=\"0\"  rate=\"50\" cmd=\"mm --y=1\" return_attached=\"\"/>"
-			"                <Button text=\"Surge-\" id=\"id_7\" repeat=\"0\"  rate=\"50\" cmd=\"mm --y=-1\" return_attached=\"\"/>"
-			"            </Panel>"
-			"            <Panel text=\"Rotate\" id=\"id_9\">"
-			"                <Button text=\"Yaw+\" id=\"id_10\" repeat=\"0\"  rate=\"50\" cmd=\"mm --c=1\" return_attached=\"\"/>"
-			"                <Button text=\"Yaw-\" id=\"id_11\" repeat=\"0\"  rate=\"50\" cmd=\"mm --c=-1\" return_attached=\"\"/>"
-			"                <Button text=\"Roll+\" id=\"id_12\" repeat=\"0\"  rate=\"50\" cmd=\"mm --a=1\" return_attached=\"\"/>"
-			"                <Button text=\"Roll-\" id=\"id_13\" repeat=\"0\"  rate=\"50\" cmd=\"mm --a=-1\" return_attached=\"\"/>"
-			"                <Button text=\"Pitch+\" id=\"id_14\" repeat=\"0\"  rate=\"50\" cmd=\"mm --b=1\" return_attached=\"\"/>"
-			"                <Button text=\"Pitch-\" id=\"id_15\" repeat=\"0\"  rate=\"50\" cmd=\"mm --b=-1\" return_attached=\"\"/>"
-			"            </Panel>"
-			"        </Panel>"
-			"        <Panel text=\"Auto\" id=\"id_16\">"
-			"            <Button text=\"Start\" id=\"id_16\" cmd=\"mm --stop; am --stop;am --start\" return_attached=\"\"/>"
-			"            <Button text=\"Stop\" id=\"id_17\" cmd=\"mm --stop; am --stop;am --stop\" return_attached=\"\"/>"
-			"        </Panel>"
-			"    </CmdInterfacePoolObject>"
-			"</InterfaceRoot>";
 	}
 }

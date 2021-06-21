@@ -57,7 +57,7 @@ namespace aris::robot
 	}
 	auto createControllerServoPress()->std::unique_ptr<aris::control::Controller>
 	{
-		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController);
+		std::unique_ptr<aris::control::Controller> controller(new aris::control::Controller);
 
 		for (aris::Size i = 0; i < 1; ++i)
 		{
@@ -91,8 +91,8 @@ namespace aris::robot
 				"	</sdo_pool>"
 				"</m" + std::to_string(i) + ">";
 
-			controller->slavePool().push_back(new aris::control::EthercatMotor());
-			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
+			controller->motorPool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->motorPool().back(), xml_str);
 		}
 
 		return controller;

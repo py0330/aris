@@ -44,9 +44,9 @@ namespace aris::control
 	auto Motor::homePos()const->double { return imp_->home_pos_; }
 	auto Motor::setHomePos(double home_pos)->void { imp_->home_pos_ = home_pos; }
 	Motor::~Motor() = default;
-	Motor::Motor(const std::string &name, std::uint16_t phy_id
+	Motor::Motor(const std::string &name
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
-		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos) :Slave(name, phy_id)
+		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos) 
 	{
 		imp_->max_pos_ = max_pos;
 		imp_->min_pos_ = min_pos;
@@ -63,20 +63,14 @@ namespace aris::control
 	Motor::Motor(const Motor &other) = default;
 	Motor& Motor::operator=(const Motor &other) = default;
 
-	struct Controller::Imp { aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>> motion_pool_{ nullptr }; };
-	auto Controller::motionPool()->aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>& { return imp_->motion_pool_; }
-	auto Controller::init()->void
-	{
-		Master::init();
-		imp_->motion_pool_ = aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>(&slavePool());
-		motionPool().update();
-		for (int i = 0; i < motionPool().size(); ++i)motionPool()[i].imp_->mot_id_ = i;
-	}
-	auto Controller::motionAtAbs(aris::Size id)->Motor& { return imp_->motion_pool_.at(id); }
-	auto Controller::motionAtPhy(aris::Size id)->Motor& { return dynamic_cast<Motor&>(slaveAtPhy(id)); }
-	auto Controller::motionAtSla(aris::Size id)->Motor& { return dynamic_cast<Motor&>(slavePool().at(id)); }
+	struct Controller::Imp { 
+		std::unique_ptr<aris::core::PointerArray<Motor>> motor_pool_{ new aris::core::PointerArray<Motor> };
+	};
+	auto Controller::resetMotorPool(aris::core::PointerArray<Motor> *pool) { imp_->motor_pool_.reset(pool); }
+	auto Controller::motorPool()->aris::core::PointerArray<Motor>& { return *imp_->motor_pool_; }
+	auto Controller::init()->void{}
 	Controller::~Controller() = default;
-	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) {}
+	Controller::Controller(const std::string &name) :imp_(new Imp) {}
 
 	ARIS_REGISTRATION
 	{
@@ -94,8 +88,12 @@ namespace aris::control
 			.prop("home_pos", &Motor::setHomePos, &Motor::homePos)
 			;
 
+	aris::core::class_<aris::core::PointerArray<Motor>>("MotorPoolObject")
+		.asRefArray();
+
+		typedef aris::core::PointerArray<Motor>&(Controller::*MotorPoolFunc)();
 		aris::core::class_<Controller>("Controller")
-			.inherit<Master>()
+			.prop("motor_pool", &Controller::resetMotorPool, MotorPoolFunc(&Controller::motorPool))
 			;
 	}
 }

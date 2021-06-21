@@ -6,8 +6,7 @@
 
 namespace aris::control
 {
-	class ARIS_API Motor : public virtual Slave
-	{
+	class ARIS_API Motor{
 	public:
 		auto motId()const->aris::Size;
 		auto maxPos()const->double;
@@ -62,7 +61,7 @@ namespace aris::control
 		auto virtual mode(std::uint8_t md)->int = 0;
 
 		virtual ~Motor();
-		explicit Motor(const std::string &name = "motion", std::uint16_t phy_id = 0
+		explicit Motor(const std::string &name = "motion"
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		Motor(const Motor &other);
@@ -76,18 +75,16 @@ namespace aris::control
 
 		friend class Controller;
 	};
-	class ARIS_API Controller : public virtual Master
-	{
+	class ARIS_API Controller {
 	public:
-		auto virtual init()->void override;
-		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>&;
-		auto motionPool()const->const aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
-		auto motionAtSla(aris::Size id)->Motor&;
-		auto motionAtSla(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
-		auto motionAtPhy(aris::Size id)->Motor&;
-		auto motionAtPhy(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
-		auto motionAtAbs(aris::Size id)->Motor&;
-		auto motionAtAbs(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
+		auto virtual init()->void;
+
+		auto resetMotorPool(aris::core::PointerArray<Motor> *pool);
+		auto motorPool()->aris::core::PointerArray<Motor>&;
+		auto motorPool()const->const aris::core::PointerArray<Motor>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motorPool(); }
+
+
+
 
 		virtual ~Controller();
 		Controller(const std::string &name = "controller");

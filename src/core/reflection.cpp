@@ -46,8 +46,7 @@ namespace aris::core
 		struct InstancePtr { std::shared_ptr<void> data_; };
 		std::variant<std::monostate, InstanceRef, InstancePtr> data_;
 	};
-	struct Type::Imp
-	{
+	struct Type::Imp{
 		// init properties, for inheritance //
 		bool inited{ false };
 

@@ -20,9 +20,8 @@ public:
 	{
 		const double PI = 3.141592653589793;
 		
-		
 		// 设置时间，如果伺服周期为1000Hz，那么每个周期时间递加0.001s //
-		model()->setTime(model()->time() + 0.001);
+		model()->setTime(0.001 * count());
 
 		// 计算末端的位置 //
 		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
@@ -32,7 +31,7 @@ public:
 		pe[3] = 0.3 + 4 * PI*count() / 1000;
 
 		// 设置末端位置 //
-		model()->generalMotionPool().front().setMpe(pe, "321");
+		dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().front()).setMpe(pe, "321");
 
 		// 求反解 //
 		model()->solverPool()[0].kinPos();

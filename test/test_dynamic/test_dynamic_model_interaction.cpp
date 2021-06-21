@@ -336,13 +336,13 @@ void test_constraint()
 		m1.cptCp(result1);
 		if (!s_is_equal(m1.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
 
-		m1.updMp();
+		m1.updP();
 		if (!s_is_equal(m1.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
 
-		m1.updMv();
+		m1.updV();
 		if (!s_is_equal(m1.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
 
-		m1.updMa();
+		m1.updA();
 		if (!s_is_equal(m1.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
 	}
 
@@ -589,10 +589,10 @@ void test_constraint()
 
 
 
-		//mot.updMp();
+		//mot.updP();
 		//if (std::abs(mot.mp() - 0.521)>error)std::cout << "\"Motion:updMp\" failed" << std::endl;
 
-		//mot.updMv();
+		//mot.updV();
 		//if (std::abs(mot.mv() - 0.689)>error)std::cout << "\"Motion:updMv\" failed" << std::endl;
 
 		//mot.updGlbCm();

@@ -11,8 +11,7 @@ void test_seven_axis_forward_solver()
 {
 
 }
-void test_seven_axis_inverse_solver()
-{
+void test_seven_axis_inverse_solver(){
 	aris::dynamic::SevenAxisParam param;
 
 	param.d1 = 0.3705;
@@ -21,11 +20,12 @@ void test_seven_axis_inverse_solver()
 	param.tool0_pe[2] = 0.2205;
 	std::cout << "finished***" << std::endl;
 	auto m = aris::dynamic::createModelSevenAxis(param);
+	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
 	std::cout << "finished***" << std::endl;
 	m->init();
 	std::cout << "finished***" << std::endl;
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
-	m->generalMotionPool()[0].setMpe(pe, "321");
+	gm.setMpe(pe, "321");
 
 	for (int i = 0; i < 9; ++i)
 	{
@@ -35,8 +35,8 @@ void test_seven_axis_inverse_solver()
 		m->solverPool()[1].kinPos();
 
 		double result[6];
-		m->generalMotionPool()[0].updMpm();
-		m->generalMotionPool()[0].getMpe(result, "321");
+		gm.updP();
+		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 
 		/////////////////////////////////////////////////////////////////////
@@ -94,6 +94,7 @@ void test_seven_axis_inverse_solver2()
 	//param.tool0_pe[2] = 0.1048;
 
 	auto m = aris::dynamic::createModelSevenAxis2(param);
+	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
 	m->init();
 
 	//double pe1[]{ 0.4707, 0.206, 0.6817, 3.49, 0.8636, 3.3637 };
@@ -104,12 +105,12 @@ void test_seven_axis_inverse_solver2()
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
 	double input[7]{ 0.1, 0.2, 0.3, -0.8, 0.5, 0.6, 0.7 };
-	m->setMotionPos(input);
+	m->setInputPos(input);
 	m->forwardKinematics();
-	m->generalMotionPool()[0].updMpm();
-	m->generalMotionPool()[0].getMpe(pe);
+	gm.updP();
+	gm.getMpe(pe);
 
-	aris::dynamic::dsp(4, 4, *m->generalMotionPool()[0].mpm());
+	aris::dynamic::dsp(4, 4, *gm.mpm());
 	
 	//m->generalMotionPool()[0].setMpe(pe, "321");
 
@@ -125,8 +126,8 @@ void test_seven_axis_inverse_solver2()
 		//m->solverPool()[1].kinPos();
 
 		double result[6];
-		m->generalMotionPool()[0].updMpm();
-		m->generalMotionPool()[0].getMpe(result, "321");
+		gm.updP();
+		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 
 
@@ -159,6 +160,7 @@ void test_seven_axis_inverse_solver3()
 	//param.tool0_pe[2] = 0.1048;
 
 	auto m = aris::dynamic::createModelSevenAxis3(param);
+	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
 	m->init();
 
 	//double pe1[]{ 0.4707, 0.206, 0.6817, 3.49, 0.8636, 3.3637 };
@@ -169,10 +171,10 @@ void test_seven_axis_inverse_solver3()
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
 	double input[7]{ 0.1, 0.2, 0.1, 0.4, 0.5, 0.6, 0.7 };
-	m->setMotionPos(input);
+	m->setInputPos(input);
 	m->forwardKinematics();
-	m->generalMotionPool()[0].updMpm();
-	m->generalMotionPool()[0].getMpe(pe, "321");
+	gm.updP();
+	gm.getMpe(pe, "321");
 
 
 	aris::dynamic::dsp(1, 6, pe);
@@ -192,8 +194,8 @@ void test_seven_axis_inverse_solver3()
 		//m->solverPool()[1].kinPos();
 
 		double result[6];
-		m->generalMotionPool()[0].updMpm();
-		m->generalMotionPool()[0].getMpe(result, "321");
+		gm.updP();
+		gm.getMpe(result, "321");
 		dsp(1, 6, result);
 
 

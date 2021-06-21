@@ -26,39 +26,50 @@ namespace aris::server
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
 		using PostCallback = std::add_pointer<void(ControlServer&)>::type;
 
-		// members //
 		static auto instance()->ControlServer &;
+
+		// model //
 		template<typename T = aris::dynamic::Model, typename... Args>
 		auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
-		template<typename T = aris::control::Controller, typename... Args>
-		auto makeController(Args&&... args)->void { this->resetController(new T(std::forward<Args>(args)...)); }
-		template<typename T = aris::sensor::SensorRoot, typename... Args>
-		auto makeSensorRoot(Args&&... args)->void { this->resetSensorRoot(new T(std::forward<Args>(args)...)); }
-		template<typename T = aris::plan::PlanRoot, typename... Args>
-		auto makePlanRoot(Args&&... args)->void { this->resetPlanRoot(new T(std::forward<Args>(args)...)); }
 		auto resetModel(dynamic::Model *model)->void;
-		auto resetController(control::Controller *controller)->void;
-		auto resetSensorRoot(sensor::SensorRoot *sensor_root)->void;
-		auto resetPlanRoot(plan::PlanRoot *sensor_root)->void;
-		auto resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void;
-		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
-		auto resetCustomModule(server::CustomModule *custom_module)->void;
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
+
+		// master //
+		template<typename T = aris::control::Master, typename... Args>
+		auto makeMaster(Args&&... args)->void { this->resetMaster(new T(std::forward<Args>(args)...)); }
+		auto resetMaster(control::Master *master)->void;
+		auto master()->control::Master&;
+		auto master()const->const control::Master& { return const_cast<ControlServer *>(this)->master(); }
+
+		// controller //
+		template<typename T = aris::control::Controller, typename... Args>
+		auto makeController(Args&&... args)->void { this->resetController(new T(std::forward<Args>(args)...)); }
+		auto resetController(control::Controller *controller)->void;
 		auto controller()->control::Controller&;
 		auto controller()const->const control::Controller& { return const_cast<ControlServer *>(this)->controller(); }
-		auto sensorRoot()->sensor::SensorRoot&;
-		auto sensorRoot()const->const sensor::SensorRoot& { return const_cast<ControlServer *>(this)->sensorRoot(); }
+
+		// plans //
+		template<typename T = aris::plan::PlanRoot, typename... Args>
+		auto makePlanRoot(Args&&... args)->void { this->resetPlanRoot(new T(std::forward<Args>(args)...)); }
+		auto resetPlanRoot(plan::PlanRoot *sensor_root)->void;
 		auto planRoot()->plan::PlanRoot&;
 		auto planRoot()const->const plan::PlanRoot& { return const_cast<ControlServer *>(this)->planRoot(); }
+
+		// interfaces //
+		auto resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void;
 		auto interfacePool()->aris::core::PointerArray<aris::server::Interface>&;
 		auto interfacePool()const->const aris::core::PointerArray<aris::server::Interface>& { return const_cast<ControlServer *>(this)->interfacePool(); }
-		auto interfaceRoot()->InterfaceRoot&;
-		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
+
+		// middleware //
+		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
 		auto middleWare()->MiddleWare&;
 		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
 		auto customModule()->CustomModule&;
 		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
+
+		// custom module //
+		auto resetCustomModule(server::CustomModule *custom_module)->void;
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;
@@ -66,8 +77,8 @@ namespace aris::server
 		auto running()->bool;
 		auto globalCount()->std::int64_t;
 		auto currentExecutePlanRt()->aris::plan::Plan *;
-		auto globalMotionCheckOption()->std::uint64_t*;
-		auto setAutoLogActive(bool auto_log)->void;
+		auto globalMotionCheckOption()->std::uint64_t*;// 全局的初始检查选项，也是每个 plan 的初始检查选项，但不影响空闲时候的检查
+		auto setAutoLogActive(bool auto_log)->void; // 为每个 plan 自动创建日志
 		auto autoLogActive()->bool;
 
 		// operation in NRT context //

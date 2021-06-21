@@ -283,7 +283,7 @@ namespace aris::dynamic
 		imp_->M6 = &model()->motionPool().at(5);
 		imp_->M7 = &model()->motionPool().at(6);
 
-		imp_->ee = &model()->generalMotionPool().at(0);
+		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 
 
 		auto &p = imp_->seven_axis_param;
@@ -411,7 +411,7 @@ namespace aris::dynamic
 					}
 
 					double last_mp = imp_->motions[i]->mpInternal();
-					imp_->motions[i]->updMp();
+					imp_->motions[i]->updP();
 					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
 					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}

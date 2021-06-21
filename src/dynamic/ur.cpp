@@ -110,15 +110,7 @@ namespace aris::dynamic
 
 	struct UniversalSolver::Imp
 	{
-		std::vector<Diag *> get_diag_from_part_id_;
-
 		std::vector<SubSystem> subsys_pool_;
-
-		std::vector<double> F_, FU_, FT_, G_, GU_, GT_, S_, QT_DOT_G_, xpf_, xcf_, bpf_, bcf_, beta_, cmI, cmJ, cmU, cmT;
-		std::vector<Size> FP_, GP_;
-
-		std::vector<double> Jg_, cg_;
-		std::vector<double> M_, h_;
 
 		static auto one_constraint_upd_d(Diag *d)noexcept->void
 		{
@@ -432,7 +424,7 @@ namespace aris::dynamic
 		Joint *R5 = &m.jointPool().at(4);
 		Joint *R6 = &m.jointPool().at(5);
 
-		GeneralMotion *ee = &m.generalMotionPool().at(0);
+		GeneralMotion *ee = &dynamic_cast<GeneralMotion&>(m.generalMotionPool().at(0));
 
 		// UR的机构有如下特点：
 		// 1轴和2轴垂直且交于一点： A点
@@ -585,7 +577,7 @@ namespace aris::dynamic
 
 
 			auto last_mp = m.motionPool().at(i).mpInternal();
-			m.motionPool().at(i).updMp();
+			m.motionPool().at(i).updP();
 			while (m.motionPool().at(i).mpInternal() - last_mp > PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() - 2 * PI);
 			while (m.motionPool().at(i).mpInternal() - last_mp < -PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() + 2 * PI);
 		}

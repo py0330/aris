@@ -21,7 +21,7 @@ namespace aris::server
 
 		std::string ret;
 		ret.reserve(length);
-		std::srand(std::time(nullptr));
+		std::srand(static_cast<unsigned int>(std::time(nullptr)));
 		for (int i = 0; i < length; ++i)ret.push_back(letters[std::rand() % 62]);
 		return ret;
 	};
@@ -640,9 +640,9 @@ namespace aris::server
 
 		std::string line;
 		std::getline(ss, line);
-		head_size += line.size();
+		head_size += (int)line.size();
 		std::getline(ss, line);
-		head_size += line.size();
+		head_size += (int)line.size();
 		auto filename_raw = line.substr(line.find("filename=\"") + 10);
 		filename_raw = filename_raw.substr(0, filename_raw.size() - 2);
 
@@ -650,9 +650,9 @@ namespace aris::server
 
 
 		std::getline(ss, line);
-		head_size += line.size();
+		head_size += (int)line.size();
 		std::getline(ss, line);
-		head_size += line.size();
+		head_size += (int)line.size();
 		
 		auto data = str.substr(head_size + 4, str.rfind("\r\n", str.size() - 5) - head_size - 4);
 

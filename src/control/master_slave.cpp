@@ -22,11 +22,10 @@ namespace aris::control
 	auto Slave::setVirtual(bool is_virtual)->void { imp_->is_virtual = is_virtual; }
 	auto Slave::id()const->std::uint16_t { return imp_->sla_id_; }
 	Slave::~Slave() = default;
-	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp) { imp_->phy_id_ = phy_id; }
+	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp), NamedObject(name) { imp_->phy_id_ = phy_id; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Slave);
 
-	struct Master::Imp
-	{
+	struct Master::Imp{
 	public:
 		enum { LOG_NEW_FILE = 1, LOG_NEW_FILE_RAW_NAME = 2 };
 		static auto rt_task_func(void *master)->void
@@ -308,7 +307,7 @@ namespace aris::control
 	auto Master::setSamplePeriodNs(int period_ns)->void {	imp_->sample_period_ns_ = period_ns;}
 	auto Master::samplePeriodNs()const ->int { return imp_->sample_period_ns_; }
 	Master::~Master() = default;
-	Master::Master(const std::string &name) :imp_(new Imp){}
+	Master::Master(const std::string &name) :imp_(new Imp), NamedObject(name){}
 
 	ARIS_REGISTRATION{
 		aris::core::class_<Slave>("Slave")

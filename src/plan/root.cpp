@@ -23,7 +23,6 @@ namespace aris::plan
 		aris::control::Master *master_;
 		aris::control::Controller *controller_;
 		aris::control::EthercatMaster *ec_master_;
-		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
 		std::weak_ptr<Plan> shared_for_this_;
@@ -64,7 +63,6 @@ namespace aris::plan
 	auto Plan::master()->aris::control::Master* { return imp_->master_; }
 	auto Plan::controller()->aris::control::Controller* { return imp_->controller_; }
 	auto Plan::ecMaster()->aris::control::EthercatMaster* { return imp_->ec_master_; }
-	auto Plan::ecController()->aris::control::EthercatController* { return imp_->ec_controller_; }
 	auto Plan::sharedPtrForThis()->std::shared_ptr<Plan> { return imp_->shared_for_this_.lock(); }
 	auto Plan::option()->std::uint64_t& { return imp_->option_; }
 	auto Plan::motorOptions()->std::vector<std::uint64_t>& { return imp_->mot_options_; }
@@ -75,7 +73,7 @@ namespace aris::plan
 	auto Plan::beginGlobalCount()->std::int64_t { return imp_->begin_global_count_; }
 	auto Plan::rtStastic()->aris::control::Master::RtStasticsData & { return imp_->rt_stastic_; }
 	auto Plan::doubleParam(std::string_view param_name)->double { return std::stod(std::string(cmdParams().at(param_name))); }
-	auto Plan::floatParam(std::string_view param_name)->float { return std::stod(std::string(cmdParams().at(param_name))); }
+	auto Plan::floatParam(std::string_view param_name)->float { return static_cast<float>(std::stod(std::string(cmdParams().at(param_name)))); }
 	auto Plan::int32Param(std::string_view param_name)->std::int32_t { return std::stol(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::int64Param(std::string_view param_name)->std::int64_t { return std::stoll(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
@@ -335,13 +333,11 @@ namespace aris::plan
 		"		<UniqueParam default=\"all\">"\
 		"			<Param name=\"all\" abbreviation=\"a\"/>"\
 		"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"\
-		"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"\
-		"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"\
 		"		</UniqueParam>"
 	auto set_active_motor(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetActiveMotor &param)->void
 	{
 		param.active_motor.clear();
-		param.active_motor.resize(plan.controller()->motionPool().size(), 0);
+		param.active_motor.resize(plan.controller()->motorPool().size(), 0);
 		
 		for (auto cmd_param : cmd_params)
 		{
@@ -352,14 +348,6 @@ namespace aris::plan
 			else if (cmd_param.first == "motion_id")
 			{
 				param.active_motor.at(plan.int32Param(cmd_param.first)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.at(plan.controller()->motionAtPhy(plan.int32Param(cmd_param.first)).motId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.at(plan.controller()->motionAtSla(plan.int32Param(cmd_param.first)).motId()) = 1;
 			}
 		}
 	}
@@ -379,7 +367,7 @@ namespace aris::plan
 		"		<Param name=\"dec\" default=\"0.1\"/>"
 	auto set_input_movement(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetInputMovement &param)->void
 	{
-		param.axis_begin_pos_vec.resize(plan.controller()->motionPool().size(), 0.0);
+		param.axis_begin_pos_vec.resize(plan.controller()->motorPool().size(), 0.0);
 		for (auto cmd_param : cmd_params)
 		{
 			if (cmd_param.first == "pos")
@@ -387,9 +375,9 @@ namespace aris::plan
 				auto p = plan.matrixParam(cmd_param.first);
 				if (p.size() == 1)
 				{
-					param.axis_pos_vec.resize(plan.controller()->motionPool().size(), p.toDouble());
+					param.axis_pos_vec.resize(plan.controller()->motorPool().size(), p.toDouble());
 				}
-				else if (p.size() == plan.controller()->motionPool().size())
+				else if (p.size() == plan.controller()->motorPool().size())
 				{
 					param.axis_pos_vec.assign(p.begin(), p.end());
 				}
@@ -404,9 +392,9 @@ namespace aris::plan
 
 				if (a.size() == 1)
 				{
-					param.axis_acc_vec.resize(plan.controller()->motionPool().size(), a.toDouble());
+					param.axis_acc_vec.resize(plan.controller()->motorPool().size(), a.toDouble());
 				}
-				else if (a.size() == plan.controller()->motionPool().size())
+				else if (a.size() == plan.controller()->motorPool().size())
 				{
 					param.axis_acc_vec.assign(a.begin(), a.end());
 				}
@@ -422,9 +410,9 @@ namespace aris::plan
 
 				if (v.size() == 1)
 				{
-					param.axis_vel_vec.resize(plan.controller()->motionPool().size(), v.toDouble());
+					param.axis_vel_vec.resize(plan.controller()->motorPool().size(), v.toDouble());
 				}
-				else if (v.size() == plan.controller()->motionPool().size())
+				else if (v.size() == plan.controller()->motorPool().size())
 				{
 					param.axis_vel_vec.assign(v.begin(), v.end());
 				}
@@ -439,9 +427,9 @@ namespace aris::plan
 
 				if (d.size() == 1)
 				{
-					param.axis_dec_vec.resize(plan.controller()->motionPool().size(), d.toDouble());
+					param.axis_dec_vec.resize(plan.controller()->motorPool().size(), d.toDouble());
 				}
-				else if (d.size() == plan.controller()->motionPool().size())
+				else if (d.size() == plan.controller()->motorPool().size())
 				{
 					param.axis_dec_vec.assign(d.begin(), d.end());
 				}
@@ -452,23 +440,20 @@ namespace aris::plan
 			}
 		}
 	}
-	auto check_input_movement(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetInputMovement &param, SetActiveMotor &active)->void
-	{
+	auto check_input_movement(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetInputMovement &param, SetActiveMotor &active)->void{
 		auto c = plan.controller();
-		for (Size i = 0; i < c->motionPool().size(); ++i)
-		{
-			if (active.active_motor[i])
-			{
-				if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
+		for (Size i = 0; i < c->motorPool().size(); ++i){
+			if (active.active_motor[i])	{
+				if (param.axis_pos_vec[i] > c->motorPool()[i].maxPos() || param.axis_pos_vec[i] < c->motorPool()[i].minPos())
 					THROW_FILE_LINE("input pos beyond range");
 
-				if (param.axis_vel_vec[i] > c->motionPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
+				if (param.axis_vel_vec[i] > c->motorPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
 					THROW_FILE_LINE("input vel beyond range");
 
-				if (param.axis_acc_vec[i] > c->motionPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
+				if (param.axis_acc_vec[i] > c->motorPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
 					THROW_FILE_LINE("input acc beyond range");
 
-				if (param.axis_dec_vec[i] > c->motionPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
+				if (param.axis_dec_vec[i] > c->motorPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
 					THROW_FILE_LINE("input dec beyond range");
 			}
 		}
@@ -498,11 +483,11 @@ namespace aris::plan
 	auto Enable::executeRT()->int
 	{
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller()->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller()->motorPool().size(); ++i)
 		{
 			if (imp_->active_motor[i])
 			{
-				auto &cm = controller()->motionPool().at(i);
+				auto &cm = controller()->motorPool().at(i);
 				auto ret = cm.enable();
 				if (ret)
 				{
@@ -510,7 +495,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unenabled motor " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -547,11 +532,11 @@ namespace aris::plan
 	auto Disable::executeRT()->int
 	{
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller()->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller()->motorPool().size(); ++i)
 		{
 			if (imp_->active_motor[i])
 			{
-				auto &cm = controller()->motionPool().at(i);
+				auto &cm = controller()->motorPool().at(i);
 				auto ret = cm.disable();
 				if (ret)
 				{
@@ -559,7 +544,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Undisabled motor " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -600,27 +585,27 @@ namespace aris::plan
 				std::uint32_t low_speed = std::stoi(std::string(cmdParams().at("low_speed")));
 				std::uint32_t acc = std::stoi(std::string(cmdParams().at("acceleration")));
 
-				auto &cm = dynamic_cast<aris::control::EthercatMotor &>(controller()->motionPool()[i]);
+				auto &cm = dynamic_cast<aris::control::EthercatMotor &>(controller()->motorPool()[i]);
 			
-				cm.writeSdo(0x6098, 0x00, method);
+				cm.slave()->writeSdo(0x6098, 0x00, method);
 				std::int8_t method_read;
-				cm.readSdo(0x6098, 0x00, method_read);
+				cm.slave()->readSdo(0x6098, 0x00, method_read);
 				if (method_read != method)THROW_FILE_LINE("home sdo write failed method");
-				cm.writeSdo(0x607C, 0x00, offset);
+				cm.slave()->writeSdo(0x607C, 0x00, offset);
 				std::int32_t offset_read;
-				cm.readSdo(0x607C, 0x00, offset_read);
+				cm.slave()->readSdo(0x607C, 0x00, offset_read);
 				if (offset_read != offset)THROW_FILE_LINE("home sdo write failed offset");
-				cm.writeSdo(0x6099, 0x01, high_speed);
+				cm.slave()->writeSdo(0x6099, 0x01, high_speed);
 				std::int32_t high_speed_read;
-				cm.readSdo(0x6099, 0x01, high_speed_read);
+				cm.slave()->readSdo(0x6099, 0x01, high_speed_read);
 				if (high_speed_read != high_speed)THROW_FILE_LINE("home sdo write failed high_speed");
-				cm.writeSdo(0x6099, 0x02, low_speed);
+				cm.slave()->writeSdo(0x6099, 0x02, low_speed);
 				std::int32_t low_speed_read;
-				cm.readSdo(0x6099, 0x02, low_speed_read);
+				cm.slave()->readSdo(0x6099, 0x02, low_speed_read);
 				if (low_speed_read != low_speed)THROW_FILE_LINE("home sdo write failed low_speed");
-				cm.writeSdo(0x609A, 0x00, acc);
+				cm.slave()->writeSdo(0x609A, 0x00, acc);
 				std::int32_t acc_read;
-				cm.readSdo(0x609A, 0x00, acc_read);
+				cm.slave()->readSdo(0x609A, 0x00, acc_read);
 				if (acc_read != acc)THROW_FILE_LINE("home sdo write failed acc");
 				
 			}
@@ -632,11 +617,11 @@ namespace aris::plan
 	auto Home::executeRT()->int
 	{
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller()->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller()->motorPool().size(); ++i)
 		{
 			if (imp_->active_motor[i])
 			{
-				auto &cm = controller()->motionPool().at(i);
+				auto &cm = controller()->motorPool().at(i);
 				auto ret = cm.home();
 				if (ret)
 				{
@@ -644,7 +629,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unhomed motor " << i << ", ret: " << ret << std::endl;
 					}
 				}
 				else
@@ -693,11 +678,11 @@ namespace aris::plan
 	auto Mode::executeRT()->int
 	{
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller()->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < controller()->motorPool().size(); ++i)
 		{
 			if (imp_->active_motor[i])
 			{
-				auto &cm = controller()->motionPool().at(i);
+				auto &cm = controller()->motorPool().at(i);
 				auto ret = cm.mode(imp_->mode);
 				if (count() == 1) 
 				{
@@ -723,7 +708,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unmoded motor " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -766,9 +751,9 @@ namespace aris::plan
 		set_active_motor(cmdParams(), *this, *imp_);
 		set_input_movement(cmdParams(), *this, *imp_);
 
-		for (Size i = 0; i < controller()->motionPool().size(); ++i)
+		for (Size i = 0; i < controller()->motorPool().size(); ++i)
 		{
-			auto &cm = controller()->motionPool()[i];
+			auto &cm = controller()->motorPool()[i];
 			imp_->axis_pos_vec[i] = imp_->axis_pos_vec[i] * (cm.maxPos() - cm.minPos()) + cm.minPos();
 			imp_->axis_acc_vec[i] = imp_->axis_acc_vec[i] * cm.maxAcc();
 			imp_->axis_vel_vec[i] = imp_->axis_vel_vec[i] * cm.maxVel();
@@ -776,7 +761,7 @@ namespace aris::plan
 		}
 		check_input_movement(cmdParams(), *this, *imp_, *imp_);
 
-		imp_->total_count_vec.resize(controller()->motionPool().size(), 1);
+		imp_->total_count_vec.resize(controller()->motorPool().size(), 1);
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
@@ -786,24 +771,24 @@ namespace aris::plan
 		// 取得起始位置 //
 		if (count() == 1)
 		{
-			for (Size i = 0; i < controller()->motionPool().size(); ++i)
+			for (Size i = 0; i < controller()->motorPool().size(); ++i)
 			{
 				if (imp_->active_motor[i])
 				{
-					imp_->axis_begin_pos_vec[i] = controller()->motionPool().at(i).actualPos();
+					imp_->axis_begin_pos_vec[i] = controller()->motorPool().at(i).actualPos();
 				}
 			}
 		}
 
 		// 设置驱动器的位置 //
-		for (Size i = 0; i < controller()->motionPool().size(); ++i)
+		for (Size i = 0; i < controller()->motorPool().size(); ++i)
 		{
 			if (imp_->active_motor[i])
 			{
 				double p, v, a;
 				aris::plan::moveAbsolute(static_cast<double>(count()), imp_->axis_begin_pos_vec[i], imp_->axis_pos_vec[i], imp_->axis_vel_vec[i] / 1000
 					, imp_->axis_acc_vec[i] / 1000 / 1000, imp_->axis_dec_vec[i] / 1000 / 1000, p, v, a, imp_->total_count_vec[i]);
-				controller()->motionAtAbs(i).setTargetPos(p);
+				controller()->motorPool()[i].setTargetPos(p);
 			}
 		}
 
@@ -858,12 +843,10 @@ namespace aris::plan
 	{
 		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(this->param());
 
-		if (count() == 1)
-		{
-			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
-			{
-				controller()->motionPool()[i].setTargetPos(controller()->motionPool().at(i).actualPos());
-				model()->motionPool()[i].setMp(controller()->motionPool().at(i).actualPos());
+		if (count() == 1){
+			for (Size i = 0; i < std::min(controller()->motorPool().size(), model()->motionPool().size()); ++i){
+				controller()->motorPool()[i].setTargetPos(controller()->motorPool().at(i).actualPos());
+				model()->motionPool()[i].setMp(controller()->motorPool().at(i).actualPos());
 			}
 
 			param->is_rt_waiting_ready_.store(true);
@@ -904,7 +887,7 @@ namespace aris::plan
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
 	}
-	auto Sleep::executeRT()->int { return imp_->count - count(); }
+	auto Sleep::executeRT()->int { return imp_->count - static_cast<int>(count()); }
 	Sleep::~Sleep() = default;
 	Sleep::Sleep(const std::string &name) :imp_(new Imp)
 	{
@@ -918,12 +901,12 @@ namespace aris::plan
 	auto Show::prepareNrt()->void{	for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; }
 	auto Show::executeRT()->int
 	{
-		controller()->mout() << "pos: ";
-		for (auto &m : controller()->motionPool())
+		master()->mout() << "pos: ";
+		for (auto &m : controller()->motorPool())
 		{
-			controller()->mout() << std::setprecision(15) << m.actualPos() << "   ";
+			master()->mout() << std::setprecision(15) << m.actualPos() << "   ";
 		}
-		controller()->mout() << std::endl;
+		master()->mout() << std::endl;
 		return 0;
 	}
 	Show::Show(const std::string &name){ aris::core::fromXmlString(command(), "<Command name=\"sh\"/>"); }
@@ -937,7 +920,7 @@ namespace aris::plan
 		set_input_movement(cmdParams(), *this, *imp_);
 		//check_input_movement(cmdParams(), *this, *imp_, *imp_);
 
-		imp_->axis_begin_pos_vec.resize(controller()->motionPool().size());
+		imp_->axis_begin_pos_vec.resize(controller()->motorPool().size());
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
@@ -950,7 +933,7 @@ namespace aris::plan
 			{
 				if (imp_->active_motor[i])
 				{
-					imp_->axis_begin_pos_vec[i] = controller()->motionPool()[i].targetPos();
+					imp_->axis_begin_pos_vec[i] = controller()->motorPool()[i].targetPos();
 				}
 			}
 		}
@@ -966,12 +949,12 @@ namespace aris::plan
 					imp_->axis_begin_pos_vec[i], imp_->axis_pos_vec[i],
 					imp_->axis_vel_vec[i] / 1000, imp_->axis_acc_vec[i] / 1000 / 1000, imp_->axis_dec_vec[i] / 1000 / 1000,
 					p, v, a, t_count);
-				controller()->motionPool()[i].setTargetPos(p);
+				controller()->motorPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
 			}
 		}
 
-		return total_count - count();
+		return total_count - static_cast<int>(count());
 	}
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) :imp_(new Imp)
@@ -1088,11 +1071,11 @@ namespace aris::plan
 				else if (acc_mat.size() == model()->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i)mvj_param.joint_acc[i] *= controller()->motionPool()[i].maxAcc();
+				for (int i = 0; i < 6; ++i)mvj_param.joint_acc[i] *= controller()->motorPool()[i].maxAcc();
 
 				// check value validity //
-				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motionPool().size()); ++i)
-					if (mvj_param.joint_acc[i] <= 0 || mvj_param.joint_acc[i] > c->motionPool()[i].maxAcc())
+				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
+					if (mvj_param.joint_acc[i] <= 0 || mvj_param.joint_acc[i] > c->motorPool()[i].maxAcc())
 						THROW_FILE_LINE("");
 			}
 			else if (cmd_param.first == "joint_vel")
@@ -1105,11 +1088,11 @@ namespace aris::plan
 				else if (vel_mat.size() == model()->motionPool().size()) std::copy(vel_mat.begin(), vel_mat.end(), mvj_param.joint_vel.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i)mvj_param.joint_vel[i] *= controller()->motionPool()[i].maxVel();
+				for (int i = 0; i < 6; ++i)mvj_param.joint_vel[i] *= controller()->motorPool()[i].maxVel();
 
 				// check value validity //
-				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motionPool().size()); ++i)
-					if (mvj_param.joint_vel[i] <= 0 || mvj_param.joint_vel[i] > c->motionPool()[i].maxVel())
+				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
+					if (mvj_param.joint_vel[i] <= 0 || mvj_param.joint_vel[i] > c->motorPool()[i].maxVel())
 						THROW_FILE_LINE("");
 			}
 			else if (cmd_param.first == "joint_dec")
@@ -1122,11 +1105,11 @@ namespace aris::plan
 				else if (dec_mat.size() == model()->motionPool().size()) std::copy(dec_mat.begin(), dec_mat.end(), mvj_param.joint_dec.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i) mvj_param.joint_dec[i] *= controller()->motionPool()[i].maxAcc();
+				for (int i = 0; i < 6; ++i) mvj_param.joint_dec[i] *= controller()->motorPool()[i].maxAcc();
 
 				// check value validity //
-				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motionPool().size()); ++i)
-					if (mvj_param.joint_dec[i] <= 0 || mvj_param.joint_dec[i] > c->motionPool()[i].maxAcc())
+				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
+					if (mvj_param.joint_dec[i] <= 0 || mvj_param.joint_dec[i] > c->motorPool()[i].maxAcc())
 						THROW_FILE_LINE("");
 			}
 		}
@@ -1145,17 +1128,19 @@ namespace aris::plan
 		static Size max_total_count;
 		if (count() == 1)
 		{
+			auto gm = dynamic_cast<aris::dynamic::GeneralMotion*>(&model()->generalMotionPool().at(0));
+			
 			// inverse kinematic //
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvj_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).setMpm(end_pm);
+			gm->setMpm(end_pm);
 			if (model()->solverPool().at(0).kinPos())return -1;
 
 			// init joint_pos //
-			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
+			for (Size i = 0; i < std::min(controller()->motorPool().size(), model()->motionPool().size()); ++i)
 			{
-				mvj_param->joint_pos_begin[i] = controller()->motionPool()[i].targetPos();
-				mvj_param->joint_pos_end[i] = model()->motionPool()[i].mp();
+				mvj_param->joint_pos_begin[i] = controller()->motorPool()[i].targetPos();
+				mvj_param->joint_pos_end[i] = *model()->motionPool()[i].p();
 				aris::plan::moveAbsolute(static_cast<double>(count()), mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i]
 					, mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000
 					, p, v, a, mvj_param->total_count[i]);
@@ -1164,17 +1149,17 @@ namespace aris::plan
 			max_total_count = *std::max_element(mvj_param->total_count.begin(), mvj_param->total_count.end());
 		}
 
-		for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
+		for (Size i = 0; i < std::min(controller()->motorPool().size(), model()->motionPool().size()); ++i)
 		{
 			aris::plan::moveAbsolute(static_cast<double>(count()) * mvj_param->total_count[i] / max_total_count,
 				mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i],
 				mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000,
 				p, v, a, mvj_param->total_count[i]);
 
-			controller()->motionPool()[i].setTargetPos(p);
+			controller()->motorPool()[i].setTargetPos(p);
 		}
 
-		return max_total_count == 0 ? 0 : max_total_count - count();
+		return max_total_count == 0 ? 0 : static_cast<int>(max_total_count - count());
 	}
 	MoveJ::~MoveJ() = default;
 	MoveJ::MoveJ(const std::string &name) :imp_(new Imp)
@@ -1262,10 +1247,12 @@ namespace aris::plan
 		aris::Size pos_total_count, ori_total_count;
 		if (count() == 1)
 		{
+			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvl_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).updMpm();
-			model()->generalMotionPool().at(0).getMpm(begin_pm);
+			gm.updP();
+			gm.getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 
 			// relative_pa //
@@ -1295,8 +1282,10 @@ namespace aris::plan
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 		// 反解计算电机位置 //
-		model()->generalMotionPool().at(0).setMpm(pm2);
+		gm.setMpm(pm2);
 		if (model()->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
@@ -1312,7 +1301,7 @@ namespace aris::plan
 		//////////////////////////////////////////////////////////////////////////////////
 
 
-		return std::max(pos_total_count, ori_total_count) > count() ? 1 : 0;
+		return std::max(pos_total_count, ori_total_count) > aris::Size(count()) ? 1 : 0;
 	}
 	MoveL::~MoveL() = default;
 	MoveL::MoveL(const std::string &name) :imp_(new Imp)
@@ -1405,7 +1394,6 @@ namespace aris::plan
 				if (!Imp::is_running_.load())THROW_FILE_LINE("auto mode not started, when stop");
 
 				Imp::is_running_.store(false);
-				option() |= aris::plan::Plan::WAIT_FOR_COLLECTION;
 			}
 			else if (cmd_param.first == "pe")
 			{
@@ -1445,17 +1433,17 @@ namespace aris::plan
 	auto AutoMove::executeRT()->int
 	{
 		auto param = std::any_cast<AutoMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
 
-		if (count() == 1)
-		{
-			model()->generalMotionPool()[0].setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
+		if (count() == 1){
+			gm.setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
 		}
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i)if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// get target pe //
@@ -1476,9 +1464,9 @@ namespace aris::plan
 				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
 		}
 
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 
 		static int i = 0;
 		if (++i % 1000 == 0)
@@ -1585,7 +1573,6 @@ namespace aris::plan
 				if (!Imp::is_running_.load())THROW_FILE_LINE("manual mode not started, when stop");
 
 				Imp::is_running_.store(false);
-				option() |= WAIT_FOR_COLLECTION;
 			}
 			else if (cmd_param.first == "x")
 			{
@@ -1612,12 +1599,13 @@ namespace aris::plan
 	auto ManualMove::executeRT()->int
 	{
 		auto param = std::any_cast<ManualMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i) if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// init status //
@@ -1644,13 +1632,12 @@ namespace aris::plan
 		}
 
 		// check if target_pe is valid //
-		model()->generalMotionPool()[0].setMpe(target_pe_new.data(), imp_->eul_type.c_str());
+		gm.setMpe(target_pe_new.data(), imp_->eul_type.c_str());
 		auto check_motion_limit = [&]()->bool
 		{
 			auto c = controller();
-			for (std::size_t i = 0; i < std::min(c->motionPool().size(), model()->motionPool().size()); ++i)
-			{
-				auto &cm = c->motionPool().at(i);
+			for (std::size_t i = 0; i < std::min(c->motorPool().size(), model()->motionPool().size()); ++i)	{
+				auto &cm = c->motorPool().at(i);
 				auto &mm = model()->motionPool().at(i);
 
 				if (mm.mp() < cm.minPos() + 0.005 || mm.mp() > cm.maxPos() - 0.005) return false;
@@ -1671,9 +1658,9 @@ namespace aris::plan
 		}
 
 		// set everything //
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 		model()->solverPool()[0].kinPos();
 		model()->solverPool()[0].kinVel();
 
