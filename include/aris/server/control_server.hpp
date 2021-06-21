@@ -35,10 +35,6 @@ namespace aris::server
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 
-		auto resetCustomModule(server::CustomModule *custom_module)->void;
-
-
-
 		// master //
 		template<typename T = aris::control::Master, typename... Args>
 		auto makeMaster(Args&&... args)->void { this->resetMaster(new T(std::forward<Args>(args)...)); }
@@ -71,6 +67,9 @@ namespace aris::server
 		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
 		auto customModule()->CustomModule&;
 		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
+
+		// custom module //
+		auto resetCustomModule(server::CustomModule *custom_module)->void;
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;
