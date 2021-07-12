@@ -11,6 +11,7 @@
 #include <set>
 #include <mutex>
 #include <map>
+#include <cstring>
 
 #include "sqlite3.h"
 #include "aris/core/data_structure.hpp"
@@ -110,9 +111,12 @@ namespace aris::core
 	};
 
 	class ARIS_API DbLogCell {
+#define MAX_LOG_LENGTH 512
 	public:
-		auto text() const->const std::string& { return text_; }
-		auto setText(const std::string &text)->void { text_ = text; }
+		auto text() const->std::string { return std::string(ctext_); }
+		auto ctext() const->const char* { return ctext_; }
+		auto setText(const std::string &text)->void { std::strncpy(ctext_, text.c_str(), MAX_LOG_LENGTH-1); ctext_[MAX_LOG_LENGTH-1]='\0'; }
+		auto setText(const char *ctext)->void { if (!ctext) return; std::strncpy(ctext_, ctext, MAX_LOG_LENGTH-1); ctext_[MAX_LOG_LENGTH-1]='\0'; }
 		auto logLvl() const->LogLvl { return l_; }
 		auto setLogLvl(LogLvl l)->void { l_ = l; }
 		auto logType() const->LogType { return t_; }
@@ -127,7 +131,7 @@ namespace aris::core
 		auto timeStamp() const->const std::chrono::system_clock::time_point& { return tp_; }
 
 	private:
-		std::string text_;
+		char ctext_[MAX_LOG_LENGTH];
 		LogLvl l_{LogLvl::kInfo};
 		LogType t_{LogType::kSystem};
 		int code_{0};
@@ -137,6 +141,15 @@ namespace aris::core
 
 	public:
 		DbLogCell() = default;
+		explicit DbLogCell(const char *ctext,
+						   LogLvl l = LogLvl::kInfo, 
+						   LogType t = LogType::kSystem, 
+						   int code = 0,
+						   AccessStrategy stg = AccessStrategy::kYield,
+						   bool need_check = true,
+						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now()
+						   ) 
+			:l_(l), t_(t), code_(code), stg_(stg), nc_(need_check), tp_(tp) { setText(ctext); }
 		explicit DbLogCell(const std::string &text,
 						   LogLvl l = LogLvl::kInfo, 
 						   LogType t = LogType::kSystem, 
@@ -145,7 +158,7 @@ namespace aris::core
 						   bool need_check = true,
 						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now()
 						   ) 
-			: text_(text), l_(l), t_(t), code_(code), stg_(stg), nc_(need_check), tp_(tp) {}
+			:l_(l), t_(t), code_(code), stg_(stg), nc_(need_check), tp_(tp) { setText(text); }
 		virtual ~DbLogCell() = default;
 	};
 
