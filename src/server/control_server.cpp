@@ -589,6 +589,15 @@ namespace aris::server{
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void{
+		class TerminalInterface : public Interface {
+		public:
+			auto virtual open()->void override {}
+			auto virtual close()->void override {}
+			auto virtual isConnected() const->bool override { return true; }
+		};
+
+		static TerminalInterface terminal;
+
 		auto ret = std::async(std::launch::async, []()->std::string{
 			std::string command_in;
 			std::getline(std::cin, command_in);
@@ -609,7 +618,7 @@ namespace aris::server{
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready){
 				// 在linux后台可能getline失败，得到空字符串 //
 				if (auto cmd_str = ret.get(); !cmd_str.empty())	{
-					imp_->middle_ware_->executeCmd(cmd_str);
+					imp_->middle_ware_->executeCmd(cmd_str, dynamic_cast<Interface*>(&terminal));
 				}
 
 				ret = std::async(std::launch::async, []()->std::string{
@@ -1074,8 +1083,9 @@ namespace aris::server{
 		std::unique_lock<std::mutex> lck(imp_->auto_mu_);
 		return std::make_tuple(imp_->current_file_, imp_->current_line_);
 	}
-	auto ProgramMiddleware::executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int
+	auto ProgramMiddleware::executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int
 	{
+		(void)(interface);
 		auto send_code_and_msg = [send_ret](int code, const std::string& ret_msg_str)->int
 		{
 			nlohmann::json js;

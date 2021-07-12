@@ -125,7 +125,7 @@ namespace aris::server
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
 		auto currentFileLine()->std::tuple<std::string, int>;
-		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int override;
+		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int override;
 		~ProgramMiddleware();
 
 		ProgramMiddleware();

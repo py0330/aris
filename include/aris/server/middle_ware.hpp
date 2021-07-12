@@ -6,6 +6,8 @@
 
 #include <aris_lib_export.h>
 
+#include "aris/server/interface.hpp"
+
 namespace aris::server {
 	class ARIS_API MiddleWare {
 	public:
@@ -13,8 +15,8 @@ namespace aris::server {
 		virtual ~MiddleWare() {}
 
 		auto virtual init()->void {}
-		auto virtual executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int;     // 默认实现仅转发指令到控制器
-		auto virtual executeCmd(std::string cmd_str)->void;
+		auto virtual executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int;     // 默认实现仅转发指令到控制器
+		auto virtual executeCmd(std::string_view cmd_str, Interface *interface)->void;
 	};
 
 }   // namespace aris::server
