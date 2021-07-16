@@ -589,13 +589,6 @@ namespace aris::server{
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void{
-		class TerminalInterface : public Interface {
-		public:
-			auto virtual open()->void override {}
-			auto virtual close()->void override {}
-			auto virtual isConnected() const->bool override { return true; }
-		};
-
 		static TerminalInterface terminal;
 
 		auto ret = std::async(std::launch::async, []()->std::string{

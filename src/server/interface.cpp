@@ -208,6 +208,7 @@ namespace aris::server
 					aris::core::Msg ret_msg(msg);
 					ret_msg.copy(str);
 					socket->sendMsg(ret_msg);
+					std::cout << "---" << str << std::endl;
 				}
 				catch (std::exception &e)
 				{
@@ -418,7 +419,7 @@ namespace aris::server
 	}
 	// ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	// ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
-	// ProgramWebInterface::~ProgramWebInterface() = default;
+	ProgramWebInterface::~ProgramWebInterface() = default;
 }
 
 
@@ -796,12 +797,12 @@ namespace aris::server
 	HttpInterface::~HttpInterface() = default;
 	// HttpInterface::HttpInterface(HttpInterface && other) = default;
 	// HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
-	// HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
-	// {
-	// 	imp_->document_root_ = document_root;
-	// 	imp_->dav_root_ = document_root;
-	// 	imp_->port_ = port;
-	// }
+	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
+	{
+		imp_->document_root_ = document_root;
+		imp_->dav_root_ = document_root;
+		imp_->port_ = port;
+	}
 
 	ARIS_REGISTRATION{
 
