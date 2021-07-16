@@ -23,15 +23,27 @@ namespace aris::server
 	public:
 		auto virtual open()->void = 0;
 		auto virtual close()->void = 0;
+		auto virtual isConnected() const->bool = 0;
+		auto resetOnConnected(unsigned priority, const std::function<void(const Interface *interface)> &cbk=nullptr) noexcept->void;
+		auto removeAllOnConnected() noexcept->void;
+		auto resetOnDisconnected(unsigned priority, const std::function<void(const Interface *interface)> &cbk=nullptr) noexcept->void;
+		auto removeAllOnDisconnected() noexcept->void;
 
+	protected:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+
+	public:
 		Interface(const std::string &name = "interface");
-		ARIS_DEFINE_BIG_FOUR(Interface);
+		virtual ~Interface();
+		ARIS_DELETE_BIG_FOUR(Interface)
 	};
 	class ARIS_API ProgramWebInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
+		auto virtual isConnected() const->bool override;
 		auto resetSocket(aris::core::Socket *sock)->void;
 		auto socket()->aris::core::Socket&;
 		auto isAutoMode()->bool;
@@ -45,8 +57,9 @@ namespace aris::server
 		
 		~ProgramWebInterface();
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
-		ProgramWebInterface(ProgramWebInterface && other);
-		ProgramWebInterface& operator=(ProgramWebInterface&& other);
+		// ProgramWebInterface(ProgramWebInterface && other);
+		// ProgramWebInterface& operator=(ProgramWebInterface&& other);
+		ARIS_DELETE_BIG_FOUR(ProgramWebInterface)
 
 	private:
 		struct Imp;
@@ -58,12 +71,13 @@ namespace aris::server
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
+		auto virtual isConnected() const->bool override;
 		auto resetSocket(aris::core::Socket *sock)->void;
 		auto socket()->aris::core::Socket&;
 
 		~WebInterface();
-		WebInterface(const std::string &name = "websock_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
-		ARIS_DECLARE_BIG_FOUR(WebInterface);
+		WebInterface(const std::string &name = "tcp_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
+		ARIS_DELETE_BIG_FOUR(WebInterface);
 
 	private:
 		struct Imp;
@@ -74,6 +88,7 @@ namespace aris::server
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
+		auto virtual isConnected() const->bool override;
 		auto documentRoot()->std::string;
 		auto setDocumentRoot(const std::string &root)->void;
 		auto port()->std::string;
@@ -81,10 +96,11 @@ namespace aris::server
 
 		virtual ~HttpInterface();
 		HttpInterface(const std::string &name = "http_interface", const std::string &port = "8000", const std::string &document_root = "./");
-		HttpInterface(const HttpInterface & other) = delete;
-		HttpInterface(HttpInterface && other);
-		HttpInterface &operator=(const HttpInterface& other) = delete;
-		HttpInterface &operator=(HttpInterface&& other);
+		// HttpInterface(const HttpInterface & other) = delete;
+		// HttpInterface(HttpInterface && other);
+		// HttpInterface &operator=(const HttpInterface& other) = delete;
+		// HttpInterface &operator=(HttpInterface&& other);
+		ARIS_DELETE_BIG_FOUR(HttpInterface)
 
 	private:
 		struct Imp;

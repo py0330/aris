@@ -20,6 +20,16 @@ namespace aris::server
 {
 	class ARIS_API CustomModule {};
 
+	class TerminalInterface : public Interface {
+	public:
+		auto virtual open()->void override { is_open_ = true; }
+		auto virtual close()->void override { is_open_ = false; }
+		auto virtual isConnected() const->bool override { return is_open_; }
+
+	private:
+		bool is_open_{false};
+	};
+
 	class ARIS_API ControlServer
 	{
 	public:
@@ -125,7 +135,7 @@ namespace aris::server
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
 		auto currentFileLine()->std::tuple<std::string, int>;
-		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int override;
+		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int override;
 		~ProgramMiddleware();
 
 		ProgramMiddleware();

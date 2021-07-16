@@ -342,12 +342,21 @@ namespace aris::core
 			worker_ = std::thread([this]() {
 				while(this->to_work_) {
 					if (this->queue_->isEmpty()) {
-						std::this_thread::sleep_for(std::chrono::milliseconds(200));
+						std::this_thread::sleep_for(std::chrono::milliseconds(50));
 						continue;
 					}
 
 					DbLogCell cell;
 					this->queue_->pop(cell, AccessStrategy::kYield);
+
+					if (cell.needCheck()) {
+						++this->id_;
+						std::lock_guard<std::recursive_mutex> lg(this->unchecked_mu_);
+						this->unchecked_cells_.insert({this->currentId(), cell});
+						if (cell.logLvl() == LogLvl::kError) {
+							this->error_ids_.insert(this->currentId());
+						}
+					}
 
 					char *msg{nullptr};
 					std::string sql = "INSERT INTO SYSLOG (TIME, LEVEL, TYPE, CODE, TEXT) VALUES(";
@@ -375,7 +384,16 @@ namespace aris::core
 
 	auto Sqlite3Log::toDb(const DbLogCell &cell)->void {
 		if (!isOpen()) throw std::runtime_error("Database has not been opened.");
-		queue_->push(cell, cell.strategy());
+		// TODO: set cpu affinity or use mutex to solve probable cell missing
+		if (!queue_->push(cell, cell.strategy())) {
+			std::fstream fstrm_status("trace.log", std::ios::out | std::ios::app);
+			fstrm_status << "log '" << cell.text() << "' inserted to the queue failed -- " << datetimeFormat(cell.timeStamp()) << std::endl;
+			fstrm_status.close();
+			throw std::runtime_error("log to queue failed");
+		}
+		if (cell.logLvl() == LogLvl::kError) {
+			has_error_.store(true, std::memory_order_release);
+		}
 	}
 
 	auto Sqlite3Log::close()->void {
@@ -499,6 +517,30 @@ namespace aris::core
 
 		return ret;
 
+	}
+
+	auto Sqlite3Log::unchecked() const->std::map<uint64_t, DbLogCell> {
+		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
+		return unchecked_cells_;
+	}
+	
+	auto Sqlite3Log::check(uint64_t id)->void {
+		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
+		auto iter = unchecked_cells_.find(id);
+		if (iter == unchecked_cells_.end()) return;
+		if (iter->second.logLvl() == LogLvl::kError) {
+			error_ids_.erase(iter->first);
+		}
+		unchecked_cells_.erase(iter);
+		if (error_ids_.empty())
+			has_error_.store(false, std::memory_order_release);
+	}
+
+	auto Sqlite3Log::checkAll()->void {
+		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
+		unchecked_cells_.clear();
+		error_ids_.clear();
+		has_error_.store(false, std::memory_order_release);
 	}
 
 	// auto CodeTextTable::getAndFormat(int code, int language, ...) const->std::string {

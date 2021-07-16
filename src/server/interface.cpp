@@ -20,8 +20,35 @@
 
 namespace aris::server
 {
+	struct Interface::Imp {
+		std::map<unsigned, std::function<void(const Interface *interface)>> on_connecteds_;
+		std::map<unsigned, std::function<void(const Interface *interface)>> on_disconnecteds_;
+	};
 
-	Interface::Interface(const std::string &name) : NamedObject(name) {}
+	Interface::Interface(const std::string &name) : NamedObject(name), imp_(new Imp) {}
+	Interface::~Interface() = default;
+
+	auto Interface::resetOnConnected(unsigned priority, const std::function<void(const Interface *interface)> &cbk) noexcept->void {
+		if (cbk)
+			imp_->on_connecteds_[priority] = cbk;
+		else
+			imp_->on_connecteds_.erase(priority);
+	}
+
+	auto Interface::removeAllOnConnected() noexcept->void {
+		imp_->on_connecteds_.clear();
+	}
+
+	auto Interface::resetOnDisconnected(unsigned priority, const std::function<void(const Interface *interface)> &cbk) noexcept->void {
+		if (cbk)
+			imp_->on_disconnecteds_[priority] = cbk;
+		else
+			imp_->on_disconnecteds_.erase(priority);
+	}
+
+	auto Interface::removeAllOnDisconnected() noexcept->void {
+		imp_->on_disconnecteds_.clear();
+	}
 
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
 	{
@@ -170,6 +197,7 @@ namespace aris::server
 	auto WebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
 	auto WebInterface::open()->void { socket().startServer(); }
 	auto WebInterface::close()->void { socket().stop(); }
+	auto WebInterface::isConnected() const->bool { return imp_->sock_->isConnected(); }
 	WebInterface::~WebInterface() = default;
 	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name), imp_(new Imp)
 	{
@@ -180,6 +208,7 @@ namespace aris::server
 					aris::core::Msg ret_msg(msg);
 					ret_msg.copy(str);
 					socket->sendMsg(ret_msg);
+					std::cout << "---" << str << std::endl;
 				}
 				catch (std::exception &e)
 				{
@@ -197,7 +226,7 @@ namespace aris::server
 				<< msg.header().reserved3_ << ":"
 				<< std::string_view(msg.data(), msg.size()) << std::endl;
 
-			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret);
+			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret, dynamic_cast<Interface*>(this));
 
 			return 0;
 		};
@@ -208,12 +237,19 @@ namespace aris::server
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 
+			for (const auto &[priority, cbk] : Interface::imp_->on_connecteds_) {
+				cbk(this);
+			}
+
 			return 0;
 		};
 
 		imp_->onLoseConnection_ = [this](aris::core::Socket *socket)->int {
 			ARIS_COUT << this->name() << " lose connection" << std::endl;
 			LOG_INFO << this->name() << " lose connection" << std::endl;
+			for (const auto &[priority, cbk] : Interface::imp_->on_disconnecteds_) {
+				cbk(this);
+			}
 			for (;;)
 			{
 				try
@@ -258,6 +294,7 @@ namespace aris::server
 	}
 	auto ProgramWebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
 	auto ProgramWebInterface::open()->void { socket().startServer(); }
+	auto ProgramWebInterface::isConnected() const->bool { return imp_->sock_->isConnected(); }
 	auto ProgramWebInterface::close()->void { socket().stop(); }
 	auto ProgramWebInterface::lastError()->std::string {
 		if (auto pgm_mid = dynamic_cast<ProgramMiddleware*>(&(aris::server::ControlServer::instance().middleWare())))
@@ -333,22 +370,28 @@ namespace aris::server
 				<< msg.header().reserved3_ << ":"
 				<< std::string_view(msg.data(), msg.size()) << std::endl;
 
-			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret);
+			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret, dynamic_cast<Interface*>(this));
 
 			return 0;
 		};
-		imp_->onReceiveConnection_ = [](aris::core::Socket *sock, const char *ip, int port)->int
+		imp_->onReceiveConnection_ = [this](aris::core::Socket *sock, const char *ip, int port)->int
 		{
 			ARIS_COUT << "socket receive connection" << std::endl;
 			LOG_INFO << "socket receive connection:\n"
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
+			for (const auto &[priority, cbk] : Interface::imp_->on_connecteds_) {
+				cbk(this);
+			}
 			return 0;
 		};
-		imp_->onLoseConnection_ = [](aris::core::Socket *socket)->int
+		imp_->onLoseConnection_ = [this](aris::core::Socket *socket)->int
 		{
 			ARIS_COUT << "socket lose connection" << std::endl;
 			LOG_INFO << "socket lose connection" << std::endl;
+			for (const auto &[priority, cbk] : Interface::imp_->on_disconnecteds_) {
+				cbk(this);
+			}
 			for (;;)
 			{
 				try
@@ -374,8 +417,8 @@ namespace aris::server
 		imp_->sock_->setOnReceivedConnection(imp_->onReceiveConnection_);
 		imp_->sock_->setOnLoseConnection(imp_->onLoseConnection_);
 	}
-	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
-	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
+	// ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
+	// ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
 	ProgramWebInterface::~ProgramWebInterface() = default;
 }
 
@@ -746,13 +789,14 @@ namespace aris::server
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		if (imp_->is_running_.exchange(false) == true) { imp_->http_thread_.join(); }
 	}
+	auto HttpInterface::isConnected() const->bool { return true; }
 	auto HttpInterface::documentRoot()->std::string { return imp_->document_root_; }
 	auto HttpInterface::port()->std::string { return imp_->port_; }
 	auto HttpInterface::setPort(const std::string &port)->void { imp_->port_ = port; }
 	auto HttpInterface::setDocumentRoot(const std::string &root)->void { imp_->document_root_ = root; }
 	HttpInterface::~HttpInterface() = default;
-	HttpInterface::HttpInterface(HttpInterface && other) = default;
-	HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
+	// HttpInterface::HttpInterface(HttpInterface && other) = default;
+	// HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
 	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
 	{
 		imp_->document_root_ = document_root;

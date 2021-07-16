@@ -11,6 +11,7 @@
 #include <set>
 #include <mutex>
 #include <map>
+#include <cstring>
 
 #include "sqlite3.h"
 #include "aris/core/data_structure.hpp"
@@ -110,39 +111,54 @@ namespace aris::core
 	};
 
 	class ARIS_API DbLogCell {
+#define MAX_LOG_LENGTH 512
 	public:
-		auto setTimeStamp(const std::chrono::system_clock::time_point &tp) { tp_ = tp; }
-		auto timeStamp() const->const std::chrono::system_clock::time_point& { return tp_; }
+		auto text() const->std::string { return std::string(ctext_); }
+		auto ctext() const->const char* { return ctext_; }
+		auto setText(const std::string &text)->void { std::strncpy(ctext_, text.c_str(), MAX_LOG_LENGTH-1); ctext_[MAX_LOG_LENGTH-1]='\0'; }
+		auto setText(const char *ctext)->void { if (!ctext) return; std::strncpy(ctext_, ctext, MAX_LOG_LENGTH-1); ctext_[MAX_LOG_LENGTH-1]='\0'; }
 		auto logLvl() const->LogLvl { return l_; }
 		auto setLogLvl(LogLvl l)->void { l_ = l; }
 		auto logType() const->LogType { return t_; }
 		auto setLogType(LogType t)->void { t_ = t; }
 		auto code() const->int { return code_; }
 		auto setCode(int code)->void { code_ = code; }
-		auto text() const->const std::string& { return text_; }
-		auto setText(const std::string &text)->void { text_ = text; }
-
 		auto strategy() const->AccessStrategy { return stg_; }
 		auto setStrategy(AccessStrategy stg)->void { stg_ = stg; }
+		auto needCheck() const->bool { return nc_; }
+		auto setNeedCheck(bool need_check)->void { nc_ = need_check; }
+		auto setTimeStamp(const std::chrono::system_clock::time_point &tp) { tp_ = tp; }
+		auto timeStamp() const->const std::chrono::system_clock::time_point& { return tp_; }
 
 	private:
-		std::chrono::system_clock::time_point tp_{std::chrono::system_clock::now()};
+		char ctext_[MAX_LOG_LENGTH];
 		LogLvl l_{LogLvl::kInfo};
 		LogType t_{LogType::kSystem};
 		int code_{0};
-		std::string text_;
-
 		AccessStrategy stg_{AccessStrategy::kYield};
+		bool nc_{true};
+		std::chrono::system_clock::time_point tp_{std::chrono::system_clock::now()};
 
 	public:
 		DbLogCell() = default;
-		explicit DbLogCell(const std::string &text, 
-						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now(), 
+		explicit DbLogCell(const char *ctext,
 						   LogLvl l = LogLvl::kInfo, 
 						   LogType t = LogType::kSystem, 
-						   int code = 0, 
-						   AccessStrategy stg = AccessStrategy::kYield) 
-			: text_(text), tp_(tp), l_(l), t_(t), code_(code), stg_(stg) {}
+						   int code = 0,
+						   AccessStrategy stg = AccessStrategy::kYield,
+						   bool need_check = true,
+						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now()
+						   ) 
+			:l_(l), t_(t), code_(code), stg_(stg), nc_(need_check), tp_(tp) { setText(ctext); }
+		explicit DbLogCell(const std::string &text,
+						   LogLvl l = LogLvl::kInfo, 
+						   LogType t = LogType::kSystem, 
+						   int code = 0,
+						   AccessStrategy stg = AccessStrategy::kYield,
+						   bool need_check = true,
+						   const std::chrono::system_clock::time_point tp = std::chrono::system_clock::now()
+						   ) 
+			:l_(l), t_(t), code_(code), stg_(stg), nc_(need_check), tp_(tp) { setText(text); }
 		virtual ~DbLogCell() = default;
 	};
 
@@ -210,26 +226,38 @@ namespace aris::core
 		auto isOpen() const->bool;
 		auto select(const LogFilter &filter) const->std::vector<DbLogCell>;
 
+		auto currentId() const->uint64_t { return id_.load(std::memory_order_acquire); }
+		auto unchecked() const->std::map<uint64_t, DbLogCell>;
+		auto check(uint64_t id)->void;
+		auto checkAll()->void;
+		auto hasError() const->bool { return has_error_.load(std::memory_order_acquire); }
+
 	private:
 		sqlite3 *db_{nullptr};
 		bool to_work_{false};
 		std::thread worker_;
 		std::unique_ptr<LockFreeArrayQueue<DbLogCell>> queue_{nullptr};
 		mutable std::recursive_mutex mu_;
+
+		std::atomic<uint64_t> id_{0};
+		std::set<uint64_t> error_ids_;
+		std::map<uint64_t, DbLogCell> unchecked_cells_;
+		mutable std::recursive_mutex unchecked_mu_;
+		std::atomic_bool has_error_{false};
 		
 	private:
 		Sqlite3Log() : queue_(new LockFreeArrayQueue<DbLogCell>(1024)) {}
 		~Sqlite3Log();
 	};
 
-#define DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code);
-#define DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code);
-#define DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code);
-#define DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code);
-#define RT_DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
-#define RT_DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, std::chrono::system_clock::now(), aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
+#define DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kYield, false);
+#define DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kYield, false);
+#define DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kWarning, type, code);
+#define DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kError, type, code);
+#define RT_DBLOG_DEBUG(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kDebug, type, code, aris::core::AccessStrategy::kAbandon, false);
+#define RT_DBLOG_INFO(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kInfo, type, code, aris::core::AccessStrategy::kAbandon, false);
+#define RT_DBLOG_WARNING(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kWarning, type, code, aris::core::AccessStrategy::kAbandon);
+#define RT_DBLOG_ERROR(text, code, type) std::cout<<aris::core::DbLogCell(text, aris::core::LogLvl::kError, type, code, aris::core::AccessStrategy::kAbandon);
 
 // #define EN 0
 // #define CHS 1
