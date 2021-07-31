@@ -45,8 +45,7 @@ namespace                                                                       
 static const aris_reflection_help_class__ ARIS_REFLECT_CAT(auto_register__, __LINE__);    \
 static void aris_reflection_register_function_()
 
-namespace aris::core
-{
+namespace aris::core{
 	class Type;
 	class Property;
 	class Instance;
@@ -65,6 +64,36 @@ namespace aris::core
 		auto setToText(std::function<std::string(void*)>)->void;
 		auto setFromText(std::function<void(void*, std::string_view)>)->void;
 
+		template<typename T> friend class class_;
+		friend class Instance;
+		friend class Type;
+
+		struct Imp;
+		std::shared_ptr<Imp> imp_;
+	};
+	class ARIS_API Function {
+	public:
+		static auto getFunction(std::string_view name)->Function*;
+
+
+
+
+
+
+		auto name()const->std::string;
+		
+		
+		template<typename T>
+		auto invoke()const->void;
+		auto type()->const Type*;
+		~Function();
+		Function(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
+
+
+
+
+
+	private:
 		template<typename T> friend class class_;
 		friend class Instance;
 		friend class Type;
@@ -191,10 +220,8 @@ namespace aris::core
 	public:
 		// 注册普通类型 //
 		template <typename T = Class_Type>
-		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr)
-		{
-			type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
-			{
+		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr){
+			type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{
 				auto f = [](void const * data)->void{	delete static_cast<Class_Type const*>(data); };
 				auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
 				Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
@@ -204,8 +231,7 @@ namespace aris::core
 
 		// 注册纯虚类型 //
 		template <typename T = Class_Type>
-		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr)
-		{
+		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr){
 			type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, nullptr);
 		}
 
@@ -223,6 +249,7 @@ namespace aris::core
 			return *this;
 		};
 
+		// 自身与字符串的转换方法 //
 		auto textMethod(std::function<std::string(Class_Type*)> to_string, std::function<void(Class_Type*, std::string_view)> from_string){
 			type_->text([=](Instance* ins)->std::string	{return to_string(ins->castTo<Class_Type>());},
 						[=](Instance* ins, std::string_view str){from_string(ins->castTo<Class_Type>(), str);});
@@ -362,8 +389,16 @@ namespace aris::core
 			return *this;
 		}
 
+		// 
+		//func();
+
 	private:
 		Type * type_;
+	};
+
+	template<typename F>
+	class function_ {
+
 	};
 
 	auto inline charToStr(void* value)->std::string

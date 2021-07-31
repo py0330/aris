@@ -27,22 +27,86 @@
 #include "aris/core/basic_type.hpp"
 #include "aris/core/msg.hpp"
 
+#define LOG_DEBUG aris::core::defaultLogStream() \
+	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "DEBUG" << "|" \
+	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
+	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
+	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
 
-namespace aris::core
-{
-	class ThreadSafeStreamBuf :public std::streambuf
-	{
+#define LOG_INFO aris::core::defaultLogStream() \
+	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "INFO" << "|" \
+	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
+	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
+	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
+
+#define LOG_ERROR aris::core::defaultLogStream() \
+	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "ERROR" << "|" \
+	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
+	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
+	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
+
+#define LOG_FATAL aris::core::defaultLogStream() \
+	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "FATAL" << "|" \
+	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
+	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
+	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
+
+#define LOG_CONTINUE aris::core::log() \
+	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|"
+
+#define LOG_DEBUG_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
+	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
+	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_DEBUG
+
+#define LOG_INFO_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
+	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
+	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_INFO
+
+#define LOG_ERROR_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
+	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
+	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_ERROR
+
+#define LOG_FATAL_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
+	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
+	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_FATAL
+
+
+
+
+
+
+
+
+namespace aris::core{
+	// 语言 //
+	int language_id = 0;
+	auto setLanguage(int language_id_)->void {
+		language_id = language_id_;
+	}
+	auto currentLanguage()->int {
+		return language_id;
+	}
+
+	// 通用log //
+	std::function<void(LogLvl level, int code, const char *msg)> log_method = defaultLog;
+	auto setLogMethod(std::function<void(LogLvl level, int code, const char *msg)> method)->void {
+		log_method = method ? method : defaultLog;
+	}
+	auto logMethod(LogLvl level, int code, const char *msg)->void {
+		log_method(level, code, msg);
+	}
+
+	// 默认log实现 //
+	class ThreadSafeStreamBuf :public std::streambuf{
 	public:
-		virtual auto overflow(int_type c)->int_type override
-		{
+		virtual auto overflow(int_type c)->int_type override{
 			msg_.resize(msg_.capacity());// 保证在下次resize的时候，所有数据都会被copy，这是因为在resize重新分配内存时，不是按照capacity来copy
 			msg_.resize(msg_.capacity() + 1);
 			setp(msg_.data() + msg_.size(), msg_.data() + msg_.capacity());
 			*(pptr() - 1) = c;
 			return c;
 		}
-		virtual auto sync()->int override
-		{
+		virtual auto sync()->int override{
 			std::unique_lock<std::recursive_mutex> lck(*real_mutex_);
 
 			msg_.resize(msg_.capacity() - static_cast<MsgSize>(epptr() - pptr()));
@@ -61,17 +125,14 @@ namespace aris::core
 		std::recursive_mutex* real_mutex_;
 	};
 	template<int>
-	class ThreadSafeStream :public std::ostream 
-	{ 
+	class ThreadSafeStream :public std::ostream { 
 	public: 
-		static auto setStream(std::ostream& stream) ->void
-		{ 
+		static auto setStream(std::ostream& stream) ->void{ 
 			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
 			real_stream_ = &stream; 
 		}
 		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
-		ThreadSafeStream(std::ostream &default_stream) :std::ostream(&buf_) 
-		{
+		ThreadSafeStream(std::ostream &default_stream) :std::ostream(&buf_){
 			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
 			real_stream_ = real_stream_ ? real_stream_ : &default_stream;
 		}; 
@@ -86,14 +147,6 @@ namespace aris::core
 	template <int a>
 	std::ostream* ThreadSafeStream<a>::real_stream_;
 
-	auto cout()->std::ostream&
-	{
-		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
-		static thread_local ThreadSafeStream<0> local_stream_(std::cout);
-		return local_stream_;
-	}
-	auto setCoutStream(std::ostream& cout_stream) { ThreadSafeStream<0>::setStream(cout_stream); }
-
 	static std::filesystem::path log_dir_path_;
 	static std::filesystem::path log_file_path_;
 	static std::ofstream log_fstream_;
@@ -101,58 +154,104 @@ namespace aris::core
 	static std::atomic_int max_info_num = 100000, current_info_num = 0;
 	static int log_file_num = 0;
 
-	auto log()->std::ostream&
-	{
-		// 这个参数仅仅用于设置默认值 //
-		static thread_local ThreadSafeStream<1> local_stream_(log_fstream_);
-		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
-
-		// 如果记录满了，关闭文件，因为上面有锁，所以不可能出现内存stream在sync，而这里在关闭的情况 //
-		if (++current_info_num > max_info_num) 
-		{
-			log_fstream_.close();
-			current_info_num = 0;
-			log_file_num++;
-		}
+	auto defaultLog(LogLvl level, int code, const char *msg)->void {
 		
-		// 如果第一次或之前满了，打开文件 //
-		if (!log_fstream_.is_open())
-		{
-			logFile();
-			ThreadSafeStream<1>::setStream(log_fstream_);
-		}
+		auto print = [&](const char *lvl) {
+			std::string_view data(msg);
+			bool is_first_time = true;
+			while (data.size() > 0){
+				auto print = data.substr(0, data.find_first_of("\n"));
 
-		// 返回memory stream //
-		return local_stream_;
+				if (is_first_time) {
+					aris::core::defaultLogStream()
+						<< std::setw(aris::core::LOG_TYPE_WIDTH) << lvl << "|"
+						<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) << "|"
+						<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) << "|"
+						<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ << "|"
+						<< print
+						<< std::endl;
+				}
+				else
+				{
+					aris::core::defaultLogStream()
+						<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|"
+						<< print
+						<< std::endl;
+				}
+
+
+				is_first_time = false;
+				data = data.substr(print.size() == data.size()? data.size() : print.size() + 1);
+			}
+		};
+
+		
+
+		
+		switch (level) {
+		case LogLvl::kDebug:
+			print("DEBUG");
+			break;
+		case LogLvl::kInfo:
+			print("INFO");
+			break;
+		case LogLvl::kWarning:
+			print("WARN");
+			break;
+		case LogLvl::kError:
+			print("ERROR");
+			break;
+		default:
+			LOG_FATAL << "INVALID LEVEL!!! " << msg << std::endl;
+		}
 	}
-	auto logDirectory(const std::filesystem::path &log_dir)->void
-	{
+	auto setDefaultLogDirectory(const std::filesystem::path &log_dir)->void {
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute("log") : std::filesystem::absolute(log_dir);
 		std::filesystem::create_directories(log_dir_path_);
 	}
-	auto logFile(const std::filesystem::path &log_file_path)->void
-	{
+	auto defaultLogDirectory()->std::filesystem::path {
+		if (log_dir_path_.empty())setDefaultLogDirectory();
+		return log_dir_path_;
+	}
+	auto setDefaultLogFile(const std::filesystem::path &log_file_path)->void {
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_file_path_ = log_file_path.empty() ? std::filesystem::path(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt") : log_file_path;
-		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : logDirPath() / log_file_path_;
+		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : defaultLogDirectory() / log_file_path_;
 		log_file_path_.replace_filename(log_file_path_.filename().replace_extension().string() + std::string("_") + std::to_string(log_file_num) + log_file_path_.extension().string());
 		std::filesystem::create_directories(log_file_path_.parent_path());
 
 		log_fstream_.close();
 		log_fstream_.open(log_file_path_, std::ios::out | std::ios::trunc);
 	}
-	auto logMaxInfoNum(int max_info_num_) { max_info_num.store(max_info_num_); }
+	auto setDefaultLogMaxInfoNum(int max_info_num_) { max_info_num.store(max_info_num_); }
+	auto defaultLogStream()->std::ostream&{
+		// 这个参数仅仅用于设置默认值 //
+		static thread_local ThreadSafeStream<1> local_stream_(log_fstream_);
+		
+		// 线程锁 //
+		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
-	auto logDirPath()->std::filesystem::path 
-	{ 
-		if (log_dir_path_.empty())logDirectory();
-		return log_dir_path_; 
+		// 如果记录满了，关闭文件，因为上面有锁，所以不可能出现内存stream在sync，而这里在关闭的情况 //
+		if (++current_info_num > max_info_num) {
+			log_fstream_.close();
+			current_info_num = 0;
+			log_file_num++;
+		}
+		
+		// 如果第一次或之前满了，打开文件 //
+		if (!log_fstream_.is_open()){
+			setDefaultLogFile();
+			ThreadSafeStream<1>::setStream(log_fstream_);
+		}
+
+		// 返回memory stream //
+		return local_stream_;
 	}
-	auto logExeName()->std::string
-	{
+
+	auto logExeName()->std::string{
 		const int TASK_NAME_LEN = 1024;
 
 #ifdef WIN32
@@ -207,14 +306,26 @@ namespace aris::core
 		return std::string(proName);
 
 	}
-	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string
-	{
+	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string{
 		auto time_t_var = std::chrono::system_clock::to_time_t(time);
 		auto timeinfo = localtime(&time_t_var);
 		char time_format[1024];
 		strftime(time_format, 1024, "%Y-%m-%d--%H-%M-%S", timeinfo);
 		return std::string(time_format);
 	}
+
+	// 线程安全版输入输出 //
+	auto cout()->std::ostream& {
+		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
+		static thread_local ThreadSafeStream<0> local_stream_(std::cout);
+		return local_stream_;
+	}
+	auto setCoutStream(std::ostream& cout_stream) { ThreadSafeStream<0>::setStream(cout_stream); }
+
+
+
+
+
 
 	auto ARIS_API dateFormat(const std::chrono::system_clock::time_point &time)->std::string {
 		const auto &str = datetimeFormat(time);

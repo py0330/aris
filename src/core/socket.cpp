@@ -38,6 +38,29 @@
 #include "aris/core/log.hpp"
 #include "aris/core/sha1.h"
 
+
+#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept"}
+#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"}
+#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"}
+#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"}
+#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"}
+#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"}
+#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"}
+#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"}
+
+
+
+
+
+
+
+
+
+
+
+
 namespace aris::core
 {
 	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int
@@ -313,7 +336,7 @@ namespace aris::core
 					return;
 				}
 
-				LOG_ERROR << "socket failed to accept" << std::endl;
+				aris::core::log(SOCKET_FAILED_ACCEPT);
 				continue;
 			}
 
@@ -325,7 +348,7 @@ namespace aris::core
 				int res = recv(imp->recv_socket_, recv_data, 1024, 0);
 				if (res <= 0)
 				{
-					LOG_ERROR << "websocket shake hand failed : " << res << std::endl;
+					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED, res);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -339,7 +362,7 @@ namespace aris::core
 				}
 				catch (std::exception &)
 				{
-					LOG_ERROR << "websocket shake hand failed : invalid key" << std::endl;
+					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -372,7 +395,7 @@ namespace aris::core
 				
 				if (ret == -1)
 				{
-					LOG_ERROR << "websocket shake hand failed : lose connection before hand shake successful" << std::endl;
+					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -467,7 +490,8 @@ namespace aris::core
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
 					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
 					{
-						LOG_ERROR << "websocket receive too large or negative object, size:" << payload_len << std::endl;
+						
+						aris::core::log(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -491,7 +515,7 @@ namespace aris::core
 				//////////////////////////////////保护，最短长度不能小于MsgHeader的数据长度///////////////////////////////
 				if (payload_data.size() < sizeof(aris::core::MsgHeader))
 				{
-					LOG_ERROR << "websocket espect msg, but receive raw data" << std::endl;
+					aris::core::log(WEBSOCKET_RECEIVE_RAW);
 					break;
 				}
 
@@ -501,7 +525,7 @@ namespace aris::core
 
 				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
 				{
-					LOG_ERROR << "websocket receive wrong msg size, msg size:" << recv_msg.size() << "payload size:" << payload_data.size() << std::endl;
+					aris::core::log(WEBSOCKET_RECEIVE_WRONG_MSG_SIZE, recv_msg.size(), payload_data.size());
 					break;
 				}
 
@@ -554,7 +578,7 @@ namespace aris::core
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
 					if (payload_len > 0x00100000 || payload_len + payload_data.size() > 0x00200000)
 					{
-						LOG_ERROR << "websocket receive too large object" << std::endl;
+						aris::core::log(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -587,7 +611,7 @@ namespace aris::core
 				if (ret <= 0 && !close_lck.try_lock()) return;
 				if (ret != sizeof(MsgHeader) + recv_msg.size())
 				{
-					LOG_ERROR << "UDP msg size not correct" << std::endl;
+					aris::core::log(SOCKET_UDP_WRONG_MSG_SIZE);
 					continue;
 				}
 				if(ret > 0 && imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
@@ -625,11 +649,11 @@ namespace aris::core
 			case TCP:
 			case WEB:
 			case WEB_RAW:
-				if (shutdown(imp_->recv_socket_, 2) < 0) LOG_ERROR << "shutdown error:" << errno << std::endl;
+				if (shutdown(imp_->recv_socket_, 2) < 0) aris::core::log(SOCKET_SHUT_DOWN_ERROR, errno);
 				break;
 			case UDP:
 			case UDP_RAW:
-				if (close_sock(imp_->recv_socket_) < 0) LOG_ERROR << "close error:" << errno << std::endl;
+				if (close_sock(imp_->recv_socket_) < 0) aris::core::log(SOCKET_SHUT_CLOSE_ERROR, errno);
 				break;
 			}
 

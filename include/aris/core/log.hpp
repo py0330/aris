@@ -17,59 +17,81 @@
 
 #include <aris_lib_export.h>
 
-#define LOG_DEBUG aris::core::log() \
-	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "DEBUG" << "|" \
-	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
-	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
-	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
-
-#define LOG_INFO aris::core::log() \
-	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "INFO" << "|" \
-	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
-	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
-	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
-
-#define LOG_ERROR aris::core::log() \
-	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "ERROR" << "|" \
-	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
-	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
-	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
-
-#define LOG_FATAL aris::core::log() \
-	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "FATAL" << "|" \
-	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
-	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
-	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
-
-#define LOG_CONTINUE aris::core::log() \
-	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|"
-
-#define LOG_DEBUG_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
-	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
-	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_DEBUG
-
-#define LOG_INFO_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
-	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
-	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_INFO
-
-#define LOG_ERROR_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
-	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
-	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_ERROR
-
-#define LOG_FATAL_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
-	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
-	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_FATAL
-
-#define LOG_AND_THROW(error) LOG_ERROR << error.what() << std::endl, throw error
+#define LOG_AND_THROW(error) aris::core::log(aris::core::LogLvl::kError, 0, error), throw std::runtime_error(error)
 
 #define THROW_FILE_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
 
 #define ARIS_COUT aris::core::cout()
 
-namespace aris::core
-{
-	enum
-	{
+namespace aris::core{
+	
+#define LANG_ENGLISH 0
+#define LANG_CHINESE 1
+	// 设置语言 id //
+	auto ARIS_API setLanguage(int language_id)->void;
+	// 当前语言 id //
+	auto ARIS_API currentLanguage()->int;
+	// 根据语言切换 //
+	//auto ARIS_API locale(std::initializer_list<const char*> format_msg)->std::string {
+	//	return (currentLanguage() <= format_msg.size()) ? format_msg.begin()[currentLanguage()] : format_msg.begin()[0];
+
+	//}
+
+	// 日志等级 //
+	enum class ARIS_API LogLvl : int {
+		kDebug = 0,
+		kInfo,
+		kWarning,
+		kError
+	};
+	// 设置记录log的方法 //
+	auto ARIS_API setLogMethod(std::function<void(LogLvl level, int code, const char *msg)> method = nullptr)->void;
+	// 调用记录log的方法，由于涉及语言选择，尽量不要直接使用该方法 //
+	auto ARIS_API logMethod(LogLvl level, int code, const char *msg)->void;
+
+	// 记录log //
+	template <typename ...Args>
+	auto log(LogLvl level, int code, std::initializer_list<const char*> format_msg, Args ... args)->void {
+		auto format_str = (currentLanguage() <= format_msg.size()) ? format_msg.begin()[currentLanguage()] : format_msg.begin()[0];
+
+		// 不定长的format //
+		int size_s = std::snprintf(nullptr, 0, format_str, args ...) + 1;;
+		if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
+		auto size = static_cast<size_t>(size_s);
+		auto buf = std::make_unique<char[]>(size);
+		std::snprintf(buf.get(), size, format_str, args ...);
+		logMethod(level, code, buf.get());
+	}
+
+	
+
+	// 以下为默认log方法 //
+
+	// 默认log方法 //
+	auto ARIS_API defaultLog(LogLvl level, int code, const char *msg)->void;
+	// 设置log文件夹，参数为空时将当前二进制文件路径设为log路径 //
+	auto ARIS_API setDefaultLogDirectory(const std::filesystem::path &log_dir_path = std::filesystem::path())->void;
+	// 获取log文件夹 //
+	auto ARIS_API defaultLogDirectory()->std::filesystem::path;
+	// 设置log文件名，可以是相对或绝对路径，为空时采用默认值 //
+	auto ARIS_API setDefaultLogFile(const std::filesystem::path &log_file_path = std::filesystem::path())->void;
+	// 设置单个log文件最大的条数，小于0时无上限 //
+	auto ARIS_API setDefaultLogMaxInfoNum(int max_info_num = 100000);
+
+	// 返回log stream //
+	auto ARIS_API defaultLogStream()->std::ostream&;
+
+
+
+
+	// 以下为默认log所使用的格式化方法 //
+
+	// 返回当前程序的文件名，例如：C:/program/abc.exe -> abc
+	auto ARIS_API logExeName()->std::string;
+	// 返回时间格式 "%Y-%m-%d--%H-%M-%S"
+	auto ARIS_API logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+
+	enum {
 		LOG_TYPE_WIDTH = 5,
 		LOG_TIME_WIDTH = 20,
 		LOG_FILE_WIDTH = 25,
@@ -77,24 +99,28 @@ namespace aris::core
 		LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
 	};
 
-	// 设置log文件夹，参数为空时将二进制文件路径设为log路径 //
-	auto ARIS_API logDirectory(const std::filesystem::path &log_dir_path = std::filesystem::path())->void;
-	// 设置log文件名，可以是相对或绝对路径，为空时采用默认值 //
-	auto ARIS_API logFile(const std::filesystem::path &log_file_path = std::filesystem::path())->void;
-	// 设置单个log文件最大的条数，小于0时无上限 //
-	auto ARIS_API logMaxInfoNum(int max_info_num= 100000);
-	// 返回log stream //
-	auto ARIS_API log()->std::ostream&;
-
-	auto ARIS_API logDirPath()->std::filesystem::path;
-	auto ARIS_API logExeName()->std::string;
-	auto ARIS_API logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
-
 	auto ARIS_API cout()->std::ostream&;
+
+
+
+
+
+
+
+
+
+
 
 	auto ARIS_API dateFormat(const std::chrono::system_clock::time_point &time)->std::string;
 	auto ARIS_API timeFormat(const std::chrono::system_clock::time_point &time)->std::string;
 	auto ARIS_API datetimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+
+
+
+
+
+
+
 
 	enum class ARIS_API LogType : int {
 		kSystem = 0,
@@ -102,12 +128,12 @@ namespace aris::core
     	kOperation
 	};
 
-	enum class ARIS_API LogLvl : int {
-		kDebug = 0,
-		kInfo,
-		kWarning,
-		kError
-	};
+	//enum class ARIS_API LogLvl : int {
+	//	kDebug = 0,
+	//	kInfo,
+	//	kWarning,
+	//	kError
+	//};
 
 	class ARIS_API DbLogCell {
 	public:

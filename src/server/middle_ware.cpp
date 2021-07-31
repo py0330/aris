@@ -10,7 +10,7 @@ namespace aris::server {
 auto MiddleWare::executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int {
 	aris::server::ControlServer::instance().executeCmdInCmdLine(std::string(str), [send_ret](aris::plan::Plan &plan)->void
 		{
-			LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
+			//LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
 
 			// only copy if it is a str
 			if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))

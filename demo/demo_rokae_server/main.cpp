@@ -157,7 +157,7 @@ public:
 		//);
 	}
 };
-
+/*
 int main(int argc, char *argv[])
 {
 	Quad quad;
@@ -252,4 +252,64 @@ int main(int argc, char *argv[])
 	std::cin >> a;
 
 	return 0;
+}
+*/
+struct B1 {
+	int x;
+	virtual ~B1() { }
+};
+
+struct B2 {
+	int y;
+	virtual ~B2() { }
+};
+
+struct D : B1, B2 { };
+
+#define ARIS_DEBUG 1
+
+
+#define ERROR1 ARIS_DEBUG, -1001, {"ERROR:%s is not correct", "错误%s"}
+
+int print_out(int level, int code, std::initializer_list<const char*> msg) {
+	std::cout << level << code << msg.begin()[1] << std::endl;
+	return 0;
+}
+
+
+#define LOG_ERROR(E) print_out(E);
+
+
+
+
+
+
+
+
+int main() {
+	D x;
+	B1* b1_ptr = &x;
+	B2* b2_ptr = &x;
+	std::cout << "original address:     " << &x << "\n";
+
+	std::cout << "b1_ptr:               " << b1_ptr << "\n";
+	std::cout << "dynamic_cast b1_ptr:  " << dynamic_cast<void*>(b1_ptr) << "\n";
+
+	std::cout << "b2_ptr:               " << b2_ptr << "\n";
+	std::cout << "dynamic_cast b2_ptr:  " << dynamic_cast<void*>(b2_ptr) << "\n";
+
+	auto b2_void = dynamic_cast<void*>(b2_ptr);
+
+	std::cout << "dynamic_cast b2_ptr:  " << b2_void << "\n";
+
+
+	auto b2_final = static_cast<B2*>(b2_void);
+	std::cout << "dynamic_cast b2_ptr:  " << b2_final << "\n";
+
+
+	//LOG_ERROR(ERROR1);
+
+	aris::core::log(ERROR1, 10);
+
+	std::cout << aris::core::logExeName() << std::endl;
 }
