@@ -16,10 +16,8 @@
 #include "aris/dynamic/model.hpp"
 #include "aris/plan/root.hpp"
 
-namespace aris::plan
-{
-	struct Plan::Imp
-	{
+namespace aris::plan{
+	struct Plan::Imp{
 		std::string name_;
 
 		std::int64_t count_;
@@ -28,7 +26,6 @@ namespace aris::plan
 		aris::control::Master *master_;
 		aris::control::Controller *controller_;
 		aris::control::EthercatMaster *ec_master_;
-		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
 		std::weak_ptr<Plan> shared_for_this_;
@@ -54,15 +51,12 @@ namespace aris::plan
 
 namespace aris::dynamic
 {
-	struct Calibrator::Imp
-	{
-		struct ConstraintBlock
-		{
+	struct Calibrator::Imp{
+		struct ConstraintBlock	{
 			Constraint *c;
 			Size ri, rj, col;
 		};
-		struct ForceBlock
-		{
+		struct ForceBlock{
 			Force *f;
 			Size ri, rj;
 		};
@@ -75,6 +69,13 @@ namespace aris::dynamic
 
 		Size m_, g_, k_;
 		std::vector<double> A_, x_, b_;
+
+		std::vector<double> torque_constant_, velocity_ratio_, torque_weight_, velocity_dead_zone_;
+		int pos_idx_{ 0 }, vel_idx_{ 1 }, fce_idx_{ 2 }, data_num_per_motor_{ 3 };
+		int filter_window_size_{ 20 };
+		double tolerable_variance_{ 0.05 };
+
+		friend auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset);
 	};
 	auto Calibrator::m()->Size { return imp_->m_; }
 	auto Calibrator::g()->Size { return imp_->g_; }
@@ -82,24 +83,19 @@ namespace aris::dynamic
 	auto Calibrator::A()->double* { return imp_->A_.data(); }
 	auto Calibrator::x()->double* { return imp_->x_.data(); }
 	auto Calibrator::b()->double* { return imp_->b_.data(); }
-	auto Calibrator::allocateMemory()->void
-	{
+	auto Calibrator::allocateMemory()->void{
 		imp_->m_ = 0;
 		imp_->g_ = 0;
 		imp_->k_ = 0;
 
-		for (auto &m : model()->motionPool())
-		{
-			if (m.active())
-			{
+		for (auto &m : model()->motionPool()){
+			if (m.active())	{
 				imp_->m_++;
 				imp_->k_ += 3;
 			}
 		}
-		for (auto &p : model()->partPool())
-		{
-			if (p.active() && &p != &model()->ground())
-			{
+		for (auto &p : model()->partPool())	{
+			if (p.active() && &p != &model()->ground())	{
 				imp_->g_ += 10;
 			}
 		}
@@ -113,20 +109,16 @@ namespace aris::dynamic
 		imp_->dyn_m_ = 0;
 		imp_->dyn_n_ = 6;
 		std::vector<Part*> active_parts;
-		for (auto &prt : model()->partPool())
-		{
-			if (prt.active())
-			{
+		for (auto &prt : model()->partPool()){
+			if (prt.active()){
 				active_parts.push_back(&prt);
 				imp_->dyn_m_ += 6;
 			}
 		}
 
 		imp_->cst_blk_vec_.clear();
-		for (auto &jnt : model()->jointPool())
-		{
-			if (jnt.active())
-			{
+		for (auto &jnt : model()->jointPool()){
+			if (jnt.active()){
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&jnt,
@@ -137,10 +129,8 @@ namespace aris::dynamic
 				imp_->dyn_n_ += jnt.dim();
 			}
 		}
-		for (auto &mot : model()->motionPool())
-		{
-			if (mot.active())
-			{
+		for (auto &mot : model()->motionPool())	{
+			if (mot.active()){
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&mot,
@@ -151,10 +141,8 @@ namespace aris::dynamic
 				imp_->dyn_n_ += mot.dim();
 			}
 		}
-		for (auto &gmt : model()->generalMotionPool())
-		{
-			if (gmt.active())
-			{
+		for (auto &gmt : model()->generalMotionPool()){
+			if (gmt.active()){
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&gmt,
@@ -167,10 +155,8 @@ namespace aris::dynamic
 		}
 
 		imp_->fce_blk_vec_.clear();
-		for (auto &fce : model()->forcePool())
-		{
-			if (fce.active())
-			{
+		for (auto &fce : model()->forcePool()){
+			if (fce.active()){
 				imp_->fce_blk_vec_.push_back(Imp::ForceBlock
 					{
 						&fce,
@@ -204,8 +190,7 @@ namespace aris::dynamic
 		imp_->D_.clear();
 		imp_->D_.resize(imp_->m_*imp_->dyn_m_, 0.0);
 	}
-	auto Calibrator::clb()->void
-	{
+	auto Calibrator::clb()->void{
 		auto f = imp_->f_.data();
 
 		auto C = imp_->C_.data();
@@ -226,12 +211,10 @@ namespace aris::dynamic
 		/////////////////////////////////////////// make A ///////////////////////////////////////
 		// make C //
 		std::fill_n(C, imp_->dyn_m_*imp_->dyn_n_, 0.0);
-		for (int i = 0; i < 6; ++i)
-		{
+		for (int i = 0; i < 6; ++i)	{
 			C[at(i, i, imp_->dyn_n_)] = 1;
 		}
-		for (auto &b : imp_->cst_blk_vec_)
-		{
+		for (auto &b : imp_->cst_blk_vec_)	{
 			b.c->cptPrtCm(C + at(b.ri, b.col, imp_->dyn_n_), imp_->dyn_n_, C + at(b.rj, b.col, imp_->dyn_n_), imp_->dyn_n_);
 		}
 
@@ -244,21 +227,17 @@ namespace aris::dynamic
 
 		// make D //
 		Size di = 0;
-		for (auto &b : imp_->cst_blk_vec_)
-		{
-			if (dynamic_cast<Motion*>(b.c))
-			{
+		for (auto &b : imp_->cst_blk_vec_){
+			if (dynamic_cast<Motion*>(b.c)){
 				s_mc(1, imp_->dyn_m_, C_inv + at(b.col, 0, imp_->dyn_m_), D + at(di, 0, imp_->dyn_m_));
 				di++;
 			}
 		}
 
 		// make B //
-		for (auto &b : imp_->cst_blk_vec_)
-		{
+		for (auto &b : imp_->cst_blk_vec_){
 			Size row{ 0 };
-			for (auto &p : model()->partPool())
-			{
+			for (auto &p : model()->partPool()){
 				double cm[6][6], vs[6];
 
 				s_inv_tv(*p.pm(), p.vs(), vs);
@@ -271,10 +250,8 @@ namespace aris::dynamic
 
 		// make A finally //
 		int col1 = 0, col2 = 6;
-		for (auto &prt : model()->partPool())
-		{
-			if (prt.active() && &prt != &model()->ground())
-			{
+		for (auto &prt : model()->partPool()){
+			if (prt.active() && &prt != &model()->ground()){
 				double q[6]{ 0 };
 
 				s_inv_tv(*prt.pm(), prt.as(), q);
@@ -283,8 +260,7 @@ namespace aris::dynamic
 				double v[6];
 				s_inv_tv(*prt.pm(), prt.vs(), v);
 
-				for (std::size_t j = 0; j < imp_->m_; ++j)
-				{
+				for (std::size_t j = 0; j < imp_->m_; ++j){
 					A[at(j, col1 + 0, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[at(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[at(j, col2 + 2, imp_->dyn_m_)] * q[2];
 					A[at(j, col1 + 1, n())] = D[at(j, col2 + 1, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[1] - D[at(j, col2 + 2, imp_->dyn_m_)] * q[4] - D[at(j, col2 + 4, imp_->dyn_m_)] * q[2];
 					A[at(j, col1 + 2, n())] = D[at(j, col2 + 2, imp_->dyn_m_)] * q[3] + D[at(j, col2 + 3, imp_->dyn_m_)] * q[2] - D[at(j, col2 + 0, imp_->dyn_m_)] * q[5] - D[at(j, col2 + 5, imp_->dyn_m_)] * q[0];
@@ -313,10 +289,8 @@ namespace aris::dynamic
 		}
 		// make A from frictions //
 		Size ai = 0;
-		for (auto &b : imp_->cst_blk_vec_)
-		{
-			if (dynamic_cast<Motion*>(b.c))
-			{
+		for (auto &b : imp_->cst_blk_vec_){
+			if (dynamic_cast<Motion*>(b.c))	{
 				A[at(ai, g() + ai * 3 + 0, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv(), dynamic_cast<Motion*>(b.c)->frcZeroCheck());
 				A[at(ai, g() + ai * 3 + 1, n())] = dynamic_cast<Motion*>(b.c)->mv();
 				A[at(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
@@ -327,17 +301,14 @@ namespace aris::dynamic
 
 		/////////////////////////////////////////// make b ///////////////////////////////////////
 		Size bi{ 0 };
-		for (auto &blk : imp_->cst_blk_vec_)
-		{
-			if (dynamic_cast<Motion*>(blk.c))
-			{
+		for (auto &blk : imp_->cst_blk_vec_){
+			if (dynamic_cast<Motion*>(blk.c)){
 				b[bi] = dynamic_cast<Motion*>(blk.c)->mf();
 				bi++;
 			}
 		}
 		std::fill(f, f + imp_->dyn_m_, 0.0);
-		for (auto &fce : imp_->fce_blk_vec_)
-		{
+		for (auto &fce : imp_->fce_blk_vec_){
 			double glb_fsI[6], glb_fsJ[6];
 			fce.f->cptGlbFs(glb_fsI, glb_fsJ);
 
@@ -353,111 +324,123 @@ namespace aris::dynamic
 
 		/////////////////////////////////////////// make x ///////////////////////////////////////
 		Size xi = 0;
-		for (auto &prt : model()->partPool())
-		{
-			if (prt.active() && &prt != &model()->ground())
-			{
+		for (auto &prt : model()->partPool()){
+			if (prt.active() && &prt != &model()->ground())	{
 				s_vc(10, prt.prtIv(), x + xi);
 				xi += 10;
 			}
 		}
 		// make x from frictions //
 		bi = 0;
-		for (auto &blk : imp_->cst_blk_vec_)
-		{
-			if (dynamic_cast<Motion*>(blk.c))
-			{
+		for (auto &blk : imp_->cst_blk_vec_){
+			if (dynamic_cast<Motion*>(blk.c)){
 				s_vc(3, dynamic_cast<Motion*>(blk.c)->frcCoe(), x + g() + bi * 3);
 				bi++;
 			}
 		}
 	}
-	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset)
-	{
-		const int filter_size = 10;
-		const int mot_num = 6;
-		const int pos_at = 1;
-		const int vel_at = 2;
-		const int cur_at = 3;
-		const int mot_data_num = 4;
+	auto Calibrator::setDataIndex(int pos_idx, int vel_idx, int fce_idx, int data_num_per_motor)->void {
+		imp_->pos_idx_ = pos_idx;
+		imp_->vel_idx_ = vel_idx;
+		imp_->fce_idx_ = fce_idx;
+		imp_->data_num_per_motor_ = data_num_per_motor;
+	}
+	auto Calibrator::setFilterWindowSize(int window_size)->void {
+		imp_->filter_window_size_ = window_size;
+	}
+	auto Calibrator::dataIndex()const->std::tuple<int, int, int, int> { return std::make_tuple(imp_->pos_idx_, imp_->vel_idx_, imp_->fce_idx_, imp_->data_num_per_motor_); }
+	auto Calibrator::filterWindowSize()const->int { return imp_->filter_window_size_; }
+	auto Calibrator::torqueConstant()const->std::vector<double> { return imp_->torque_constant_; }
+	auto Calibrator::setTorqueConstant(std::vector<double> constant)->void { imp_->torque_constant_ = constant; }
+	auto Calibrator::velocityRatio()const->std::vector<double> { return imp_->velocity_ratio_; }
+	auto Calibrator::setVelocityRatio(std::vector<double> constant)->void { imp_->velocity_ratio_ = constant; }
+	auto Calibrator::torqueWeight()const->std::vector<double> { return imp_->torque_weight_; }
+	auto Calibrator::setTorqueWeight(std::vector<double> constant)->void { imp_->torque_weight_ = constant; }
+	auto Calibrator::velocityDeadZone()const->std::vector<double> { return imp_->velocity_dead_zone_; }
+	auto Calibrator::setVelocityDeadZone(std::vector<double> constant)->void { imp_->velocity_dead_zone_ = constant; }
+	auto Calibrator::tolerableVariance()const->double { return imp_->tolerable_variance_; }
+	auto Calibrator::setTolerableVariance(double constant)->void { imp_->tolerable_variance_ = constant; }
 
-		const double torque_constant[6]{ 0.283 * 81 * 4808, 0.283 * 81 * 4808, 0.276 * 81 * 2546, 0.226 * 72.857 * 1556, 0.219 * 81 * 849, 0.219 * 50 * 849 };
+	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset){
+		const auto[pos_at, vel_at, fce_at, mot_data_num] = clb->dataIndex();
+		const auto filter_size = clb->filterWindowSize();
+		const int mot_num = clb->model()->motionPool().size();
+		const auto torque_constant = clb->torqueConstant();
+		const auto line_num = mot_num * mot_data_num;
+		const double dt = 0.001;
 
 		auto &pos = *dataset[0];
 		auto &vel = *dataset[1];
 		auto &acc = *dataset[2];
 		auto &fce = *dataset[3];
 
-		auto num = mtx.size() / 24 / 10 - 2;
-		for (int i = 0; i < mot_num; ++i)
-		{
+		// 预分配内存，为当前数据叠加新的数据 //
+		auto num = mtx.size() / line_num / filter_size - 2;
+		for (int i = 0; i < mot_num; ++i){
 			pos[i].reserve(num + pos[i].size());
 			vel[i].reserve(num + vel[i].size());
 			acc[i].reserve(num + acc[i].size());
 			fce[i].reserve(num + fce[i].size());
 		}
 
-		for (int i = 1; i < num + 1; ++i)
-		{
-			for (int j = 0; j < mot_num; ++j)
-			{
+		for (int i = 1; i < num + 1; ++i){
+			for (int j = 0; j < mot_num; ++j){
 				// make actual pos //
 				pos[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k)
-				{
-					pos[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 1] / filter_size;
+				for (int k = 0; k < filter_size; ++k){
+					pos[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + pos_at] / filter_size;
 				}
 
 				// make actual vel //
 				vel[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k)
-				{
-					vel[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 2] / filter_size;
+				for (int k = 0; k < filter_size; ++k){
+					vel[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + vel_at] / filter_size * clb->velocityRatio()[j];
 				}
 
 				// make actual acc //
-				const int avg_size = 4;
+				const int avg_size = filter_size / 2;
 
-				double r = mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2] / (1 + avg_size * 2);
-				double l = mtx[i * 24 * filter_size + j * 4 + 2] / (1 + avg_size * 2);
-				for (int k = 0; k < avg_size; ++k)
-				{
-					r += mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2 + 24 * k] / (1 + avg_size * 2);
-					r += mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2 - 24 * k] / (1 + avg_size * 2);
-					l += mtx[i * 24 * filter_size + j * 4 + 2 + 24 * k] / (1 + avg_size * 2);
-					l += mtx[i * 24 * filter_size + j * 4 + 2 - 24 * k] / (1 + avg_size * 2);
+				double r = mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * filter_size] / (avg_size * 2 - 1);
+				double l = mtx[i * line_num * filter_size + j * mot_data_num + vel_at] / (avg_size * 2 - 1);
+				for (int k = 1; k < avg_size; ++k){
+					r += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k + line_num * filter_size ] / (avg_size * 2 - 1);
+					r += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k + line_num * filter_size ] / (avg_size * 2 - 1);
+					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k] / (avg_size * 2 - 1);
+					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k] / (avg_size * 2 - 1);
 				}
-				acc[j].push_back((r - l) * 1000 / filter_size);
+				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j]);
 
 				// make actual fce //
 				fce[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k)
-				{
-					fce[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 3] / filter_size * torque_constant[j] / 1e6;
+				for (int k = 0; k < filter_size; ++k){
+					fce[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + fce_at] / filter_size * torque_constant[j];
 				}
 			}
 		}
 	}
-	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->void
-	{
+	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->int{
+		// init some values //
+		if (imp_->torque_constant_.empty())imp_->torque_constant_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_ratio_.empty()) imp_->velocity_ratio_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->torque_weight_.empty())  imp_->torque_weight_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_dead_zone_.empty())imp_->velocity_dead_zone_.resize(model()->motionPool().size(), 0.1);
+		
 		// make datasets //
-		std::cout << "making datasets" << std::endl;
-		std::vector<std::vector<double> > pos(6);
-		std::vector<std::vector<double> > vel(6);
-		std::vector<std::vector<double> > acc(6);
-		std::vector<std::vector<double> > fce(6);
+		//std::cout << "making datasets" << std::endl;
+		std::vector<std::vector<double> > pos(model()->motionPool().size());
+		std::vector<std::vector<double> > vel(model()->motionPool().size());
+		std::vector<std::vector<double> > acc(model()->motionPool().size());
+		std::vector<std::vector<double> > fce(model()->motionPool().size());
 
-		for (auto &file : file_paths)
-		{
-			std::cout << "----loading file:" << file << std::endl;
+		for (auto &file : file_paths){
+			std::cout << "clb----loading file:" << file << std::endl;
 			auto mtx = aris::dynamic::dlmread(file.c_str());
-			std::cout << "----making data" << std::endl;
 			std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
 			makeDataset(this, mtx, dataset);
 		}
 		
 		// make calibration matrix //
-		std::cout << "make calibration matrix" << std::endl;
+		std::cout << "clb----computing data" << std::endl;
 		this->allocateMemory();
 
 		auto num = pos[0].size();
@@ -465,85 +448,89 @@ namespace aris::dynamic
 		std::vector<aris::Size> p(num * m());
 
 		Size rows{ 0 }, cols{ n() };
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
+		for (int i = 0; i < num; ++i){
+			for (int j = 0; j < model()->motionPool().size(); ++j){
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
-				this->model()->motionPool()[j].setMf(fce[j][i]);
 			}
 
 			this->model()->solverPool().at(1).kinPos();
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < 6; ++j)
-			{
+			for (int j = 0; j < model()->motionPool().size(); ++j){
 				this->model()->motionPool()[j].setMf(fce[j][i]);
 			}
 			this->clb();
 
-			for (int j = 0; j < 6; ++j)
-			{
-				if (std::abs(this->model()->motionPool()[j].mv()) < 0.01)continue;
+			for (int j = 0; j < model()->motionPool().size(); ++j){
+				// 考虑速度死区 //
+				if (std::abs(this->model()->motionPool()[j].mv()) < velocityDeadZone()[j])continue;
 
-				std::copy_n(this->A() + j * n(), n(), A.data() + rows * n());
-				b[rows] = this->b()[j];
+				// 考虑电机扭矩权重 //
+				s_vc(n(), 1.0/torqueWeight()[j], this->A() + j * n(), A.data() + rows * n());
+				b[rows] = this->b()[j] * 1.0/torqueWeight()[j];
 				rows++;
 			}
 		}
 		auto max_value = *std::max_element(A.begin(), A.begin() + rows * n());
-		auto min_value = *std::max_element(A.begin(), A.begin() + rows * n());
+		auto min_value = *std::min_element(A.begin(), A.begin() + rows * n());
 		auto real_max = std::max(std::abs(max_value), std::abs(min_value));
-		std::cout << "A size:" << rows << "x" << cols << std::endl;
-		std::cout << "max value of A:" << real_max << std::endl;
+		std::cout << "clb----A size:" << rows << "x" << cols << std::endl;
+		std::cout << "clb----max value of A:" << real_max << std::endl;
 
 		// solve calibration matrix //
-		std::cout << "solve calibration matrix" << std::endl;
+		std::vector<double> U(rows * n());
+
+		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
 		double zero_check = 1e-6;
-		s_householder_utp(rows, n(), A.data(), A.data(), tau.data(), p.data(), rank, zero_check);
-		s_householder_utp_sov(rows, n(), 1, rank, A.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
-		std::cout << "rank:" << rank << std::endl;
+		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
+		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
+		std::cout << "clb----rank:" << rank << std::endl;
 
-		std::cout << "inertia result:" << std::endl;
-		dsp(6, 10, x.data());
-		std::cout << "friction result:" << std::endl;
-		dsp(6, 3, x.data() + 60);
+		std::cout << "clb----inertia result:" << std::endl;
+		dsp(model()->partPool().size() - 1, 10, x.data());
+		std::cout << "clb----friction result:" << std::endl;
+		dsp(model()->motionPool().size(), 3, x.data() + (model()->partPool().size() - 1) * 10);
+
+
+		// check variance //
+		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
+		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
+		std::cout << "clb----variance:" << variance << std::endl;
+		if (variance > imp_->tolerable_variance_) return -1;
+
 
 		// update inertias //
 		updateInertiaParam(x.data());
+		return 0;
 	}
-	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void
-	{
+	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void{
 		// make datasets //
 		std::cout << "making datasets" << std::endl;
-		std::vector<std::vector<double> > pos(6);
-		std::vector<std::vector<double> > vel(6);
-		std::vector<std::vector<double> > acc(6);
-		std::vector<std::vector<double> > fce(6);
+		std::vector<std::vector<double> > pos(model()->motionPool().size());
+		std::vector<std::vector<double> > vel(model()->motionPool().size());
+		std::vector<std::vector<double> > acc(model()->motionPool().size());
+		std::vector<std::vector<double> > fce(model()->motionPool().size());
 
-		for (auto &file : file_paths)
-		{
+		for (auto &file : file_paths) {
 			std::cout << "----loading file:" << file << std::endl;
 			auto mtx = aris::dynamic::dlmread(file.c_str());
 			std::cout << "----making data" << std::endl;
 			std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
 			makeDataset(this, mtx, dataset);
 		}
-
+		
 		// now test datasets //
 		auto num = pos[0].size();
 		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
-		std::vector<std::vector<double> > f(6, std::vector<double>(num));
-		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
-		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
+		std::vector<std::vector<double> > f(model()->motionPool().size(), std::vector<double>(num));
+		std::vector<std::vector<double> > ff(model()->motionPool().size(), std::vector<double>(num));
+		std::vector<std::vector<double> > fd(model()->motionPool().size(), std::vector<double>(num));
+		for (int i = 0; i < num; ++i){
+			for (int j = 0; j < model()->motionPool().size(); ++j){
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
@@ -553,8 +540,7 @@ namespace aris::dynamic
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < 6; ++j)
-			{
+			for (int j = 0; j < model()->motionPool().size(); ++j)	{
 				f[j][i] = this->model()->motionPool()[j].mf();
 			}
 		}
@@ -565,8 +551,7 @@ namespace aris::dynamic
 
 		std::cout << "dynamic finished, now output results" << std::endl;
 
-		for (int i = 0; i<6; ++i)
-		{
+		for (int i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
 			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
@@ -590,8 +575,7 @@ namespace aris::dynamic
 
 		std::cout << "end" << std::endl;
 	}
-	auto Calibrator::clbFile(const std::string &file_paths)->void
-	{
+	auto Calibrator::clbFile(const std::string &file_paths)->void{
 		auto mtx = aris::dynamic::dlmread(file_paths.c_str());
 
 		std::cout << "mtx size:" << mtx.size() << std::endl;
@@ -607,10 +591,8 @@ namespace aris::dynamic
 		std::vector<std::vector<double> > acc(6, std::vector<double>(num));
 		std::vector<std::vector<double> > fce(6, std::vector<double>(num));
 		
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
+		for (int i = 0; i < num; ++i){
+			for (int j = 0; j < 6; ++j)	{
 				// make actual pos //
 				pos[j][i] = 0.0;
 				for (int k = 0; k < 10; ++k)
@@ -620,8 +602,7 @@ namespace aris::dynamic
 
 				// make actual vel //
 				vel[j][i] = 0.0;
-				for (int k = 0; k < 10; ++k)
-				{
+				for (int k = 0; k < 10; ++k){
 					vel[j][i] += mtx[i * 240 + k * 24 + j * 4 + 2] / 10.0;
 				}
 
@@ -630,8 +611,7 @@ namespace aris::dynamic
 
 				// make actual fce //
 				fce[j][i] = 0.0;
-				for (int k = 0; k < 10; ++k)
-				{
+				for (int k = 0; k < 10; ++k){
 					fce[j][i] += mtx[i * 240 + k * 24 + j * 4 + 3] / 10.0 * torque_constant[j]/1e6;
 				}
 			}
@@ -645,10 +625,8 @@ namespace aris::dynamic
 		std::vector<aris::Size> p(num * m());
 
 		std::cout << "A size:" << num * m() << "x" << n() << std::endl;
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
+		for (int i = 0; i < num; ++i){
+			for (int j = 0; j < 6; ++j)	{
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
@@ -659,8 +637,7 @@ namespace aris::dynamic
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < 6; ++j)
-			{
+			for (int j = 0; j < 6; ++j){
 				this->model()->motionPool()[j].setMf(fce[j][i]);
 			}
 			this->clb();
@@ -720,10 +697,8 @@ namespace aris::dynamic
 		std::vector<std::vector<double> > f(6, std::vector<double>(num));
 		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
 		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
+		for (int i = 0; i < num; ++i){
+			for (int j = 0; j < 6; ++j){
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
@@ -754,8 +729,7 @@ namespace aris::dynamic
 
 
 		
-		for (int i = 0; i<6;++i)
-		{
+		for (int i = 0; i<6;++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
 			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
@@ -779,23 +753,18 @@ namespace aris::dynamic
 
 		std::cout << "end" << std::endl;
 	}
-	auto Calibrator::updateInertiaParam(const double *x)->void
-	{
+	auto Calibrator::updateInertiaParam(const double *x)->void{
 		Size xi = 0;
-		for (auto &prt : model()->partPool())
-		{
-			if (prt.active() && &prt != &model()->ground())
-			{
+		for (auto &prt : model()->partPool()){
+			if (prt.active() && &prt != &model()->ground()){
 				prt.setPrtIv(x + xi);
 				xi += 10;
 			}
 		}
 		// make x from frictions //
 		Size bi = 0;
-		for (auto &blk : imp_->cst_blk_vec_)
-		{
-			if (dynamic_cast<Motion*>(blk.c))
-			{
+		for (auto &blk : imp_->cst_blk_vec_){
+			if (dynamic_cast<Motion*>(blk.c)){
 				dynamic_cast<Motion*>(blk.c)->setFrcCoe(x + g() + bi * 3);
 				bi++;
 			}
@@ -1000,19 +969,19 @@ namespace aris::dynamic
 	}
 	auto SimResult::ConstraintResult::restore(Size pos)->void
 	{
-		constraint().setCf(imp_->cf_.at(pos).data());
-		if (dynamic_cast<Motion*>(&constraint()))
-		{
-			dynamic_cast<Motion*>(&constraint())->updMp();
-			dynamic_cast<Motion*>(&constraint())->updMv();
-			dynamic_cast<Motion*>(&constraint())->updMa();
-		}
-		if (dynamic_cast<GeneralMotion*>(&constraint()))
-		{
-			dynamic_cast<GeneralMotion*>(&constraint())->updMpm();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMvs();
-			dynamic_cast<GeneralMotion*>(&constraint())->updMas();
-		}
+		//constraint().setCf(imp_->cf_.at(pos).data());
+		//if (dynamic_cast<Motion*>(&constraint()))
+		//{
+		//	dynamic_cast<Motion*>(&constraint())->updP();
+		//	dynamic_cast<Motion*>(&constraint())->updV();
+		//	dynamic_cast<Motion*>(&constraint())->updA();
+		//}
+		//if (dynamic_cast<GeneralMotion*>(&constraint()))
+		//{
+		//	dynamic_cast<GeneralMotion*>(&constraint())->updP();
+		//	dynamic_cast<GeneralMotion*>(&constraint())->updV();
+		//	dynamic_cast<GeneralMotion*>(&constraint())->updA();
+		//}
 	}
 	SimResult::ConstraintResult::~ConstraintResult() = default;
 	SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : imp_(new Imp(constraint)) {}
@@ -1135,12 +1104,11 @@ namespace aris::dynamic
 		result.record();
 		
 		auto p = std::unique_ptr<aris::plan::Plan>(plan.clone());
-		p->imp_->count_ = 0;
+		p->imp_->count_ = 1;
 		p->imp_->model_ = model();
 		p->imp_->master_ = nullptr;
 		p->imp_->controller_ = nullptr;
 		p->imp_->ec_master_ = nullptr;
-		p->imp_->ec_controller_ = nullptr;
 		p->imp_->cs_ = nullptr;
 
 		// 记录轨迹中的状态 //
@@ -1195,8 +1163,7 @@ namespace aris::dynamic
 	auto AdamsSimulator::saveAdams(const std::string &filename, SimResult &result, Size pos)->void
 	{
 		std::string filename_ = filename;
-		if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
-		{
+		if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd"){
 			filename_ += ".cmd";
 		}
 
@@ -1217,23 +1184,21 @@ namespace aris::dynamic
 		std::vector<double> time(result.size() + 1);
 		std::vector<std::vector<double>> mot_akima(model()->motionPool().size(), std::vector<double>(result.size() + 1));
 		std::vector<std::vector<std::array<double, 6>>> gm_akima(model()->generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
-		if (pos == -1)
-		{
+		if (pos == -1){
 			if (result.size() < 4)THROW_FILE_LINE("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
 
-			for (Size i(-1); ++i < result.size() + 1;)
-			{
+			for (Size i(-1); ++i < result.size() + 1;){
 				result.restore(i);
 				time.at(i) = model()->time();
-				for (Size j(-1); ++j < model()->motionPool().size();)
-				{
+				for (Size j(-1); ++j < model()->motionPool().size();){
 					model()->motionPool().at(j).updMp();
 					mot_akima.at(j).at(i) = model()->motionPool().at(j).mpInternal();
 				}
-				for (Size j(-1); ++j < model()->generalMotionPool().size();)
-				{
-					model()->generalMotionPool().at(j).updMpm();
-					model()->generalMotionPool().at(j).getMpe(gm_akima.at(j).at(i).data(), "123");
+				for (Size j(-1); ++j < model()->generalMotionPool().size();){
+					if (auto gm = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(j))){
+						gm->updMpm();
+						gm->getMpe(gm_akima.at(j).at(i).data(), "123");
+					}
 				}
 			}
 		}
@@ -1454,82 +1419,157 @@ namespace aris::dynamic
 				<< "    function = \"" << (pos == -1 ? akima_func : polynomial_func) << "\"  \r\n"
 				<< "!\r\n";
 		}
-		for (auto &gm : model()->generalMotionPool())
-		{
-			file << "ude create instance  &\r\n"
-				<< "    instance_name = ." << model_name << "." << gm.name() << "  &\r\n"
-				<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
-				<< "    location = 0.0, 0.0, 0.0  &\r\n"
-				<< "    orientation = 0.0, 0.0, 0.0  \r\n"
-				<< "!\r\n";
+		for (auto &gmb : model()->generalMotionPool()){
+			if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
 
-			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model_name << "." << gm.name() << ".i_marker  &\r\n"
-				<< "	object_value = ." << model_name << "." << gm.makI()->fatherPart().name() << "." << gm.makI()->name() << " \r\n"
-				<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gm->name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gm->makI()->fatherPart().name() << "." << gm->makI()->name() << " \r\n"
+					<< "!\r\n";
 
-			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model_name << "." << gm.name() << ".j_marker  &\r\n"
-				<< "	object_value = ." << model_name << "." << gm.makJ()->fatherPart().name() << "." << gm.makJ()->name() << " \r\n"
-				<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gm->name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gm->makJ()->fatherPart().name() << "." << gm->makJ()->name() << " \r\n"
+					<< "!\r\n";
 
-			std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
 
-			double pe123[6], ve123[6], ae123[6];
-			gm.getMpe(pe123, "123");
-			gm.getMve(ve123, "123");
-			gm.getMae(ae123, "123");
-			for (Size i = 0; i < 6; ++i)
-			{
-				std::string akima = gm.name() + "_" + axis_names[i] + "_akima";
-				std::string akima_func = "AKISPL(time,0," + akima + ")";
-				std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
-				std::string func = pos == -1 ? akima_func : polynomial_func;
-
-				// 构建akima曲线 //
-				if (pos == -1)
+				double pe123[6], ve123[6], ae123[6];
+				gm->getMpe(pe123, "123");
+				gm->getMve(ve123, "123");
+				gm->getMae(ae123, "123");
+				for (Size i = 0; i < 6; ++i)
 				{
-					file << "data_element create spline &\r\n"
-						<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
-						<< "    adams_id = " << model()->motionPool().size() + adamsID(gm) * 6 + i << "  &\r\n"
-						<< "    units = m &\r\n"
-						<< "    x = " << time.at(0);
-					for (auto p = time.begin() + 1; p < time.end(); ++p)
+					std::string akima = gm->name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
+
+					// 构建akima曲线 //
+					if (pos == -1)
 					{
-						file << "," << *p;
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gm) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p)
+						{
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gm->id()).at(0).at(i);
+						for (auto p = gm_akima.at(gm->id()).begin() + 1; p < gm_akima.at(gm->id()).end(); ++p)
+						{
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
 					}
-					file << "    y = " << gm_akima.at(gm.id()).at(0).at(i);
-					for (auto p = gm_akima.at(gm.id()).begin() + 1; p < gm_akima.at(gm.id()).end(); ++p)
-					{
-						file << "," << p->at(i);
-					}
-					file << " \r\n!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = 1 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
 				}
 
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_type  &\r\n"
-					<< "	integer_value = 1 \r\n"
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model_name << "." << gm->name() << "\r\n"
 					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_func  &\r\n"
-					<< "	string_value = \"" + func + "\" \r\n"
-					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_ic_disp  &\r\n"
-					<< "	real_value = 0.0 \r\n"
-					<< "!\r\n";
-
-				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model_name << "." << gm.name() << "." << axis_names[i] << "_ic_velo  &\r\n"
-					<< "	real_value = 0.0 \r\n"
-					<< "!\r\n";
+			
 			}
+			//else if (auto gmp = dynamic_cast<PointMotion*>(&gmb)) {
+			//	file << "ude create instance  &\r\n"
+			//		<< "    instance_name = ." << model_name << "." << gmp->name() << "  &\r\n"
+			//		<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+			//		<< "    location = 0.0, 0.0, 0.0  &\r\n"
+			//		<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+			//		<< "!\r\n";
 
-			file << "ude modify instance  &\r\n"
-				<< "	instance_name = ." << model_name << "." << gm.name() << "\r\n"
-				<< "!\r\n";
+			//	file << "variable modify  &\r\n"
+			//		<< "	variable_name = ." << model_name << "." << gmp->name() << ".i_marker  &\r\n"
+			//		<< "	object_value = ." << model_name << "." << gmp->makI()->fatherPart().name() << "." << gmp->makI()->name() << " \r\n"
+			//		<< "!\r\n";
+
+			//	file << "variable modify  &\r\n"
+			//		<< "	variable_name = ." << model_name << "." << gmp->name() << ".j_marker  &\r\n"
+			//		<< "	object_value = ." << model_name << "." << gmp->makJ()->fatherPart().name() << "." << gmp->makJ()->name() << " \r\n"
+			//		<< "!\r\n";
+
+			//	std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+
+			//	double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,0 };
+			//	double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,0 };
+			//	double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,0 };
+
+			//	for (Size i = 0; i < 6; ++i)
+			//	{
+			//		std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
+			//		std::string akima_func = "AKISPL(time,0," + akima + ")";
+			//		std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
+			//		std::string func = pos == -1 ? akima_func : polynomial_func;
+
+			//		// 构建akima曲线 //
+			//		if (pos == -1){
+			//			file << "data_element create spline &\r\n"
+			//				<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+			//				<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
+			//				<< "    units = m &\r\n"
+			//				<< "    x = " << time.at(0);
+			//			for (auto p = time.begin() + 1; p < time.end(); ++p){
+			//				file << "," << *p;
+			//			}
+			//			file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
+			//			for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p){
+			//				file << "," << p->at(i);
+			//			}
+			//			file << " \r\n!\r\n";
+			//		}
+
+			//		file << "variable modify  &\r\n"
+			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
+			//			<< "	integer_value = " << (i < 3 ? 1 : 0) <<  " \r\n"
+			//			<< "!\r\n";
+
+			//		file << "variable modify  &\r\n"
+			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_func  &\r\n"
+			//			<< "	string_value = \"" + func + "\" \r\n"
+			//			<< "!\r\n";
+
+			//		file << "variable modify  &\r\n"
+			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+			//			<< "	real_value = 0.0 \r\n"
+			//			<< "!\r\n";
+
+			//		file << "variable modify  &\r\n"
+			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+			//			<< "	real_value = 0.0 \r\n"
+			//			<< "!\r\n";
+			//	}
+
+			//	file << "ude modify instance  &\r\n"
+			//		<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
+			//		<< "!\r\n";
+			//}
 		}
 		for (auto &force : model()->forcePool())
 		{
@@ -1642,13 +1682,21 @@ namespace aris::dynamic
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &gm : model()->generalMotionPool())
+		for (auto &gmb : model()->generalMotionPool())
 		{
-			if (!gm.active())
+			if (!gmb.active())
 			{
-				file << "ude attributes  &\r\n"
-					<< "    instance_name = ." << model_name << "." << gm.name() << "  &\r\n"
-					<< "    active = off \r\n!\r\n";
+				if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
+
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+				//else if (auto gm2 = dynamic_cast<PointMotion*>(&gmb)) {
+				//	file << "ude attributes  &\r\n"
+				//		<< "    instance_name = ." << model_name << "." << gm2->name() << "  &\r\n"
+				//		<< "    active = off \r\n!\r\n";
+				//}
 			}
 		}
 		for (auto &fce : model()->forcePool())
@@ -1722,5 +1770,10 @@ namespace aris::dynamic
 		
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;
+
+
+
+
+
 	}
 }
