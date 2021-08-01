@@ -70,9 +70,10 @@ namespace aris::dynamic
 		Size m_, g_, k_;
 		std::vector<double> A_, x_, b_;
 
-		int pos_idx_, vel_idx_, fce_idx_, data_num_per_motor_;
-		int filter_window_size_;
-		std::vector<double> torque_constant_, velocity_ratio_;
+		std::vector<double> torque_constant_, velocity_ratio_, torque_weight_, velocity_dead_zone_;
+		int pos_idx_{ 0 }, vel_idx_{ 1 }, fce_idx_{ 2 }, data_num_per_motor_{ 3 };
+		int filter_window_size_{ 20 };
+		double tolerable_variance_{ 0.05 };
 
 		friend auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset);
 	};
@@ -353,6 +354,12 @@ namespace aris::dynamic
 	auto Calibrator::setTorqueConstant(std::vector<double> constant)->void { imp_->torque_constant_ = constant; }
 	auto Calibrator::velocityRatio()const->std::vector<double> { return imp_->velocity_ratio_; }
 	auto Calibrator::setVelocityRatio(std::vector<double> constant)->void { imp_->velocity_ratio_ = constant; }
+	auto Calibrator::torqueWeight()const->std::vector<double> { return imp_->torque_weight_; }
+	auto Calibrator::setTorqueWeight(std::vector<double> constant)->void { imp_->torque_weight_ = constant; }
+	auto Calibrator::velocityDeadZone()const->std::vector<double> { return imp_->velocity_dead_zone_; }
+	auto Calibrator::setVelocityDeadZone(std::vector<double> constant)->void { imp_->velocity_dead_zone_ = constant; }
+	auto Calibrator::tolerableVariance()const->double { return imp_->tolerable_variance_; }
+	auto Calibrator::setTolerableVariance(double constant)->void { imp_->tolerable_variance_ = constant; }
 
 	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset){
 		const auto[pos_at, vel_at, fce_at, mot_data_num] = clb->dataIndex();
@@ -411,24 +418,29 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->void{
+	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->int{
+		// init some values //
+		if (imp_->torque_constant_.empty())imp_->torque_constant_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_ratio_.empty()) imp_->velocity_ratio_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->torque_weight_.empty())  imp_->torque_weight_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_dead_zone_.empty())imp_->velocity_dead_zone_.resize(model()->motionPool().size(), 0.1);
+		
 		// make datasets //
-		std::cout << "making datasets" << std::endl;
+		//std::cout << "making datasets" << std::endl;
 		std::vector<std::vector<double> > pos(model()->motionPool().size());
 		std::vector<std::vector<double> > vel(model()->motionPool().size());
 		std::vector<std::vector<double> > acc(model()->motionPool().size());
 		std::vector<std::vector<double> > fce(model()->motionPool().size());
 
 		for (auto &file : file_paths){
-			std::cout << "----loading file:" << file << std::endl;
+			std::cout << "clb----loading file:" << file << std::endl;
 			auto mtx = aris::dynamic::dlmread(file.c_str());
-			std::cout << "----making data" << std::endl;
 			std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
 			makeDataset(this, mtx, dataset);
 		}
 		
 		// make calibration matrix //
-		std::cout << "make calibration matrix" << std::endl;
+		std::cout << "clb----computing data" << std::endl;
 		this->allocateMemory();
 
 		auto num = pos[0].size();
@@ -453,34 +465,47 @@ namespace aris::dynamic
 			this->clb();
 
 			for (int j = 0; j < model()->motionPool().size(); ++j){
-				if (std::abs(this->model()->motionPool()[j].mv()) < 0.01)continue;
+				// 考虑速度死区 //
+				if (std::abs(this->model()->motionPool()[j].mv()) < velocityDeadZone()[j])continue;
 
-				std::copy_n(this->A() + j * n(), n(), A.data() + rows * n());
-				b[rows] = this->b()[j];
+				// 考虑电机扭矩权重 //
+				s_vc(n(), 1.0/torqueWeight()[j], this->A() + j * n(), A.data() + rows * n());
+				b[rows] = this->b()[j] * 1.0/torqueWeight()[j];
 				rows++;
 			}
 		}
 		auto max_value = *std::max_element(A.begin(), A.begin() + rows * n());
-		auto min_value = *std::max_element(A.begin(), A.begin() + rows * n());
+		auto min_value = *std::min_element(A.begin(), A.begin() + rows * n());
 		auto real_max = std::max(std::abs(max_value), std::abs(min_value));
-		std::cout << "A size:" << rows << "x" << cols << std::endl;
-		std::cout << "max value of A:" << real_max << std::endl;
+		std::cout << "clb----A size:" << rows << "x" << cols << std::endl;
+		std::cout << "clb----max value of A:" << real_max << std::endl;
 
 		// solve calibration matrix //
-		std::cout << "solve calibration matrix" << std::endl;
+		std::vector<double> U(rows * n());
+
+		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
 		double zero_check = 1e-6;
-		s_householder_utp(rows, n(), A.data(), A.data(), tau.data(), p.data(), rank, zero_check);
-		s_householder_utp_sov(rows, n(), 1, rank, A.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
-		std::cout << "rank:" << rank << std::endl;
+		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
+		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
+		std::cout << "clb----rank:" << rank << std::endl;
 
-		std::cout << "inertia result:" << std::endl;
+		std::cout << "clb----inertia result:" << std::endl;
 		dsp(model()->partPool().size() - 1, 10, x.data());
-		std::cout << "friction result:" << std::endl;
+		std::cout << "clb----friction result:" << std::endl;
 		dsp(model()->motionPool().size(), 3, x.data() + (model()->partPool().size() - 1) * 10);
+
+
+		// check variance //
+		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
+		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
+		std::cout << "clb----variance:" << variance << std::endl;
+		if (variance > imp_->tolerable_variance_) return -1;
+
 
 		// update inertias //
 		updateInertiaParam(x.data());
+		return 0;
 	}
 	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void{
 		// make datasets //
@@ -1745,5 +1770,10 @@ namespace aris::dynamic
 		
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;
+
+
+
+
+
 	}
 }

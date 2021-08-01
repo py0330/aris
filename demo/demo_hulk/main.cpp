@@ -92,7 +92,14 @@ int main()
 		0.45 * 100 / 1000,
 		0.45 * 100 / 1000,
 		0.45 * 100 / 1000 });
-
+	clb.setTorqueWeight({
+		0.7 * 160,
+		0.7 * 160,
+		0.7 * 100,
+		0.45 * 100,
+		0.45 * 100,
+		0.45 * 100,
+		0.45 * 100 });
 	clb.setVelocityRatio({
 		1.0 / 160 / 6.13,
 		1.0 / 160 / 6.13,
@@ -124,15 +131,15 @@ int main()
 
 	try
 	{
-		//clb.clbFiles({
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine2.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine3.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine4.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine5.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine6.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine7.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine8.txt",
+		clb.clbFiles({
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine2.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine3.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine4.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine5.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine6.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine7.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine8.txt",
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine9.txt",
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine10.txt",
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine11.txt",
@@ -146,13 +153,13 @@ int main()
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine19.txt",
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine20.txt",
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data0.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data1.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data2.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data3.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data4.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data5.txt",
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data6.txt",
-		//});
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data1.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data2.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data3.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data4.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data5.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data6.txt",
+		});
 
 
 		aris::dynamic::dsp(1, 10, m->partPool()[1].prtIv());
@@ -196,8 +203,8 @@ int main()
 
 		std::cout << "verify" << std::endl;
 		clb.verifyFiles({
-			//"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\data1.txt",
-			"C:\\Users\\py033\\Desktop\\data2.txt"
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
+			//"C:\\Users\\py033\\Desktop\\data2.txt"
 			});
 
 
