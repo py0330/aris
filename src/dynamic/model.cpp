@@ -438,5 +438,4 @@ namespace aris::dynamic{
 			//.prop<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
 			;
 	}
-
 }
