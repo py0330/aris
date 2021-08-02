@@ -184,7 +184,9 @@ namespace aris::dynamic{
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	auto Model::inputPosSize()const noexcept->Size { return imp_->actuator_pos_size_; }
-	auto Model::inputDim()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputVelSize()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputAccSize()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputFceSize()const noexcept->Size { return imp_->actuator_dim_; }
 	auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
 	auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
 	auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
@@ -194,7 +196,9 @@ namespace aris::dynamic{
 	auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
 	auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
-	auto Model::outputDim()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_dim_; }
 	auto Model::setOutputPos(const double *mp)noexcept->void { 
 		for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i)
 			generalMotionPool()[i].setP(mp + pos);

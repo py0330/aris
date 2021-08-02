@@ -144,7 +144,7 @@ namespace aris::server{
 		PVC *last_pvc_, *last_last_pvc_;
 
 		// 交换controller与model所需的缓存 //
-		double *mem_transfer_pvaf_;
+		double *mem_transfer_p_, *mem_transfer_v_, *mem_transfer_a_, *mem_transfer_f_;
 
 		// Error 相关
 		std::uint64_t *idle_mot_check_options_, *global_mot_check_options_;
@@ -284,20 +284,20 @@ namespace aris::server{
 		int ret = plan.executeRT();
 
 		// 控制电机 //
-		model_->getInputPos(mem_transfer_pvaf_);
-		model_->getInputVel(mem_transfer_pvaf_ + 1 * model_->inputDim());
-		model_->getInputAcc(mem_transfer_pvaf_ + 2 * model_->inputDim());
-		model_->getInputFce(mem_transfer_pvaf_ + 3 * model_->inputDim());
+		model_->getInputPos(mem_transfer_p_);
+		model_->getInputVel(mem_transfer_v_);
+		model_->getInputAcc(mem_transfer_a_);
+		model_->getInputFce(mem_transfer_f_);
 
-		for (std::size_t i = 0; i < std::min(model_->inputDim(), controller_->motorPool().size()); ++i)
+		for (std::size_t i = 0; i < std::min(model_->inputPosSize(), controller_->motorPool().size()); ++i)
 		{
 			auto &cm = controller_->motorPool()[i];
 
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_pvaf_[i + 0 * model_->inputDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_pvaf_[i + 1 * model_->inputDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_pvaf_[i + 3 * model_->inputDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_pvaf_[i + 1 * model_->inputDim()]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_pvaf_[i + 3 * model_->inputDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_p_[i]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_v_[i]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_f_[i]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_v_[i]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_f_[i]);
 		}
 
 		return ret;
@@ -859,7 +859,10 @@ namespace aris::server{
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().motorPool().size());
-		core::allocMem(mem_size, imp_->mem_transfer_pvaf_, imp_->model_->inputDim() * 4);
+		core::allocMem(mem_size, imp_->mem_transfer_p_, imp_->model_->inputPosSize());
+		core::allocMem(mem_size, imp_->mem_transfer_v_, imp_->model_->inputVelSize());
+		core::allocMem(mem_size, imp_->mem_transfer_a_, imp_->model_->inputAccSize());
+		core::allocMem(mem_size, imp_->mem_transfer_f_, imp_->model_->inputFceSize());
 
 		imp_->mempool_.resize(mem_size, char(0));
 
@@ -869,8 +872,14 @@ namespace aris::server{
 		std::fill_n(imp_->idle_mot_check_options_, controller().motorPool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
 		std::fill_n(imp_->global_mot_check_options_, controller().motorPool().size(), std::uint64_t(0));
-		imp_->mem_transfer_pvaf_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_pvaf_);
-		std::fill_n(imp_->mem_transfer_pvaf_, model().inputDim() * 4, 0.0);
+		imp_->mem_transfer_p_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_p_);
+		std::fill_n(imp_->mem_transfer_p_, model().inputPosSize(), 0.0);
+		imp_->mem_transfer_v_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_v_);
+		std::fill_n(imp_->mem_transfer_v_, model().inputVelSize(), 0.0);
+		imp_->mem_transfer_a_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_a_);
+		std::fill_n(imp_->mem_transfer_a_, model().inputAccSize(), 0.0);
+		imp_->mem_transfer_f_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_f_);
+		std::fill_n(imp_->mem_transfer_f_, model().inputFceSize(), 0.0);
 
 		// 赋予初值 //
 		master().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
