@@ -152,8 +152,14 @@ public:
 		for (auto &m : subModels())size += m.outputFceSize();
 		return size;
 	}
-	auto virtual getOutputFce(double *mf)const noexcept->void { }
-	auto virtual setOutputFce(const double *mf)noexcept->void { }
+	auto virtual getOutputFce(double *mf)const noexcept->void {
+		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
+			models_[idx].getOutputFce(mf + pos);
+	}
+	auto virtual setOutputFce(const double *mf)noexcept->void {
+		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
+			models_[idx].setOutputFce(mf + pos);
+	}
 
 	auto subModels()->aris::core::PointerArray<ModelBase>& { return models_; }
 	auto subModels()const->const aris::core::PointerArray<ModelBase>& { return models_; }
