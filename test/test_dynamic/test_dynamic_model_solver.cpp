@@ -846,22 +846,22 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.outputPosSize(), opo);
 		}
 		m.getOutputVel(result);
-		if (!s_is_equal(m.outputDim(), result, ovo, error[1])) {
+		if (!s_is_equal(m.outputVelSize(), result, ovo, error[1])) {
 			std::cout << s.id() << "::kinVel() forward origin failed" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), ovo);
+			dsp(1, m.outputVelSize(), result);
+			dsp(1, m.outputVelSize(), ovo);
 		}
 		m.getOutputAcc(result);
-		if (!s_is_equal(m.outputDim(), result, oao, error[2])) {
+		if (!s_is_equal(m.outputAccSize(), result, oao, error[2])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward origin failed: acc not correct" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), oao);
+			dsp(1, m.outputAccSize(), result);
+			dsp(1, m.outputAccSize(), oao);
 		}
 		m.getInputFce(result);
-		if (!s_is_equal(m.inputDim(), result, ifo, error[3])) {
+		if (!s_is_equal(m.inputFceSize(), result, ifo, error[3])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward origin failed: fce not correct" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), ifo);
+			dsp(1, m.inputFceSize(), result);
+			dsp(1, m.inputFceSize(), ifo);
 		}
 
 
@@ -888,22 +888,22 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.outputPosSize(), opt);
 		}
 		m.getOutputVel(result);
-		if (!s_is_equal(m.outputDim(), result, ovt, error[1])) {
+		if (!s_is_equal(m.outputVelSize(), result, ovt, error[1])) {
 			std::cout << s.id() << "::kinVel() forward failed" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), ovt);
+			dsp(1, m.outputVelSize(), result);
+			dsp(1, m.outputVelSize(), ovt);
 		}
 		m.getOutputAcc(result);
-		if (!s_is_equal(m.outputDim(), result, oat, error[2])) {
+		if (!s_is_equal(m.outputAccSize(), result, oat, error[2])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed: acc not correct" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), oat);
+			dsp(1, m.outputAccSize(), result);
+			dsp(1, m.outputAccSize(), oat);
 		}
 		m.getInputFce(result);
-		if (!s_is_equal(m.inputDim(), result, ift, error[3])) {
+		if (!s_is_equal(m.inputFceSize(), result, ift, error[3])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed: fce not correct" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), ift);
+			dsp(1, m.inputFceSize(), result);
+			dsp(1, m.inputFceSize(), ift);
 		}
 		// check jacobi & general dyn matrix //
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
@@ -1006,10 +1006,10 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		for (auto &gm : m.generalMotionPool()) { gm.updP();	gm.updV();	gm.updA(); }
 		m.getOutputAcc(result);
-		if (!s_is_equal(m.outputDim(), result, oat, error[2])) {
+		if (!s_is_equal(m.outputAccSize(), result, oat, error[2])) {
 			std::cout << s.id() << "::dynAccAndFce() forward forward failed at: with force" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), oat);
+			dsp(1, m.outputAccSize(), result);
+			dsp(1, m.outputAccSize(), oat);
 		}
 
 
@@ -1038,22 +1038,22 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.outputPosSize(), ipo);
 		}
 		m.getInputVel(result);
-		if (!s_is_equal(m.inputDim(), result, ivo, error[5])) {
+		if (!s_is_equal(m.inputVelSize(), result, ivo, error[5])) {
 			std::cout << s.id() << "::kinVel() inverse origin failed" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), ivo);
+			dsp(1, m.inputVelSize(), result);
+			dsp(1, m.inputVelSize(), ivo);
 		}
 		m.getInputAcc(result);
-		if (!s_is_equal(m.inputDim(), result, iao, error[6])) {
+		if (!s_is_equal(m.inputAccSize(), result, iao, error[6])) {
 			std::cout << s.id() << "::kinAcc() inverse origin failed" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), iao);
+			dsp(1, m.inputAccSize(), result);
+			dsp(1, m.inputAccSize(), iao);
 		}
 		m.getOutputFce(result);
-		if (!s_is_equal(m.outputDim(), result, ofo, error[7])) {
+		if (!s_is_equal(m.outputFceSize(), result, ofo, error[7])) {
 			std::cout << s.id() << "::dynFce() inverse origin failed" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), ofo);
+			dsp(1, m.outputFceSize(), result);
+			dsp(1, m.outputFceSize(), ofo);
 		}
 
 		// set ee //
@@ -1079,22 +1079,22 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.outputPosSize(), ipt);
 		}
 		m.getInputVel(result);
-		if (!s_is_equal(m.inputDim(), result, ivt, error[5])) {
+		if (!s_is_equal(m.inputVelSize(), result, ivt, error[5])) {
 			std::cout << s.id() << "::kinVel() inverse failed" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), ivt);
+			dsp(1, m.inputVelSize(), result);
+			dsp(1, m.inputVelSize(), ivt);
 		}
 		m.getInputAcc(result);
-		if (!s_is_equal(m.inputDim(), result, iat, error[6])) {
+		if (!s_is_equal(m.inputAccSize(), result, iat, error[6])) {
 			std::cout << s.id() << "::kinAcc() inverse failed" << std::endl;
-			dsp(1, m.inputDim(), result);
-			dsp(1, m.inputDim(), iat);
+			dsp(1, m.inputAccSize(), result);
+			dsp(1, m.inputAccSize(), iat);
 		}
 		m.getOutputFce(result);
-		if (!s_is_equal(m.outputDim(), result, oft, error[7])) {
+		if (!s_is_equal(m.outputFceSize(), result, oft, error[7])) {
 			std::cout << s.id() << "::dynFce() inverse failed" << std::endl;
-			dsp(1, m.outputDim(), result);
-			dsp(1, m.outputDim(), oft);
+			dsp(1, m.outputFceSize(), result);
+			dsp(1, m.outputFceSize(), oft);
 		}
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s)){
 			// check Jg //
@@ -1243,7 +1243,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 			
 		for (auto &gm : m.generalMotionPool())gm.updV();
 		m.getOutputVel(result1);
-		if (!s_is_equal(m.outputDim(), result1, ovt, error[1]))
+		if (!s_is_equal(m.outputVelSize(), result1, ovt, error[1]))
 			throw std::runtime_error(s.id() + "::kinVel() forward bench vel failed");
 	}) << std::endl;
 
@@ -1262,7 +1262,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 
 		for (auto &gm : m.generalMotionPool())gm.updA();
 		m.getOutputAcc(result1);
-		if (!s_is_equal(m.outputDim(), result1, oat, error[1]))
+		if (!s_is_equal(m.outputAccSize(), result1, oat, error[1]))
 			throw std::runtime_error(s.id() + "::kinAcc() forward bench acc failed");
 	}) << std::endl;
 	
@@ -1302,9 +1302,9 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		s.kinPos();
 		for (auto &mot : m.motionPool())mot.updP();
 		m.getInputPos(result1);
-		if (count < 2 && count % 2 && !s_is_equal(m.inputDim(), result1, ipt, error[4]))
+		if (count < 2 && count % 2 && !s_is_equal(m.inputPosSize(), result1, ipt, error[4]))
 			throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
-		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.inputDim(), result1, ipo, error[4]))
+		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.inputPosSize(), result1, ipo, error[4]))
 			throw std::runtime_error(s.id() + "::kinPos() forward bench origin failed");
 
 		++count;
@@ -1319,7 +1319,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		s.kinVel();
 		for (auto &mot : m.motionPool())mot.updV();
 		m.getInputVel(result1);
-		if (!s_is_equal(m.inputDim(), result1, ivt, error[5])) 
+		if (!s_is_equal(m.inputVelSize(), result1, ivt, error[5])) 
 			throw std::runtime_error(s.id() + "::kinVel() inverse bench vel failed");
 	}) << std::endl;
 
