@@ -1772,7 +1772,27 @@ namespace aris::dynamic
 			;
 
 
+		aris::core::class_<std::vector<int>>("vector_int")
+			.asArray()
+			;
 
+		aris::core::class_<std::vector<double>>("vector_double")
+			.asArray()
+			;
+
+		aris::core::class_<Calibrator>("Calibrator")
+			.prop("data_index", &[](Calibrator *obj, std::vector<int> data_idx)->void {
+					obj->setDataIndex(data_idx[0], data_idx[1], data_idx[2], data_idx[3]); 
+				}, &[](Calibrator *obj)->std::vector<int>{
+					return std::vector<int>{std::get<0>(obj->dataIndex()), std::get<1>(obj->dataIndex()), std::get<2>(obj->dataIndex()), std::get<3>(obj->dataIndex())};
+				})
+			.prop("filter_window_size", &Calibrator::setFilterWindowSize,  &Calibrator::filterWindowSize)
+			.prop("velocity_ratio",     &Calibrator::setVelocityRatio,     &Calibrator::velocityRatio)
+			.prop("torque_constant",    &Calibrator::setTorqueConstant,    &Calibrator::torqueConstant)
+			.prop("torque_weight",      &Calibrator::setTorqueWeight,      &Calibrator::torqueWeight)
+			.prop("velocity_dead_zone", &Calibrator::setVelocityDeadZone,  &Calibrator::velocityDeadZone)
+			.prop("tolerable_variance", &Calibrator::setTolerableVariance, &Calibrator::tolerableVariance)
+			;
 
 
 	}

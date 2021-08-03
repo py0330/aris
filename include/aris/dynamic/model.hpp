@@ -216,24 +216,28 @@ namespace aris::dynamic{
 		auto virtual forwardDynamics()noexcept->int override;
 
 		auto virtual inputPosSize()const noexcept->Size override;
-		auto virtual inputDim()const noexcept->Size override;
 		auto virtual getInputPos(double *mp)const noexcept->void override;
 		auto virtual setInputPos(const double *mp)noexcept->void override;
+		auto virtual inputVelSize()const noexcept->Size override;
 		auto virtual getInputVel(double *mv)const noexcept->void override;
 		auto virtual setInputVel(const double *mv)noexcept->void override;
+		auto virtual inputAccSize()const noexcept->Size override;
 		auto virtual getInputAcc(double *ma)const noexcept->void override;
 		auto virtual setInputAcc(const double *ma)noexcept->void override;
+		auto virtual inputFceSize()const noexcept->Size override;
 		auto virtual getInputFce(double *mf)const noexcept->void override;
 		auto virtual setInputFce(const double *mf)noexcept->void override;
 
 		auto virtual outputPosSize()const noexcept->Size override;
-		auto virtual outputDim()const noexcept->Size override;
 		auto virtual getOutputPos(double *mp)const noexcept->void override;
 		auto virtual setOutputPos(const double *mp)noexcept->void override;
+		auto virtual outputVelSize()const noexcept->Size override;
 		auto virtual getOutputVel(double *mv)const noexcept->void override;
 		auto virtual setOutputVel(const double *mv)noexcept->void override;
+		auto virtual outputAccSize()const noexcept->Size override;
 		auto virtual getOutputAcc(double *ma)const noexcept->void override;
 		auto virtual setOutputAcc(const double *ma)noexcept->void override;
+		auto virtual outputFceSize()const noexcept->Size override;
 		auto virtual getOutputFce(double *mf)const noexcept->void override;
 		auto virtual setOutputFce(const double *mf)noexcept->void override;
 		/// @}
