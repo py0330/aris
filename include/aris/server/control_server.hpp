@@ -18,7 +18,11 @@
 
 namespace aris::server
 {
-	class ARIS_API CustomModule {};
+	class ARIS_API CustomModule {
+	public:
+		CustomModule() = default;
+		virtual ~CustomModule() = default;
+	};
 
 	class TerminalInterface : public Interface {
 	public:
