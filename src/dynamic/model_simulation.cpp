@@ -485,7 +485,7 @@ namespace aris::dynamic
 
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
-		double zero_check = 1e-6;
+		double zero_check = 1e-8;
 		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "clb----rank:" << rank << std::endl;
@@ -500,7 +500,7 @@ namespace aris::dynamic
 		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
 		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
 		std::cout << "clb----variance:" << variance << std::endl;
-		if (variance > imp_->tolerable_variance_) return -1;
+		//if (variance > imp_->tolerable_variance_) return -1;
 
 
 		// update inertias //

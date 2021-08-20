@@ -78,10 +78,14 @@ namespace aris::server
 		auto globalCount()->std::int64_t;
 		auto currentExecutePlanRt()->aris::plan::Plan *;
 		auto globalMotionCheckOption()->std::uint64_t*;// 全局的初始检查选项，也是每个 plan 的初始检查选项，但不影响空闲时候的检查
+		auto idleMotionCheckOption()->std::uint64_t*;
 		auto setAutoLogActive(bool auto_log)->void; // 为每个 plan 自动创建日志
 		auto autoLogActive()->bool;
 
 		// operation in NRT context //
+		auto init()->void;
+		auto start()->void;
+		auto stop()->void;
 		auto open()->void;
 		auto close()->void;
 		auto runCmdLine()->void;
@@ -89,9 +93,6 @@ namespace aris::server
 		auto executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
 		auto executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
 		auto executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
-		auto init()->void;
-		auto start()->void;
-		auto stop()->void;
 		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;
 		auto currentCollectPlan()->std::shared_ptr<aris::plan::Plan>;
 		auto waitForAllExecution()->void;

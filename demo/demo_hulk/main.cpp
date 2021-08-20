@@ -2,10 +2,54 @@
 
 int main()
 {
-	//auto m = aris::robot::createModelRokaeXB4();
+	{
+		aris::dynamic::Model m;
+		aris::core::fromXmlFile(m, "C:\\Users\\py033\\Desktop\\moveSine_log\\model.xml");
+		auto &clb = m.calibratorPool().add<aris::dynamic::Calibrator>();
+		clb.setDataIndex(0, 1, 2, 3);
+		clb.setFilterWindowSize(30);
+		clb.setTorqueConstant({
+			-1.27 * 80 / 1000,
+			1.27 * 121 / 1000,
+			0.64 * 57.9545 / 1000,
+			0.318 * 122.4 / 1000,
+			0.318 * 51 / 1000,
+			-0.318 * 50 / 1000 });
+		clb.setTorqueWeight({
+			1.27 * 80,
+			1.27 * 121,
+			0.64 * 57.9545,
+			0.318 * 122.4,
+			0.318 * 51,
+			0.318 * 50 });
+		clb.setVelocityRatio({
+			1.0,
+			1.0,
+			1.0,
+			1.0,
+			1.0,
+			1.0,
+			});
 
-	//auto &clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
+		m.init();
 
+		clb.clbFiles({
+			//"C:\\Users\\py033\\Desktop\\moveSine_log\\calib_dyn_par.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par1.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par2.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par3.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par4.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par5.txt",
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\1\\calib_dyn_par6.txt",
+			});
+
+		std::cout << "verify" << std::endl;
+		clb.verifyFiles({
+			"C:\\Users\\py033\\Desktop\\moveSine_log\\calib_dyn_par.txt",
+			//"C:\\Users\\py033\\Desktop\\data2.txt"
+			});
+
+	}
 	try
 	{
 		/*clb.clbFiles({ 
@@ -85,49 +129,31 @@ int main()
 	clb.setDataIndex(0, 1, 2, 3);
 	clb.setFilterWindowSize(30);
 	clb.setTorqueConstant({ 
-		0.7 * 160 / 1000,
-		-0.7 * 160 / 1000,
-		0.7 * 100 / 1000,
-		0.45 * 100 / 1000,
-		0.45 * 100 / 1000,
-		0.45 * 100 / 1000,
-		0.45 * 100 / 1000 });
+		-1.27 * 80 / 1000,
+		1.27 * 121 / 1000,
+		0.64 * 57.9545 / 1000,
+		0.318 * 122.4 / 1000,
+		0.318 * 51 / 1000,
+		-0.318 * 50 / 1000 });
 	clb.setTorqueWeight({
-		0.7 * 160,
-		0.7 * 160,
-		0.7 * 100,
-		0.45 * 100,
-		0.45 * 100,
-		0.45 * 100,
-		0.45 * 100 });
+		-1.27 * 80 / 1000,
+		1.27 * 121 / 1000,
+		0.64 * 57.9545 / 1000,
+		0.318 * 122.4 / 1000,
+		0.318 * 51 / 1000,
+		-0.318 * 50 / 1000 });
 	clb.setVelocityRatio({
-		1.0 / 160 / 6.13,
-		1.0 / 160 / 6.13,
-		1.0 / 100 / 6.13,
-		1.0 / 100 / 6.13, 
-		1.0 / 100 / 6.13,
-		1.0 / 100 / 6.13,
-		1.0 / 100 / 6.13, });
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		});
 
 	m->init();
 	
-	aris::dynamic::dsp(1, 10, m->partPool()[1].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[2].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[3].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[4].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[5].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[6].prtIv());
-	aris::dynamic::dsp(1, 10, m->partPool()[7].prtIv());
 
-	
-
-	aris::dynamic::dsp(1, 3, m->motionPool()[0].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[1].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[2].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[3].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[4].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[5].frcCoe());
-	aris::dynamic::dsp(1, 3, m->motionPool()[6].frcCoe());
 
 	try
 	{
@@ -202,10 +228,10 @@ int main()
 
 
 		std::cout << "verify" << std::endl;
-		clb.verifyFiles({
-			"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
-			//"C:\\Users\\py033\\Desktop\\data2.txt"
-			});
+		//clb.verifyFiles({
+		//	"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
+		//	//"C:\\Users\\py033\\Desktop\\data2.txt"
+		//	});
 
 
 		//clb.verifyFiles({

@@ -336,7 +336,7 @@ namespace aris::core
 					return;
 				}
 
-				aris::core::log(SOCKET_FAILED_ACCEPT);
+				ARIS_LOG(SOCKET_FAILED_ACCEPT);
 				continue;
 			}
 
@@ -348,7 +348,7 @@ namespace aris::core
 				int res = recv(imp->recv_socket_, recv_data, 1024, 0);
 				if (res <= 0)
 				{
-					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED, res);
+					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED, res);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -362,7 +362,7 @@ namespace aris::core
 				}
 				catch (std::exception &)
 				{
-					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY);
+					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -395,7 +395,7 @@ namespace aris::core
 				
 				if (ret == -1)
 				{
-					aris::core::log(WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION);
+					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -491,7 +491,7 @@ namespace aris::core
 					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
 					{
 						
-						aris::core::log(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
+						ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -515,7 +515,7 @@ namespace aris::core
 				//////////////////////////////////保护，最短长度不能小于MsgHeader的数据长度///////////////////////////////
 				if (payload_data.size() < sizeof(aris::core::MsgHeader))
 				{
-					aris::core::log(WEBSOCKET_RECEIVE_RAW);
+					ARIS_LOG(WEBSOCKET_RECEIVE_RAW);
 					break;
 				}
 
@@ -525,7 +525,7 @@ namespace aris::core
 
 				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
 				{
-					aris::core::log(WEBSOCKET_RECEIVE_WRONG_MSG_SIZE, recv_msg.size(), payload_data.size());
+					ARIS_LOG(WEBSOCKET_RECEIVE_WRONG_MSG_SIZE, recv_msg.size(), payload_data.size());
 					break;
 				}
 
@@ -578,7 +578,7 @@ namespace aris::core
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
 					if (payload_len > 0x00100000 || payload_len + payload_data.size() > 0x00200000)
 					{
-						aris::core::log(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
+						ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -611,7 +611,7 @@ namespace aris::core
 				if (ret <= 0 && !close_lck.try_lock()) return;
 				if (ret != sizeof(MsgHeader) + recv_msg.size())
 				{
-					aris::core::log(SOCKET_UDP_WRONG_MSG_SIZE);
+					ARIS_LOG(SOCKET_UDP_WRONG_MSG_SIZE);
 					continue;
 				}
 				if(ret > 0 && imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
@@ -649,11 +649,11 @@ namespace aris::core
 			case TCP:
 			case WEB:
 			case WEB_RAW:
-				if (shutdown(imp_->recv_socket_, 2) < 0) aris::core::log(SOCKET_SHUT_DOWN_ERROR, errno);
+				if (shutdown(imp_->recv_socket_, 2) < 0) ARIS_LOG(SOCKET_SHUT_DOWN_ERROR, errno);
 				break;
 			case UDP:
 			case UDP_RAW:
-				if (close_sock(imp_->recv_socket_) < 0) aris::core::log(SOCKET_SHUT_CLOSE_ERROR, errno);
+				if (close_sock(imp_->recv_socket_) < 0) ARIS_LOG(SOCKET_SHUT_CLOSE_ERROR, errno);
 				break;
 			}
 

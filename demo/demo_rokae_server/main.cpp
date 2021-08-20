@@ -266,10 +266,7 @@ struct B2 {
 
 struct D : B1, B2 { };
 
-#define ARIS_DEBUG 1
-
-
-#define ERROR1 ARIS_DEBUG, -1001, {"ERROR:%s is not correct", "错误%s"}
+#define ERROR1 aris::core::LogLvl::kDebug, -1001, {"ERROR:%s is not correct", "错误%s"}
 
 int print_out(int level, int code, std::initializer_list<const char*> msg) {
 	std::cout << level << code << msg.begin()[1] << std::endl;
@@ -283,10 +280,46 @@ int print_out(int level, int code, std::initializer_list<const char*> msg) {
 
 
 
+#define _LOG_I(level, code, info, ...)               \
+	aris::core::log(level, code, \
+	std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) + "|"+ __LINE__+"|"+aris::core::localeString(info, __VA_ARGS__)) 
+#define _LOG_II(...) _LOG_I(__VA_ARGS__)
+
+#define LOG(...) _LOG_II(__VA_ARGS__)
+
+//#define PP_CONCAT(A, B) PP_CONCAT_IMPL(A, B)
+//#define PP_CONCAT_IMPL(A, B) A##B
+
+#define PP_CONCAT(A, B) A##B
+
+#define FOO(N) PP_CONCAT(foo_, N)
+
+#define BAR() bar
+
+auto FOO(bar)()->void {
+
+};    // -> foo_bar
 
 
+auto FOO(BAR())(int) {
+	return 0;
+}  // -> foo_bar
 
+
+#define ADD_TWO_IMPL(first, second) first + second
+#define UNPACK(macro, args) macro args
+#define ADD_TWO(...) UNPACK(ADD_TWO_IMPL, (__VA_ARGS__))
+
+#define a_and_b a,b
+
+
+#define ERROR_123 aris::core::LogLvl::kError, -999, { "AAAAAAAAAAAAAAAAAAAAAASSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD" }
 int main() {
+
+	int a=1, b=2;
+	std::cout << ADD_TWO(a_and_b) << std::endl;
+	std::cout << (1+(a,b)) << std::endl;
+
 	D x;
 	B1* b1_ptr = &x;
 	B2* b2_ptr = &x;
@@ -307,9 +340,12 @@ int main() {
 	std::cout << "dynamic_cast b2_ptr:  " << b2_final << "\n";
 
 
-	//LOG_ERROR(ERROR1);
 
-	aris::core::log(ERROR1, 10);
+	aris::core::log(aris::core::LogData{std::chrono::system_clock::now(), __FILE__, 1000, aris::core::LogLvl::kError, -999, "AAAAAAAAAAAAAAAAAAAAAASSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD"});
+
+	ARIS_LOG(aris::core::LogLvl::kError, -999, { "AAAAAAAAAAAAAAAAAAAAA\nAS\nSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD%s","sss:%s" },"bbb");
+	ARIS_LOG(ERROR_123);
+
 
 	std::cout << aris::core::logExeName() << std::endl;
 }

@@ -97,7 +97,7 @@ namespace aris::server{
 			~InternalData()	{
 				// step 4a. 同步收集4a //
 				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))){
-					aris::core::log(aris::core::LogLvl::kInfo, 0, { "server collect cmd %ji" }, plan_->cmdId());
+					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan_->cmdId());
 					plan_->collectNrt();
 				}
 
@@ -177,8 +177,7 @@ namespace aris::server{
 		std::atomic_bool cmdline_msg_received_ = false;
 		std::shared_ptr<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>> > > cmdline_execute_promise_;
 	};
-	auto ControlServer::Imp::tg()->void
-	{
+	auto ControlServer::Imp::tg()->void{
 		// pre callback //
 		if (auto call = pre_callback_.load())call(ControlServer::instance());
 
@@ -509,7 +508,8 @@ namespace aris::server{
 	}
 	auto ControlServer::Imp::fixError(bool is_in_check)->std::int32_t
 	{
-		std::int32_t fix_finished{ 0 };
+		// 只要在check里面执行，都说明修复没有结束 //
+		std::int32_t fix_finished{ is_in_check ? -1 : 0 };
 		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
 		{
 			// correct
@@ -584,6 +584,7 @@ namespace aris::server{
 		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
 	}
 	auto ControlServer::globalMotionCheckOption()->std::uint64_t* { return imp_->global_mot_check_options_; }
+	auto ControlServer::idleMotionCheckOption()->std::uint64_t* { return imp_->idle_mot_check_options_; }
 	auto ControlServer::setAutoLogActive(bool auto_log)->void { imp_->is_rt_log_started_.store(auto_log); }
 	auto ControlServer::autoLogActive()->bool { return imp_->is_rt_log_started_.load(); }
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
@@ -665,8 +666,7 @@ namespace aris::server{
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
 				++cmd_id;
-				//LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
-				aris::core::log(aris::core::LogLvl::kInfo, 0, { "server parse cmd %ji : %s" }, cmd_id, str.data());
+				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server parse cmd %ji : %s" }, cmd_id, str.data());
 				auto[cmd, params] = planRoot().planParser().parse(std::string_view(cmd_str_local.data(), cmd_str_local.size()));
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
@@ -714,7 +714,7 @@ namespace aris::server{
 		for (auto p = internal_data.begin(); p < internal_data.end(); ++p){
 			auto &plan = (*p)->plan_;
 			try	{
-				aris::core::log(aris::core::LogLvl::kInfo, 0, { "server prepare cmd %ji" }, plan->cmdId());
+				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server prepare cmd %ji" }, plan->cmdId());
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
 
@@ -763,7 +763,7 @@ namespace aris::server{
 				for (auto &p : plan->cmdParams()){
 					ss << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 				}
-				aris::core::log(aris::core::LogLvl::kInfo, 0, { ss.str().c_str() });
+				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { ss.str().c_str() });
 			}
 		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -810,7 +810,7 @@ namespace aris::server{
 		for (auto &inter : need_run_internal){
 			imp_->internal_data_queue_[cmd_end++ % Imp::CMD_POOL_SIZE] = inter;
 			inter->has_run_ = true;
-			aris::core::log(aris::core::LogLvl::kInfo, 0, { "server execute cmd %ji" }, inter->plan_->cmdId());
+			ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server execute cmd %ji" }, inter->plan_->cmdId());
 		}
 		imp_->cmd_end_.store(cmd_end);
 
@@ -935,21 +935,20 @@ namespace aris::server{
 
 					std::stringstream ss;
 					ss << "cmd " << plan.cmdId() << " stastics:" << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "avg time(ns):" << std::int64_t(plan.rtStastic().avg_time_consumed) << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "max time(ns):" << plan.rtStastic().max_time_consumed << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "in count:" << plan.rtStastic().max_time_occur_count << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "min time(ns):" << plan.rtStastic().min_time_consumed << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "in count:" << plan.rtStastic().min_time_occur_count << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "total count:" << plan.rtStastic().total_count << std::endl
-						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "overruns:" << plan.rtStastic().overrun_count << std::endl;
+						<< std::setw(20) << "avg time(ns):" << std::int64_t(plan.rtStastic().avg_time_consumed) << std::endl
+						<< std::setw(20) << "max time(ns):" << plan.rtStastic().max_time_consumed << std::endl
+						<< std::setw(20) << "in count:" << plan.rtStastic().max_time_occur_count << std::endl
+						<< std::setw(20) << "min time(ns):" << plan.rtStastic().min_time_consumed << std::endl
+						<< std::setw(20) << "in count:" << plan.rtStastic().min_time_occur_count << std::endl
+						<< std::setw(20) << "total count:" << plan.rtStastic().total_count << std::endl
+						<< std::setw(20) << "overruns:" << plan.rtStastic().overrun_count << std::endl;
 
-					aris::core::log(aris::core::LogLvl::kInfo, 0, { ss.str().data() });
+					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { ss.str().data() });
 
 					// step 4b&5b, 不能用RAII，因为reset的时候先减智能指针引用计数，此时currentCollectPlan 无法再获取到 internal_data了 //
 					if (!(plan.option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 					{
-						//LOG_INFO << "server collect cmd " << plan.cmdId() << std::endl;
-						aris::core::log(aris::core::LogLvl::kInfo, 0, { "server collect cmd %ji" }, plan.cmdId());
+						ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan.cmdId());
 						plan.collectNrt();
 					}
 					aris::server::ControlServer::instance().imp_->cmd_collect_++;
@@ -1117,7 +1116,7 @@ namespace aris::server{
 		if (cmd == "program")
 		{
 			ARIS_PRO_COUT << "---" << str << std::endl;
-			aris::core::log(aris::core::LogLvl::kInfo, 0, { "pro ---%s" }, str.data());
+			ARIS_LOG(aris::core::LogLvl::kInfo, 0, { "pro ---%s" }, str.data());
 
 			for (auto &[param, value] : params)
 			{
@@ -1201,7 +1200,7 @@ namespace aris::server{
 						catch (std::exception &e)
 						{
 							ARIS_COUT << e.what() << std::endl;
-							aris::core::log(aris::core::LogLvl::kError, 0, { "pro ---%s" }, e.what());
+							ARIS_LOG(aris::core::LogLvl::kError, 0, { "pro ---%s" }, e.what());
 							return send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, e.what());
 						}
 					}
@@ -1337,7 +1336,7 @@ namespace aris::server{
 						else if (imp_->language_parser_.currentWord() == "set")
 						{
 							ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
-							aris::core::log(aris::core::LogLvl::kError, 0, { "pro %5d---%s" }, imp_->language_parser_.currentLine(), imp_->language_parser_.currentCmd());
+							ARIS_LOG(aris::core::LogLvl::kError, 0, { "pro %5d---%s" }, imp_->language_parser_.currentLine(), imp_->language_parser_.currentCmd());
 							try
 							{
 								c.calculateExpression(imp_->language_parser_.currentParamStr());
@@ -1351,7 +1350,7 @@ namespace aris::server{
 								imp_->last_error_ = e.what();
 								imp_->last_error_line_ = imp_->language_parser_.currentLine();
 								ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
-								aris::core::log(aris::core::LogLvl::kError, 0, { "pro %5d---err_code:%s  err_msg:" }, imp_->last_error_line_, imp_->last_error_code_, imp_->last_error_);
+								ARIS_LOG(aris::core::LogLvl::kError, 0, { "pro %5d---err_code:%s  err_msg:" }, imp_->last_error_line_, imp_->last_error_code_, imp_->last_error_);
 							}
 						}
 						else
@@ -1395,7 +1394,7 @@ namespace aris::server{
 				}
 				else if (param == "start")
 				{
-					aris::core::log(aris::core::LogLvl::kInfo, 0, { "pro now start" });
+					ARIS_LOG(aris::core::LogLvl::kInfo, 0, { "pro now start" });
 
 					if (!isAutoMode())
 					{
