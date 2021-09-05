@@ -109,7 +109,7 @@ namespace aris::server{
 		auto tg()->void;
 		auto executeCmd(aris::plan::Plan &plan)->int;
 		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
-		auto fixError(bool is_in_check)->std::int32_t;
+		auto fixError()->std::int32_t;
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;
@@ -139,7 +139,7 @@ namespace aris::server{
 		std::thread collect_thread_;
 		std::atomic_bool is_collect_running_;
 
-		// 储存上一次motion的数据 //
+		// 储存上一次motion的数据, p v c //
 		struct PVC { double p; double v; double c; };
 		PVC *last_pvc_, *last_last_pvc_;
 
@@ -190,7 +190,7 @@ namespace aris::server{
 
 		// 如果处于错误状态,或者错误还未清理完 //
 		if (err_code_and_fixed){
-			err.fix = fixError(false);
+			err.fix = fixError();
 			err_code_and_fixed_.store(err_code_and_fixed);
 			server_->master().resetRtStasticData(nullptr, false);
 			server_->master().lout() << std::flush;
@@ -221,7 +221,7 @@ namespace aris::server{
 
 			// 错误，包含系统检查出的错误以及用户返回错误 //
 			if (((err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count())) < 0) || ((err.code = ret) < 0)){
-				err.fix = fixError(true);
+				err.fix = fixError();
 				err_code_and_fixed_.store(err_code_and_fixed);
 
 				// finish //
@@ -263,10 +263,18 @@ namespace aris::server{
 		}
 		// 否则检查idle状态
 		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0){
-			err.fix = fixError(true);
+			err.fix = fixError();
 			err_code_and_fixed_.store(err_code_and_fixed);
 			server_->master().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
 		}
+
+		// 储存本次的数据 //
+		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
+			last_last_pvc_[i].p = controller_->motorPool()[i].targetPos();
+			last_last_pvc_[i].v = controller_->motorPool()[i].targetVel();
+			last_last_pvc_[i].c = controller_->motorPool()[i].targetToq();
+		}
+		std::swap(last_pvc_, last_last_pvc_);
 
 		// 给与外部想要的数据 //
 		if (if_get_data_.exchange(false)){ // 原子操作
@@ -288,10 +296,8 @@ namespace aris::server{
 		model_->getInputAcc(mem_transfer_a_);
 		model_->getInputFce(mem_transfer_f_);
 
-		for (std::size_t i = 0; i < std::min(model_->inputPosSize(), controller_->motorPool().size()); ++i)
-		{
+		for (std::size_t i = 0; i < std::min(model_->inputPosSize(), controller_->motorPool().size()); ++i){
 			auto &cm = controller_->motorPool()[i];
-
 			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_p_[i]);
 			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_v_[i]);
 			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_f_[i]);
@@ -301,8 +307,7 @@ namespace aris::server{
 
 		return ret;
 	}
-	auto ControlServer::Imp::checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int
-	{
+	auto ControlServer::Imp::checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int{
 		int error_code = aris::plan::Plan::SUCCESS;
 
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
@@ -323,15 +328,11 @@ namespace aris::server{
 			}
 
 			// 使能时才检查 //
-			if ((cm.statusWord() & 0x6f) == 0x27)
-			{
-				switch (cm.modeOfOperation())
-				{
-				case 8:
-				{
+			if ((cm.statusWord() & 0x6f) == 0x27){
+				switch (cm.modeOfOperation()){
+				case 8:{
 					// check pos infinite //
-					if (!std::isfinite(cm.targetPos()))
-					{
+					if (!std::isfinite(cm.targetPos())){
 						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
 						sprintf(error_msg, "%s_%d:\nMotion %zu target position is INFINITE in count %zu:\nvalue: %f\n", __FILE__, __LINE__, i, count_, cm.targetPos());
 						return error_code;
@@ -386,11 +387,9 @@ namespace aris::server{
 
 					break;
 				}
-				case 9:
-				{
+				case 9:{
 					// check vel infinite //
-					if (!std::isfinite(cm.targetVel()))
-					{
+					if (!std::isfinite(cm.targetVel())){
 						error_code = aris::plan::Plan::MOTION_VEL_INFINITE;
 						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity is INFINITE in count %zu:\nvalue: %f\n", __FILE__, __LINE__, i, count_, cm.targetVel());
 						return error_code;
@@ -434,8 +433,7 @@ namespace aris::server{
 
 					break;
 				}
-				case 10:
-				{
+				case 10:{
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.actualPos() > cm.maxPos()))
@@ -482,11 +480,9 @@ namespace aris::server{
 					}
 					break;
 				}
-				default:
-				{
+				default:{
 					// invalid mode //
-					if (!(option & aris::plan::Plan::NOT_CHECK_MODE))
-					{
+					if (!(option & aris::plan::Plan::NOT_CHECK_MODE)){
 						error_code = aris::plan::Plan::MOTION_INVALID_MODE;
 						sprintf(error_msg, "%s_%d:\nMotion %zu MODE INVALID in count %zu:\nmode: %d\n", __FILE__, __LINE__, i, count_, cm.modeOfOperation());
 						return error_code;
@@ -496,20 +492,12 @@ namespace aris::server{
 			}
 		}
 
-		// 储存电机指令 //
-		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
-		{
-			last_last_pvc_[i].p = controller_->motorPool()[i].targetPos();
-			last_last_pvc_[i].v = controller_->motorPool()[i].targetVel();
-			last_last_pvc_[i].c = controller_->motorPool()[i].targetToq();
-		}
-		std::swap(last_pvc_, last_last_pvc_);
+		
 		return 0;
 	}
-	auto ControlServer::Imp::fixError(bool is_in_check)->std::int32_t
-	{
+	auto ControlServer::Imp::fixError()->std::int32_t{
 		// 只要在check里面执行，都说明修复没有结束 //
-		std::int32_t fix_finished{ is_in_check ? -1 : 0 };
+		std::int32_t fix_finished{ 0 };
 		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
 		{
 			// correct
@@ -519,8 +507,7 @@ namespace aris::server{
 			case 1:
 				
 			case 8:
-				if (is_in_check) cm.setTargetPos(((last_pvc_[i].p - cm.actualPos()) > cm.maxVel() || (last_pvc_[i].p - cm.actualPos()) < cm.minVel()) ? cm.actualPos() : last_pvc_[i].p);
-				else cm.setTargetPos(std::abs(last_pvc_[i].p - cm.actualPos()) > cm.maxPosFollowingError() ? cm.actualPos() : last_pvc_[i].p);
+				cm.setTargetPos(std::abs(last_pvc_[i].p - cm.actualPos()) > cm.maxPosFollowingError() ? cm.actualPos() : last_pvc_[i].p);
 				break;
 			case 9:
 				cm.setTargetVel(0.0);
@@ -546,8 +533,7 @@ namespace aris::server{
 	auto ControlServer::resetMaster(control::Master *master)->void { imp_->master_.reset(master); }
 	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
-	auto ControlServer::resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void 
-	{
+	auto ControlServer::resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void {
 		imp_->interface_pool_.reset(pool);
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
@@ -559,15 +545,13 @@ namespace aris::server{
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
 	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
-	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
-	{
+	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
 		err.code = err_code;
 		imp_->err_code_and_fixed_.store(err_code_and_fixed);
 		if (err_msg)std::strcpy(imp_->err_msg_, err_msg);
 	}
-	auto ControlServer::errorCode()const->int
-	{
+	auto ControlServer::errorCode()const->int{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
 		err_code_and_fixed = imp_->err_code_and_fixed_.load();
 		return err.err_code;
@@ -577,8 +561,7 @@ namespace aris::server{
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
 	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
-	auto ControlServer::currentExecutePlanRt()->aris::plan::Plan *
-	{
+	auto ControlServer::currentExecutePlanRt()->aris::plan::Plan *{
 		auto cmd_now = imp_->cmd_now_.load();
 		auto cmd_end = imp_->cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
@@ -861,6 +844,7 @@ namespace aris::server{
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().motorPool().size());
+
 		core::allocMem(mem_size, imp_->mem_transfer_p_, imp_->model_->inputPosSize());
 		core::allocMem(mem_size, imp_->mem_transfer_v_, imp_->model_->inputVelSize());
 		core::allocMem(mem_size, imp_->mem_transfer_a_, imp_->model_->inputAccSize());
@@ -874,6 +858,7 @@ namespace aris::server{
 		std::fill_n(imp_->idle_mot_check_options_, controller().motorPool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
 		std::fill_n(imp_->global_mot_check_options_, controller().motorPool().size(), std::uint64_t(0));
+
 		imp_->mem_transfer_p_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_p_);
 		std::fill_n(imp_->mem_transfer_p_, model().inputPosSize(), 0.0);
 		imp_->mem_transfer_v_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_v_);
@@ -1033,25 +1018,28 @@ namespace aris::server{
 		}
 		else
 		{
-			while (imp_->err_code_and_fixed_.load())
-			{
-				union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
-				err.err_code = 0;
-				err.is_fixed = 0xFFFF'FFFF;
-				imp_->err_code_and_fixed_ &= err_code_and_fixed;
-				std::this_thread::sleep_for(std::chrono::nanoseconds(master().samplePeriodNs()));
-			}
+			//while (imp_->err_code_and_fixed_.load())
+			//{
+			//	union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+			//	err.err_code = 0;
+			//	err.is_fixed = 0xFFFF'FFFF;
+			//	imp_->err_code_and_fixed_ &= err_code_and_fixed;
+			//	std::this_thread::sleep_for(std::chrono::nanoseconds(master().samplePeriodNs()));
+			//}
 
+			// 本函数只负责清理code标志位，fix标志位系统内部会自行清理掉 //
+			union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+			err.err_code = 0;
+			err.is_fixed = 0xFFFF'FFFF;
+			imp_->err_code_and_fixed_ &= err_code_and_fixed;
 			std::fill_n(imp_->err_msg_, 1024, '\0');
 		}
 	}
-	ControlServer::~ControlServer() 
-	{ 
+	ControlServer::~ControlServer() { 
 		close();
 		if(running())stop();
 	}
-	ControlServer::ControlServer() :imp_(new Imp(this))
-	{
+	ControlServer::ControlServer() :imp_(new Imp(this))	{
 		// create members //
 		makeModel<aris::dynamic::Model>();
 		makeMaster<aris::control::Master>();
@@ -1060,8 +1048,7 @@ namespace aris::server{
 	}
 
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
-	struct ProgramMiddleware::Imp
-	{
+	struct ProgramMiddleware::Imp{
 		std::unique_ptr<aris::core::Socket> sock_{ new aris::core::Socket };
 
 		aris::core::CommandParser command_parser_;
@@ -1087,15 +1074,12 @@ namespace aris::server{
 	auto ProgramMiddleware::isAutoRunning()->bool { return imp_->auto_thread_.joinable(); }
 	auto ProgramMiddleware::isAutoPaused()->bool { return imp_->is_pause_.load(); }
 	auto ProgramMiddleware::isAutoStopped()->bool { return imp_->is_stop_.load(); }
-	auto ProgramMiddleware::currentFileLine()->std::tuple<std::string, int>
-	{
+	auto ProgramMiddleware::currentFileLine()->std::tuple<std::string, int>	{
 		std::unique_lock<std::mutex> lck(imp_->auto_mu_);
 		return std::make_tuple(imp_->current_file_, imp_->current_line_);
 	}
-	auto ProgramMiddleware::executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int
-	{
-		auto send_code_and_msg = [send_ret](int code, const std::string& ret_msg_str)->int
-		{
+	auto ProgramMiddleware::executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int{
+		auto send_code_and_msg = [send_ret](int code, const std::string& ret_msg_str)->int{
 			nlohmann::json js;
 			js["return_code"] = code;///////////////////////////////////////////////////////////
 			js["return_message"] = ret_msg_str;
@@ -1113,13 +1097,11 @@ namespace aris::server{
 		try { std::tie(cmd, params) = imp_->command_parser_.parse(str); }
 		catch (std::exception &) {};
 
-		if (cmd == "program")
-		{
+		if (cmd == "program"){
 			ARIS_PRO_COUT << "---" << str << std::endl;
 			ARIS_LOG(aris::core::LogLvl::kInfo, 0, { "pro ---%s" }, str.data());
 
-			for (auto &[param, value] : params)
-			{
+			for (auto &[param, value] : params){
 				if (param == "set_auto"){
 					imp_->is_auto_mode_ = true;
 					return send_code_and_msg(0, "");
