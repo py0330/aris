@@ -150,10 +150,10 @@ namespace aris::core{
 	}
 
 	// 上层日志方法，带日志数据结构 //
-	std::function<void(LogData &)> log_data_ = defaultLogData;
-	auto setLogMethod(std::function<void(LogData &)> method)->void { log_data_ = method ? method : defaultLogData; }
-	auto log(LogData &data)->void { log_data_(data); }
-	auto defaultLogData(LogData &d)->void {
+	std::function<void(LogData)> log_data_ = defaultLogData;
+	auto setLogMethod(std::function<void(LogData )> method)->void { log_data_ = method ? method : defaultLogData; }
+	auto log(LogData data)->void { log_data_(data); }
+	auto defaultLogData(LogData d)->void {
 		enum {
 			LOG_TYPE_WIDTH = 7,
 			LOG_TIME_WIDTH = 19,

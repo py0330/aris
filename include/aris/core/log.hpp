@@ -11,6 +11,7 @@
 #include <set>
 #include <mutex>
 #include <map>
+#include <functional>
 
 #include "sqlite3.h"
 #include "aris/core/data_structure.hpp"
@@ -78,16 +79,25 @@ namespace aris::core{
 		LogLvl level;
 		int code;
 		std::string msg;
+
+		static auto makeLogData(std::chrono::system_clock::time_point time,
+			const char *file_name,
+			int line,
+			LogLvl level,
+			int code,
+			std::string msg)->LogData {
+			return LogData{ time , file_name, line, level, code, msg};
+		}
 	};
-	auto ARIS_API setLogMethod(std::function<void(LogData &)> method = nullptr)->void;
-	auto ARIS_API log(LogData &data)->void;
-	auto ARIS_API defaultLogData(LogData &data)->void;
+	auto ARIS_API setLogMethod(std::function<void(LogData)> method = nullptr)->void;
+	auto ARIS_API log(LogData data)->void;
+	auto ARIS_API defaultLogData(LogData data)->void;
 	
 	// 方便宏 //
 	// refer to https://stackoverflow.com/questions/50427015/possible-to-pass-comma-and-args-into-c-macro
 	#define ARIS_UNPACK(macro, args) macro args
 
-	#define ARIS_LOG_IMP(lvl, code, msgs, ...) aris::core::log(aris::core::LogData{std::chrono::system_clock::now(), __FILE__, __LINE__, lvl, code, aris::core::localeString(msgs, __VA_ARGS__)})
+	#define ARIS_LOG_IMP(lvl, code, msgs, ...) aris::core::log(aris::core::LogData::makeLogData(std::chrono::system_clock::now(), __FILE__, __LINE__, lvl, code, aris::core::localeString(msgs, __VA_ARGS__)}))
 	#define ARIS_LOG(...) ARIS_UNPACK(ARIS_LOG_IMP, (__VA_ARGS__))
 
 	// 默认log的文件夹、单文件最多条数等 //

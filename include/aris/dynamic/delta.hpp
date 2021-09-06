@@ -36,7 +36,6 @@ namespace aris::dynamic
 	//                       y
 	//                       ^
 	//                       |
-	//
 	//                    o
 	//                     \         
 	//                      \       
