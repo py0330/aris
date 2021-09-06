@@ -1780,12 +1780,16 @@ namespace aris::dynamic
 			.asArray()
 			;
 
+		auto to_data_idx = [](Calibrator *obj, std::vector<int> data_idx)->void {
+			obj->setDataIndex(data_idx[0], data_idx[1], data_idx[2], data_idx[3]);
+		};
+
+		auto from_data_idx = [](Calibrator *obj)->std::vector<int> {
+			return std::vector<int>{std::get<0>(obj->dataIndex()), std::get<1>(obj->dataIndex()), std::get<2>(obj->dataIndex()), std::get<3>(obj->dataIndex())};
+		};
+
 		aris::core::class_<Calibrator>("Calibrator")
-			.prop("data_index", &[](Calibrator *obj, std::vector<int> data_idx)->void {
-					obj->setDataIndex(data_idx[0], data_idx[1], data_idx[2], data_idx[3]); 
-				}, &[](Calibrator *obj)->std::vector<int>{
-					return std::vector<int>{std::get<0>(obj->dataIndex()), std::get<1>(obj->dataIndex()), std::get<2>(obj->dataIndex()), std::get<3>(obj->dataIndex())};
-				})
+			.prop("data_index", &to_data_idx, &from_data_idx)
 			.prop("filter_window_size", &Calibrator::setFilterWindowSize,  &Calibrator::filterWindowSize)
 			.prop("velocity_ratio",     &Calibrator::setVelocityRatio,     &Calibrator::velocityRatio)
 			.prop("torque_constant",    &Calibrator::setTorqueConstant,    &Calibrator::torqueConstant)
