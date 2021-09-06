@@ -164,24 +164,24 @@ namespace aris::core{
 		
 		const char *lvl_str[] {"DEBUG", "INFO", "WARNING", "ERROR", "FATAL"};
 
-		static std::stringstream ss;
+		std::stringstream ss;
 		std::string_view data(d.msg);
 		bool is_first_time = true;
 		while (data.size() > 0) {
 			auto print = data.substr(0, data.find_first_of("\n"));
 
 			if (is_first_time) {
-				ss	<< std::setw(LOG_TYPE_WIDTH) << lvl_str[(int)d.level] << "|"
+				ss << std::setw(LOG_TYPE_WIDTH) << lvl_str[(int)d.level] << "|"
 					<< std::setw(LOG_TIME_WIDTH) << aris::core::datetimeFormat(d.time) << "|"
 					<< std::setw(LOG_FILE_WIDTH) << std::string_view(d.file_name).substr(std::string_view(d.file_name).find_last_of("/\\") + 1) << "|"
 					<< std::setw(LOG_LINE_WIDTH) << d.line << "|"
-					<< print
-					<< std::endl;
+					<< print;
 			}
 			else {
-				ss	<< std::setw(LOG_SPACE_WIDTH) << "|"
-					<< print
-					<< std::endl;
+				ss << "\n"
+					<< std::setw(LOG_SPACE_WIDTH) << "|"
+					<< print;
+					
 			}
 
 
