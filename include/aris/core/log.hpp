@@ -97,7 +97,7 @@ namespace aris::core{
 	// refer to https://stackoverflow.com/questions/50427015/possible-to-pass-comma-and-args-into-c-macro
 	#define ARIS_UNPACK(macro, args) macro args
 
-	#define ARIS_LOG_IMP(lvl, code, msgs, ...) aris::core::log(aris::core::LogData::makeLogData(std::chrono::system_clock::now(), __FILE__, __LINE__, lvl, code, aris::core::localeString(msgs, __VA_ARGS__)}))
+	#define ARIS_LOG_IMP(lvl, code, msgs, ...) aris::core::log(aris::core::LogData::makeLogData(std::chrono::system_clock::now(), __FILE__, __LINE__, lvl, code, aris::core::localeString(msgs, __VA_ARGS__)))
 	#define ARIS_LOG(...) ARIS_UNPACK(ARIS_LOG_IMP, (__VA_ARGS__))
 
 	// 默认log的文件夹、单文件最多条数等 //
