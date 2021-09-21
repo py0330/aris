@@ -1570,6 +1570,78 @@ namespace aris::dynamic
 					<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
 					<< "!\r\n";
 			}
+			else if (auto gmp = dynamic_cast<XyztMotion*>(&gmb)) {
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model_name << "." << gmp->name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makI()->fatherPart().name() << "." << gmp->makI()->name() << " \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makJ()->fatherPart().name() << "." << gmp->makJ()->name() << " \r\n"
+					<< "!\r\n";
+
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+
+				double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,gmp->p()[3] };
+				double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,gmp->p()[3] };
+				double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,gmp->p()[3] };
+
+				for (Size i = 0; i < 6; ++i){
+					std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
+
+					// 构建akima曲线 //
+					if (pos == -1) {
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p) {
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
+						for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p) {
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
+					}
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = " << (i < 3 || i==5 ? 1 : 0) << " \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+				}
+
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
+					<< "!\r\n";
+			}
 		}
 		for (auto &force : model()->forcePool())
 		{
@@ -1684,8 +1756,7 @@ namespace aris::dynamic
 		}
 		for (auto &gmb : model()->generalMotionPool())
 		{
-			if (!gmb.active())
-			{
+			if (!gmb.active()){
 				if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
 
 					file << "ude attributes  &\r\n"
@@ -1697,6 +1768,12 @@ namespace aris::dynamic
 						<< "    instance_name = ." << model_name << "." << gm2->name() << "  &\r\n"
 						<< "    active = off \r\n!\r\n";
 				}
+				else if (auto gm3 = dynamic_cast<XyztMotion*>(&gmb)) {
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm3->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+
 			}
 		}
 		for (auto &fce : model()->forcePool())

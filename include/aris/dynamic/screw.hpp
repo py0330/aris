@@ -40,10 +40,12 @@ namespace aris::dynamic
 	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n
 	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// as  :  6x1 螺旋加速度(acceleration screw)\n
-
+	///
 	/// i3  :  3x3 惯量矩阵
 	/// im  :  6x6 空间惯量矩阵
 	/// iv  :  10x1 惯量矩阵向量[m, cx, cy, cz, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]
+
+
 	auto ARIS_API s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
 	auto ARIS_API s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
 	template <typename ...Args>
@@ -1483,7 +1485,7 @@ namespace aris::dynamic
 	auto ARIS_API s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 	///
-	/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+	/// 这里原点origin为位姿矩阵pm_out的点,first_axis为第一坐标轴的方向,second_axis位于第一根坐标轴与第二根坐标轴的平面内，也是方向
 	///
 	///
 	auto inline s_sov_axes2pm(const double *origin, const double *first_axis, const double *second_axis, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_axis, 1, second_axis, 1, pm_out, axis_order); };

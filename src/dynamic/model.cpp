@@ -283,7 +283,13 @@ namespace aris::dynamic{
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
-		s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
+
+
+		s_swap_v(3, &glb_pm[0], 4, &glb_pm[2], 4);
+		s_iv(3, glb_pm, 4);
+
+
+		//s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
 

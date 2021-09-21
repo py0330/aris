@@ -1,10 +1,8 @@
-﻿#ifndef ARIS_DYNAMIC_DELTA_H_
-#define ARIS_DYNAMIC_DELTA_H_
+﻿#include "aris.hpp"
 
-#include <array>
-#include <aris/dynamic/model_solver.hpp>
-
-namespace aris::dynamic{
+int main(){
+	
+	// 构造 delta 的模型 //
 	//---------------------------------------------------------------------------------------------
 	// 包含4个自由度。每个支联4个杆件  link1~4
 	// 尺寸示意：
@@ -34,68 +32,48 @@ namespace aris::dynamic{
 	// 俯视图：
 	//                       y
 	//                       ^
-	//               支联2   |
+	//                       |
 	//                    o
 	//                     \
 	//                      \
-	//                       *------o      -> x   支联1
+	//                       *------o      -> x
 	//                      /
 	//                     /
 	//                    o
-	//               支联3
 	//
+	//
+
+
+	aris::dynamic::DeltaParam param;
+	param.a = 0.5;
+	param.b = 0.2;
+	param.c = 0.1;
+	param.d = 0.7;
+	param.e = 0.1;
+	aris::dynamic::DeltaModel m1(param);
+
+
+
+
+
+	// 设置末端 //
+	double xyz_theta[4]{ -0.1, 0.1, -0.45, 0.3 };
+	m1.setOutputPos(xyz_theta);
 	
+	// 反解，可能失败，失败意味着到达边缘 //
+	if(m1.inverseKinematics())
+		std::cout << "failed" << std::endl;
+
+	// 获取电机位置 //
+	double input[4];
+	m1.getInputPos(input);
 	
-	/// @defgroup dynamic_model_group 动力学建模模块
-	/// @{
-	///
-	struct ARIS_API DeltaParam{
-		// DH PARAM //
-		double a{ 0.0 };
-		double b{ 0.0 };
-		double c{ 0.0 };
-		double d{ 0.0 };
-		double e{ 0.0 };
-
-		// TOOL 0, by default is 321 type
-		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-		std::string tool0_pe_type;
-
-		// BASE wrt REF, by default is 321 type 
-		double base2ref_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-		std::string base2ref_pe_type;
-
-		// inertia vector, size must be 6
-		std::vector<std::array<double, 10> > iv_vec;
-
-		// mot friction vector, size must be 6
-		std::vector<std::array<double, 3> > mot_frc_vec;
-	};
-	struct ARIS_API DeltaModel :public aris::dynamic::Model {
-	public:
-		auto dh()->aris::core::Matrix&;
-
-		virtual ~DeltaModel();
-		explicit DeltaModel(const DeltaParam &param);
-		DeltaModel(DeltaModel&&);
-		DeltaModel& operator=(DeltaModel&&);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-		friend class DeltaInverseKinematicSolver;
-	};
+	// 打印电机位置 //
+	aris::dynamic::dsp(1, 4, input);
 
 
-
-	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model>;
-
-
-
-
-
-	///
-	/// @}
+	std::cout << "demo_model_delta finished, press any key to continue" << std::endl;
+	std::cin.get();
+	return 0;
 }
 
-#endif

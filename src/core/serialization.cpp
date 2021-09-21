@@ -19,34 +19,29 @@
 
 namespace aris::core
 {
-	auto typename_xml2c(const tinyxml2::XMLElement *ele)->std::string
-	{
+	auto typename_xml2c(const tinyxml2::XMLElement *ele)->std::string{
 		return std::regex_replace(ele->Name(), std::regex("\\."), "::");
 	}
-	auto typename_c2xml(const aris::core::Type *c_type)->std::string
-	{
+	auto typename_c2xml(const aris::core::Type *c_type)->std::string{
 		return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");
 	}
 	
-	auto to_xml_ele(aris::core::Instance ins, tinyxml2::XMLElement *ele)->void
-	{
+	auto to_xml_ele(aris::core::Instance ins, tinyxml2::XMLElement *ele)->void{
 		// set text //
 		if (!ins.toString().empty()) ele->SetText(ins.toString().data());
 		
 		// set children or props //
-		if (ins.isArray())
-		{
-			for (auto prop : ins.type()->properties())
-			{
+		if (ins.isArray()){
+			for (auto prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 
 				if (!v.isBasic())
 					THROW_FILE_LINE("failed to serilize");
 
-				if (v.toString() != "")ele->SetAttribute(prop->name().data(), v.toString().c_str());
+				if (v.toString() != "")
+					ele->SetAttribute(prop->name().data(), v.toString().c_str());
 			}
-			for (auto i = 0; i < ins.size(); ++i)
-			{
+			for (auto i = 0; i < ins.size(); ++i){
 				auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(ins.at(i).type()).data());
 				ele->InsertEndChild(insert_ele);
 				to_xml_ele(ins.at(i), insert_ele);
@@ -54,17 +49,14 @@ namespace aris::core
 		}
 		else
 		{
-			for (auto &prop : ins.type()->properties())
-			{
+			for (auto &prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 
-				if (v.isBasic())
-				{
+				if (v.isBasic()){
 					if(!v.toString().empty())
 						ele->SetAttribute(prop->name().data(), v.toString().c_str());
 				}
-				else
-				{
+				else{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
 					//insert_ele->SetAttribute(":name", prop->name().data());
@@ -73,8 +65,7 @@ namespace aris::core
 			}
 		}
 	}
-	auto toXmlString(aris::core::Instance ins)->std::string
-	{
+	auto toXmlString(aris::core::Instance ins)->std::string{
 		tinyxml2::XMLDocument doc;
 
 		auto root_xml_ele = doc.NewElement(typename_c2xml(ins.type()).data());
@@ -88,36 +79,29 @@ namespace aris::core
 		return std::string(printer.CStr());
 	}
 
-	auto from_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
-	{
+	auto from_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void{
 		// from text //
 		if (ele->GetText())	ins.fromString(ele->GetText());
 
 		// 获取全部ele //
 		std::vector<tinyxml2::XMLElement *> child_eles;
 		std::vector<const tinyxml2::XMLAttribute *> attrs;
-		for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
-		{
+		for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement()){
 			child_eles.push_back(child_ele);
 		}
-		for (auto attr = ele->FirstAttribute(); attr; attr = attr->Next())
-		{
+		for (auto attr = ele->FirstAttribute(); attr; attr = attr->Next()){
 			attrs.push_back(attr);
 		}
 		
 		// 读写 //
-		for (auto &prop : ins.type()->properties())
-		{
+		for (auto &prop : ins.type()->properties()){
 			// basic type //
-			if (prop->type()->isBasic())
-			{
-				auto found = std::find_if(attrs.begin(), attrs.end(), [&prop](const auto attr)->bool 
-				{
+			if (prop->type()->isBasic()){
+				auto found = std::find_if(attrs.begin(), attrs.end(), [&prop](const auto attr)->bool {
 					return std::regex_replace(attr->Name(), std::regex("\\."), "::") == prop->name();
 				});
 
-				if (found == attrs.end()) 
-				{
+				if (found == attrs.end()) {
 					//std::cout << "WARNING:basic prop not found : " << prop->name() << std::endl;
 					continue;
 				}
@@ -130,15 +114,12 @@ namespace aris::core
 			}
 
 			// non basic type, non ptr prop //
-			if (!prop->acceptPtr())
-			{
-				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
-				{
+			if (!prop->acceptPtr()){
+				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
 					return typename_xml2c(ele) == prop->type()->name();
 				});
 
-				if (found == child_eles.end())
-				{
+				if (found == child_eles.end()){
 					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
 					continue;
 				}
@@ -151,15 +132,12 @@ namespace aris::core
 			}
 
 			// non basic type, accept ptr //
-			if (prop->acceptPtr())
-			{
-				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
-				{
+			if (prop->acceptPtr()){
+				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
 					return Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele)));
 				});
 
-				if (found == child_eles.end())
-				{
+				if (found == child_eles.end()){
 					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
 					continue;
 				}
@@ -174,10 +152,8 @@ namespace aris::core
 			}
 		}
 
-		if (ins.isArray())
-		{
-			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
-			{
+		if (ins.isArray()){
+			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement()){
 				auto type = Type::getType(typename_xml2c(child_ele));
 				if (!type) THROW_FILE_LINE("unrecognized type in xml : " + std::string(child_ele->Name()));
 
@@ -188,8 +164,7 @@ namespace aris::core
 			}
 		}
 	}
-	auto fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void
-	{
+	auto fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void{
 		tinyxml2::XMLDocument doc;
 		auto ret = doc.Parse(xml_str.data(), xml_str.size());
 
@@ -204,22 +179,15 @@ namespace aris::core
 		from_xml_ele(ins, root_ele);
 	}
 
-	auto toXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void
-	{
+	auto toXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void{
 		std::ofstream fs(file, std::ios::trunc);
-
 		fs << toXmlString(ins);
-
 		fs.close();
 	}
-	auto fromXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void
-	{
+	auto fromXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void{
 		std::ifstream fs(file);
-
 		std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
-
 		fromXmlString(ins, str);
-
 		fs.close();
 	}
 

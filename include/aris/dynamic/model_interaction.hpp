@@ -322,6 +322,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	// 只包含 xyz 3个维度的末端，例如 4足 机器人的足端
 	class ARIS_API PointMotion final :public MotionBase{
 	public:
 		static auto Dim()->Size { return 3; }
@@ -354,6 +355,40 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	// 只包含 xyz 和 theta 4个维度的末端，例如 scara和delta的末端
+	class ARIS_API XyztMotion final :public MotionBase{
+	public:
+		static auto Dim()->Size { return 4; }
+		auto virtual dim() const noexcept ->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCv(double *cv)const noexcept->void override;
+		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual p()const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double *mp) noexcept->void override;
+		auto virtual getP(double *mp)const noexcept->void override;
+		auto virtual v()const noexcept->const double* override;
+		auto virtual updV() noexcept->void override;
+		auto virtual setV(const double *mv) noexcept->void override;
+		auto virtual getV(double *mv)const noexcept->void override;
+		auto virtual a()const noexcept->const double* override;
+		auto virtual updA() noexcept->void override;
+		auto virtual setA(const double *ma) noexcept->void override;
+		auto virtual getA(double *ma)const noexcept->void override;
+		auto virtual f()const noexcept->const double* override { return cf(); }
+		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
+
+		virtual ~XyztMotion();
+		explicit XyztMotion(const std::string &name = "xyzt_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		ARIS_DECLARE_BIG_FOUR(XyztMotion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	
 
 	class ARIS_API GeneralForce final :public Force{
 	public:

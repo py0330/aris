@@ -543,7 +543,7 @@ namespace aris::dynamic
 		ra_in = ra_in ? ra_in : default_ra();
 		rm_out = rm_out ? rm_out : default_out();
 
-		double theta = sqrt(ra_in[0] * ra_in[0] + ra_in[1] * ra_in[1] + ra_in[2] * ra_in[2]);
+		double theta = std::sqrt(ra_in[0] * ra_in[0] + ra_in[1] * ra_in[1] + ra_in[2] * ra_in[2]);
 
 		const double &a = ra_in[0];
 		const double &b = ra_in[1];
