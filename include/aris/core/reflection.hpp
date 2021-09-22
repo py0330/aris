@@ -74,18 +74,11 @@ namespace aris::core{
 	class ARIS_API Function {
 	public:
 		static auto getFunction(std::string_view name)->Function*;
-
-
-
-
-
-
 		auto name()const->std::string;
 		
 		
 		template<typename T>
 		auto invoke()const->void;
-		auto type()->const Type*;
 		~Function();
 		Function(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
 
@@ -375,22 +368,17 @@ namespace aris::core{
 		}
 		
 		// to text
-		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
-		{
+		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func){
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			found->setToText(func);
 			return *this;
 		}
 		// from text
-		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
-		{
+		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func){
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			found->setFromText(func);
 			return *this;
 		}
-
-		// 
-		//func();
 
 	private:
 		Type * type_;

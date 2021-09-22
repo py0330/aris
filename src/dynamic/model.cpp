@@ -230,6 +230,7 @@ namespace aris::dynamic{
 	auto Model::solverPool()->aris::core::PointerArray<Solver, Element>& { return *imp_->solver_pool_; }
 	auto Model::simulatorPool()->aris::core::PointerArray<Simulator, Element>& { return *imp_->simulator_pool_; }
 	auto Model::simResultPool()->aris::core::PointerArray<SimResult, Element>& { return *imp_->sim_result_pool_; }
+	auto Model::resetCalibratorPool(aris::core::PointerArray<Calibrator, Element> *pool)->void { imp_->calibrator_pool_.reset(pool); }
 	auto Model::calibratorPool()->aris::core::PointerArray<Calibrator, Element>& { return *imp_->calibrator_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
 	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& { 
@@ -445,7 +446,7 @@ namespace aris::dynamic{
 			.prop("solver_pool", &Model::resetSolverPool, SolverPoolFunc(&Model::solverPool))
 			//.prop<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
 			//.prop<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
-			//.prop<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
+			.prop("calibrator_pool", &Model::resetCalibratorPool, CalibratorPoolFunc(&Model::calibratorPool))
 			;
 	}
 }

@@ -500,7 +500,7 @@ namespace aris::dynamic
 		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
 		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
 		std::cout << "clb----variance:" << variance << std::endl;
-		//if (variance > imp_->tolerable_variance_) return -1;
+		if (variance > imp_->tolerable_variance_) return -1;
 
 
 		// update inertias //
@@ -1848,31 +1848,38 @@ namespace aris::dynamic
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;
 
-
-		aris::core::class_<std::vector<int>>("vector_int")
-			.asArray()
-			;
-
-		aris::core::class_<std::vector<double>>("vector_double")
-			.asArray()
-			;
-
-		auto to_data_idx = [](Calibrator *obj, std::vector<int> data_idx)->void {
-			obj->setDataIndex(data_idx[0], data_idx[1], data_idx[2], data_idx[3]);
+		auto to_data_idx = [](Calibrator *obj, aris::core::Matrix data_idx)->void {
+			obj->setDataIndex(data_idx.data()[0], data_idx.data()[1], data_idx.data()[2], data_idx.data()[3]);
+		};
+		auto from_data_idx = [](Calibrator *obj)->aris::core::Matrix {
+			return aris::core::Matrix{
+				(double)std::get<0>(obj->dataIndex()), 
+				(double)std::get<1>(obj->dataIndex()), 
+				(double)std::get<2>(obj->dataIndex()), 
+				(double)std::get<3>(obj->dataIndex())
+			};
 		};
 
-		auto from_data_idx = [](Calibrator *obj)->std::vector<int> {
-			return std::vector<int>{std::get<0>(obj->dataIndex()), std::get<1>(obj->dataIndex()), std::get<2>(obj->dataIndex()), std::get<3>(obj->dataIndex())};
-		};
+#define VECTOR_TO_MATRIX(set_name, get_name) auto FUNC_SET_##set_name = [](Calibrator *obj, aris::core::Matrix data)->void {	\
+	 		obj->set_name(std::vector<double>(data.begin(), data.end()));								\
+		};																																	\
+		auto FUNC_GET_##get_name = [](Calibrator *obj)->aris::core::Matrix {																\
+	 		return aris::core::Matrix(1, obj->get_name().size(), obj->get_name().data());													\
+		};																														
+
+		VECTOR_TO_MATRIX(setVelocityRatio,		velocityRatio);
+		VECTOR_TO_MATRIX(setTorqueConstant,		torqueConstant);
+		VECTOR_TO_MATRIX(setTorqueWeight,		torqueWeight);
+		VECTOR_TO_MATRIX(setVelocityDeadZone,	velocityDeadZone);
 
 		aris::core::class_<Calibrator>("Calibrator")
 			.prop("data_index", &to_data_idx, &from_data_idx)
 			.prop("filter_window_size", &Calibrator::setFilterWindowSize,  &Calibrator::filterWindowSize)
-			.prop("velocity_ratio",     &Calibrator::setVelocityRatio,     &Calibrator::velocityRatio)
-			.prop("torque_constant",    &Calibrator::setTorqueConstant,    &Calibrator::torqueConstant)
-			.prop("torque_weight",      &Calibrator::setTorqueWeight,      &Calibrator::torqueWeight)
-			.prop("velocity_dead_zone", &Calibrator::setVelocityDeadZone,  &Calibrator::velocityDeadZone)
 			.prop("tolerable_variance", &Calibrator::setTolerableVariance, &Calibrator::tolerableVariance)
+			.prop("velocity_ratio", &FUNC_SET_setVelocityRatio, &FUNC_GET_velocityRatio)
+			.prop("torque_constant", &FUNC_SET_setTorqueConstant, &FUNC_GET_torqueConstant)
+			.prop("torque_weight", &FUNC_SET_setTorqueWeight, &FUNC_GET_torqueWeight)
+			.prop("velocity_dead_zone", &FUNC_SET_setVelocityDeadZone, &FUNC_GET_velocityDeadZone)
 			;
 
 

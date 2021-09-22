@@ -71,7 +71,6 @@ private:
 auto setValue5(ChildClass *c, double v)->void { c->global_value_ = v; }
 auto getValue5(ChildClass *c)->double { return c->global_value_; }
 
-
 ARIS_REGISTRATION{
 
 	// 注册 Basic 类型，以及它和字符串的转换关系(此时不能有其他 prop 属性) //
@@ -110,8 +109,9 @@ int main(){
 	//# 使用反射 #//
 	{
 		//## 基础类型 ##//
-		// 基础类型只有和字符串交互的，无法序列化
+		// 基础类型可以和字符串交互，也可直接序列化
 		Basic basic1{ "jack", 12 };
+		std::cout << aris::core::toXmlString(basic1) << std::endl;
 
 		// 使用 Instance 进行反射交互，Instance 是basic1的引用，不负责其生命周期
 		aris::core::Instance ins = basic1;
@@ -273,6 +273,9 @@ int main(){
 		delete base_ptr;
 	}
 	
+
+
+
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0; 

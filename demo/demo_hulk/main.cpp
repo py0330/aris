@@ -4,7 +4,7 @@ int main()
 {
 	{
 		aris::dynamic::Model m;
-		aris::core::fromXmlFile(m, "C:\\Users\\py033\\Desktop\\moveSine_log\\model.xml");
+		//aris::core::fromXmlFile(m, "C:\\Users\\py033\\Desktop\\moveSine_log\\model.xml");
 		auto &clb = m.calibratorPool().add<aris::dynamic::Calibrator>();
 		clb.setDataIndex(0, 1, 2, 3);
 		clb.setFilterWindowSize(30);
@@ -32,6 +32,8 @@ int main()
 			});
 
 		m.init();
+
+		std::cout << aris::core::toXmlString(m) << std::endl;
 
 		clb.clbFiles({
 			//"C:\\Users\\py033\\Desktop\\moveSine_log\\calib_dyn_par.txt",
