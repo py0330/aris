@@ -154,7 +154,6 @@ int main()
 	m->init();
 	
 
-
 	try
 	{
 		clb.clbFiles({
@@ -232,6 +231,7 @@ int main()
 		//	"C:\\Users\\py033\\Desktop\\moveSine_log\\moveSine_log\\movesine1.txt",
 		//	//"C:\\Users\\py033\\Desktop\\data2.txt"
 		//	});
+
 
 
 		//clb.verifyFiles({

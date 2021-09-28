@@ -500,8 +500,8 @@ namespace aris::dynamic
 		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
 		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
 		std::cout << "clb----variance:" << variance << std::endl;
-		//if (variance > imp_->tolerable_variance_) return -1;
 
+		if (variance > imp_->tolerable_variance_) return -1;
 
 		// update inertias //
 		updateInertiaParam(x.data());
@@ -1470,7 +1470,6 @@ namespace aris::dynamic
 						}
 						file << " \r\n!\r\n";
 					}
-
 					file << "variable modify  &\r\n"
 						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_type  &\r\n"
 						<< "	integer_value = 1 \r\n"
@@ -1773,7 +1772,6 @@ namespace aris::dynamic
 						<< "    instance_name = ." << model_name << "." << gm3->name() << "  &\r\n"
 						<< "    active = off \r\n!\r\n";
 				}
-
 			}
 		}
 		for (auto &fce : model()->forcePool())
@@ -1848,7 +1846,6 @@ namespace aris::dynamic
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;
 
-
 		aris::core::class_<std::vector<int>>("vector_int")
 			.asArray()
 			;
@@ -1874,7 +1871,5 @@ namespace aris::dynamic
 			.prop("velocity_dead_zone", &Calibrator::setVelocityDeadZone,  &Calibrator::velocityDeadZone)
 			.prop("tolerable_variance", &Calibrator::setTolerableVariance, &Calibrator::tolerableVariance)
 			;
-
-
 	}
 }
