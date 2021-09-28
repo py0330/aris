@@ -103,6 +103,31 @@ ARIS_REGISTRATION{
 }
 
 
+class func_ {
+public:
+	template <typename R, typename... Param>
+	func_(std::string name, std::function<R(Param...)> f) {
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_func = [=]()->void* {
+			std::apply(f, *(Arguments*)inside_tuple.get());
+			return nullptr;
+		};
+	}
+
+	template <typename... Param>
+	auto invoke(Param&&... params)->void{
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_tuple.reset(new Arguments(params... ));
+		inside_func();
+	}
+
+
+private:
+	std::shared_ptr<void> inside_tuple;
+	std::function<void*(void)> inside_func;
+};
+
+
 int main(){
 	std::cout << std::setiosflags(std::ios::left);
 
@@ -274,7 +299,26 @@ int main(){
 	}
 	
 
+	auto f = [](int &a, double b)->double {
+		std::cout << "a:" << a << std::endl;
+		std::cout << "b:" << b << std::endl;
+		std::cout << &a << std::endl;
+		a = 123456;
+		b = 0.0001;
+		return 0.0; 
+	};
+	std::function<double(int&, double)> ff = f;
 
+
+	func_ aaa("aaa", ff);
+
+	int bc = 1;
+	int &bd = bc;
+	double ccc(145.67);
+
+	std::cout << &bc << std::endl;
+	std::cout << &bd << std::endl;
+	aaa.invoke(bd, ccc);
 
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();
