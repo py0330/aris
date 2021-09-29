@@ -71,7 +71,6 @@ private:
 auto setValue5(ChildClass *c, double v)->void { c->global_value_ = v; }
 auto getValue5(ChildClass *c)->double { return c->global_value_; }
 
-
 ARIS_REGISTRATION{
 
 	// 注册 Basic 类型，以及它和字符串的转换关系(此时不能有其他 prop 属性) //
@@ -104,14 +103,40 @@ ARIS_REGISTRATION{
 }
 
 
+class func_ {
+public:
+	template <typename R, typename... Param>
+	func_(std::string name, std::function<R(Param...)> f) {
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_func = [=]()->void* {
+			std::apply(f, *(Arguments*)inside_tuple.get());
+			return nullptr;
+		};
+	}
+
+	template <typename... Param>
+	auto invoke(Param&&... params)->void{
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_tuple.reset(new Arguments(params... ));
+		inside_func();
+	}
+
+
+private:
+	std::shared_ptr<void> inside_tuple;
+	std::function<void*(void)> inside_func;
+};
+
+
 int main(){
 	std::cout << std::setiosflags(std::ios::left);
 
 	//# 使用反射 #//
 	{
 		//## 基础类型 ##//
-		// 基础类型只有和字符串交互的，无法序列化
+		// 基础类型可以和字符串交互，也可直接序列化
 		Basic basic1{ "jack", 12 };
+		std::cout << aris::core::toXmlString(basic1) << std::endl;
 
 		// 使用 Instance 进行反射交互，Instance 是basic1的引用，不负责其生命周期
 		aris::core::Instance ins = basic1;
@@ -273,6 +298,28 @@ int main(){
 		delete base_ptr;
 	}
 	
+
+	auto f = [](int &a, double b)->double {
+		std::cout << "a:" << a << std::endl;
+		std::cout << "b:" << b << std::endl;
+		std::cout << &a << std::endl;
+		a = 123456;
+		b = 0.0001;
+		return 0.0; 
+	};
+	std::function<double(int&, double)> ff = f;
+
+
+	func_ aaa("aaa", ff);
+
+	int bc = 1;
+	int &bd = bc;
+	double ccc(145.67);
+
+	std::cout << &bc << std::endl;
+	std::cout << &bd << std::endl;
+	aaa.invoke(bd, ccc);
+
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0; 

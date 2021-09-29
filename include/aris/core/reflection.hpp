@@ -74,18 +74,11 @@ namespace aris::core{
 	class ARIS_API Function {
 	public:
 		static auto getFunction(std::string_view name)->Function*;
-
-
-
-
-
-
 		auto name()const->std::string;
 		
 		
 		template<typename T>
 		auto invoke()const->void;
-		auto type()->const Type*;
 		~Function();
 		Function(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
 
@@ -97,6 +90,11 @@ namespace aris::core{
 		template<typename T> friend class class_;
 		friend class Instance;
 		friend class Type;
+
+		std::vector<void*> params;
+
+
+
 
 		struct Imp;
 		std::shared_ptr<Imp> imp_;
@@ -218,7 +216,7 @@ namespace aris::core{
 	template<typename Class_Type>
 	class class_{
 	public:
-		// 注册普通类型 //
+		// 注册普通类型：要求1）不为纯虚类型；2）有默认构造函数；3）可析构 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr){
 			type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{
@@ -229,7 +227,7 @@ namespace aris::core{
 			});
 		}
 
-		// 注册纯虚类型 //
+		// 注册其他类型：当不满足上述三条时使用 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr){
 			type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, nullptr);
@@ -375,31 +373,60 @@ namespace aris::core{
 		}
 		
 		// to text
-		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
-		{
+		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func){
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			found->setToText(func);
 			return *this;
 		}
 		// from text
-		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
-		{
+		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func){
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			found->setFromText(func);
 			return *this;
 		}
 
-		// 
-		//func();
-
 	private:
 		Type * type_;
 	};
 
-	template<typename F>
-	class function_ {
 
-	};
+
+
+
+
+
+
+
+
+
+
+	//template<typename R>
+	//class function_ {};
+
+
+	//template<typename R, typename... Param>
+	//class function_<R(Param...)> {
+	//public:
+	//	template <class F> struct ArgType;
+	//	template <class R, class T>
+	//	struct ArgType<R(*)(T)> {
+	//		typedef T type;
+	//	};
+
+
+	//	template <typename T = Class_Type>
+	//	function_(std::string_view name, std::enable_if_t<> *test = nullptr) {
+	//		type_ = Type::registerType(std::is_polymorphic_v<Class_Type>, typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance> {
+	//			auto f = [](void const * data)->void {	delete static_cast<Class_Type const*>(data); };
+	//			auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
+	//			Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
+	//			return std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>(std::move(ptr), ins);
+	//		});
+	//	}
+
+	//private:
+	//	std::function<>
+	//};
 
 	auto inline charToStr(void* value)->std::string
 	{
