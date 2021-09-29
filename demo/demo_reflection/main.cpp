@@ -105,10 +105,62 @@ ARIS_REGISTRATION{
 
 class func_ {
 public:
+	//template <typename R, typename... Param>
+	//func_(std::string name, std::function<R(Param...)> f) {
+	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+	//	inside_func = [=]()->void* {
+	//		std::apply(f, *(Arguments*)inside_tuple.get());
+	//		return nullptr;
+	//	};
+	//}
+
+	//template <typename... Param>
+	//auto invoke(Param&&... params)->void{
+	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+	//	inside_tuple.reset(new Arguments(params... ));
+	//	inside_func();
+	//}
+	//template <std::size_t... I>
+	//auto apply_impl(Tuple &&t, std::index_sequence<I...>)
+	//{
+	//	inside_tuple.reset(new Arguments(
+	//		(*ins_vec[I].castTo<
+	//			decltype(std::remove_reference_t(std::get<I>(t)))
+	//		>, ...)
+	//	));
+
+
+	//	// This implementation is valid since C++20 (via P1065R2)
+	//	// In C++17, a constexpr counterpart of std::invoke is actually needed here
+	//	//return std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))...);
+
+
+	//}
+
+
+	template <class MyTuple, std::size_t... I>
+	auto apply_impl(MyTuple &&t, std::index_sequence<I...>)->void{
+		//std::vector<aris::core::Instance> ins_vec;
+		std::cout << typeid(MyTuple).name() << std::endl;
+
+		std::cout << typeid(decltype(std::get<0>(t))).name() << std::endl;
+
+		auto b = std::make_tuple(*ins_vec[I].castTo<decltype(std::get<I>(t))>()...);
+		std::cout << typeid(b).name() << std::endl;
+
+		auto c = new std::remove_reference_t<MyTuple>(*ins_vec[I].castTo<decltype(std::get<I>(t))>()...);
+
+		//auto b = std::make_tuple(std::get<I>(t)...);
+	}
+
 	template <typename R, typename... Param>
 	func_(std::string name, std::function<R(Param...)> f) {
 		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
 		inside_func = [=]()->void* {
+			apply_impl(
+				*(Arguments*)inside_tuple.get(), 
+				std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Arguments>>>{}
+			);
 			std::apply(f, *(Arguments*)inside_tuple.get());
 			return nullptr;
 		};
@@ -116,13 +168,16 @@ public:
 
 	template <typename... Param>
 	auto invoke(Param&&... params)->void{
-		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-		inside_tuple.reset(new Arguments(params... ));
+		//using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		//inside_tuple.reset(new Arguments(params... ));
+		
+
+		ins_vec = std::vector<aris::core::Instance>({params...});
 		inside_func();
 	}
 
-
 private:
+	std::vector<aris::core::Instance> ins_vec;
 	std::shared_ptr<void> inside_tuple;
 	std::function<void*(void)> inside_func;
 };
@@ -305,7 +360,7 @@ int main(){
 		std::cout << &a << std::endl;
 		a = 123456;
 		b = 0.0001;
-		return 0.0; 
+		return 0.0;
 	};
 	std::function<double(int&, double)> ff = f;
 

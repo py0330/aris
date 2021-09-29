@@ -148,9 +148,9 @@ namespace aris::core{
 		auto type()const->const Type*;
 
 		template<typename T>
-		auto castTo()const->T*{
+		constexpr auto castTo()const->std::add_pointer_t<T>{
 			auto type = &Type::reflect_types().at(typeid(T).hash_code());
-			return reinterpret_cast<T*>(castToType(type));
+			return reinterpret_cast<std::add_pointer_t<T>>(castToType(type));
 		}
 		
 		// only work for non-basic and non-array //
