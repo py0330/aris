@@ -72,6 +72,27 @@ int main(){
 	aris::dynamic::dsp(1, 4, input);
 
 
+
+
+	aris::dynamic::ScaraParam param2;
+	param2.a = 1;
+	param2.b = 1;
+	auto m2 = aris::dynamic::createModelScara(param2);
+
+	double xyz_theta2[4]{ -0.8, -0.9, -0.45, 0.3 };
+	m2->setOutputPos(xyz_theta2);
+	if (m2->inverseKinematics())
+		std::cout << "failed" << std::endl;
+
+	m2->getInputPos(input);
+
+	aris::dynamic::dsp(1, 4, input);
+
+	double output[4];
+	m2->generalMotionPool()[0].updP();
+	m2->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+
 	std::cout << "demo_model_delta finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0;
