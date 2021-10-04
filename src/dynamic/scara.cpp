@@ -26,10 +26,18 @@ namespace aris::dynamic{
 		auto c = std::sqrt(ee_xyza[0] * ee_xyza[0] + ee_xyza[1] * ee_xyza[1]);
 		if (c<std::abs(a - b) || c>std::abs(a + b)) return -1;
 
-		input[0] = which_root == 1 ? std::atan2(ee_xyza[1], ee_xyza[0]) - std::acos((a*a + c * c - b * b) / (2 * a*c)) : std::atan2(ee_xyza[1], ee_xyza[0]) + std::acos((a*a + c * c - b * b) / (2 * a*c));
-		input[1] = which_root == 1 ? -std::acos((a*a + b*b - c*c) / (2*a*b)) + aris::PI / 2 : std::acos((a*a + b*b - c*c) / (2*a*b)) - aris::PI * 3 / 2;
+		input[0] = which_root == 0 ? std::atan2(ee_xyza[1], ee_xyza[0]) - std::acos((a*a + c * c - b * b) / (2 * a*c)) : std::atan2(ee_xyza[1], ee_xyza[0]) + std::acos((a*a + c * c - b * b) / (2 * a*c));
+		input[1] = which_root == 0 ? -std::acos((a*a + b*b - c*c) / (2*a*b)) + aris::PI / 2 : std::acos((a*a + b*b - c*c) / (2*a*b)) - aris::PI * 3 / 2;
 		input[2] = ee_xyza[2];
 		input[3] = ee_xyza[3] - input[1] - input[0];
+
+		while (input[0] > aris::PI) input[0] -= 2 * aris::PI;
+		while (input[0] < -aris::PI) input[0] += 2 * aris::PI;
+		while (input[1] > aris::PI) input[0] -= 2 * aris::PI;
+		while (input[1] < -aris::PI) input[0] += 2 * aris::PI;
+		while (input[3] > aris::PI) input[3] -= 2 * aris::PI;
+		while (input[3] < -aris::PI) input[3] += 2 * aris::PI;
+
 		return 0;
 	}
 

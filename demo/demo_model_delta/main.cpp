@@ -50,46 +50,55 @@ int main(){
 	param.c = 0.1;
 	param.d = 0.7;
 	param.e = 0.1;
-	aris::dynamic::DeltaModel m1(param);
+	auto m1 = aris::dynamic::createModelDelta(param);
 
-
-
-
-
-	// 设置末端 //
+	//////////////////// 反解 ////////////////////
 	double xyz_theta[4]{ -0.1, 0.1, -0.45, 0.3 };
-	m1.setOutputPos(xyz_theta);
+	m1->setOutputPos(xyz_theta);
 	
 	// 反解，可能失败，失败意味着到达边缘 //
-	if(m1.inverseKinematics())
+	if(m1->inverseKinematics())
 		std::cout << "failed" << std::endl;
 
 	// 获取电机位置 //
 	double input[4];
-	m1.getInputPos(input);
+	m1->getInputPos(input);
 	
 	// 打印电机位置 //
 	aris::dynamic::dsp(1, 4, input);
 
+	//////////////////// 正解 ////////////////////
+
+	m1->setInputPos(input);
+	if (m1->forwardKinematics())
+		std::cout << "failed" << std::endl;
+
+	// 以前的方法仍然可以使用，即用 generalMotionPool()[0]  来访问
+	double output[4];
+	m1->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
 
 
 
+	////////////////////////////////////////// scara 机器人 ////////////////////////////////////
+	
 	aris::dynamic::ScaraParam param2;
 	param2.a = 1;
 	param2.b = 1;
 	auto m2 = aris::dynamic::createModelScara(param2);
 
+	//////////////////// 反解 ////////////////////
 	double xyz_theta2[4]{ -0.8, -0.9, -0.45, 0.3 };
 	m2->setOutputPos(xyz_theta2);
 	if (m2->inverseKinematics())
 		std::cout << "failed" << std::endl;
-
 	m2->getInputPos(input);
-
 	aris::dynamic::dsp(1, 4, input);
 
-	double output[4];
-	m2->generalMotionPool()[0].updP();
+	//////////////////// 正解 ////////////////////
+	m2->setInputPos(input);
+	if (m2->forwardKinematics())
+		std::cout << "failed" << std::endl;
 	m2->getOutputPos(output);
 	aris::dynamic::dsp(1, 4, output);
 
