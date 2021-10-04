@@ -15,7 +15,7 @@ void test_stewart_inverse_solver()
 	//auto &adams = m->simulatorPool().add<aris::dynamic::AdamsSimulator>();
 	//adams.saveAdams("C:\\Users\\py033\\Desktop\\test1.cmd");
 
-	m->generalMotionPool()[0].setMpe(std::array<double, 6>{0,1,0.2,aris::PI/4,aris::PI/5,aris::PI/7}.data(), "313");
+	dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]).setMpe(std::array<double, 6>{0,1,0.2,aris::PI/4,aris::PI/5,aris::PI/7}.data(), "313");
 
 	inv.kinPos();
 

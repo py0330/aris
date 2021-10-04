@@ -450,9 +450,9 @@ namespace aris::dynamic
 		Size rows{ 0 }, cols{ n() };
 		for (int i = 0; i < num; ++i){
 			for (int j = 0; j < model()->motionPool().size(); ++j){
-				this->model()->motionPool()[j].setMp(pos[j][i]);
-				this->model()->motionPool()[j].setMv(vel[j][i]);
-				this->model()->motionPool()[j].setMa(acc[j][i]);
+				this->model()->motionPool()[j].setP(&pos[j][i]);
+				this->model()->motionPool()[j].setV(&vel[j][i]);
+				this->model()->motionPool()[j].setA(&acc[j][i]);
 			}
 
 			this->model()->solverPool().at(1).kinPos();
@@ -460,7 +460,7 @@ namespace aris::dynamic
 			this->model()->solverPool().at(2).dynAccAndFce();
 
 			for (int j = 0; j < model()->motionPool().size(); ++j){
-				this->model()->motionPool()[j].setMf(fce[j][i]);
+				this->model()->motionPool()[j].setF(&fce[j][i]);
 			}
 			this->clb();
 
@@ -485,7 +485,7 @@ namespace aris::dynamic
 
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
-		double zero_check = 1e-6;
+		double zero_check = 1e-8;
 		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "clb----rank:" << rank << std::endl;
@@ -500,8 +500,8 @@ namespace aris::dynamic
 		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
 		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
 		std::cout << "clb----variance:" << variance << std::endl;
-		if (variance > imp_->tolerable_variance_) return -1;
 
+		if (variance > imp_->tolerable_variance_) return -1;
 
 		// update inertias //
 		updateInertiaParam(x.data());
@@ -969,19 +969,19 @@ namespace aris::dynamic
 	}
 	auto SimResult::ConstraintResult::restore(Size pos)->void
 	{
-		//constraint().setCf(imp_->cf_.at(pos).data());
-		//if (dynamic_cast<Motion*>(&constraint()))
-		//{
-		//	dynamic_cast<Motion*>(&constraint())->updP();
-		//	dynamic_cast<Motion*>(&constraint())->updV();
-		//	dynamic_cast<Motion*>(&constraint())->updA();
-		//}
-		//if (dynamic_cast<GeneralMotion*>(&constraint()))
-		//{
-		//	dynamic_cast<GeneralMotion*>(&constraint())->updP();
-		//	dynamic_cast<GeneralMotion*>(&constraint())->updV();
-		//	dynamic_cast<GeneralMotion*>(&constraint())->updA();
-		//}
+		constraint().setCf(imp_->cf_.at(pos).data());
+		if (dynamic_cast<Motion*>(&constraint()))
+		{
+			dynamic_cast<Motion*>(&constraint())->updP();
+			dynamic_cast<Motion*>(&constraint())->updV();
+			dynamic_cast<Motion*>(&constraint())->updA();
+		}
+		if (dynamic_cast<GeneralMotion*>(&constraint()))
+		{
+			dynamic_cast<GeneralMotion*>(&constraint())->updP();
+			dynamic_cast<GeneralMotion*>(&constraint())->updV();
+			dynamic_cast<GeneralMotion*>(&constraint())->updA();
+		}
 	}
 	SimResult::ConstraintResult::~ConstraintResult() = default;
 	SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : imp_(new Imp(constraint)) {}
@@ -1191,12 +1191,12 @@ namespace aris::dynamic
 				result.restore(i);
 				time.at(i) = model()->time();
 				for (Size j(-1); ++j < model()->motionPool().size();){
-					model()->motionPool().at(j).updMp();
+					model()->motionPool().at(j).updP();
 					mot_akima.at(j).at(i) = model()->motionPool().at(j).mpInternal();
 				}
 				for (Size j(-1); ++j < model()->generalMotionPool().size();){
 					if (auto gm = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(j))){
-						gm->updMpm();
+						gm->updP();
 						gm->getMpe(gm_akima.at(j).at(i).data(), "123");
 					}
 				}
@@ -1470,7 +1470,6 @@ namespace aris::dynamic
 						}
 						file << " \r\n!\r\n";
 					}
-
 					file << "variable modify  &\r\n"
 						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_type  &\r\n"
 						<< "	integer_value = 1 \r\n"
@@ -1497,79 +1496,151 @@ namespace aris::dynamic
 					<< "!\r\n";
 			
 			}
-			//else if (auto gmp = dynamic_cast<PointMotion*>(&gmb)) {
-			//	file << "ude create instance  &\r\n"
-			//		<< "    instance_name = ." << model_name << "." << gmp->name() << "  &\r\n"
-			//		<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
-			//		<< "    location = 0.0, 0.0, 0.0  &\r\n"
-			//		<< "    orientation = 0.0, 0.0, 0.0  \r\n"
-			//		<< "!\r\n";
+			else if (auto gmp = dynamic_cast<PointMotion*>(&gmb)) {
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model_name << "." << gmp->name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
 
-			//	file << "variable modify  &\r\n"
-			//		<< "	variable_name = ." << model_name << "." << gmp->name() << ".i_marker  &\r\n"
-			//		<< "	object_value = ." << model_name << "." << gmp->makI()->fatherPart().name() << "." << gmp->makI()->name() << " \r\n"
-			//		<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makI()->fatherPart().name() << "." << gmp->makI()->name() << " \r\n"
+					<< "!\r\n";
 
-			//	file << "variable modify  &\r\n"
-			//		<< "	variable_name = ." << model_name << "." << gmp->name() << ".j_marker  &\r\n"
-			//		<< "	object_value = ." << model_name << "." << gmp->makJ()->fatherPart().name() << "." << gmp->makJ()->name() << " \r\n"
-			//		<< "!\r\n";
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makJ()->fatherPart().name() << "." << gmp->makJ()->name() << " \r\n"
+					<< "!\r\n";
 
-			//	std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
 
-			//	double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,0 };
-			//	double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,0 };
-			//	double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,0 };
+				double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,0 };
+				double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,0 };
+				double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,0 };
 
-			//	for (Size i = 0; i < 6; ++i)
-			//	{
-			//		std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
-			//		std::string akima_func = "AKISPL(time,0," + akima + ")";
-			//		std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
-			//		std::string func = pos == -1 ? akima_func : polynomial_func;
+				for (Size i = 0; i < 6; ++i)
+				{
+					std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
 
-			//		// 构建akima曲线 //
-			//		if (pos == -1){
-			//			file << "data_element create spline &\r\n"
-			//				<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
-			//				<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
-			//				<< "    units = m &\r\n"
-			//				<< "    x = " << time.at(0);
-			//			for (auto p = time.begin() + 1; p < time.end(); ++p){
-			//				file << "," << *p;
-			//			}
-			//			file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
-			//			for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p){
-			//				file << "," << p->at(i);
-			//			}
-			//			file << " \r\n!\r\n";
-			//		}
+					// 构建akima曲线 //
+					if (pos == -1){
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p){
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
+						for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p){
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
+					}
 
-			//		file << "variable modify  &\r\n"
-			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
-			//			<< "	integer_value = " << (i < 3 ? 1 : 0) <<  " \r\n"
-			//			<< "!\r\n";
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = " << (i < 3 ? 1 : 0) <<  " \r\n"
+						<< "!\r\n";
 
-			//		file << "variable modify  &\r\n"
-			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_func  &\r\n"
-			//			<< "	string_value = \"" + func + "\" \r\n"
-			//			<< "!\r\n";
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
 
-			//		file << "variable modify  &\r\n"
-			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
-			//			<< "	real_value = 0.0 \r\n"
-			//			<< "!\r\n";
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
 
-			//		file << "variable modify  &\r\n"
-			//			<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
-			//			<< "	real_value = 0.0 \r\n"
-			//			<< "!\r\n";
-			//	}
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+				}
 
-			//	file << "ude modify instance  &\r\n"
-			//		<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
-			//		<< "!\r\n";
-			//}
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
+					<< "!\r\n";
+			}
+			else if (auto gmp = dynamic_cast<XyztMotion*>(&gmb)) {
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model_name << "." << gmp->name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makI()->fatherPart().name() << "." << gmp->makI()->name() << " \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model_name << "." << gmp->name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model_name << "." << gmp->makJ()->fatherPart().name() << "." << gmp->makJ()->name() << " \r\n"
+					<< "!\r\n";
+
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+
+				double mp[6]{ gmp->p()[0],gmp->p()[1],gmp->p()[2],0,0,gmp->p()[3] };
+				double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,gmp->p()[3] };
+				double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,gmp->p()[3] };
+
+				for (Size i = 0; i < 6; ++i){
+					std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
+
+					// 构建akima曲线 //
+					if (pos == -1) {
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
+							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p) {
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
+						for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p) {
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
+					}
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = " << (i < 3 || i==5 ? 1 : 0) << " \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model_name << "." << gmp->name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+				}
+
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model_name << "." << gmp->name() << "\r\n"
+					<< "!\r\n";
+			}
 		}
 		for (auto &force : model()->forcePool())
 		{
@@ -1684,19 +1755,23 @@ namespace aris::dynamic
 		}
 		for (auto &gmb : model()->generalMotionPool())
 		{
-			if (!gmb.active())
-			{
+			if (!gmb.active()){
 				if (auto gm = dynamic_cast<GeneralMotion*>(&gmb)) {
 
 					file << "ude attributes  &\r\n"
 						<< "    instance_name = ." << model_name << "." << gm->name() << "  &\r\n"
 						<< "    active = off \r\n!\r\n";
 				}
-				//else if (auto gm2 = dynamic_cast<PointMotion*>(&gmb)) {
-				//	file << "ude attributes  &\r\n"
-				//		<< "    instance_name = ." << model_name << "." << gm2->name() << "  &\r\n"
-				//		<< "    active = off \r\n!\r\n";
-				//}
+				else if (auto gm2 = dynamic_cast<PointMotion*>(&gmb)) {
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm2->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+				else if (auto gm3 = dynamic_cast<XyztMotion*>(&gmb)) {
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model_name << "." << gm3->name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
 			}
 		}
 		for (auto &fce : model()->forcePool())
@@ -1771,9 +1846,38 @@ namespace aris::dynamic
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;
 
+		auto to_data_idx = [](Calibrator *obj, aris::core::Matrix data_idx)->void {
+			obj->setDataIndex(data_idx.data()[0], data_idx.data()[1], data_idx.data()[2], data_idx.data()[3]);
+		};
+		auto from_data_idx = [](Calibrator *obj)->aris::core::Matrix {
+			return aris::core::Matrix{
+				(double)std::get<0>(obj->dataIndex()), 
+				(double)std::get<1>(obj->dataIndex()), 
+				(double)std::get<2>(obj->dataIndex()), 
+				(double)std::get<3>(obj->dataIndex())
+			};
+		};
 
+#define VECTOR_TO_MATRIX(set_name, get_name) auto FUNC_SET_##set_name = [](Calibrator *obj, aris::core::Matrix data)->void {	\
+	 		obj->set_name(std::vector<double>(data.begin(), data.end()));								\
+		};																																	\
+		auto FUNC_GET_##get_name = [](Calibrator *obj)->aris::core::Matrix {																\
+	 		return aris::core::Matrix(1, obj->get_name().size(), obj->get_name().data());													\
+		};																														
 
+		VECTOR_TO_MATRIX(setVelocityRatio,		velocityRatio);
+		VECTOR_TO_MATRIX(setTorqueConstant,		torqueConstant);
+		VECTOR_TO_MATRIX(setTorqueWeight,		torqueWeight);
+		VECTOR_TO_MATRIX(setVelocityDeadZone,	velocityDeadZone);
 
-
+		aris::core::class_<Calibrator>("Calibrator")
+			.prop("data_index", &to_data_idx, &from_data_idx)
+			.prop("filter_window_size", &Calibrator::setFilterWindowSize,  &Calibrator::filterWindowSize)
+			.prop("tolerable_variance", &Calibrator::setTolerableVariance, &Calibrator::tolerableVariance)
+			.prop("velocity_ratio", &FUNC_SET_setVelocityRatio, &FUNC_GET_velocityRatio)
+			.prop("torque_constant", &FUNC_SET_setTorqueConstant, &FUNC_GET_torqueConstant)
+			.prop("torque_weight", &FUNC_SET_setTorqueWeight, &FUNC_GET_torqueWeight)
+			.prop("velocity_dead_zone", &FUNC_SET_setVelocityDeadZone, &FUNC_GET_velocityDeadZone)
+			;
 	}
 }

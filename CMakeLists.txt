@@ -173,8 +173,7 @@ endif(BUILD_TESTS)
 ################################### build demos for aris ####################################
 option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)
-	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
-					demo_model_scara demo_stewart demo_hulk demo_ur demo_server demo_rokae_server demo_reflection)
+	set(ARIS_DEMOS 	demo_server)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})

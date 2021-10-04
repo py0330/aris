@@ -10,7 +10,6 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-
 	class ARIS_API Interaction :public DynEle{
 	public:
 		auto makI() noexcept->Marker* { return makI_; }
@@ -43,8 +42,7 @@ namespace aris::dynamic
 		auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
 		auto virtual cptCv(double *cv)const noexcept->void;
 		auto virtual cptCa(double *ca)const noexcept->void;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
-		{
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 			double cmI[36], cmJ[36];
 			double U[36], tau[6];
 			double Q[36], R[36];
@@ -117,106 +115,29 @@ namespace aris::dynamic
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
 		ARIS_DEFINE_BIG_FOUR(Joint);
 	};
-	class ARIS_API Motion final :public Constraint{
+	class ARIS_API MotionBase :public Constraint {
 	public:
-		static auto Dim()->Size { return 1; }
-		auto virtual dim() const noexcept ->Size override { return Dim(); }
-		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
-		auto virtual cptCv(double *cv)const noexcept->void override;
-		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual pSize()const noexcept->Size { return dim(); }
+		auto virtual p()const noexcept->const double* { return nullptr; }
+		auto virtual updP() noexcept->void {}
+		auto virtual setP(const double *p) noexcept->void {}
+		auto virtual getP(double *p)const noexcept->void { s_vc(pSize(), this->p(), p); }
+		auto virtual v()const noexcept->const double* { return nullptr; }
+		auto virtual updV() noexcept->void {}
+		auto virtual setV(const double *v) noexcept->void {}
+		auto virtual getV(double *v)const noexcept->void { s_vc(dim(), this->v(), v); }
+		auto virtual a()const noexcept->const double* { return nullptr; }
+		auto virtual updA() noexcept->void {}
+		auto virtual setA(const double *a) noexcept->void {}
+		auto virtual getA(double *a)const noexcept->void { s_vc(dim(), this->a(), a); }
+		auto virtual f()const noexcept->const double* { return nullptr; }
+		auto virtual setF(const double *f) noexcept->void {}
+		auto virtual getF(double *f)const noexcept->void { s_vc(dim(), this->f(), f); }
 
-		auto setAxis(Size axis)->void;
-		auto axis()const noexcept->Size;
-		auto mp() const noexcept->double;
-		auto updMp() noexcept->void;
-		auto setMp(double mp) noexcept->void;
-		auto mv() const noexcept->double;
-		auto updMv() noexcept->void;
-		auto setMv(double mv) noexcept->void;
-		auto ma() const noexcept->double;
-		auto updMa() noexcept->void;
-		auto setMa(double ma) noexcept->void;
-		auto mf() const noexcept->double;
-		auto setMf(double mf) noexcept->void;
-		auto mfDyn() const noexcept->double;
-		auto setMfDyn(double mf_dyn) noexcept->void;
-		auto mfFrc() const noexcept->double;
-		auto frcCoe() const noexcept ->const double3&;
-		auto setFrcCoe(const double *frc_coe) noexcept->void;
-		auto frcZeroCheck()const noexcept ->double { return 1e-3; }
-		auto mpOffset()const noexcept->double;
-		auto setMpOffset(double mp_offset)noexcept->void;
-		auto mpFactor()const noexcept->double;
-		auto setMpFactor(double mp_factor)noexcept->void;
-		auto mpInternal()const noexcept->double;
-		auto setMpInternal(double mp_internal)noexcept->void;
-
-		virtual ~Motion();
-		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
-		ARIS_DECLARE_BIG_FOUR(Motion);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-	class ARIS_API GeneralMotion final :public Constraint{
-	public:
-		static auto Dim()->Size { return 6; }
-		auto virtual dim() const noexcept ->Size override { return Dim(); }
-		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override
-		{
-			double pm[16];
-			s_inv_pm(makI_pm, pm);
-			s_tmf(pm, dm);
-		}
-		auto virtual cptCv(double *cv)const noexcept->void override;
-		auto virtual cptCa(double *ca)const noexcept->void override;
-
-		auto mpm()const noexcept->const double4x4&;
-		auto updMpm() noexcept->void;
-		auto setMpe(const double* pe, const char *type = "313") noexcept->void;
-		auto setMpq(const double* pq) noexcept->void;
-		auto setMpm(const double* pm) noexcept->void;
-		auto getMpe(double* pe, const char *type = "313")const noexcept->void;
-		auto getMpq(double* pq)const noexcept->void;
-		auto getMpm(double* pm)const noexcept->void;
-		auto mvs()const noexcept->const double6&;
-		auto updMvs() noexcept->void;
-		auto setMve(const double* ve, const char *type = "313") noexcept->void;
-		auto setMvq(const double* vq) noexcept->void;
-		auto setMvm(const double* vm) noexcept->void;
-		auto setMva(const double* va) noexcept->void;
-		auto setMvs(const double* vs) noexcept->void;
-		auto getMve(double* ve, const char *type = "313")const noexcept->void;
-		auto getMvq(double* vq)const noexcept->void;
-		auto getMvm(double* vm)const noexcept->void;
-		auto getMva(double* va)const noexcept->void;
-		auto getMvs(double* vs)const noexcept->void;
-		auto mas()const noexcept->const double6&;
-		auto updMas() noexcept->void;
-		auto setMae(const double* ae, const char *type = "313") noexcept->void;
-		auto setMaq(const double* aq) noexcept->void;
-		auto setMam(const double* am) noexcept->void;
-		auto setMaa(const double* aa) noexcept->void;
-		auto setMas(const double* as) noexcept->void;
-		auto getMae(double* ae, const char *type = "313")const noexcept->void;
-		auto getMaq(double* aq)const noexcept->void;
-		auto getMam(double* am)const noexcept->void;
-		auto getMaa(double* aa)const noexcept->void;
-		auto getMas(double* as)const noexcept->void;
-		auto mfs() const noexcept->const double6&;
-		auto setMfs(const double * mfs) noexcept->void;
-
-		virtual ~GeneralMotion();
-		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
-		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		virtual ~MotionBase() = default;
+		explicit MotionBase(const std::string &name = "motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) 
+		: Constraint(name, makI, makJ, active){}
+		ARIS_DEFINE_BIG_FOUR(MotionBase);
 	};
 	class ARIS_API Force :public Interaction{
 	public:
@@ -281,6 +202,193 @@ namespace aris::dynamic
 		explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 		ARIS_DEFINE_BIG_FOUR(SphericalJoint);
 	};
+
+	class ARIS_API Motion final :public MotionBase{
+	public:
+		static auto Dim()->Size { return 1; }
+		auto virtual dim() const noexcept ->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCv(double *cv)const noexcept->void override;
+		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual p() const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double *mp) noexcept->void override;
+		auto virtual v()const noexcept->const double* override;
+		auto virtual updV() noexcept->void override;
+		auto virtual setV(const double *mp) noexcept->void override;
+		auto virtual a()const noexcept->const double* override;
+		auto virtual updA() noexcept->void override;
+		auto virtual setA(const double *mp) noexcept->void override;
+		auto virtual f()const noexcept->const double* override;
+		auto virtual setF(const double *mf) noexcept->void override;
+
+		auto mp()const noexcept->double { return *p(); }
+		auto setMp(double mp) noexcept->void { setP(&mp); }
+		auto mv() const noexcept->double { return *v(); }
+		auto setMv(double mv) noexcept->void { setV(&mv); }
+		auto ma() const noexcept->double { return *a(); }
+		auto setMa(double ma) noexcept->void { setA(&ma); }
+		auto mf() const noexcept->double { return *f(); }
+		auto setMf(double mf) noexcept->void { setF(&mf); }
+
+		auto setAxis(Size axis)->void;
+		auto axis()const noexcept->Size;
+		auto mfDyn() const noexcept->double;
+		auto setMfDyn(double mf_dyn) noexcept->void;
+		auto mfFrc() const noexcept->double;
+		auto frcCoe() const noexcept ->const double3&;
+		auto setFrcCoe(const double *frc_coe) noexcept->void;
+		auto frcZeroCheck()const noexcept ->double { return 1e-2; }
+		auto mpOffset()const noexcept->double;
+		auto setMpOffset(double mp_offset)noexcept->void;
+		auto mpFactor()const noexcept->double;
+		auto setMpFactor(double mp_factor)noexcept->void;
+		auto mpInternal()const noexcept->double;
+		auto setMpInternal(double mp_internal)noexcept->void;
+
+		virtual ~Motion();
+		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr
+			, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0
+			, bool active = true);
+		ARIS_DECLARE_BIG_FOUR(Motion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	class ARIS_API GeneralMotion final :public MotionBase{
+	public:
+		static auto Dim()->Size { return 6; }
+		auto virtual dim() const noexcept ->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCv(double *cv)const noexcept->void override;
+		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual pSize()const noexcept->Size { return 16; }
+		auto virtual p()const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double *mp) noexcept->void override { setMpm(mp); }
+		auto virtual getP(double *mp)const noexcept->void override { getMpm(mp); }
+		auto virtual v()const noexcept->const double* override;
+		auto virtual updV() noexcept->void override;
+		auto virtual setV(const double *mv) noexcept->void override { setMvs(mv); }
+		auto virtual getV(double *mv)const noexcept->void override { getMvs(mv); }
+		auto virtual a()const noexcept->const double* override;
+		auto virtual updA() noexcept->void override;
+		auto virtual setA(const double *ma) noexcept->void override { setMas(ma); }
+		auto virtual getA(double *ma)const noexcept->void override { getMas(ma); }
+		auto virtual f()const noexcept->const double* override { return mfs(); }
+		auto virtual setF(const double *mf) noexcept->void override { setMfs(mf); }
+
+		auto mpm()const noexcept->const double4x4&;
+		auto setMpe(const double* pe, const char *type = "313") noexcept->void;
+		auto setMpq(const double* pq) noexcept->void;
+		auto setMpm(const double* pm) noexcept->void;
+		auto getMpe(double* pe, const char *type = "313")const noexcept->void;
+		auto getMpq(double* pq)const noexcept->void;
+		auto getMpm(double* pm)const noexcept->void;
+		auto mvs()const noexcept->const double6&;
+		auto setMve(const double* ve, const char *type = "313") noexcept->void;
+		auto setMvq(const double* vq) noexcept->void;
+		auto setMvm(const double* vm) noexcept->void;
+		auto setMva(const double* va) noexcept->void;
+		auto setMvs(const double* vs) noexcept->void;
+		auto getMve(double* ve, const char *type = "313")const noexcept->void;
+		auto getMvq(double* vq)const noexcept->void;
+		auto getMvm(double* vm)const noexcept->void;
+		auto getMva(double* va)const noexcept->void;
+		auto getMvs(double* vs)const noexcept->void;
+		auto mas()const noexcept->const double6&;
+		auto setMae(const double* ae, const char *type = "313") noexcept->void;
+		auto setMaq(const double* aq) noexcept->void;
+		auto setMam(const double* am) noexcept->void;
+		auto setMaa(const double* aa) noexcept->void;
+		auto setMas(const double* as) noexcept->void;
+		auto getMae(double* ae, const char *type = "313")const noexcept->void;
+		auto getMaq(double* aq)const noexcept->void;
+		auto getMam(double* am)const noexcept->void;
+		auto getMaa(double* aa)const noexcept->void;
+		auto getMas(double* as)const noexcept->void;
+		auto mfs() const noexcept->const double6&;
+		auto setMfs(const double * mfs) noexcept->void;
+
+		virtual ~GeneralMotion();
+		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	// 只包含 xyz 3个维度的末端，例如 4足 机器人的足端
+	class ARIS_API PointMotion final :public MotionBase{
+	public:
+		static auto Dim()->Size { return 3; }
+		auto virtual dim() const noexcept ->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCv(double *cv)const noexcept->void override;
+		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual p()const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double *mp) noexcept->void override;
+		auto virtual getP(double *mp)const noexcept->void override;
+		auto virtual v()const noexcept->const double* override;
+		auto virtual updV() noexcept->void override;
+		auto virtual setV(const double *mv) noexcept->void override;
+		auto virtual getV(double *mv)const noexcept->void override;
+		auto virtual a()const noexcept->const double* override;
+		auto virtual updA() noexcept->void override;
+		auto virtual setA(const double *ma) noexcept->void override;
+		auto virtual getA(double *ma)const noexcept->void override;
+		auto virtual f()const noexcept->const double* override { return cf(); }
+		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
+
+		virtual ~PointMotion();
+		explicit PointMotion(const std::string &name = "point_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		ARIS_DECLARE_BIG_FOUR(PointMotion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	// 只包含 xyz 和 theta 4个维度的末端，例如 scara和delta的末端
+	class ARIS_API XyztMotion final :public MotionBase{
+	public:
+		static auto Dim()->Size { return 4; }
+		auto virtual dim() const noexcept ->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCv(double *cv)const noexcept->void override;
+		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual p()const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double *mp) noexcept->void override;
+		auto virtual getP(double *mp)const noexcept->void override;
+		auto virtual v()const noexcept->const double* override;
+		auto virtual updV() noexcept->void override;
+		auto virtual setV(const double *mv) noexcept->void override;
+		auto virtual getV(double *mv)const noexcept->void override;
+		auto virtual a()const noexcept->const double* override;
+		auto virtual updA() noexcept->void override;
+		auto virtual setA(const double *ma) noexcept->void override;
+		auto virtual getA(double *ma)const noexcept->void override;
+		auto virtual f()const noexcept->const double* override { return cf(); }
+		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
+
+		virtual ~XyztMotion();
+		explicit XyztMotion(const std::string &name = "xyzt_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
+		ARIS_DECLARE_BIG_FOUR(XyztMotion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	
 
 	class ARIS_API GeneralForce final :public Force{
 	public:

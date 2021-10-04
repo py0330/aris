@@ -3,44 +3,62 @@
 
 namespace aris::dynamic
 {
-	class ARIS_API EndEffector{
+	class ARIS_API EndEffectorBase{
 	public:
-		//auto virtual dim()->Size = 0;
-		//auto virtual pos()->double* = 0;
-		//auto virtual setPos(double *pos)->void = 0;
-		//auto virtual vel()->double* = 0;
-		//auto virtual setVel(double *vel)->void = 0;
-		//auto virtual acc()->double* = 0;
-		//auto virtual setAcc(double *acc)->void = 0;
+		auto virtual dim()const noexcept->Size { return 0; };
+		auto virtual pSize()const noexcept->Size { return dim(); }
+		auto virtual p()const noexcept->const double* { return nullptr; }
+		auto virtual setP(const double *mp) noexcept->void {}
+		auto virtual v()const noexcept->const double* { return nullptr; }
+		auto virtual setV(const double *mp) noexcept->void {}
+		auto virtual a()const noexcept->const double* { return nullptr; }
+		auto virtual setA(const double *mp) noexcept->void {}
 	};
 
 	class ARIS_API ModelBase{
 	public:
 		// kinematics & dynamics //
-		auto virtual inverseKinematics()->int { return -1; }
-		auto virtual forwardKinematics()->int { return -1; }
-		auto virtual inverseKinematicsVel()->int { return -1; }
-		auto virtual forwardKinematicsVel()->int { return -1; }
-		auto virtual inverseDynamics()->int { return -1; }
-		auto virtual forwardDynamics()->int { return -1; }
+		auto virtual inverseKinematics()noexcept->int { return -1; }
+		auto virtual forwardKinematics()noexcept->int { return -1; }
+		auto virtual inverseKinematicsVel()noexcept->int { return -1; }
+		auto virtual forwardKinematicsVel()noexcept->int { return -1; }
+		auto virtual inverseDynamics()noexcept->int { return -1; }
+		auto virtual forwardDynamics()noexcept->int { return -1; }
 
 		// inputs //
-		auto virtual motionDim()->Size { return 0; }
-		auto virtual getMotionPos(double *mp)const ->void { }
-		auto virtual setMotionPos(const double *mp)->void { }
-		auto virtual getMotionVel(double *mv)const ->void { }
-		auto virtual setMotionVel(const double *mv)->void { }
-		auto virtual getMotionAcc(double *ma)const ->void { }
-		auto virtual setMotionAcc(const double *ma)->void { }
-		auto virtual getMotionFce(double *mf)const ->void { }
-		auto virtual setMotionFce(const double *mf)->void { }
+		auto virtual inputPosSize()const noexcept->Size { return 0; }
+		auto virtual getInputPos(double *mp)const noexcept->void { }
+		auto virtual setInputPos(const double *mp)noexcept->void { }
 
-		// end-effectors //
-		auto virtual endEffectorSize()->Size { return 0; }
-		auto virtual endEffector(Size i = 0)->EndEffector* { return nullptr; }
+		auto virtual inputVelSize()const noexcept->Size { return 0; }
+		auto virtual getInputVel(double *mv)const noexcept->void { }
+		auto virtual setInputVel(const double *mv)noexcept->void { }
+
+		auto virtual inputAccSize()const noexcept->Size { return 0; }
+		auto virtual getInputAcc(double *ma)const noexcept->void { }
+		auto virtual setInputAcc(const double *ma)noexcept->void { }
+
+		auto virtual inputFceSize()const noexcept->Size { return 0; }
+		auto virtual getInputFce(double *mf)const noexcept->void { }
+		auto virtual setInputFce(const double *mf)noexcept->void { }
+
+		// outputs //
+		auto virtual outputPosSize()const noexcept->Size { return 0; }
+		auto virtual getOutputPos(double *mp)const noexcept->void { }
+		auto virtual setOutputPos(const double *mp)noexcept->void { }
+
+		auto virtual outputVelSize()const noexcept->Size { return 0; }
+		auto virtual getOutputVel(double *mv)const noexcept->void { }
+		auto virtual setOutputVel(const double *mv)noexcept->void { }
+
+		auto virtual outputAccSize()const noexcept->Size { return 0; }
+		auto virtual getOutputAcc(double *ma)const noexcept->void { }
+		auto virtual setOutputAcc(const double *ma)noexcept->void { }
+
+		auto virtual outputFceSize()const noexcept->Size { return 0; }
+		auto virtual getOutputFce(double *mf)const noexcept->void { }
+		auto virtual setOutputFce(const double *mf)noexcept->void { }
 	};
-
-	
 }
 
 #endif

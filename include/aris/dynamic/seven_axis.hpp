@@ -38,7 +38,7 @@ namespace aris::dynamic
 		auto virtual kinPos()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
 		{
-			model()->generalMotionPool()[0].setMpm(ee_pm);
+			dynamic_cast<GeneralMotion&>(model()->generalMotionPool()[0]).setMpm(ee_pm);
 			if (ext_axes)
 			{
 				for (int i = 6; i < model()->motionPool().size(); ++i)
@@ -59,19 +59,6 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	/*class ARIS_API SevenAxisForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver
-	{
-	public:
-		auto virtual kinPos()->int override;
-
-		virtual ~SevenAxisForwardKinematicSolver();
-		explicit SevenAxisForwardKinematicSolver(const std::string &name = "seven_axis_forward_solver");
-		ARIS_DECLARE_BIG_FOUR(SevenAxisForwardKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};*/
 	///
 	/// @}
 }

@@ -1145,17 +1145,19 @@ namespace aris::plan
 		static Size max_total_count;
 		if (count() == 1)
 		{
+			auto gm = dynamic_cast<aris::dynamic::GeneralMotion*>(&model()->generalMotionPool().at(0));
+
 			// inverse kinematic //
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvj_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).setMpm(end_pm);
+			gm->setMpm(end_pm);
 			if (model()->solverPool().at(0).kinPos())return -1;
 
 			// init joint_pos //
 			for (Size i = 0; i < std::min(controller()->motionPool().size(), model()->motionPool().size()); ++i)
 			{
 				mvj_param->joint_pos_begin[i] = controller()->motionPool()[i].targetPos();
-				mvj_param->joint_pos_end[i] = model()->motionPool()[i].mp();
+				mvj_param->joint_pos_end[i] = *model()->motionPool()[i].p();
 				aris::plan::moveAbsolute(static_cast<double>(count()), mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i]
 					, mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000
 					, p, v, a, mvj_param->total_count[i]);
@@ -1174,7 +1176,7 @@ namespace aris::plan
 			controller()->motionPool()[i].setTargetPos(p);
 		}
 
-		return max_total_count == 0 ? 0 : max_total_count - count();
+		return max_total_count == 0 ? 0 : static_cast<int>(max_total_count - count());
 	}
 	MoveJ::~MoveJ() = default;
 	MoveJ::MoveJ(const std::string &name) :imp_(new Imp)
@@ -1262,10 +1264,12 @@ namespace aris::plan
 		aris::Size pos_total_count, ori_total_count;
 		if (count() == 1)
 		{
+			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvl_param->ee_pq.data(), end_pm);
-			model()->generalMotionPool().at(0).updMpm();
-			model()->generalMotionPool().at(0).getMpm(begin_pm);
+			gm.updP();
+			gm.getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 
 			// relative_pa //
@@ -1295,8 +1299,10 @@ namespace aris::plan
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+
 		// 反解计算电机位置 //
-		model()->generalMotionPool().at(0).setMpm(pm2);
+		gm.setMpm(pm2);
 		if (model()->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
@@ -1444,18 +1450,19 @@ namespace aris::plan
 	}
 	auto AutoMove::executeRT()->int
 	{
-		auto param = std::any_cast<AutoMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0)); auto param = std::any_cast<AutoMoveParam>(&this->param());
+
 
 		if (count() == 1)
 		{
-			model()->generalMotionPool()[0].setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
+			gm.setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
 		}
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i)if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// get target pe //
@@ -1476,9 +1483,9 @@ namespace aris::plan
 				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
 		}
 
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 
 		static int i = 0;
 		if (++i % 1000 == 0)
@@ -1612,12 +1619,13 @@ namespace aris::plan
 	auto ManualMove::executeRT()->int
 	{
 		auto param = std::any_cast<ManualMoveParam>(&this->param());
+		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
 
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
-		model()->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMve(ve_now, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
+		gm.getMpe(pe_now, imp_->eul_type.c_str());
+		gm.getMve(ve_now, imp_->eul_type.c_str());
+		gm.getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i) if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
 		// init status //
@@ -1644,12 +1652,11 @@ namespace aris::plan
 		}
 
 		// check if target_pe is valid //
-		model()->generalMotionPool()[0].setMpe(target_pe_new.data(), imp_->eul_type.c_str());
+		gm.setMpe(target_pe_new.data(), imp_->eul_type.c_str());
 		auto check_motion_limit = [&]()->bool
 		{
 			auto c = controller();
-			for (std::size_t i = 0; i < std::min(c->motionPool().size(), model()->motionPool().size()); ++i)
-			{
+			for (std::size_t i = 0; i < std::min(c->motionPool().size(), model()->motionPool().size()); ++i) {
 				auto &cm = c->motionPool().at(i);
 				auto &mm = model()->motionPool().at(i);
 
@@ -1671,9 +1678,9 @@ namespace aris::plan
 		}
 
 		// set everything //
-		model()->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
-		model()->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
+		gm.setMpe(pe_next, imp_->eul_type.c_str());
+		gm.setMve(ve_next, imp_->eul_type.c_str());
+		gm.setMae(ae_next, imp_->eul_type.c_str());
 		model()->solverPool()[0].kinPos();
 		model()->solverPool()[0].kinVel();
 

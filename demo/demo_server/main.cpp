@@ -303,36 +303,36 @@ int main(int argc, char *argv[])
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 
-	auto model5 = createModelRokaeXB4_5(robot_pm);
+	//auto model5 = createModelRokaeXB4_5(robot_pm);
 
-	model5->init();
-	cs.model().init();
+	//model5->init();
+	//cs.model().init();
 
-	model5->motionPool()[5].setMp(0.5);
+	//model5->motionPool()[5].setMp(0.5);
 
-	model5->generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
-	model5->solverPool()[0].kinPos();
-	for (int i = 0; i < 6; ++i)
-	{
-		std::cout << model5->motionPool()[i].mp() << std::endl;
-	}
-	std::cout  << std::endl;
-	model5->solverPool()[1].kinPos();
-	model5->generalMotionPool()[0].updMpm();
-	aris::dynamic::dsp(4, 4, *model5->generalMotionPool()[0].mpm());
-
-
+	//model5->generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
+	//model5->solverPool()[0].kinPos();
+	//for (int i = 0; i < 6; ++i)
+	//{
+	//	std::cout << model5->motionPool()[i].mp() << std::endl;
+	//}
+	//std::cout  << std::endl;
+	//model5->solverPool()[1].kinPos();
+	//model5->generalMotionPool()[0].updMpm();
+	//aris::dynamic::dsp(4, 4, *model5->generalMotionPool()[0].mpm());
 
 
-	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
+
+
+	dynamic_cast<aris::dynamic::GeneralMotion&>(cs.model().generalMotionPool()[0]).setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
 	cs.model().solverPool()[0].kinPos();
 	for (int i = 0; i < 6; ++i)
 	{
 		std::cout << cs.model().motionPool()[i].mp() << std::endl;
 	}
 	cs.model().solverPool()[1].kinPos();
-	cs.model().generalMotionPool()[0].updMpm();
-	aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
+	cs.model().generalMotionPool()[0].updP();
+	//aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
 
 	//aris::server::MakeBlockly make_block;
 	//make_block.make("D:\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\program\\daiyi\\gongxu1.aris");

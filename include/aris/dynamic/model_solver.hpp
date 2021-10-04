@@ -8,8 +8,7 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-	class ARIS_API Solver :public Element
-	{
+	class ARIS_API Solver :public Element{
 	public:
 		auto virtual allocateMemory()->void = 0;
 		auto virtual kinPos()->int = 0;
@@ -32,8 +31,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API UniversalSolver : public Solver
-	{
+	class ARIS_API UniversalSolver : public Solver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
@@ -45,7 +43,9 @@ namespace aris::dynamic
 		auto Jg()const noexcept->const double *;// dimension : mJ x nJ 
 		auto cg()const noexcept->const double *;// dimension : mJ x 1
 		auto cptGeneralInverseDynamicMatrix() noexcept->void;// torque = M * theta_dot_dot + h
-		auto nM()const noexcept->Size;// = motion_number + general_motion_number x 6
+		auto indexOfMotionInM(Size mot_id)->Size;
+		auto indexOfGeneralMotionInM(Size gm_id)->Size;
+		auto nM()const noexcept->Size;// = sum of all active motion dimension
 		auto M()const noexcept->const double *;// dimension : nM x nM 
 		auto h()const noexcept->const double *;// dimension : nM x 1
 
@@ -57,8 +57,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API ForwardKinematicSolver :public UniversalSolver
-	{
+	class ARIS_API ForwardKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
@@ -79,8 +78,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API InverseKinematicSolver :public UniversalSolver
-	{
+	class ARIS_API InverseKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
@@ -101,8 +99,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API ForwardDynamicSolver :public UniversalSolver
-	{
+	class ARIS_API ForwardDynamicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
@@ -113,8 +110,7 @@ namespace aris::dynamic
 		explicit ForwardDynamicSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(ForwardDynamicSolver);
 	};
-	class ARIS_API InverseDynamicSolver :public UniversalSolver
-	{
+	class ARIS_API InverseDynamicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
