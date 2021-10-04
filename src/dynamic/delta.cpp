@@ -157,7 +157,7 @@ namespace aris::dynamic{
 		if (auto lambda = B * B - 4 * A*C; lambda < 0) return -1;
 		else {
 			// 这里用异或，找到z < 0的根
-			t = (which_root == 0 ^ h[2] < 0) ? (-B - std::sqrt(lambda)) / (2 * A) : (-B + std::sqrt(lambda)) / (2 * A);
+			t = ((which_root == 0) ^ (h[2] < 0)) ? (-B - std::sqrt(lambda)) / (2 * A) : (-B + std::sqrt(lambda)) / (2 * A);
 			if (t < 0)return -2;
 		}
 
@@ -467,8 +467,6 @@ namespace aris::dynamic{
 	
 	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
-
-		//imp_->dh_ = aris::core::Matrix({ param.a, param.b, param.c, param.d, param.e });
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b, param.c, param.d, param.e }));
 

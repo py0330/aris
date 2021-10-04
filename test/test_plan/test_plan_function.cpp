@@ -220,8 +220,8 @@ void test_optimal()
 			double real_vs[6];
 			aris::dynamic::s_vc(6, node.ds, vs, real_vs);
 
-			planner.model->generalMotionPool().at(i).setMpq(pq.data() + 7 * i);
-			planner.model->generalMotionPool().at(i).setMvs(real_vs);
+			//planner.model->generalMotionPool().at(i).setMpq(pq.data() + 7 * i);
+			//planner.model->generalMotionPool().at(i).setMvs(real_vs);
 		}
 
 		planner.solver->kinPos();
@@ -231,7 +231,7 @@ void test_optimal()
 		file << node.s << "  ";
 		for (auto &mot : planner.model->motionPool())
 		{
-			mot.updMp();
+			//mot.updMp();
 			file << mot.mp() << "  ";
 		}
 		file << "\n";
