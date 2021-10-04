@@ -120,68 +120,47 @@ public:
 	//	inside_tuple.reset(new Arguments(params... ));
 	//	inside_func();
 	//}
-	//template <std::size_t... I>
-	//auto apply_impl(Tuple &&t, std::index_sequence<I...>)
-	//{
-	//	inside_tuple.reset(new Arguments(
-	//		(*ins_vec[I].castTo<
-	//			decltype(std::remove_reference_t(std::get<I>(t)))
-	//		>, ...)
-	//	));
 
-
-	//	// This implementation is valid since C++20 (via P1065R2)
-	//	// In C++17, a constexpr counterpart of std::invoke is actually needed here
-	//	//return std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))...);
-
-
-	//}
-
-
-	template <class MyTuple, std::size_t... I>
-	auto apply_impl(MyTuple &&t, std::index_sequence<I...>)->void{
-		//std::vector<aris::core::Instance> ins_vec;
-		std::cout << typeid(MyTuple).name() << std::endl;
-
-		std::cout << typeid(decltype(std::get<0>(t))).name() << std::endl;
-
-		auto b = std::make_tuple(*ins_vec[I].castTo<decltype(std::get<I>(t))>()...);
-		std::cout << typeid(b).name() << std::endl;
-
-		auto c = new std::remove_reference_t<MyTuple>(*ins_vec[I].castTo<decltype(std::get<I>(t))>()...);
-
-		//auto b = std::make_tuple(std::get<I>(t)...);
-	}
+	
 
 	template <typename R, typename... Param>
 	func_(std::string name, std::function<R(Param...)> f) {
 		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-		inside_func = [=]()->void* {
-			apply_impl(
-				*(Arguments*)inside_tuple.get(), 
-				std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Arguments>>>{}
+		inside_func = [=](std::vector<aris::core::Instance> &param_ins_vec)->void* {
+			auto t = make_param_tuple<Arguments>(
+				param_ins_vec,
+				std::make_index_sequence<std::tuple_size_v<Arguments>>{}
 			);
-			std::apply(f, *(Arguments*)inside_tuple.get());
+			std::apply(f, t);
 			return nullptr;
 		};
 	}
 
 	template <typename... Param>
 	auto invoke(Param&&... params)->void{
-		//using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-		//inside_tuple.reset(new Arguments(params... ));
-		
-
-		ins_vec = std::vector<aris::core::Instance>({params...});
-		inside_func();
+		auto ins_vec = std::vector<aris::core::Instance>({params...});
+		inside_func(ins_vec);
 	}
 
 private:
-	std::vector<aris::core::Instance> ins_vec;
-	std::shared_ptr<void> inside_tuple;
-	std::function<void*(void)> inside_func;
+	std::function<void*(std::vector<aris::core::Instance> &)> inside_func;
+
+	template <class MyTuple, std::size_t... I>
+	auto make_param_tuple(std::vector<aris::core::Instance> &param_ins_vec, std::index_sequence<I...>)->MyTuple {
+		return MyTuple(*param_ins_vec[I].castTo<std::remove_reference_t<std::tuple_element_t<I, MyTuple>>>()...);
+	}
 };
 
+//template <typename R, typename... Param>
+//auto select_overload(std::function<R(Param...)> f)->std::function<R(Param...)> { return f; }
+
+template<typename Signature >
+Signature* select_overload(Signature * 	func) { return func; }
+
+
+
+void f1(int a) { std::cout << "f1:a  " << a << std::endl; }
+void f1(double b) { std::cout << "f1:b  " << b << std::endl; }
 
 int main(){
 	std::cout << std::setiosflags(std::ios::left);
@@ -366,6 +345,12 @@ int main(){
 
 
 	func_ aaa("aaa", ff);
+
+	auto ffff = select_overload<void(int)>(f1);
+
+	std::function<void(int)> fffff = select_overload<void(int)>(f1);
+	func_ f1_("f1", fffff);
+	//func_ f1_("f1", select_overload<void(int)>(f1));
 
 	int bc = 1;
 	int &bd = bc;

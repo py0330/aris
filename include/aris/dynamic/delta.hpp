@@ -73,17 +73,14 @@ namespace aris::dynamic{
 	};
 	struct ARIS_API DeltaModel :public aris::dynamic::Model {
 	public:
-		auto dh()->aris::core::Matrix&;
-
 		virtual ~DeltaModel();
 		explicit DeltaModel(const DeltaParam &param);
 		DeltaModel(DeltaModel&&);
 		DeltaModel& operator=(DeltaModel&&);
 
 	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
 		friend class DeltaInverseKinematicSolver;
+		friend class DeltaForwardKinematicSolver;
 	};
 
 
