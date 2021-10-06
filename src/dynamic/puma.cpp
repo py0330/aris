@@ -27,6 +27,16 @@ namespace aris::dynamic
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
 
+		// compute ee info //
+		const double axis_6_pe[]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3, 0.0, aris::PI / 2.0 ,0.0 };
+		double axis_6_pm[16];
+		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
+		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+
+		s_pe2pm(axis_6_pe, axis_6_pm, "321");
+		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
+		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
+
 		// add part //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
 		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 6 ? param.iv_vec[0].data() : default_iv);
@@ -34,7 +44,8 @@ namespace aris::dynamic
 		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
 		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 6 ? param.iv_vec[3].data() : default_iv);
 		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
-		auto &p6 = model->partPool().add<Part>("L6", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv);
+		auto &p6 = model->partPool().add<Part>("L6", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv,
+			ee_i_pm);
 
 		// add joint //
 		const double j1_pos[3]{      0.0,                 0.0, param.d1 };
@@ -76,16 +87,7 @@ namespace aris::dynamic
 		m6.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[5].data() : default_mot_frc);
 
 		// add ee general motion //
-		const double axis_6_pe[]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3, 0.0, aris::PI / 2.0 ,0.0 };
-		double axis_6_pm[16];
-		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
-		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-
-		s_pe2pm(axis_6_pe, axis_6_pm, "321");
-		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
-		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
-
-		auto &makI = p6.addMarker("tool0", ee_i_pm);
+		auto &makI = p6.addMarker("tool0");
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
@@ -104,9 +106,8 @@ namespace aris::dynamic
 		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
 
 		// add tools and wobj //
-		for (int i = 1; i < 17; ++i) 
-		{
-			p6.addMarker("tool" + std::to_string(i), ee_i_pm);
+		for (int i = 1; i < 17; ++i) {
+			p6.addMarker("tool" + std::to_string(i));
 		}
 		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
