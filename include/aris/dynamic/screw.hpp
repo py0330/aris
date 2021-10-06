@@ -1518,6 +1518,14 @@ namespace aris::dynamic
 	///
 	///
 	auto ARIS_API s_sov_axis_distance(const double*from_pm, const double*to_pm, Size axis)noexcept->double;
+
+
+	/// \brief 求解平面内2点法标定，适用于scara 和 delta等4轴机器人
+	/// input:      2组数据6个数：[x1 y1 c1 x2 y2 c2]
+	/// result:     [tool_x tool_y]
+	/// mini_angle: 最小允许的输入角度差值
+	auto ARIS_API s_calib_tool_two_pnts(const double* input, double*result, double mini_angle = 0.1)noexcept->int;
+
 }
 
 #endif
