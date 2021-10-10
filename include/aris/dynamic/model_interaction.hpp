@@ -40,7 +40,8 @@ namespace aris::dynamic
 		auto virtual locCmI() const->const double* = 0;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void;
 		auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
-		auto virtual cptCv(double *cv)const noexcept->void;
+		auto virtual cptCv(double *cv)const noexcept->void { std::fill_n(cv, dim(), 0.0); }
+		auto virtual cptCvDiff(double *cv)const noexcept->void;
 		auto virtual cptCa(double *ca)const noexcept->void;
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 			double cmI[36], cmJ[36];

@@ -41,6 +41,7 @@ namespace aris::dynamic{
 		struct Block { 
 			const Constraint* cst_;
 			bool is_I_;
+			int mot_dim_pos_; // 记录motion的dim pos，-1不是motion，其他为dim pos
 		};
 
 		const Part *prtI_, *prtJ_; // prtI为对角块的part
@@ -162,7 +163,7 @@ namespace aris::dynamic{
 		ARIS_LOOP_D_2_TO_END{
 			Size pos{ 0 };
 			ARIS_LOOP_BLOCK(d->rel_.){
-				b->cst_->cptCv(d->bc_ + pos);
+				b->cst_->cptCvDiff(d->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
@@ -170,7 +171,7 @@ namespace aris::dynamic{
 		ARIS_LOOP_R{
 			Size pos{ 0 };
 			ARIS_LOOP_BLOCK(r->rel_.){
-				b->cst_->cptCv(r->bc_ + pos);
+				b->cst_->cptCvDiff(r->bc_ + pos);
 				pos += b->cst_->dim();
 			}
 		}
@@ -870,11 +871,12 @@ namespace aris::dynamic{
 			// make active constraint pool //
 			std::vector<const Constraint*> cp;
 			for (auto &jnt : model()->jointPool())if (jnt.active())cp.push_back(&jnt);
-			for (auto &mot : model()->motionPool())if (mot.active()) cp.push_back(&mot);
+			for (auto &mot : model()->motionPool())if (mot.active())cp.push_back(&mot);
 			for (auto &gmt : model()->generalMotionPool())if (gmt.active())cp.push_back(&gmt);
 
 			// make relation pool //
 			std::vector<LocalRelation> relation_pool;
+			int mot_dim_pos = 0;
 			for (auto c : cp){
 				if (c->makI() == nullptr || c->makJ() == nullptr) continue;
 				
@@ -885,10 +887,12 @@ namespace aris::dynamic{
 
 				if (ret == relation_pool.end()){
 					relation_pool.push_back(LocalRelation{ &c->makI()->fatherPart(), &c->makJ()->fatherPart(), c->dim(), c->dim() });
-					relation_pool.back().cst_pool_.push_back({ c, true });
+					relation_pool.back().cst_pool_.push_back({ c, true, dynamic_cast<const MotionBase*>(c) ? mot_dim_pos : -1 });
+					mot_dim_pos += dynamic_cast<const MotionBase*>(c) ? dynamic_cast<const MotionBase*>(c)->dim() : 0;
 				}
 				else{
-					ret->cst_pool_.push_back({ c, &c->makI()->fatherPart() == ret->prtI_ });
+					ret->cst_pool_.push_back({ c, &c->makI()->fatherPart() == ret->prtI_, dynamic_cast<const MotionBase*>(c) ? mot_dim_pos : -1 });
+					mot_dim_pos += dynamic_cast<const MotionBase*>(c) ? dynamic_cast<const MotionBase*>(c)->dim() : 0;
 					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](auto& a, auto& b){return a.cst_->dim() > b.cst_->dim();});//这里把大的约束往前放
 					ret->size_ += c->dim();
 					ret->dim_ = ret->cst_pool_[0].cst_->dim();// relation 的 dim 以大的为准，最大的在第一个
@@ -1330,8 +1334,7 @@ namespace aris::dynamic{
 		if (error() < maxError())ARIS_LOOP_SYS ARIS_LOOP_SYS_D const_cast<Part*>(d->part_)->setPm(d->pm_);
 		return error() < maxError() ? 0 : -1;
 	}
-	auto UniversalSolver::kinVel()->int
-	{
+	auto UniversalSolver::kinVel()->int	{
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D d->part_->getPm(d->pm_);
 
 		s_fill(6, 1, 0.0, const_cast<double *>(model()->ground().vs()));
@@ -1342,8 +1345,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto UniversalSolver::dynAccAndFce()->int
-	{
+	auto UniversalSolver::dynAccAndFce()->int{
 		// 更新杆件位姿，每个杆件外力 //
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D {
 			d->part_->getPm(d->pm_);
@@ -1389,8 +1391,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto UniversalSolver::cptGeneralJacobi()noexcept->void
-	{
+	auto UniversalSolver::cptGeneralJacobi()noexcept->void{
 		auto Jg = imp_->pd_->Jg_;
 		auto cg = imp_->pd_->cg_;
 		
@@ -1419,35 +1420,40 @@ namespace aris::dynamic{
 						ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, mot->id(), nJg()), nJg());
 						bc[pos] = 0.0;
 					}
-					else if (auto gmt = dynamic_cast<const GeneralMotion*>(b->cst_)) {
-						double tmf[6][6];
-						s_tmf(*gmt->mpm(), *tmf);
+					////else if (auto gmt = dynamic_cast<const GeneralMotion*>(b->cst_)) {
+					////	double tmf[6][6];
+					////	s_tmf(*gmt->mpm(), *tmf);
 
-						for (Size k(-1); ++k < 6;) {
-							// 更新bc，将当前电机的未知量更新为当前c的1.0 //
-							// Tmf^(T) * v //
-							s_vc(6, tmf[k], bc);
+					////	for (Size k(-1); ++k < 6;) {
+					////		// 更新bc，将当前电机的未知量更新为当前c的1.0 //
+					////		// Tmf^(T) * v //
+					////		s_vc(6, tmf[k], bc);
+					////		sys->sovXp();
+					////		ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + gmt->id() * 6 + k, nJg()), nJg());
+					////	}
+
+					////	std::fill(bc, bc + 6, 0.0);
+					////}
+					else if (auto gmt = dynamic_cast<const MotionBase*>(b->cst_)) {
+						double mv_store[6];
+						gmt->getV(mv_store);
+
+						for (Size k(-1); ++k < gmt->dim();) {
+							double mv[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+							mv[k] = 1.0;
+							const_cast<MotionBase*>(gmt)->setV(mv);
+							double cv[6];
+							gmt->cptCv(cv);
+
+							s_vc(gmt->dim(), cv, bc + pos);
 							sys->sovXp();
-							ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + gmt->id() * 6 + k, nJg()), nJg());
+							//ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + gmt->id() * 6 + k, nJg()), nJg());
+							//ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, mot->id(), nJg()), nJg());
+							ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + b->mot_dim_pos_ + k, nJg()), nJg());
 						}
 
-						std::fill(bc, bc + 6, 0.0);
-					}
-					else if (auto gmt = dynamic_cast<const PointMotion*>(b->cst_)) {
-
-						// don't know why, but it works //
-						double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-						gmt->makJ()->getPm(*gmt->makI(), pm);
-
-						for (Size k(-1); ++k < 3;) {
-							// 更新bc，将当前电机的未知量更新为当前c的1.0 //
-							// Tmf^(T) * v //
-							s_vc(3, pm + k,4, bc,1);
-							sys->sovXp();
-							ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, this->model()->motionPool().size() + gmt->id() * 6 + k, nJg()), nJg());
-						}
-
-						std::fill(bc, bc + 3, 0.0);
+						const_cast<MotionBase*>(gmt)->setV(mv_store);
+						std::fill_n(bc + pos, gmt->dim(), 0.0);
 					}
 
 					pos += b->cst_->dim();
@@ -1786,10 +1792,8 @@ namespace aris::dynamic{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比，找出加速度差，就是cfi
-		for (auto &gm : model()->generalMotionPool())
-		{
-			for (auto &mot : model()->motionPool())
-			{
+		for (auto &gm : model()->generalMotionPool()){
+			for (auto &mot : model()->motionPool()){
 				double tem[6];
 				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 				s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);

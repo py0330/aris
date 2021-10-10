@@ -113,6 +113,18 @@ int main(){
 	m2->getOutputPos(output);
 	aris::dynamic::dsp(1, 4, output);
 
+	auto tool1 = m2->generalMotionPool()[0].makI()->fatherPart().findMarker("tool1");
+	double test_clb_pe[6]{ 0.1,0.2,0.3,0.5,0.4,0.6 };
+	tool1->setPrtPe(test_clb_pe);
+
+	double points[8]{ 0.5,0.4,0.3,0.6,0.4,0.9 };
+	calibModelByTwoPoints(*m2, points, "tool1");
+	double pe[6];
+	aris::dynamic::s_pm2pe(*tool1->prtPm(), pe);
+	aris::dynamic::dsp(1, 6, pe);
+
+
+
 	std::cout << "demo_model_delta finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0;

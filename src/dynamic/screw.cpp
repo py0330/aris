@@ -3699,9 +3699,10 @@ namespace aris::dynamic
 		const double A[4]{c1 - c2, -s1 + s2, s1 - s2, c1 - c2 };
 		const double tem = 1.0 / (A[0] * A[3] - A[1] * A[2]);
 		
-		double inv_A[4]{A[3]*tem, -A[1]*tem, A[2]*tem, A[0]*tem};
+		double inv_A[4]{A[3]*tem, -A[1]*tem, -A[2]*tem, A[0]*tem};
 
-		double b[2]{ input[2] - input[0], input[3] - input[1] };
+		double b[2]{ input[3] - input[0], input[4] - input[1] };
 		s_mm(2, 1, 2, inv_A, b, result);
+		return 0;
  	}
 }

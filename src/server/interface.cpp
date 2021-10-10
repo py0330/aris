@@ -439,7 +439,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.find("/api/dashboards") != std::string::npos)
@@ -453,7 +453,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri.find("/api/dashboards") != std::string::npos && uri.find("cells") != std::string::npos)
@@ -468,7 +468,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "DELETE" && uri.find("/api/dashboards") != std::string::npos	&& uri.find("cells") != std::string::npos)
@@ -482,7 +482,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/programs")
@@ -496,7 +496,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri == "/api/programs")
@@ -510,7 +510,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
@@ -524,7 +524,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "DELETE" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
@@ -540,7 +540,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 						else
 						{
@@ -551,7 +551,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 
 						break;
@@ -569,7 +569,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 						else
 						{
@@ -580,7 +580,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 
 						break;
@@ -597,7 +597,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/esi/path")
@@ -611,7 +611,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/obj_picture_list")
@@ -625,7 +625,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri == "/api/obj_picture")
@@ -642,7 +642,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else

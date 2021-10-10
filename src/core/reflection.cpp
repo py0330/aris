@@ -375,7 +375,7 @@ namespace aris::core{
 				return std::to_string(*reinterpret_cast<float*>(v));
 			}, [](float *v, std::string_view str)->void
 			{
-				float result = std::stod(std::string(str));
+				float result = (float)std::stod(std::string(str));
 				*reinterpret_cast<float*>(v) = result;
 			});
 

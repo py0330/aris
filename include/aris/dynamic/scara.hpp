@@ -43,8 +43,11 @@ namespace aris::dynamic{
 
 	auto ARIS_API createModelScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
-
-
+	// \brief 求解平面内2点法标定，适用于scara 和 delta等4轴机器人
+	// scara:      4维末端的机器人，例如scara或delta
+	// points:      2组数据6个数：[x1 y1 c1 x2 y2 c2]
+	// tool_name:   需要标定的工具坐标系名称
+	auto ARIS_API calibModelByTwoPoints(aris::dynamic::Model& scara, const double* points, std::string_view tool_name)->int;
 
 
 	///
