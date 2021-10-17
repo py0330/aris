@@ -864,7 +864,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			dsp(1, m.inputFceSize(), ifo);
 		}
 
-
 		// set input //
 		m.init();
 		m.setInputPos(ipt);
@@ -910,21 +909,13 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
 			aris::Size m = u->model()->partPool().size() * 6;
-			aris::Size n = u->model()->motionPool().size();
-			for (auto &gm : u->model()->generalMotionPool()) n += 6;
+			aris::Size n = u->model()->inputVelSize();
 
 			std::vector<double> part_vs(m, 0.0), part_as(m, 0.0);
 			std::vector<double> mot_input(n, 0.0);
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
-			}
-			for (aris::Size i = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
-				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.v(), mot_input.data() + u->model()->motionPool().size() + dim);
-				dim += gm.dim();
-			}
+			u->model()->getInputVel(mot_input.data());
 
-			s_mm(m, 1, n, u->Jg(), n, mot_input.data(), 1, part_vs.data(), 1);
+			s_mm(m, 1, n, u->Jg(), u->nJg(), mot_input.data(), 1, part_vs.data(), 1);
 			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i){
 				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2])){
 					std::cout << s.id() << "::cptGeneralJacobi() forward failed" << std::endl;
@@ -938,15 +929,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			// check cg //
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
-			}
-			for (aris::Size i = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
-				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.a(), mot_input.data() + u->model()->motionPool().size() + dim);
-				dim += gm.dim();
-			}
-
+			u->model()->getInputAcc(mot_input.data());
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
 			s_va(m, u->cg(), part_as.data());
 
@@ -965,20 +948,22 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			aris::Size n = u->nM();
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
-				if (u->indexOfMotionInM(i) != -1) {
-					ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
-					mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
-				}
-			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
-				auto &gm = u->model()->generalMotionPool().at(i);
-				if (u->indexOfGeneralMotionInM(i) != -1) {
-					s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
-					s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
-				}
-			}
+			u->model()->getInputAcc(ma.data());
+			u->model()->getInputFce(mf_compare.data());
 
+			//for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
+			//	if (u->indexOfMotionInM(i) != -1) {
+			//		ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
+			//		mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
+			//	}
+			//}
+			//for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
+			//	auto &gm = u->model()->generalMotionPool().at(i);
+			//	if (u->indexOfGeneralMotionInM(i) != -1) {
+			//		s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
+			//		s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+			//	}
+			//}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
 			s_va(n, u->h(), mf.data());
@@ -1101,21 +1086,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
 			aris::Size m = u->model()->partPool().size() * 6;
-			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
+			aris::Size n = u->model()->outputVelSize();
 
 			std::vector<double> part_vs(m, 0.0), part_as(m, 0.0);
 			std::vector<double> mot_input(n, 0.0);
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
-			}
-			for (aris::Size i = 0, pdim = 0, dim = 0; i < u->model()->generalMotionPool().size(); ++i) {
-				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.v(), mot_input.data() + u->model()->motionPool().size() + dim);
-
-				pdim += gm.pSize();
-				dim += 6;
-			}
-
+			u->model()->getOutputVel(mot_input.data());
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_vs.data());
 
 			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i){
@@ -1131,14 +1106,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			// check cg //
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i){
-				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
-			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i){
-				auto &gm = u->model()->generalMotionPool().at(i);
-				s_vc(gm.dim(), gm.a(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
-			}
-
+			u->model()->getOutputAcc(mot_input.data());
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
 			s_va(m, u->cg(), part_as.data());
 
@@ -1160,19 +1128,21 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			aris::Size n = u->nM();
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
-				if (u->indexOfMotionInM(i) != -1) {
-					ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
-					mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
-				}
-			}
-			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
-				auto &gm = u->model()->generalMotionPool().at(i);
-				if (u->indexOfGeneralMotionInM(i) != -1) {
-					s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
-					s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
-				}
-			}
+			u->model()->getOutputAcc(ma.data());
+			u->model()->getOutputFce(mf_compare.data());
+			//for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i) {
+			//	if (u->indexOfMotionInM(i) != -1) {
+			//		ma.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).ma();
+			//		mf_compare.data()[u->indexOfMotionInM(i)] = u->model()->motionPool().at(i).mf();
+			//	}
+			//}
+			//for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i) {
+			//	auto &gm = u->model()->generalMotionPool().at(i);
+			//	if (u->indexOfGeneralMotionInM(i) != -1) {
+			//		s_vc(gm.dim(), gm.a(), ma.data() + u->indexOfGeneralMotionInM(i));
+			//		s_vc(gm.dim(), gm.f(), mf_compare.data() + u->indexOfGeneralMotionInM(i));
+			//	}
+			//}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
 			s_va(n, u->h(), mf.data());

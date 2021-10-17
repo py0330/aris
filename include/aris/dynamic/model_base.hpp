@@ -9,6 +9,8 @@ namespace aris::dynamic{
 		auto virtual forwardKinematics()noexcept->int { return -1; }
 		auto virtual inverseKinematicsVel()noexcept->int { return -1; }
 		auto virtual forwardKinematicsVel()noexcept->int { return -1; }
+		auto virtual inverseKinematicsAcc()noexcept->int { return -1; }
+		auto virtual forwardKinematicsAcc()noexcept->int { return -1; }
 		auto virtual inverseDynamics()noexcept->int { return -1; }
 		auto virtual forwardDynamics()noexcept->int { return -1; }
 

@@ -212,6 +212,8 @@ namespace aris::dynamic{
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
 		auto virtual forwardKinematicsVel()noexcept->int override;
+		auto virtual inverseKinematicsAcc()noexcept->int override;
+		auto virtual forwardKinematicsAcc()noexcept->int override;
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
@@ -222,7 +224,6 @@ namespace aris::dynamic{
 		auto virtual getInputVel(double *mv)const noexcept->void override;
 		auto virtual setInputVel(const double *mv)noexcept->void override;
 		auto virtual inputAccSize()const noexcept->Size override;
-
 		auto virtual getInputAcc(double *ma)const noexcept->void override;
 		auto virtual setInputAcc(const double *ma)noexcept->void override;
 		auto virtual inputFceSize()const noexcept->Size override;

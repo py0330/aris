@@ -79,6 +79,18 @@ int main(){
 	aris::dynamic::dsp(1, 4, output);
 
 
+	try {
+		for (auto &p : m1->partPool())
+		{
+			p.geometryPool().clear();
+
+		}
+		aris::core::toXmlFile(*m1, "C:\\Users\\py033\\Desktop\\a.xml");
+	}
+	catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+	}
+
 
 	////////////////////////////////////////// scara 机器人 ////////////////////////////////////
 	//---------------------------------------------------------------------------------------------
@@ -97,6 +109,9 @@ int main(){
 	param2.a = 1;
 	param2.b = 1;
 	auto m2 = aris::dynamic::createModelScara(param2);
+
+
+	
 
 	//////////////////// 反解 ////////////////////
 	double xyz_theta2[4]{ -0.8, -0.9, -0.45, 0.3 };

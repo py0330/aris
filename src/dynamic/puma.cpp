@@ -132,8 +132,6 @@ namespace aris::dynamic
 		// puma机器人构型：
 		//
 		//
-		//
-		//
 		//                                      x            y     x
 		//                                   \  - [***d5***] o     -     EE                                      
 		//                                 d4 *                            
@@ -460,7 +458,7 @@ namespace aris::dynamic
 			double s = Ax_axis_in_R2[0] * pm[7] - Ax_axis_in_R2[1] * pm[3];// x cross R2R3
 			double c = Ax_axis_in_R2[0] * pm[3] + Ax_axis_in_R2[1] * pm[7];
 
-			imp_->puma_param.mp_offset[1] = atan2(s, c);
+			imp_->puma_param.mp_offset[1] = std::atan2(s, c);
 			imp_->puma_param.mp_factor[1] = R2_mak_on_L2 == imp_->R2->makI() ? 1.0 : -1.0;
 
 			// mp_offset[2] 应该能让R3把R4轴线转到R2R3连线方向（x轴）
@@ -477,7 +475,7 @@ namespace aris::dynamic
 			s = pm[3] * R4_axis_in_R2[1] - pm[7] * R4_axis_in_R2[0];// x cross R2R3
 			c = pm[3] * R4_axis_in_R2[0] + pm[7] * R4_axis_in_R2[1];
 
-			imp_->puma_param.mp_offset[2] = atan2(s, c);
+			imp_->puma_param.mp_offset[2] = std::atan2(s, c);
 			imp_->puma_param.mp_factor[2] = R3_mak_on_L3 == imp_->R3->makI() ? 1.0 : -1.0;
 
 			// 看看2轴和3轴是否反向 //
@@ -497,7 +495,7 @@ namespace aris::dynamic
 			s = R2_z_axis_in_R4[0] * pm[6] - R2_z_axis_in_R4[1] * pm[2];// x cross R2R3
 			c = R2_z_axis_in_R4[0] * pm[2] + R2_z_axis_in_R4[1] * pm[6];
 
-			imp_->puma_param.mp_offset[3] = atan2(s, c);
+			imp_->puma_param.mp_offset[3] = std::atan2(s, c);
 			imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == imp_->R4->makI() ? 1.0 : -1.0;
 
 			// mp_offset[4] 应该能让R5把R6轴线转到和R4轴一致
@@ -509,7 +507,7 @@ namespace aris::dynamic
 			s = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[1] - R4_z_axis_in_R5[1] * R6_z_axis_in_R5[0];// x cross R2R3
 			c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
 
-			imp_->puma_param.mp_offset[4] = atan2(s, c);
+			imp_->puma_param.mp_offset[4] = std::atan2(s, c);
 			imp_->puma_param.mp_factor[4] = R5_mak_on_L5 == imp_->R5->makI() ? 1.0 : -1.0;
 
 			// mp_offset[5] 可以随便设

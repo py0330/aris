@@ -181,6 +181,8 @@ namespace aris::dynamic{
 	auto Model::forwardKinematics()noexcept->int { return solverPool()[1].kinPos(); }
 	auto Model::inverseKinematicsVel()noexcept->int { return solverPool()[0].kinVel(); }
 	auto Model::forwardKinematicsVel()noexcept->int { return solverPool()[1].kinVel(); }
+	auto Model::inverseKinematicsAcc()noexcept->int { return solverPool()[0].dynAccAndFce(); }
+	auto Model::forwardKinematicsAcc()noexcept->int { return solverPool()[1].dynAccAndFce(); }
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	auto Model::inputPosSize()const noexcept->Size { return imp_->actuator_pos_size_; }
@@ -199,10 +201,7 @@ namespace aris::dynamic{
 	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
 	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }
 	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_dim_; }
-	auto Model::setOutputPos(const double *mp)noexcept->void { 
-		for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i)
-			generalMotionPool()[i].setP(mp + pos);
-	}
+	auto Model::setOutputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].setP(mp + pos);	}
 	auto Model::getOutputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].getP(mp + pos); }
 	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setV(mv + pos); }
 	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getV(mv + pos); }

@@ -13,31 +13,39 @@ namespace aris::dynamic
 	// 2轴、3轴、4轴平行
 	// 4轴、5轴垂直且交于一点： B点
 	// 5轴、6轴垂直且交于一点： C点
-	//                                           x    EE
-	//                                           ^ z
-	//                                         \ |/
-	//                                         . *----> y
-	//                                       W2 /
-	//                                       . /
-	//                                      \ /
-	//                                   --- o y6
-	//                                     . *
-	//                                    H2 *
-	//                                     . *
-	//                                   --\ | z5
-	//                                    . * 
-	//                                  W1 * 
-	//                                  . * 
-	//        y2                       \ * 
-	//   ---  o *** L1 *** o *** L2 *** o                  
-	//    .   |                                                          
-	//    .   z1           y3           y4                              
-	//    H1
+	//
+	//
+	//        | ....W1....|....W2...|
+	//                              x
+	//                              ^    tool_0 坐标系
+	//                    y6 轴     |  
+	//   ---              - * * * * *----> z
+	//    .               *        /
+	//    H2              *       y
+	//    .               *
+	//    .  y4 轴        *
+	//   ---  - * * * * * |  z5 轴                       
+	//    .   *                    
+	//    L2  *                             
+	//    .   *                          
+	//    .   *                             
+	//   ---  -  y3 轴                     
+	//    .   *                          
+	//	  L1  *                         
+	//    .   *                       
+	//    .   *                     
+	//   ---  -  y2 轴
+	//    .   *    
+	//    .   *         
+	//    H1  |  z1 轴
 	//    .   z
-	//    .   ^ y
-	//    .   |/
-	//   ---  *----> x
-	//       O
+	//    .   ^ 
+	//    .   |
+	//   ---  *----> y
+	//       /
+	//      x
+	//
+	//      wobj_0
 	struct ARIS_API UrParam{
 		// DH PARAM, default is ur5 //
 		double H1{ 0.089159 };
@@ -63,11 +71,7 @@ namespace aris::dynamic
 	};
 	auto ARIS_API createModelUr(const UrParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
-
-
-
-	class ARIS_API UrInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
-	{
+	class ARIS_API UrInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;

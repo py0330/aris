@@ -6,6 +6,7 @@
 #include "test_dynamic_model_coordinate.h"
 #include "test_dynamic_model_solver.h"
 #include "test_dynamic_model_solver_puma.h"
+#include "test_dynamic_model_solver_ur.h"
 #include "test_dynamic_model_solver_delta.h"
 #include "test_dynamic_model_solver_seven_axis.h"
 #include "test_dynamic_model_solver_stewart.h"
@@ -17,16 +18,17 @@
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
-	test_screw();
-	test_spline();
-	test_plan();
-	test_model();
-	test_model_coordinate();
-	test_model_interaction();
-	test_model_solver();
-	test_model_solver_universal();
-	//test_model_solver_puma();
+	//test_matrix();
+	//test_screw();
+	//test_spline();
+	//test_plan();
+	//test_model();
+	//test_model_coordinate();
+	//test_model_interaction();
+	//test_model_solver();
+	//test_model_solver_universal();
+	test_model_solver_puma();
+	test_model_solver_ur();
 	//test_model_solver_delta();
 	//test_model_solver_seven_axis();
 	//test_model_solver_stewart();

@@ -364,8 +364,7 @@ namespace aris::dynamic
 
 
 
-	struct UrParamLocal
-	{
+	struct UrParamLocal{
 		// UR的机构有如下特点：
 		// 1轴和2轴垂直且交于一点： A点
 		// 2轴、3轴、4轴平行
@@ -386,7 +385,10 @@ namespace aris::dynamic
 		// d3：C点（4轴5轴的交点）和D点（5轴6轴的交点），到A坐标系xz平面的距离，即 0 位处，C和D在A坐标系内的 y 分量，C和D的连线平行于xz平面
 		// d4：D点到B点的距离，注意这里是z轴为正
 		
-		double L1, L2, W1, H2;
+		double L1;
+		double L2;
+		double W1;
+		double H2;
 
 		double pm_A_in_Ground[16];
 		double pm_EE_in_D[16];
@@ -396,19 +398,138 @@ namespace aris::dynamic
 		double mp_factor[6];
 	};
 
+	// UR的机构有如下特点：
+	// 1轴和2轴垂直且交于一点： A点
+	// 2轴、3轴、4轴平行
+	// 4轴、5轴垂直且交于一点： B点
+	// 5轴、6轴垂直且交于一点： C点
+	//                                           x    EE
+	//                                           ^ z
+	//                                         \ |/
+	//                                         . *----> y
+	//                                       W2 /
+	//                                       . /
+	//                                      \ /
+	//                                   --- o y6
+	//                                     . *
+	//                                    H2 *
+	//                                     . *
+	//                                   --\ | z5
+	//                                    . * 
+	//                                  W1 * 
+	//                                  . * 
+	//        y2                       \ * 
+	//   ---  o *** L1 *** o *** L2 *** o  
+	//    .   |
+	//    .   z1           y3           y4 
+	//    H1
+	//    .   z
+	//    .   ^ y
+	//    .   |/
+	//   ---  *----> x
+	//       O
+	auto inverseUr(const UrParamLocal &param, const double*ee_pm, int which_root, double*input)->int {
+		const double &L1 = param.L1;
+		const double &L2 = param.L2;
+		const double &W1 = param.W1;
+		const double &H2 = param.H2;
 
-	auto inverseUr(double*dh, const double*ee_pm, int which_root, double*input)->int {
-		const double d1 = dh[0];
-		const double a2 = dh[1];
-		const double a3 = dh[2];
-		const double d4 = dh[3];
-		const double d5 = dh[4];
-		const double d6 = dh[5];
+		const double *A_pm = param.pm_A_in_Ground;
+		const double *E_pm_in_D = param.pm_EE_in_D;
+
+		const double *offset = param.mp_offset;
+		const double *factor = param.mp_factor;
+
+		double q[6]{ 0 };
+
+		// 将末端设置成D坐标系，同时得到它在A中的表达 //
+		double E_in_A[16];
+		s_inv_pm_dot_pm(A_pm, ee_pm, E_in_A);
+		double D_in_A[16];
+		s_pm_dot_inv_pm(E_in_A, E_pm_in_D, D_in_A);
+
+		// 开始求1轴 //
+		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
+		// 事实上这里可以有2个解
+		if (W1 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return false;
+		if (which_root & 0x04) {
+			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(W1 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
+		}
+		else {
+			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(W1 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
+		}
 
 
+		// 开始求5，6轴 //
+		// 事实上这里也可以有2组解
+		double R1_pm[16];
+		double R23456_pm[16], R23456_pe[6];
+
+		s_pe2pm(std::array<double, 6>{0, 0, 0, q[0], 0, 0}.data(), R1_pm, "321");
+		s_inv_pm_dot_pm(R1_pm, D_in_A, R23456_pm);
+		s_pm2pe(R23456_pm, R23456_pe, "232");
+		if (std::abs(R23456_pe[4] - 0) < 1e-10) // 为了去除奇异点
+		{
+			R23456_pe[5] = (R23456_pe[3] + R23456_pe[5]) > PI ? R23456_pe[3] + R23456_pe[5] - 2 * PI : R23456_pe[3] + R23456_pe[5];
+			R23456_pe[3] = 0.0;
+		}
+		// 选根
+		if (which_root & 0x02)
+		{
+			R23456_pe[3] = R23456_pe[3] > PI ? R23456_pe[3] - PI : R23456_pe[3] + PI;
+			R23456_pe[4] = 2 * PI - R23456_pe[4];
+			R23456_pe[5] = R23456_pe[5] > PI ? R23456_pe[5] - PI : R23456_pe[5] + PI;
+		}
+		q[4] = R23456_pe[4];
+		q[5] = R23456_pe[5];
 
 
-		return 0;
+		// 开始求2，3，4轴 // 
+		double R1234_pm[16], B_in_A[3];
+		s_pe2pm(std::array<double, 6>{0, 0, 0, q[0], R23456_pe[3], 0.0}.data(), R1234_pm, "321");
+		s_vc(3, D_in_A + 3, 4, B_in_A, 1);
+		s_va(3, -H2, R1234_pm + 2, 4, B_in_A, 1);
+		s_va(3, -W1, R1234_pm + 1, 4, B_in_A, 1);
+
+		double B_pos[3];
+		s_inv_pm_dot_v3(R1_pm, B_in_A, B_pos);
+
+		double l_square = B_pos[0] * B_pos[0] + B_pos[2] * B_pos[2];
+		double l = std::sqrt(l_square);
+		if (l > (L1 + L2) || l < (std::max(std::abs(L1), std::abs(L2)) - std::min(std::abs(L1), std::abs(L2))))return false;
+
+
+		if (which_root & 0x01)
+		{
+			q[2] = PI + std::acos((L1 * L1 + L2 * L2 - l_square) / (2 * L1 * L2));
+			q[1] = std::acos((l_square + L1 * L1 - L2 * L2) / (2 * l * L1)) - std::atan2(B_pos[2], B_pos[0]);
+			q[3] = R23456_pe[3] - q[1] - q[2];
+		}
+		else
+		{
+			q[2] = PI - std::acos((L1 * L1 + L2 * L2 - l_square) / (2 * L1 * L2));
+			q[1] = -std::acos((l_square + L1 * L1 - L2 * L2) / (2 * l * L1)) - std::atan2(B_pos[2], B_pos[0]);
+			q[3] = R23456_pe[3] - q[1] - q[2];
+		}
+
+		// 这里让每个电机角度都落在[0，2pi]
+		for (Size i = 0; i < 6; ++i){
+			q[i] = std::fmod(q[i], 2.0 * PI);
+		}
+
+		// 添加所有的偏移 //
+		for (int i = 0; i < 6; ++i) {
+			q[i] -= offset[i];
+			q[i] *= factor[i];
+
+			q[i] = std::fmod(q[i], 2.0 * PI);
+			if (q[i] > PI) q[i] -= 2 * PI;
+			if (q[i] < -PI) q[i] += 2 * PI;
+		}
+
+		// 将q copy到input中
+		s_vc(6, q, input);
+		return true;
 	}
 
 
@@ -760,9 +881,8 @@ namespace aris::dynamic
 			double s = Ax_axis_in_R2[0] * pm[7] - Ax_axis_in_R2[1] * pm[3];// x cross R2R3
 			double c = Ax_axis_in_R2[0] * pm[3] + Ax_axis_in_R2[1] * pm[7];
 
-			imp_->puma_param.mp_offset[1] = atan2(s, c);
+			imp_->puma_param.mp_offset[1] = std::atan2(s, c);
 			imp_->puma_param.mp_factor[1] = R2_mak_on_L2 == imp_->R2->makI() ? 1.0 : -1.0;
-
 
 			// mp_offset[2] 应该能让R3把R2和R4转到同一条直线上
 			double R4_pp_in_R3[3], R2_pp_in_R3[3];
@@ -770,65 +890,141 @@ namespace aris::dynamic
 			s_vc(3, pm + 3, 4, R2_pp_in_R3, 1);
 			R4_mak_on_L3->getPm(*R3_mak_on_L3, pm);
 			s_vc(3, pm + 3, 4, R4_pp_in_R3, 1);
+			imp_->puma_param.mp_offset[2] = -(std::atan2(R2_pp_in_R3[1], R2_pp_in_R3[0]) + aris::PI - std::atan2(R4_pp_in_R3[1], R4_pp_in_R3[0]));
+			imp_->puma_param.mp_factor[2] = R3_mak_on_L3 == imp_->R3->makI() ? 1.0 : -1.0;
 
+			// 看R2和R3是否反向
+			double is_23axes_the_same;
+			R2_mak_on_L2->getPm(*R3_mak_on_L2, pm);
+			is_23axes_the_same = pm[10] > 0.0 ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[2] *= is_23axes_the_same;
 
+			// mp_offset[3] 应该能让R5的z轴在零位处和R1的z轴平行
+			R1_mak_on_L1->getPm(*R2_mak_on_L1, pm);
+			double R1_z_in_R2[3]{ pm[2], pm[6], pm[10] };
+			
+			R2_mak_on_L2->getPm(*R3_mak_on_L2, pm);
+			double R1_z_in_R3_raw[3];
+			s_pm_dot_v3(pm, R1_z_in_R2, R1_z_in_R3_raw);
 
-			///////////////////////////////////////////////////////////////////////////////
+			// 还需考虑 R2 R3 需要自转到零位，所带来的额外的转动 //
+			double rm_R12[9];
+			s_rmz(param.mp_factor[1] * param.mp_offset[1] + param.mp_factor[2] * param.mp_offset[2], rm_R12);
+			double R1_z_in_R3[3];
+			s_mm(3, 1, 3, rm_R12, R1_z_in_R3_raw, R1_z_in_R3);
 
+			double R1_z_in_R4[3];
+			R3_mak_on_L3->getPm(*R4_mak_on_L3, pm);
+			s_pm_dot_v3(pm, R1_z_in_R3, R1_z_in_R4);
+			
+			R5_mak_on_L4->getPm(*R4_mak_on_L4, pm);
+			double R5_z_in_R4[3]{pm[2], pm[6], pm[10]};
 
-			//// 获取 R2R3 连线，在R2下
-			//R3_mak_on_L2->getPm(*R2_mak_on_L2, pm);
+			imp_->puma_param.mp_offset[3] = -std::atan2(R1_z_in_R4[1], R1_z_in_R4[0]) + std::atan2(R5_z_in_R4[1], R5_z_in_R4[0]);
+			imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == imp_->R4->makI() ? 1.0 : -1.0;
 
-			//// R4的z轴和 x_axis_in_R3 的夹角就是offset
-			//s = pm[3] * R4_axis_in_R2[1] - pm[7] * R4_axis_in_R2[0];// x cross R2R3
-			//c = pm[3] * R4_axis_in_R2[0] + pm[7] * R4_axis_in_R2[1];
+			// 看R3和R4是否反向
+			double is_34axes_the_same;
+			R3_mak_on_L3->getPm(*R4_mak_on_L3, pm);
+			is_34axes_the_same = pm[10] > 0.0 ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[3] *= is_23axes_the_same * is_34axes_the_same;
 
-			//imp_->puma_param.mp_offset[2] = atan2(s, c);
-			//imp_->puma_param.mp_factor[2] = R3_mak_on_L3 == imp_->R3->makI() ? 1.0 : -1.0;
+			// mp_offset[4] 应该能让R6的z轴转到R4的z轴上，但方向应考虑R4有可能和R2不同向的情况
+			double R6_z_axis_in_R5[3], R4_z_axis_in_R5[3];
+			R6_mak_on_L5->getPm(*R5_mak_on_L5, pm);
+			s_vc(3, pm + 2, 4, R6_z_axis_in_R5, 1);
+			R4_mak_on_L4->getPm(*R5_mak_on_L4, pm);
+			s_vc(3, is_23axes_the_same * is_34axes_the_same, pm + 2, 4, R4_z_axis_in_R5, 1);
+			s = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[1] - R4_z_axis_in_R5[1] * R6_z_axis_in_R5[0];// x cross R2R3
+			c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
 
-			//// 看看2轴和3轴是否反向 //
-			//bool is_23axes_the_same;
-			//R2_mak_on_L2->getPm(*R3_mak_on_L2, pm);
-			//is_23axes_the_same = pm[10] > 0.0 ? true : false;
-			//imp_->puma_param.mp_factor[2] *= is_23axes_the_same ? 1.0 : -1.0;
+			imp_->puma_param.mp_offset[4] = atan2(s, c);
+			imp_->puma_param.mp_factor[4] = R5_mak_on_L5 == imp_->R5->makI() ? 1.0 : -1.0;
 
-			//// mp_offset[3] 应该能让R4把R5轴线转到和R2轴一致
-			//double R2_z_axis_in_R3[3], R2_z_axis_in_R4[3];
-			//R2_mak_on_L2->getPm(*R3_mak_on_L2, pm);
-			//s_vc(3, pm + 2, 4, R2_z_axis_in_R3, 1);
-			//R3_mak_on_L3->getPm(*R4_mak_on_L3, pm);
-			//s_pm_dot_v3(pm, R2_z_axis_in_R3, R2_z_axis_in_R4);
-			//R5_mak_on_L4->getPm(*R4_mak_on_L4, pm);
-
-			//s = R2_z_axis_in_R4[0] * pm[6] - R2_z_axis_in_R4[1] * pm[2];// x cross R2R3
-			//c = R2_z_axis_in_R4[0] * pm[2] + R2_z_axis_in_R4[1] * pm[6];
-
-			//imp_->puma_param.mp_offset[3] = atan2(s, c);
-			//imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == imp_->R4->makI() ? 1.0 : -1.0;
-
-			//// mp_offset[4] 应该能让R5把R6轴线转到和R4轴一致
-			//double R6_z_axis_in_R5[3], R4_z_axis_in_R5[3];
-			//R6_mak_on_L5->getPm(*R5_mak_on_L5, pm);
-			//s_vc(3, pm + 2, 4, R6_z_axis_in_R5, 1);
-			//R4_mak_on_L4->getPm(*R5_mak_on_L4, pm);
-			//s_vc(3, pm + 2, 4, R4_z_axis_in_R5, 1);
-			//s = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[1] - R4_z_axis_in_R5[1] * R6_z_axis_in_R5[0];// x cross R2R3
-			//c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
-
-			//imp_->puma_param.mp_offset[4] = atan2(s, c);
-			//imp_->puma_param.mp_factor[4] = R5_mak_on_L5 == imp_->R5->makI() ? 1.0 : -1.0;
-
-			//// mp_offset[5] 可以随便设
-			//imp_->puma_param.mp_offset[5] = 0.0;
-			//imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
+			// mp_offset[5] 应该能让R5的z轴转到垂直于R3R4连线上
+			imp_->puma_param.mp_offset[5] = 0.0;
+			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
 		}
-
-
 	}
 	auto UrInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void{	imp_->which_root_ = root_of_0_to_7; }
 	auto UrInverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto UrInverseKinematicSolver::kinPos()->int {
-		return UrInverseKinematic(*model(), UniversalSolver::imp_->subsys_pool_.at(0), imp_->which_root_); };
+		if (imp_->which_root_ == 8) {
+			int solution_num = 0;
+			double diff_q[8][6];
+			double diff_norm[8];
+
+			for (int i = 0; i < 8; ++i) {
+				if (inverseUr(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num])) {
+					diff_norm[solution_num] = 0;
+					for (int j = 0; j < 6; ++j) {
+						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
+
+						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
+						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
+
+						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
+					}
+
+					++solution_num;
+				}
+			}
+
+			if (solution_num == 0) return -1;
+
+			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
+
+			for (aris::Size i = 0; i < 6; ++i) {
+				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
+					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
+					s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
+					imp_->parts[i + 1]->setPm(pm_prt_i);
+				}
+				else {
+					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
+					s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
+					imp_->parts[i + 1]->setPm(pm_prt_j);
+				}
+
+				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
+			}
+
+			return 0;
+		}
+		else {
+			if (double q[6]; inverseUr(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q)) {
+				for (aris::Size i = 0; i < 6; ++i) {
+					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
+						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
+						imp_->parts[i + 1]->setPm(pm_prt_i);
+					}
+					else {
+						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
+						imp_->parts[i + 1]->setPm(pm_prt_j);
+					}
+
+					double last_mp = imp_->motions[i]->mpInternal();
+					imp_->motions[i]->updP();
+
+					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
+					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
+				}
+
+				return 0;
+			}
+			else return -2;
+		}
+	};
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
 	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(UrInverseKinematicSolver);
@@ -841,14 +1037,12 @@ namespace aris::dynamic
 		model->environment().setGravity(gravity);
 
 		// compute ee info //
-		const double axis_6_pe[6]{ param.L1 + param.L2, param.W1 + param.W2, param.H1 + param.H2, -PI/2, -PI / 2, 0 };
-		double axis_6_pm[16];
-		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-
-		s_pe2pm(axis_6_pe, axis_6_pm, "321");
-		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
-		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
+		double ee_i_pm[16]{
+			0,1,0,0,
+			0,0,1,param.W1 + param.W2,
+			1,0,0,param.L1 + param.L2 + param.H1 + param.H2,
+			0,0,0,1 };
 
 		// add parts //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
@@ -861,12 +1055,19 @@ namespace aris::dynamic
 			ee_i_pm);
 		
 		// add joints //
-		const double j1_pos[3]{      0.0,                 0.0, param.H1 };
-		const double j2_pos[3]{      0.0,                 0.0, param.H1 };
-		const double j3_pos[3]{ param.L1,                 0.0, param.H1 + 0.1 };
-		const double j4_pos[3]{ param.L1 + param.L2,      0.0, param.H1 };
-		const double j5_pos[3]{ param.L1 + param.L2, param.W1, param.H1 };
-		const double j6_pos[3]{ param.L1 + param.L2, param.W1, param.H1 + param.H2 };
+		//const double j1_pos[3]{      0.0,                 0.0, param.H1 };
+		//const double j2_pos[3]{      0.0,                 0.0, param.H1 };
+		//const double j3_pos[3]{ param.L1,                 0.0, param.H1 + 0.1 };
+		//const double j4_pos[3]{ param.L1 + param.L2,      0.0, param.H1 };
+		//const double j5_pos[3]{ param.L1 + param.L2, param.W1, param.H1 };
+		//const double j6_pos[3]{ param.L1 + param.L2, param.W1, param.H1 + param.H2 };
+
+		const double j1_pos[3]{ 0.0,      0.0, param.H1                                  };
+		const double j2_pos[3]{ 0.0,      0.0, param.H1                                  };
+		const double j3_pos[3]{ 0.0,      0.0, param.H1 + param.L1                       };
+		const double j4_pos[3]{ 0.0,      0.0, param.H1 + param.L1 + param.L2            };
+		const double j5_pos[3]{ 0.0, param.W1, param.H1                                  };
+		const double j6_pos[3]{ 0.0, param.W1, param.H1 + param.L1 + param.L2 + param.H2 };
 
 		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
 		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
