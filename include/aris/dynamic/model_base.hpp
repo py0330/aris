@@ -1,20 +1,7 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_BASE_H_
 #define ARIS_DYNAMIC_MODEL_BASE_H_
 
-namespace aris::dynamic
-{
-	class ARIS_API EndEffectorBase{
-	public:
-		auto virtual dim()const noexcept->Size { return 0; };
-		auto virtual pSize()const noexcept->Size { return dim(); }
-		auto virtual p()const noexcept->const double* { return nullptr; }
-		auto virtual setP(const double *mp) noexcept->void {}
-		auto virtual v()const noexcept->const double* { return nullptr; }
-		auto virtual setV(const double *mp) noexcept->void {}
-		auto virtual a()const noexcept->const double* { return nullptr; }
-		auto virtual setA(const double *mp) noexcept->void {}
-	};
-
+namespace aris::dynamic{
 	class ARIS_API ModelBase{
 	public:
 		// kinematics & dynamics //
@@ -22,6 +9,8 @@ namespace aris::dynamic
 		auto virtual forwardKinematics()noexcept->int { return -1; }
 		auto virtual inverseKinematicsVel()noexcept->int { return -1; }
 		auto virtual forwardKinematicsVel()noexcept->int { return -1; }
+		auto virtual inverseKinematicsAcc()noexcept->int { return -1; }
+		auto virtual forwardKinematicsAcc()noexcept->int { return -1; }
 		auto virtual inverseDynamics()noexcept->int { return -1; }
 		auto virtual forwardDynamics()noexcept->int { return -1; }
 
