@@ -75,7 +75,7 @@ namespace aris::dynamic{
 		ScaraInverseKinematicSolver() = default;
 	};
 
-	auto ARIS_API createModelScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model> {
+	auto createModelScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b }));
@@ -160,7 +160,21 @@ namespace aris::dynamic{
 		model->init();
 		return model;
 	}
+	auto calibModelByTwoPoints(aris::dynamic::Model& scara, const double* points, std::string_view tool_name)->int {
+		double result[2];
+		if (s_calib_tool_two_pnts(points, result))return -1;
 
+		auto tool = scara.generalMotionPool()[0].makI()->fatherPart().findMarker(tool_name);
+		auto tool0 = scara.generalMotionPool()[0].makI()->fatherPart().findMarker("tool0");
+		if (!tool || !tool0)return -2;
+
+		// 只改变相对于tool0的x和y //
+		double pm[16];
+		tool->getPm(*tool0, pm);
+		s_vc(2, result, 1, pm + 3, 4);
+		tool->setPrtPm(s_pm_dot_pm(*tool0->prtPm(), pm));
+		return 0;
+	}
 
 	ARIS_REGISTRATION{
 		aris::core::class_<ScaraInverseKinematicSolver>("ScaraInverseKinematicSolver")

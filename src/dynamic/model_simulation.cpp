@@ -364,7 +364,7 @@ namespace aris::dynamic
 	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset){
 		const auto[pos_at, vel_at, fce_at, mot_data_num] = clb->dataIndex();
 		const auto filter_size = clb->filterWindowSize();
-		const int mot_num = clb->model()->motionPool().size();
+		const int mot_num = (int)clb->model()->motionPool().size();
 		const auto torque_constant = clb->torqueConstant();
 		const auto line_num = mot_num * mot_data_num;
 		const double dt = 0.001;
@@ -1847,7 +1847,7 @@ namespace aris::dynamic
 			;
 
 		auto to_data_idx = [](Calibrator *obj, aris::core::Matrix data_idx)->void {
-			obj->setDataIndex(data_idx.data()[0], data_idx.data()[1], data_idx.data()[2], data_idx.data()[3]);
+			obj->setDataIndex((int)data_idx.data()[0], (int)data_idx.data()[1], (int)data_idx.data()[2], (int)data_idx.data()[3]);
 		};
 		auto from_data_idx = [](Calibrator *obj)->aris::core::Matrix {
 			return aris::core::Matrix{
