@@ -59,6 +59,15 @@ namespace aris::dynamic{
 		const double &d = param[3];
 		const double &e = param[4];
 
+		// 在所有的输入都为0的时候，以下方法的k矩阵奇异，因此需要特殊处理：
+		if (std::abs(input[0] - 0.0) < 1e-5 && std::abs(input[1] - 0.0) < 1e-5 && std::abs(input[2] - 0.0) < 1e-5) {
+			ee_xyza[0] = 0.0;
+			ee_xyza[1] = 0.0;
+			ee_xyza[2] = -std::sqrt(d*d - (a + b - e)*(a + b - e));
+			ee_xyza[3] = input[3];
+			return 0;
+		}
+
 		// 记p1 为 S1 S2 的中点位置，p2为末端到 S3 S4 中点的向量
 		//
 		// 于是对其中某一根支联，应有以下方程：
@@ -71,7 +80,7 @@ namespace aris::dynamic{
 		//
 		// 展开：
 		//   x^2 + 2k0 x + k0^2 + y^2 + 2k1 x + k1^2 + z^2 + 2k2 z + k2^2 = d^2
-		//   
+		// 
 		// 若记: t = x^2 + y^2 + z^2
 		//       s = d^2 - k0^2 - k1^2 - k2^2
 		//       k = 2k
@@ -81,7 +90,7 @@ namespace aris::dynamic{
 		//
 		// 对3根支联列方程：
 		//   [ k00 k01 k02 ]   [ x ]   [ s1 - t ]
-		//   | k10 k11 k12 | * | y ] = | s2 - t |
+		//   | k10 k11 k12 | * | y | = | s2 - t |
 		//   [ k20 k21 k22 ]   [ z ]   [ s3 - t ]
 		//
 		// 记做：
@@ -90,7 +99,7 @@ namespace aris::dynamic{
 		//
 		// 于是：
 		//    x = K^-1 * (b - t) = [ g1 + h1 * t ]
-		//                         | g2 + h2 * t | 
+		//                         | g2 + h2 * t |
 		//                         [ g3 + h3 * t ]
 		//
 		// 继而有：
@@ -99,15 +108,14 @@ namespace aris::dynamic{
 		// 于是有：
 		//    A t^2 + B t + C = 0
 		// 其中：
-		//   A：(h1^2 + h2^2 + h3^2)
-		//   B: (2 h1 g1 + 2 h1 g1 + 2 h1 g1) - 1
-		//   C: (g1^2 + g2^2 + g3^2)
+		//    A：(h1^2 + h2^2 + h3^2)
+		//    B: (2 h1 g1 + 2 h1 g1 + 2 h1 g1) - 1
+		//    C: (g1^2 + g2^2 + g3^2)
 		//
 		// 用以上1元2次方程求解出t
 		//
 		// 进一步的，有：
 		// [x; y; z] = g + h * t
-
 
 		// 每根支联的转角
 		const double theta[] = { 0.0, PI * 2 / 3, -PI * 2 / 3 };
@@ -626,7 +634,6 @@ namespace aris::dynamic{
 		model->init();
 		return model;
 	}
-
 
 	ARIS_REGISTRATION{
 		aris::core::class_<DeltaInverseKinematicSolver>("DeltaInverseKinematicSolver")
