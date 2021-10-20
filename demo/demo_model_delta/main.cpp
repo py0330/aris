@@ -68,7 +68,7 @@ int main(){
 	aris::dynamic::dsp(1, 4, input);
 
 	//////////////////// 正解 ////////////////////
-
+	std::fill_n(input, 4, 0.00);
 	m1->setInputPos(input);
 	if (m1->forwardKinematics())
 		std::cout << "failed" << std::endl;
