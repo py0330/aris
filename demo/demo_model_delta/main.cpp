@@ -44,12 +44,27 @@ int main(){
 	//
 
 
-	aris::dynamic::DeltaParam param;
-	param.a = 0.5;
-	param.b = 0.2;
-	param.c = 0.1;
-	param.d = 0.7;
-	param.e = 0.1;
+	aris::dynamic::DeltaFullParam param;
+	param.a1 = 0.53;
+	param.b1 = 0.21;
+	param.c1 = 0.1;
+	param.d1 = 0.67;
+	param.e1 = 0.08;
+	param.theta1 = 0.1;
+
+	param.a2 = 0.49;
+	param.b2 = 0.205;
+	param.c2 = 0.11;
+	param.d2 = 0.71;
+	param.e2 = 0.1;
+	param.theta2 = aris::PI * 2 / 3 - 0.01;
+
+	param.a3 = 0.5;
+	param.b3 = 0.2;
+	param.c3 = 0.12;
+	param.d3 = 0.73;
+	param.e3 = 0.09;
+	param.theta3 = -aris::PI * 2 / 3 +0.05;
 	auto m1 = aris::dynamic::createModelDelta(param);
 
 	//////////////////// 反解 ////////////////////
@@ -68,13 +83,21 @@ int main(){
 	aris::dynamic::dsp(1, 4, input);
 
 	//////////////////// 正解 ////////////////////
-	std::fill_n(input, 4, 0.00);
-	m1->setInputPos(input);
+	double tem[4]{ 0.0000101,0,0,0 };
+	m1->setInputPos(tem);
 	if (m1->forwardKinematics())
 		std::cout << "failed" << std::endl;
 
+	//0.07494404685677   0.00605077149338   -0.32691906113662   0.00000000000000
+
 	// 以前的方法仍然可以使用，即用 generalMotionPool()[0]  来访问
 	double output[4];
+	m1->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+
+	m1->setInputPos(input);
+	if (m1->forwardKinematics())
+		std::cout << "failed" << std::endl;
 	m1->getOutputPos(output);
 	aris::dynamic::dsp(1, 4, output);
 
