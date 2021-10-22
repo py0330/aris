@@ -8,10 +8,8 @@ using namespace aris::core;
 
 void test_socket_multi_thread()
 {
-	auto test_func = [](aris::core::Socket::TYPE type)->void
-	{
-		try
-		{
+	auto test_func = [](aris::core::Socket::TYPE type)->void{
+		try{
 			Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
 
 			enum { THREAD_NUM = 8 };
@@ -19,13 +17,11 @@ void test_socket_multi_thread()
 			int request_round[THREAD_NUM]{ 0 };
 			int request_answer[THREAD_NUM]{ 0 };
 			std::atomic_bool lose_executed{ false }, connect_executed{ false };
-			server.setOnReceivedConnection([&](Socket*, const char*, int)
-			{
+			server.setOnReceivedConnection([&](Socket*, const char*, int){
 				connect_executed = true;
 				return 0;
 			});
-			server.setOnReceivedMsg([&](Socket *, Msg &msg)
-			{
+			server.setOnReceivedMsg([&](Socket *, Msg &msg){
 				std::string str(msg.data(), msg.size());
 				std::stringstream ss(str);
 				std::string word;
@@ -44,8 +40,7 @@ void test_socket_multi_thread()
 
 				return 0;
 			});
-			server.setOnReceivedRawData([&](Socket *, const char *data, int size)
-			{
+			server.setOnReceivedRawData([&](Socket *, const char *data, int size){
 				std::string str(data, size);
 				std::stringstream ss(str);
 				std::string word;
@@ -64,8 +59,7 @@ void test_socket_multi_thread()
 
 				return 0;
 			});
-			server.setOnLoseConnection([&](Socket*)
-			{
+			server.setOnLoseConnection([&](Socket*){
 				lose_executed = true;
 				return 0;
 			});
@@ -76,54 +70,44 @@ void test_socket_multi_thread()
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			std::future<void> ft_message[THREAD_NUM];
-			for (auto i = 0; i < THREAD_NUM; ++i)
-			{
-				ft_message[i] = std::async(std::launch::async, [&client, i]()
-				{
-					for (auto j = 0; j < 400; j += 4)
-					{
+			for (auto i = 0; i < THREAD_NUM; ++i){
+				ft_message[i] = std::async(std::launch::async, [&client, i](){
+					for (auto j = 0; j < 400; j += 4){
 						Msg msg("message " + std::to_string(i) + " count " + std::to_string(j));
 						
-						try 
-						{
+						try{
 							client.sendMsg(msg);
 						}
 						catch (std::exception &)
-						{
-
-						}
+						{}
 						
-						try
-						{
+						try{
 							client.sendRawData(msg.data(), msg.size());
 						}
 						catch (std::exception &)
-						{
-
-						}
+						{}
 					}
-						
 				});
 			}
 			for (auto i = 0; i < THREAD_NUM; ++i) ft_message[i].wait();
 			client.stop();
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			for (auto i = 0; i < THREAD_NUM; ++i)
-			{
+			std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+			for (auto i = 0; i < THREAD_NUM; ++i){
 				if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			}
 
 			if (!connect_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW) )std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			if (!lose_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW))std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 		}
-		catch (std::exception &e)
-		{
+		catch (std::exception &e){
 			std::cout << e.what();
 		}
 	};
 
 	std::cout << "test tcp" << std::endl;
 	test_func(aris::core::Socket::TCP);
+	std::cout << "test tcp raw" << std::endl;
+	test_func(aris::core::Socket::TCP_RAW);
 	std::cout << "test udp" << std::endl;
 	test_func(aris::core::Socket::UDP);
 	std::cout << "test udp raw" << std::endl;

@@ -10,9 +10,9 @@
 
 int main(int argc, char *argv[])
 {
-	test_object();
+	//test_object();
 	//test_msg();
-	//test_socket();
+	test_socket();
 	//test_pipe();
 	//test_log();
 	//test_command();

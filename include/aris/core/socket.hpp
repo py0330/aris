@@ -5,22 +5,19 @@
 #include <aris/core/object.hpp>
 #include <aris/core/msg.hpp>
 
-namespace aris::core
-{
-	class ARIS_API Socket
-	{
+namespace aris::core{
+	class ARIS_API Socket{
 	public:
-		enum State
-		{
+		enum State{
 			IDLE = 0,
 			WAITING_FOR_CONNECTION,
 			WORKING,
 		};
-		enum TYPE
-		{
+		enum TYPE{
 			TCP,
 			UDP,
 			WEB,
+			TCP_RAW,
 			UDP_RAW,
 			WEB_RAW
 		};
