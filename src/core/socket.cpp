@@ -38,10 +38,20 @@
 #include "aris/core/log.hpp"
 #include "aris/core/sha1.h"
 
-namespace aris::core
-{
-	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int
-	{
+
+#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept"}
+#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"}
+#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"}
+#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"}
+#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"}
+#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"}
+#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"}
+#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"}
+
+namespace aris::core{
+	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int{
 #ifdef WIN32
 		auto ret = closesocket(s);
 #endif
@@ -50,14 +60,11 @@ namespace aris::core
 #endif
 		return ret;
 	}
-	auto safe_recv(decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
-	{
+	auto safe_recv(decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int{
 		int result{ 0 };
-		for (; result < size; )
-		{
+		for (; result < size; ){
 			int ret = recv(s, data + result, size - result, 0);
-			if (ret <= 0)
-			{
+			if (ret <= 0){
 				close_sock(s);
 				result = ret;
 				break;
@@ -73,8 +80,7 @@ namespace aris::core
 	// https://www.cnblogs.com/chyingp/p/websocket-deep-in.html
 	// sha1 hash 生成出来的是纯数字，可以把它改成2进制来保存
 	// 
-	std::string base64_encode2(unsigned char const* bytes_to_encode, unsigned int in_len)
-	{
+	std::string base64_encode2(unsigned char const* bytes_to_encode, unsigned int in_len){
 		static const std::string base64_chars =
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			"abcdefghijklmnopqrstuvwxyz"
@@ -100,8 +106,7 @@ namespace aris::core
 			}
 		}
 
-		if (i)
-		{
+		if (i){
 			for (j = i; j < 3; j++)
 				char_array_3[j] = '\0';
 
@@ -120,18 +125,15 @@ namespace aris::core
 		return ret;
 
 	}
-	auto pack_data_server(const char *data, int size)->std::string
-	{
+	auto pack_data_server(const char *data, int size)->std::string{
 		std::string s;
-		if (size < 126)
-		{
+		if (size < 126){
 			s.resize(size + 2);
 			s[0] = char(0x82);// binary data, 0x81 is text data
 			s[1] = char(size);
 			std::copy_n(data, size, &s[2]);
 		}
-		else if (size < 0xFFFF)
-		{
+		else if (size < 0xFFFF){
 			s.resize(size + 4);
 			s[0] = char(0x82);
 			s[1] = char(126);
@@ -139,8 +141,7 @@ namespace aris::core
 			s[3] = size & 0xFF;
 			std::copy_n(data, size, &s[4]);
 		}
-		else
-		{
+		else{
 			s.resize(size + 10);
 			s[0] = char(0x82);
 			s[1] = char(127);
@@ -157,18 +158,15 @@ namespace aris::core
 
 		return s;
 	};
-	auto pack_data_client(const char *data, int size)->std::string
-	{
+	auto pack_data_client(const char *data, int size)->std::string{
 		std::string s;
-		if (size < 126)
-		{
+		if (size < 126){
 			s.resize(size + 6);
 			s[0] = char(0x82);// binary data, 0x81 is text data
 			s[1] = char(size) | char(0x80);
 			std::copy_n(data, size, &s[6]);
 		}
-		else if (size < 0xFFFF)
-		{
+		else if (size < 0xFFFF){
 			s.resize(size + 8);
 			s[0] = char(0x82);
 			s[1] = char(126) | char(0x80);
@@ -176,8 +174,7 @@ namespace aris::core
 			s[3] = size & 0xFF;
 			std::copy_n(data, size, &s[8]);
 		}
-		else
-		{
+		else{
 			s.resize(size + 14);
 			s[0] = char(0x82);
 			s[1] = char(127) | char(0x80);
@@ -193,34 +190,28 @@ namespace aris::core
 		}
 
 		std::fill_n(&s[s.size() - size - 4], 4, 0xf0);
-		for (int i = 0; i < size; ++i)
-		{
+		for (int i = 0; i < size; ++i){
 			s[i + s.size() - size] = s[i + s.size() - size] ^ s[s.size() - size - 4 + i % 4];
 		}
 
 		return s;
 	};
-	auto make_header_map(const std::string &hand_shake_text)->std::map<std::string, std::string>
-	{
+	auto make_header_map(const std::string &hand_shake_text)->std::map<std::string, std::string>{
 		std::istringstream istream(hand_shake_text);
 
 		// 找到Sec-WebSocket-Key //
 		std::map<std::string, std::string> header_map;
 		std::string header;
-		while (std::getline(istream, header) && header != "\r")
-		{
-			if (header[header.size() - 1] != '\r')
-			{
+		while (std::getline(istream, header) && header != "\r"){
+			if (header[header.size() - 1] != '\r'){
 				continue; //end
 			}
-			else
-			{
+			else{
 				header.erase(header.end() - 1);    //remove last char
 			}
 
 			auto end = header.find(": ", 0);
-			if (end != std::string::npos)
-			{
+			if (end != std::string::npos){
 				std::string key = header.substr(0, end);
 				std::string value = header.substr(end + 2);
 				header_map[key] = value;
@@ -230,8 +221,7 @@ namespace aris::core
 		return header_map;
 	}
 
-	struct Socket::Imp
-	{
+	struct Socket::Imp{
 		Socket* socket_;
 		Socket::State state_;
 		Socket::TYPE type_;
@@ -265,16 +255,13 @@ namespace aris::core
 		static void receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready);
 		static void acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready);
 
-		auto lose_tcp()->void
-		{
+		auto lose_tcp()->void{
 			// 需要用close_lck 来确保本段代码不会被stop中断 //
 			std::unique_lock<std::mutex> close_lck(close_mutex_, std::defer_lock);
-			if (!close_lck.try_lock())
-			{
+			if (!close_lck.try_lock()){
 				close_sock(recv_socket_);
 			}
-			else
-			{
+			else{
 				shutdown(recv_socket_, 2);
 				close_sock(recv_socket_);
 				
@@ -286,8 +273,7 @@ namespace aris::core
 			}
 		}
 	};
-	auto Socket::Imp::acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready)->void
-	{
+	auto Socket::Imp::acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready)->void{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
@@ -298,34 +284,29 @@ namespace aris::core
 		accept_thread_ready.set_value();
 
 		// 开始建立连接 //
-		for (;;)
-		{
+		for (;;){
 			// 服务器阻塞,直到客户程序建立连接 //
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 			
-			if (imp->recv_socket_ <= 0)
-			{
+			if (imp->recv_socket_ <= 0){
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
-				if (!close_lck.try_lock())
-				{
+				if (!close_lck.try_lock()){
 					close_sock(imp->lisn_socket_);
 					imp->state_ = IDLE;
 					return;
 				}
 
-				LOG_ERROR << "socket failed to accept" << std::endl;
+				//ARIS_LOG(SOCKET_FAILED_ACCEPT);
 				continue;
 			}
 
-			if (imp->type_ == WEB || imp->type_ == WEB_RAW)
-			{
+			if (imp->type_ == WEB || imp->type_ == WEB_RAW){
 				std::this_thread::sleep_for(std::chrono::seconds(3));
 				
 				char recv_data[1024]{ 0 };
 				int res = recv(imp->recv_socket_, recv_data, 1024, 0);
-				if (res <= 0)
-				{
-					LOG_ERROR << "websocket shake hand failed : " << res << std::endl;
+				if (res <= 0){
+					//ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED, res);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -333,13 +314,11 @@ namespace aris::core
 
 				auto header_map = make_header_map(recv_data);
 				std::string server_key;
-				try
-				{
+				try{
 					server_key = header_map.at("Sec-WebSocket-Key");
 				}
-				catch (std::exception &)
-				{
-					LOG_ERROR << "websocket shake hand failed : invalid key" << std::endl;
+				catch (std::exception &){
+					//ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -352,8 +331,7 @@ namespace aris::core
 				std::string hash = checksum.final();
 
 				std::uint32_t message_digest[5];
-				for (int i = 0; i < 20; ++i)
-				{
+				for (int i = 0; i < 20; ++i){
 					char num[5] = "0x00";
 					std::copy_n(hash.data() + i * 2, 2, num + 2);
 					std::uint8_t n = std::stoi(num, 0, 16);
@@ -370,9 +348,8 @@ namespace aris::core
 
 				auto ret = send(imp->recv_socket_, shake_hand.c_str(), static_cast<int>(shake_hand.size()), 0);
 				
-				if (ret == -1)
-				{
-					LOG_ERROR << "websocket shake hand failed : lose connection before hand shake successful" << std::endl;
+				if (ret == -1){
+					//ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION);
 					shutdown(imp->recv_socket_, 2);
 					close_sock(imp->recv_socket_);
 					continue;
@@ -395,8 +372,7 @@ namespace aris::core
 
 		return;
 	}
-	auto Socket::Imp::receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready)->void
-	{
+	auto Socket::Imp::receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready)->void{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
@@ -410,12 +386,9 @@ namespace aris::core
 		recv_msg.resize(1024);
 
 		// 开启接受数据的循环 //
-		for (;;)
-		{
-			switch (imp->type_)
-			{
-			case TCP:
-			{
+		for (;;){
+			switch (imp->type_){
+			case TCP:{
 				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), sizeof(MsgHeader)) <= 0) { imp->lose_tcp(); return; }
 				if (recv_msg.size() > 0x00100000 || recv_msg.size() < 0) { imp->lose_tcp(); return; }
 				recv_msg.resize(recv_msg.size());
@@ -423,11 +396,19 @@ namespace aris::core
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case WEB:
-			{
+			case TCP_RAW: {
+				char data[1024];
+				int ret = recv(imp->recv_socket_, data, 1024, 0);
+				if (ret <= 0) {
+					close_sock(imp->recv_socket_);
+					imp->lose_tcp(); return;
+				}
+				if (ret > 0 && imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
+				break;
+			}
+			case WEB:{
 				std::string payload_data;
-				for (bool fin{ false }; !fin;)
-				{
+				for (bool fin{ false }; !fin;){
 					// 接受头 //
 					char web_head[2];
 					if (safe_recv(imp->recv_socket_, web_head, 2) <= 0) { imp->lose_tcp(); return; }
@@ -441,21 +422,18 @@ namespace aris::core
 
 					// 获取数据长度
 					std::int64_t payload_len = web_head[1] & 0x7F; // 数据长度 
-					if (payload_len == 126)
-					{
+					if (payload_len == 126)	{
 						char length_char[2];
 						if (safe_recv(imp->recv_socket_, length_char, 2) <= 0) { imp->lose_tcp(); return; }
 
-						union
-						{
+						union{
 							std::uint16_t length;
 							char reverse_char[2];
 						};
 						for (int i = 0; i < 2; ++i)reverse_char[i] = length_char[1 - i];
 						payload_len = length;
 					}
-					else if (payload_len == 127)
-					{
+					else if (payload_len == 127){
 						char length_char[8];
 						if (safe_recv(imp->recv_socket_, length_char, 8) <= 0) { imp->lose_tcp(); return; }
 
@@ -465,9 +443,8 @@ namespace aris::core
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
-					{
-						LOG_ERROR << "websocket receive too large or negative object, size:" << payload_len << std::endl;
+					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000){
+						//ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -482,16 +459,14 @@ namespace aris::core
 					payload_data.resize(payload_data.size() + static_cast<std::size_t>(payload_len));
 					if (safe_recv(imp->recv_socket_, payload_data.data() + last_size, static_cast<int>(payload_len)) <= 0) { imp->lose_tcp(); return; }
 
-					for (int i{ 0 }; i<payload_len; ++i)
-					{
+					for (int i{ 0 }; i<payload_len; ++i){
 						payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
 					}
 				}
 
 				//////////////////////////////////保护，最短长度不能小于MsgHeader的数据长度///////////////////////////////
-				if (payload_data.size() < sizeof(aris::core::MsgHeader))
-				{
-					LOG_ERROR << "websocket espect msg, but receive raw data" << std::endl;
+				if (payload_data.size() < sizeof(aris::core::MsgHeader)){
+					//ARIS_LOG(WEBSOCKET_RECEIVE_RAW);
 					break;
 				}
 
@@ -499,22 +474,19 @@ namespace aris::core
 				recv_msg.resize(static_cast<aris::core::MsgSize>(payload_data.size() - sizeof(aris::core::MsgHeader)));
 				std::copy(payload_data.data(), payload_data.data() + payload_data.size(), reinterpret_cast<char*>(&recv_msg.header()));
 
-				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
-				{
-					LOG_ERROR << "websocket receive wrong msg size, msg size:" << recv_msg.size() << "payload size:" << payload_data.size() << std::endl;
+				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader)){
+					//ARIS_LOG(WEBSOCKET_RECEIVE_WRONG_MSG_SIZE, recv_msg.size(), payload_data.size());
 					break;
 				}
 
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case WEB_RAW:
-			{
+			case WEB_RAW:{
 				std::int64_t real_length{ 0 };
 				std::string payload_data;
 
-				for (bool fin{ false }; !fin;)
-				{
+				for (bool fin{ false }; !fin;){
 					// 接受头 //
 					char web_head[2];
 					if (safe_recv(imp->recv_socket_, web_head, 2) <= 0) { imp->lose_tcp(); return; }
@@ -528,21 +500,18 @@ namespace aris::core
 
 					// 获取数据长度
 					std::int64_t payload_len = web_head[1] & 0x7F; // 数据长度 
-					if (payload_len == 126)
-					{
+					if (payload_len == 126){
 						char length_char[2];
 						if (safe_recv(imp->recv_socket_, length_char, 2) <= 0) { imp->lose_tcp(); return; }
 
-						union
-						{
+						union{
 							std::uint16_t length;
 							char reverse_char[2];
 						};
 						for (int i = 0; i < 2; ++i)reverse_char[i] = length_char[1 - i];
 						payload_len = length;
 					}
-					else if (payload_len == 127)
-					{
+					else if (payload_len == 127){
 						char length_char[8];
 						if (safe_recv(imp->recv_socket_, length_char, 8) <= 0) { imp->lose_tcp(); return; }
 
@@ -552,9 +521,8 @@ namespace aris::core
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len > 0x00100000 || payload_len + payload_data.size() > 0x00200000)
-					{
-						LOG_ERROR << "websocket receive too large object" << std::endl;
+					if (payload_len > 0x00100000 || payload_len + payload_data.size() > 0x00200000){
+						//ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
 					}
@@ -569,8 +537,7 @@ namespace aris::core
 					payload_data.resize(payload_data.size() + static_cast<std::size_t>(payload_len));
 					if (safe_recv(imp->recv_socket_, payload_data.data() + last_size, static_cast<int>(payload_len)) <= 0) { imp->lose_tcp(); return; }
 
-					for (int i{ 0 }; i<payload_len; ++i)
-					{
+					for (int i{ 0 }; i<payload_len; ++i){
 						payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
 					}
 				}
@@ -579,40 +546,34 @@ namespace aris::core
 
 				break;
 			}
-			case UDP:
-			{
+			case UDP:{
 				int ret = recvfrom(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 				
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (ret <= 0 && !close_lck.try_lock()) return;
-				if (ret != sizeof(MsgHeader) + recv_msg.size())
-				{
-					LOG_ERROR << "UDP msg size not correct" << std::endl;
+				if (ret != sizeof(MsgHeader) + recv_msg.size()){
+					//ARIS_LOG(SOCKET_UDP_WRONG_MSG_SIZE);
 					continue;
 				}
 				if(ret > 0 && imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case UDP_RAW:
-			{
+			case UDP_RAW:{
 				char data[1024];
 				int ret = recvfrom(imp->recv_socket_, data, 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (ret <= 0 && !close_lck.try_lock()) return;
 				if (ret > 0 && imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
 				break;
-			}
-			}
+			}}
 		}
 	}
-	auto Socket::stop()->void
-	{
+	auto Socket::stop()->void{
 		std::lock(imp_->state_mutex_, imp_->close_mutex_);
 		std::unique_lock<std::recursive_mutex> lck1(imp_->state_mutex_, std::adopt_lock);
 		std::unique_lock<std::mutex> lck2(imp_->close_mutex_, std::adopt_lock);
 
-		switch (imp_->state_)
-		{
+		switch (imp_->state_){
 		case IDLE:
 			break;
 		case WAITING_FOR_CONNECTION:
@@ -620,16 +581,16 @@ namespace aris::core
 			if (imp_->accept_thread_.joinable())imp_->accept_thread_.join();
 			break;
 		case WORKING:
-			switch (connectType())
-			{
+			switch (connectType()){
 			case TCP:
+			case TCP_RAW:
 			case WEB:
 			case WEB_RAW:
-				if (shutdown(imp_->recv_socket_, 2) < 0) LOG_ERROR << "shutdown error:" << errno << std::endl;
+				if (shutdown(imp_->recv_socket_, 2) < 0) /*ARIS_LOG(SOCKET_SHUT_DOWN_ERROR, errno)*/;
 				break;
 			case UDP:
 			case UDP_RAW:
-				if (close_sock(imp_->recv_socket_) < 0) LOG_ERROR << "close error:" << errno << std::endl;
+				if (close_sock(imp_->recv_socket_) < 0) /*ARIS_LOG(SOCKET_SHUT_CLOSE_ERROR, errno)*/;
 				break;
 			}
 
@@ -639,15 +600,13 @@ namespace aris::core
 
 		imp_->state_ = Socket::IDLE;
 	}
-	auto Socket::startServer(const std::string &port)->void
-	{
+	auto Socket::startServer(const std::string &port)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		if (!port.empty())setPort(port);
 		if (this->port().empty())THROW_FILE_LINE("Socket can't Start as server, because it has empty port\n");
 
-		switch (imp_->state_)
-		{
+		switch (imp_->state_){
 		case IDLE:
 			break;
 		default:
@@ -658,9 +617,9 @@ namespace aris::core
 
 		//////////////////////////////////////////////////////////////////////////////////////////////
 		int sock_type;
-		switch (connectType())
-		{
+		switch (connectType()){
 		case TCP:
+		case TCP_RAW:
 		case WEB:
 		case WEB_RAW:
 			sock_type = SOCK_STREAM;
@@ -677,8 +636,7 @@ namespace aris::core
 
 		// linux 下设置keep alive
 #ifdef UNIX
-		if (sock_type == SOCK_STREAM)
-		{
+		if (sock_type == SOCK_STREAM){
 			int tcp_timeout = 10000; //10 seconds before aborting a write()
 			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0)
 				THROW_FILE_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
@@ -698,7 +656,7 @@ namespace aris::core
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
 		}
-#endif		
+#endif
 
 
 		// 设置socketopt选项,使得地址在程序结束后立即可用 //
@@ -710,16 +668,14 @@ namespace aris::core
 		imp_->server_addr_.sin_family = AF_INET;
 		imp_->server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 		imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
-		if (::bind(imp_->lisn_socket_, (struct sockaddr *)(&imp_->server_addr_), sizeof(struct sockaddr)) == -1)
-		{
+		if (::bind(imp_->lisn_socket_, (struct sockaddr *)(&imp_->server_addr_), sizeof(struct sockaddr)) == -1){
 #ifdef WIN32
 			int err = WSAGetLastError();
 #endif
 			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
-		if (connectType() == TCP || connectType() == WEB || connectType() == WEB_RAW)
-		{
+		if (connectType() == TCP || connectType() == TCP_RAW || connectType() == WEB || connectType() == WEB_RAW){
 			// 监听lisn_socket_描述符 //
 			if (listen(imp_->lisn_socket_, 5) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
 
@@ -730,8 +686,7 @@ namespace aris::core
 			imp_->accept_thread_.detach();
 			ready.wait();
 		}
-		else
-		{
+		else{
 			// 因为UDP没法shutdown，所以用非阻塞模式 //
 #ifdef WIN32
 			DWORD read_timeout = 10;
@@ -743,7 +698,6 @@ namespace aris::core
 			read_timeout.tv_usec = 10000;
 			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
 #endif
-
 			imp_->recv_socket_ = imp_->lisn_socket_;
 			
 			std::promise<void> receive_thread_ready;
@@ -754,8 +708,7 @@ namespace aris::core
 
 		return;
 	}
-	auto Socket::connect(const std::string &remote_ip, const std::string &port)->void
-	{
+	auto Socket::connect(const std::string &remote_ip, const std::string &port)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		if (!remote_ip.empty())setRemoteIP(remote_ip);
@@ -763,8 +716,7 @@ namespace aris::core
 		if (remoteIP().empty())THROW_FILE_LINE("Socket can't connect, because it empty ip address\n");
 		if (this->port().empty())THROW_FILE_LINE("Socket can't connect, because it empty port\n");
 
-		switch (imp_->state_)
-		{
+		switch (imp_->state_){
 		case IDLE:
 			break;
 		default:
@@ -775,9 +727,9 @@ namespace aris::core
 
 		///////////////////////////////////////////////////////////////////////////////
 		int sock_type;
-		switch (connectType())
-		{
+		switch (connectType()){
 		case TCP:
+		case TCP_RAW:
 		case WEB:
 		case WEB_RAW:
 			sock_type = SOCK_STREAM;
@@ -798,10 +750,9 @@ namespace aris::core
 		imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
 		imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
-		switch (connectType())
-		{
+		switch (connectType()){
 		case TCP:
-		{
+		case TCP_RAW:{
 			// 连接 //
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
 				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
@@ -817,8 +768,7 @@ namespace aris::core
 			return;
 		}
 		case WEB:
-		case WEB_RAW:
-		{
+		case WEB_RAW:{
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
 				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 
@@ -859,28 +809,23 @@ namespace aris::core
 			return;
 		}
 	}
-	auto Socket::sendMsg(const aris::core::MsgBase &data)->void
-	{
+	auto Socket::sendMsg(const aris::core::MsgBase &data)->void{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
 
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
-		switch (imp_->state_)
-		{
-		case WORKING:
-		{
-			switch (imp_->type_)
-			{
+		switch (imp_->state_){
+		case WORKING:{
+			switch (imp_->type_){
 			case TCP:
 				if (send(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
-			case WEB:
-			{
+			case WEB:{
 				auto packed_data = imp_->is_server_ 
 					? pack_data_server(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader))
 					: pack_data_client(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader));
@@ -890,8 +835,7 @@ namespace aris::core
 					return;
 				break;
 			}
-			case UDP:
-			{
+			case UDP:{
 				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 				imp_->server_addr_.sin_family = AF_INET;
 				imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
@@ -912,22 +856,23 @@ namespace aris::core
 			THROW_FILE_LINE("Socket failed sending data, because Socket is not at right STATE\n");
 		}
 	}
-	auto Socket::sendRawData(const char *data, int size)->void
-	{
+	auto Socket::sendRawData(const char *data, int size)->void{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
-		
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
-		switch (imp_->state_)
-		{
-		case WORKING:
-		{
-			switch (imp_->type_)
-			{
-			case WEB_RAW:
-			{
+		switch (imp_->state_){
+		case WORKING:{
+			switch (imp_->type_){
+			case TCP_RAW: {
+				if (send(imp_->recv_socket_, data, size, 0) == -1)
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
+				else
+					return;
+				break;
+			}
+			case WEB_RAW:{
 				auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
 				if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
@@ -935,8 +880,7 @@ namespace aris::core
 					return;
 				break;
 			}
-			case UDP_RAW:
-			{
+			case UDP_RAW:{
 				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 				imp_->server_addr_.sin_family = AF_INET;
 				imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
@@ -950,11 +894,6 @@ namespace aris::core
 				break;
 			}
 			default:
-				//auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
-				//if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
-				//	THROW_FILE_LINE("Socket failed sending data, because network failed\n");
-				//else
-				//	return;
 				THROW_FILE_LINE("Socket failed send raw data, because Socket is not at right MODE\n");
 			}
 		}
@@ -962,113 +901,95 @@ namespace aris::core
 			THROW_FILE_LINE("Socket failed send raw data, because Socket is not at right STATE\n");
 		}
 	}
-	auto Socket::isConnected()->bool
-	{
+	auto Socket::isConnected()->bool{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
-		switch (imp_->state_)
-		{
+		switch (imp_->state_){
 		case WORKING:
 			return true;
 		default:
 			return false;
 		}
 	}
-	auto Socket::state()->State
-	{
+	auto Socket::state()->State{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		return imp_->state_;
 	};
-	auto Socket::port()const->const std::string & 
-	{
+	auto Socket::port()const->const std::string&{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		return imp_->port_;
 	}
-	auto Socket::setPort(const std::string &port)->void
-	{
+	auto Socket::setPort(const std::string &port)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->port_ = port;
 	}
-	auto Socket::remoteIP()const->const std::string &
-	{
+	auto Socket::remoteIP()const->const std::string &{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		return imp_->remote_ip_;
 	}
-	auto Socket::setRemoteIP(const std::string &remote_ip)->void
-	{
+	auto Socket::setRemoteIP(const std::string &remote_ip)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->remote_ip_ = remote_ip;
 	}
 	auto Socket::connectType()const->TYPE { return imp_->type_; }
 	auto Socket::setConnectType(const TYPE type)->void { imp_->type_ = type; }
-	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void
-	{
+	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->onReceivedMsg = OnReceivedData;
 	}
-	auto Socket::setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> func)->void 
-	{ 
+	auto Socket::setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> func)->void{ 
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->onReceivedData = func;
 	}
-	auto Socket::setOnReceivedConnection(std::function<int(Socket*, const char*, int)> OnReceivedConnection)->void
-	{
+	auto Socket::setOnReceivedConnection(std::function<int(Socket*, const char*, int)> OnReceivedConnection)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->onReceivedConnection = OnReceivedConnection;
 	}
-	auto Socket::setOnLoseConnection(std::function<int(Socket*)> OnLoseConnection)->void
-	{
+	auto Socket::setOnLoseConnection(std::function<int(Socket*)> OnLoseConnection)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->onLoseConnection = OnLoseConnection;
 	}
-	Socket::~Socket() 
-	{ 
-		if (imp_)
-		{
+	Socket::~Socket(){ 
+		if (imp_){
 			stop();
 #ifdef WIN32 
 			WSACleanup();
 #endif
 		}
 	}
-	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :imp_(new Imp(this))
-	{
+	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :imp_(new Imp(this)){
 		// 启动服务器 //
 #ifdef WIN32 
 		if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)THROW_FILE_LINE("Socket can't Start as server, because it can't WSAstartup\n");
 #endif
-		
 		setRemoteIP(remote_ip);
 		setPort(port);
 		setConnectType(type);
 	}
-	Socket::Socket(Socket&&s)
-	{
+	Socket::Socket(Socket&&s){
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 	};
-	Socket& Socket::operator=(Socket&&s) 
-	{
+	Socket& Socket::operator=(Socket&&s){
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 		return *this;
 	}
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Socket::TYPE>("Socket::connect_type")
-			.textMethod([](Socket::TYPE *v)->std::string
-			{
+			.textMethod([](Socket::TYPE *v)->std::string{
 				auto type = *reinterpret_cast<Socket::TYPE*>(v);
 				if (type == Socket::TCP)return "TCP";
+				else if (type == Socket::TCP_RAW)return "TCP_RAW";
 				else if (type == Socket::WEB)return "WEB";
 				else if (type == Socket::WEB_RAW)return "WEB_RAW";
 				else if (type == Socket::UDP)return "UDP";
 				else if (type == Socket::UDP_RAW)return "UDP_RAW";
 				else THROW_FILE_LINE("unknown connect type");
-			},[](Socket::TYPE *v,std::string_view str)->void
-			{
+			},[](Socket::TYPE *v,std::string_view str)->void{
 				if (str == "TCP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP;
+				else if (str == "TCP_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP_RAW;
 				else if (str == "WEB")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB;
 				else if (str == "WEB_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB_RAW;
 				else if (str == "UDP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::UDP;
