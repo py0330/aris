@@ -137,7 +137,7 @@ namespace aris::robot
 		}
 
 		// add solver
-		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::Ur5InverseKinematicSolver>();
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::UrInverseKinematicSolver>();
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 
 		return model;
