@@ -452,7 +452,7 @@ namespace aris::server
 		for (auto &file : js["files"])
 		{
 			std::cout << "update file:" << file["name"].get<std::string>() << std::endl;
-			LOG_INFO << "HTTP UPDATE PROGRAM FILE:" << file["name"].get<std::string>() << std::endl;
+			//LOG_INFO << "HTTP UPDATE PROGRAM FILE:" << file["name"].get<std::string>() << std::endl;
 			
 			std::fstream f(program_path / pro_name / "temp" / file["name"].get<std::string>(), std::ios::out | std::ios::trunc);
 			f << file["content"].get<std::string>();
@@ -515,7 +515,7 @@ namespace aris::server
 			}
 		} else {
 			std::cout << "update file failed" << std::endl;
-			LOG_INFO << "HTTP UPDATE PROGRAM FAILED" << std::endl;
+			//LOG_INFO << "HTTP UPDATE PROGRAM FAILED" << std::endl;
 
 		}
 

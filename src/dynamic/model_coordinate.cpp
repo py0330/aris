@@ -19,60 +19,48 @@
 namespace aris::dynamic
 {
 	auto Coordinate::getPp(double *pp)const noexcept->void { if (pp)s_pm2pp(*pm(), pp); }
-	auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const noexcept->void
-	{
-		if (pp)
-		{
+	auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const noexcept->void{
+		if (pp){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2pp(*pm, pp);
 		}
 	}
 	auto Coordinate::getRe(double *re, const char *type)const noexcept->void { if (re)s_pm2re(*pm(), re, type); }
-	auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const noexcept->void
-	{
-		if (re)
-		{
+	auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const noexcept->void{
+		if (re){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2re(*pm, re, type);
 		}
 	}
 	auto Coordinate::getRq(double *rq)const noexcept->void { if (rq)s_pm2rq(*pm(), rq); }
-	auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const noexcept->void
-	{
-		if (rq)
-		{
+	auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const noexcept->void{
+		if (rq){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2rq(*pm, rq);
 		}
 	}
 	auto Coordinate::getRm(double *rm, Size rm_ld)const noexcept->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
-	auto Coordinate::getRm(const Coordinate &relative_to, double *rm, Size rm_ld)const noexcept->void
-	{
-		if (rm)
-		{
+	auto Coordinate::getRm(const Coordinate &relative_to, double *rm, Size rm_ld)const noexcept->void{
+		if (rm){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2rm(*pm, rm, rm_ld);
 		}
 	}
 	auto Coordinate::getPe(double *pe, const char *type)const noexcept->void { if (pe)s_pm2pe(*pm(), pe, type); }
-	auto Coordinate::getPe(const Coordinate &relative_to, double *pe, const char *type)const noexcept->void
-	{
-		if (pe)
-		{
+	auto Coordinate::getPe(const Coordinate &relative_to, double *pe, const char *type)const noexcept->void{
+		if (pe){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2pe(*pm, pe, type);
 		}
 	}
 	auto Coordinate::getPq(double *pq)const noexcept->void { if (pq)s_pm2pq(*pm(), pq); }
-	auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const noexcept->void
-	{
-		if (pq)
-		{
+	auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const noexcept->void{
+		if (pq){
 			double pm[4][4];
 			getPm(relative_to, *pm);
 			s_pm2pq(*pm, pq);
@@ -80,428 +68,339 @@ namespace aris::dynamic
 	}
 	auto Coordinate::getPm(double *pm)const noexcept->void { if (pm)s_vc(16, *this->pm(), pm); }
 	auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const noexcept->void { if (pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); }
-	auto Coordinate::getVp(double *vp, double *pp)const noexcept->void
-	{
-		if (vp)
-		{
+	auto Coordinate::getVp(double *vp, double *pp)const noexcept->void{
+		if (vp){
 			double pp_default[3];
 			pp = pp ? pp : pp_default;
 			getPp(pp);
 			s_vs2vp(vs(), pp, vp);
 		}
-		else
-		{
+		else{
 			getPp(pp);
 		}
 	}
-	auto Coordinate::getVp(const Coordinate &relative_to, double *vp, double *pp)const noexcept->void
-	{
-		if (vp)
-		{
+	auto Coordinate::getVp(const Coordinate &relative_to, double *vp, double *pp)const noexcept->void{
+		if (vp){
 			double vs[6], pp_default[3];
 			pp = pp ? pp : pp_default;
 			getPp(relative_to, pp);
 			getVs(relative_to, vs);
 			s_vs2vp(vs, pp, vp);
 		}
-		else
-		{
+		else{
 			getPp(relative_to, pp);
 		}
 	}
-	auto Coordinate::getWe(double *we, double *re, const char *type)const noexcept->void
-	{
-		if (we)
-		{
+	auto Coordinate::getWe(double *we, double *re, const char *type)const noexcept->void{
+		if (we){
 			double re_default[3];
 			re = re ? re : re_default;
 			getRe(re, type);
 			s_vs2we(vs(), re, we, type);
 		}
-		else
-		{
+		else{
 			getRe(re, type);
 		}
 	}
-	auto Coordinate::getWe(const Coordinate &relative_to, double *we, double *re, const char *type)const noexcept->void
-	{
-		if (we)
-		{
+	auto Coordinate::getWe(const Coordinate &relative_to, double *we, double *re, const char *type)const noexcept->void{
+		if (we){
 			double vs[6], re_default[3];
 			re = re ? re : re_default;
 			getRe(relative_to, re, type);
 			getVs(relative_to, vs);
 			s_vs2we(vs, re, we, type);
 		}
-		else
-		{
+		else{
 			getRe(relative_to, re);
 		}
 	}
-	auto Coordinate::getWq(double *wq, double *rq)const noexcept->void
-	{
-		if (wq)
-		{
+	auto Coordinate::getWq(double *wq, double *rq)const noexcept->void{
+		if (wq){
 			double rq_default[4];
 			rq = rq ? rq : rq_default;
 			getRq(rq);
 			s_vs2wq(vs(), rq, wq);
 		}
-		else
-		{
+		else{
 			getRq(rq);
 		}
 	}
-	auto Coordinate::getWq(const Coordinate &relative_to, double *wq, double *rq)const noexcept->void
-	{
-		if (wq)
-		{
+	auto Coordinate::getWq(const Coordinate &relative_to, double *wq, double *rq)const noexcept->void{
+		if (wq)	{
 			double vs[6], rq_default[4];
 			rq = rq ? rq : rq_default;
 			getRq(relative_to, rq);
 			getVs(relative_to, vs);
 			s_vs2wq(vs, rq, wq);
 		}
-		else
-		{
+		else{
 			getRq(relative_to, rq);
 		}
 	}
-	auto Coordinate::getWm(double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void
-	{
-		if (wm)
-		{
+	auto Coordinate::getWm(double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void{
+		if (wm)	{
 			double rm_default[9];
 			rm = rm ? rm : rm_default;
 			getRm(rm, rm_ld);
 			s_vs2wm(vs(), rm, wm, rm_ld, wm_ld);
 		}
-		else
-		{
+		else{
 			getRm(rm, rm_ld);
 		}
 	}
-	auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void
-	{
-		if (wm)
-		{
+	auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void{
+		if (wm)	{
 			double vs[6], rm_default[9];
 			rm = rm ? rm : rm_default;
 			getRm(relative_to, rm, rm_ld);
 			getVs(relative_to, vs);
 			s_vs2wm(vs, rm, wm, rm_ld, wm_ld);
 		}
-		else
-		{
+		else{
 			getRm(relative_to, rm, rm_ld);
 		}
 	}
-	auto Coordinate::getWa(double *wa, double *rm, Size rm_ld)const noexcept->void
-	{
+	auto Coordinate::getWa(double *wa, double *rm, Size rm_ld)const noexcept->void{
 		if (wa) { s_vs2wa(vs(), wa); }
 		getRm(rm, rm_ld);
 	}
-	auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, Size rm_ld)const noexcept->void
-	{
-		if (wa)
-		{
+	auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, Size rm_ld)const noexcept->void{
+		if (wa){
 			double vs[6], pm[16];
 			getVs(relative_to, vs, pm);
 			s_vs2wa(vs, wa);
 			s_pm2rm(pm, rm, rm_ld);
 		}
-		else
-		{
+		else{
 			getRm(rm, rm_ld);
 		}
-
 	}
-	auto Coordinate::getVe(double *ve, double *pe, const char *type)const noexcept->void
-	{
-		if (ve)
-		{
+	auto Coordinate::getVe(double *ve, double *pe, const char *type)const noexcept->void{
+		if (ve)	{
 			double pe_default[6];
 			pe = pe ? pe : pe_default;
 			getPe(pe, type);
 			s_vs2ve(vs(), pe, ve, type);
 		}
-		else
-		{
+		else{
 			getPe(pe, type);
 		}
 	}
-	auto Coordinate::getVe(const Coordinate &relative_to, double *ve, double *pe, const char *type)const noexcept->void
-	{
-		if (ve)
-		{
+	auto Coordinate::getVe(const Coordinate &relative_to, double *ve, double *pe, const char *type)const noexcept->void{
+		if (ve){
 			double vs[6], pe_default[6];
 			pe = pe ? pe : pe_default;
 			getPe(relative_to, pe, type);
 			getVs(relative_to, vs);
 			s_vs2ve(vs, pe, ve, type);
 		}
-		else
-		{
+		else{
 			getPe(relative_to, pe, type);
 		}
 	}
-	auto Coordinate::getVq(double *vq, double *pq)const noexcept->void
-	{
-		if (vq)
-		{
+	auto Coordinate::getVq(double *vq, double *pq)const noexcept->void{
+		if (vq){
 			double pq_default[7];
 			pq = pq ? pq : pq_default;
 			getPq(pq);
 			s_vs2vq(vs(), pq, vq);
 		}
-		else
-		{
+		else{
 			getPq(pq);
 		}
 	}
-	auto Coordinate::getVq(const Coordinate &relative_to, double *vq, double *pq)const noexcept->void
-	{
-		if (vq)
-		{
+	auto Coordinate::getVq(const Coordinate &relative_to, double *vq, double *pq)const noexcept->void{
+		if (vq){
 			double vs[6], pq_default[7];
 			pq = pq ? pq : pq_default;
 			getPq(relative_to, pq);
 			getVs(relative_to, vs);
 			s_vs2vq(vs, pq, vq);
 		}
-		else
-		{
+		else{
 			getPq(relative_to, pq);
 		}
 	}
-	auto Coordinate::getVm(double *vm, double *pm)const noexcept->void
-	{
-		if (vm)
-		{
+	auto Coordinate::getVm(double *vm, double *pm)const noexcept->void{
+		if (vm){
 			double pm_default[16];
 			pm = pm ? pm : pm_default;
 			getPm(pm);
 			s_vs2vm(vs(), pm, vm);
 		}
-		else
-		{
+		else{
 			getPm(pm);
 		}
 	}
-	auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const noexcept->void
-	{
-		if (vm)
-		{
+	auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const noexcept->void{
+		if (vm)	{
 			double vs[6], pm_default[16];
 			pm = pm ? pm : pm_default;
 			getPm(relative_to, pm);
 			getVs(relative_to, vs);
 			s_vs2vm(vs, pm, vm);
 		}
-		else
-		{
+		else{
 			getPm(relative_to, pm);
 		}
 	}
-	auto Coordinate::getVa(double *va, double *pp)const noexcept->void
-	{
-		if (va)
-		{
+	auto Coordinate::getVa(double *va, double *pp)const noexcept->void{
+		if (va){
 			double pp_default[3];
 			pp = pp ? pp : pp_default;
 			getPp(pp);
 			s_vs2va(vs(), pp, va);
 		}
-		else
-		{
+		else{
 			getPp(pp);
 		}
 	}
-	auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const noexcept->void
-	{
-		if (va)
-		{
+	auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const noexcept->void{
+		if (va){
 			double vs[6], pp_default[3];
 			pp = pp ? pp : pp_default;
 			getPp(relative_to, pp);
 			getVs(relative_to, vs);
 			s_vs2va(vs, pp, va);
 		}
-		else
-		{
+		else{
 			getPp(relative_to, pp);
 		}
 	}
-	auto Coordinate::getVs(double *vs, double *pm)const noexcept->void
-	{
+	auto Coordinate::getVs(double *vs, double *pm)const noexcept->void{
 		if (vs)std::copy(&this->vs()[0], &this->vs()[6], vs);
 		getPm(pm);
 	}
-	auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const noexcept->void
-	{
+	auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const noexcept->void{
 		if (vs)s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs);
 		getPm(relative_to, pm);
 	}
-	auto Coordinate::getAp(double *ap, double *vp, double *pp)const noexcept->void
-	{
-		if (ap)
-		{
+	auto Coordinate::getAp(double *ap, double *vp, double *pp)const noexcept->void{
+		if (ap)	{
 			double pp_default[3], vp_default[3];
 			pp = pp ? pp : pp_default;
 			vp = vp ? vp : vp_default;
 			getPp(pp);
 			s_as2ap(vs(), as(), pp, ap, vp);
 		}
-		else
-		{
+		else{
 			getVp(vp, pp);
 		}
 	}
-	auto Coordinate::getAp(const Coordinate &relative_to, double *ap, double *vp, double *pp)const noexcept->void
-	{
-		if (ap)
-		{
+	auto Coordinate::getAp(const Coordinate &relative_to, double *ap, double *vp, double *pp)const noexcept->void{
+		if (ap)	{
 			double vs[6], as[6], pp_default[3];
 			pp = pp ? pp : pp_default;
 			getPp(relative_to, pp);
 			getAs(relative_to, as, vs);
 			s_as2ap(vs, as, pp, ap, vp);
 		}
-		else
-		{
+		else{
 			getVp(relative_to, vp, pp);
 		}
 	}
-	auto Coordinate::getXe(double *xe, double *we, double *re, const char *type)const noexcept->void
-	{
-		if (xe)
-		{
+	auto Coordinate::getXe(double *xe, double *we, double *re, const char *type)const noexcept->void{
+		if (xe)	{
 			double re_default[3], we_default[3];
 			re = re ? re : re_default;
 			we = we ? we : we_default;
 			getRe(re, type);
 			s_as2xe(vs(), as(), re, xe, we, type);
 		}
-		else
-		{
+		else{
 			getVe(we, re, type);
 		}
 	}
-	auto Coordinate::getXe(const Coordinate &relative_to, double *xe, double *we, double *re, const char *type)const noexcept->void
-	{
-		if (xe)
-		{
+	auto Coordinate::getXe(const Coordinate &relative_to, double *xe, double *we, double *re, const char *type)const noexcept->void{
+		if (xe)	{
 			double vs[6], as[6], re_default[3];
 			re = re ? re : re_default;
 			getRe(relative_to, re, type);
 			getAs(relative_to, as, vs);
 			s_as2xe(vs, as, re, xe, we, type);
 		}
-		else
-		{
+		else{
 			getVe(relative_to, we, re, type);
 		}
 	}
-	auto Coordinate::getXq(double *xq, double *wq, double *rq)const noexcept->void
-	{
-		if (xq)
-		{
+	auto Coordinate::getXq(double *xq, double *wq, double *rq)const noexcept->void{
+		if (xq)	{
 			double rq_default[4], wq_default[4];
 			rq = rq ? rq : rq_default;
 			wq = wq ? wq : wq_default;
 			getRq(rq);
 			s_as2xq(vs(), as(), rq, xq, wq);
 		}
-		else
-		{
+		else{
 			getWq(wq, rq);
 		}
 	}
-	auto Coordinate::getXq(const Coordinate &relative_to, double *xq, double *wq, double *rq)const noexcept->void
-	{
-		if (xq)
-		{
+	auto Coordinate::getXq(const Coordinate &relative_to, double *xq, double *wq, double *rq)const noexcept->void{
+		if (xq)	{
 			double vs[6], as[6], rq_default[4];
 			rq = rq ? rq : rq_default;
 			getRq(relative_to, rq);
 			getAs(relative_to, as, vs);
 			s_as2xq(vs, as, rq, xq, wq);
 		}
-		else
-		{
+		else{
 			getWq(relative_to, wq, rq);
 		}
 	}
-	auto Coordinate::getXm(double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void
-	{
-		if (xm)
-		{
+	auto Coordinate::getXm(double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void{
+		if (xm)	{
 			double rm_default[9], wm_default[9];
 			rm = rm ? rm : rm_default;
 			wm = wm ? wm : wm_default;
 			getRm(rm, rm_ld);
 			s_as2xm(vs(), as(), rm, xm, wm, rm_ld, wm_ld, xm_ld);
 		}
-		else
-		{
+		else{
 			getWm(wm, rm, wm_ld, rm_ld);
 		}
 	}
-	auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void
-	{
-		if (xm)
-		{
+	auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void{
+		if (xm){
 			double vs[6], as[6], rm_default[9];
 			rm = rm ? rm : rm_default;
 			getRm(relative_to, rm, rm_ld);
 			getAs(relative_to, as, vs);
 			s_as2xm(vs, as, rm, xm, wm, rm_ld, wm_ld, xm_ld);
 		}
-		else
-		{
+		else{
 			getWm(relative_to, wm, rm, wm_ld, rm_ld);
 		}
 	}
-	auto Coordinate::getXa(double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void
-	{
+	auto Coordinate::getXa(double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void{		
 		if (xa)s_as2xa(as(), xa);
 		getWa(wa, rm, rm_ld);
 	}
-	auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void
-	{
-		if (xa)
-		{
+	auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void{
+		if (xa){
 			double vs[6], as[6], pm[16];
 			getAs(relative_to, as, vs, pm);
 			s_as2xa(as, xa);
 			s_vs2wa(vs, wa);
 			s_pm2rm(pm, rm, rm_ld);
 		}
-		else
-		{
+		else{
 			getWa(relative_to, wa, rm, rm_ld);
 		}
-
 	}
-	auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const noexcept->void
-	{
-		if (ae)
-		{
+	auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const noexcept->void{
+		if (ae){
 			double pe_default[6], ve_default[6];
 			pe = pe ? pe : pe_default;
 			ve = ve ? ve : ve_default;
 			getPe(pe, type);
 			s_as2ae(vs(), as(), pe, ae, ve, type);
 		}
-		else
-		{
+		else{
 			getVe(ve, pe, type);
 		}
 	}
-	auto Coordinate::getAe(const Coordinate &relative_to, double *ae, double *ve, double *pe, const char *type)const noexcept->void
-	{
-		if (ae)
-		{
+	auto Coordinate::getAe(const Coordinate &relative_to, double *ae, double *ve, double *pe, const char *type)const noexcept->void{
+		if (ae)	{
 			double vs[6], as[6], pe_default[6], ve_default[6];
 			pe = pe ? pe : pe_default;
 			ve = ve ? ve : ve_default;
@@ -509,30 +408,24 @@ namespace aris::dynamic
 			getAs(relative_to, as, vs);
 			s_as2ae(vs, as, pe, ae, ve, type);
 		}
-		else
-		{
+		else{
 			getVe(relative_to, ve, pe, type);
 		}
 	}
-	auto Coordinate::getAq(double *aq, double *vq, double *pq)const noexcept->void
-	{
-		if (aq)
-		{
+	auto Coordinate::getAq(double *aq, double *vq, double *pq)const noexcept->void{
+		if (aq)	{
 			double pq_default[7], vq_default[7];
 			pq = pq ? pq : pq_default;
 			vq = vq ? vq : vq_default;
 			getPq(pq);
 			s_as2aq(vs(), as(), pq, aq, vq);
 		}
-		else
-		{
+		else{
 			getVq(vq, pq);
 		}
 	}
-	auto Coordinate::getAq(const Coordinate &relative_to, double *aq, double *vq, double *pq)const noexcept->void
-	{
-		if (aq)
-		{
+	auto Coordinate::getAq(const Coordinate &relative_to, double *aq, double *vq, double *pq)const noexcept->void{
+		if (aq)	{
 			double vs[6], as[6], pq_default[7], vq_default[7];
 			pq = pq ? pq : pq_default;
 			vq = vq ? vq : vq_default;
@@ -540,31 +433,24 @@ namespace aris::dynamic
 			getAs(relative_to, as, vs);
 			s_as2aq(vs, as, pq, aq, vq);
 		}
-		else
-		{
+		else{
 			getVq(relative_to, vq, pq);
 		}
 	}
-	auto Coordinate::getAm(double *am, double *vm, double *pm)const noexcept->void
-	{
-		if (am)
-		{
+	auto Coordinate::getAm(double *am, double *vm, double *pm)const noexcept->void{
+		if (am){
 			double pm_default[16], vm_default[16];
 			pm = pm ? pm : pm_default;
 			vm = vm ? vm : vm_default;
 			getPm(pm);
 			s_as2am(vs(), as(), pm, am, vm);
 		}
-		else
-		{
+		else{
 			getVm(vm, pm);
 		}
-
 	}
-	auto Coordinate::getAm(const Coordinate &relative_to, double *am, double *vm, double *pm)const noexcept->void
-	{
-		if (am)
-		{
+	auto Coordinate::getAm(const Coordinate &relative_to, double *am, double *vm, double *pm)const noexcept->void{
+		if (am){
 			double vs[6], as[6], pm_default[16], vm_default[16];
 			pm = pm ? pm : pm_default;
 			vm = vm ? vm : vm_default;
@@ -572,32 +458,24 @@ namespace aris::dynamic
 			getAs(relative_to, as, vs);
 			s_as2am(vs, as, pm, am, vm);
 		}
-		else
-		{
+		else{
 			getVm(vm, pm);
 		}
-
 	}
-	auto Coordinate::getAa(double *aa, double *va, double *pp)const noexcept->void
-	{
-		if (aa)
-		{
+	auto Coordinate::getAa(double *aa, double *va, double *pp)const noexcept->void{
+		if (aa){
 			double pp_default[3], va_default[6];
 			pp = pp ? pp : pp_default;
 			va = va ? va : va_default;
 			getPp(pp);
 			s_as2aa(vs(), as(), pp, aa, va);
 		}
-		else
-		{
+		else{
 			getVa(va, pp);
 		}
-
 	}
-	auto Coordinate::getAa(const Coordinate &relative_to, double *aa, double *va, double *pp)const noexcept->void
-	{
-		if (aa)
-		{
+	auto Coordinate::getAa(const Coordinate &relative_to, double *aa, double *va, double *pp)const noexcept->void{
+		if (aa){
 			double vs[6], as[6], pp_default[3], va_default[6];
 			pp = pp ? pp : pp_default;
 			va = va ? va : va_default;
@@ -605,19 +483,15 @@ namespace aris::dynamic
 			getAs(relative_to, as, vs);
 			s_as2aa(vs, as, pp, aa, va);
 		}
-		else
-		{
+		else{
 			getVa(relative_to, va, pp);
 		}
-
 	}
-	auto Coordinate::getAs(double *as, double *vs, double *pm)const noexcept->void
-	{
+	auto Coordinate::getAs(double *as, double *vs, double *pm)const noexcept->void{
 		if (as)std::copy(&this->as()[0], &this->as()[6], as);
 		getVs(vs, pm);
 	}
-	auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const noexcept->void
-	{
+	auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const noexcept->void{
 		if (as)s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as, vs);
 		getVs(relative_to, vs, pm);
 	}
@@ -1388,11 +1262,9 @@ namespace aris::dynamic
 	ShellGeometry& ShellGeometry::operator=(const ShellGeometry &other) = default;
 	ShellGeometry& ShellGeometry::operator=(ShellGeometry &&other) = default;
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		auto setPe = [](Marker *mak, aris::core::Matrix pe)->void { mak->setPrtPe(pe.data()); };
-		auto getPe = [](Marker *mak)->aris::core::Matrix
-		{
+		auto getPe = [](Marker *mak)->aris::core::Matrix{
 			double pe[6];
 			s_pm2pe(*mak->prtPm(), pe);
 			return aris::core::Matrix(1, 6, pe);

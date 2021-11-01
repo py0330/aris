@@ -17,7 +17,7 @@ void test_log_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_DEBUG << "debug thread " << i << " count " << j << std::endl;
+					//LOG_DEBUG << "debug thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -25,7 +25,7 @@ void test_log_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_INFO << "info thread " << i << " count " << j << std::endl;
+					//LOG_INFO << "info thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -33,7 +33,7 @@ void test_log_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_ERROR << "error thread " << i << " count " << j << std::endl;
+					//LOG_ERROR << "error thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -41,7 +41,7 @@ void test_log_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_FATAL << "fatal thread " << i << " count " << j << std::endl;
+					//LOG_FATAL << "fatal thread " << i << " count " << j << std::endl;
 				}
 			});
 		}
@@ -70,7 +70,7 @@ void test_log_every_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_DEBUG_EVERY_N(10) << "debug thread " << i << " count " << j << std::endl;
+					//LOG_DEBUG_EVERY_N(10) << "debug thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -78,7 +78,7 @@ void test_log_every_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_INFO_EVERY_N(10) << "info thread " << i << " count " << j << std::endl;
+					//LOG_INFO_EVERY_N(10) << "info thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -86,7 +86,7 @@ void test_log_every_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_ERROR_EVERY_N(10) << "error thread " << i << " count " << j << std::endl;
+					//LOG_ERROR_EVERY_N(10) << "error thread " << i << " count " << j << std::endl;
 				}
 			});
 
@@ -94,7 +94,7 @@ void test_log_every_multi_thread()
 			{
 				for (auto j = 0; j < 100; ++j)
 				{
-					LOG_FATAL_EVERY_N(10) << "fatal thread " << i << " count " << j << std::endl;
+					//LOG_FATAL_EVERY_N(10) << "fatal thread " << i << " count " << j << std::endl;
 				}
 			});
 		}
@@ -116,10 +116,10 @@ void test_core_log()
 {
 	std::cout << std::endl << "-----------------test log---------------------" << std::endl;
 	
-	test_log_multi_thread();
+	//test_log_multi_thread();
 
-	logFile("test_log_every.txt");
-	test_log_every_multi_thread();
+	//logFile("test_log_every.txt");
+	//test_log_every_multi_thread();
 
 	std::cout << "-----------------test log finished------------" << std::endl << std::endl;
 }

@@ -39,48 +39,48 @@ void test_elmo_enable()
 
 		m.setControlStrategy([&]()
 		{
-			static int count{ 0 }, cos_count{ 0 };
-			static int state{ 0 };// 0为 初始状态， 1为 使能结束， 2为 sin结束， 3为 去使能结束
-			static double begin_pos;
+			//static int count{ 0 }, cos_count{ 0 };
+			//static int state{ 0 };// 0为 初始状态， 1为 使能结束， 2为 sin结束， 3为 去使能结束
+			//static double begin_pos;
 
-			int ret;
-			switch (state)
-			{
-			case 0:
-				//s1.setModeOfOperation(8);
-				//ret = s1.enable();
-				if (ret == 0) 
-				{
-					//m.mout() << "enabled at count " << count << std::endl;
-					state = 1;
-					cos_count = 0;
-					//begin_pos = s1.actualPos();
-				}
-				break;
-			case 1:
-				//s1.setTargetPos(begin_pos + (1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)) * 65536);
-				if (cos_count == 5000)
-				{
-					//m.mout() << "cos finished at count " << count << std::endl;
-					state = 2;
-				}
-				break;
-			case 2:
-				//ret = s1.disable();
-				if (ret == 0)
-				{
-					//m.mout() << "disabled at count " << count << std::endl;
-					state = 3;
-				}
-				break;
-			default:
-				break;
-			}
+			//int ret;
+			//switch (state)
+			//{
+			//case 0:
+			//	//s1.setModeOfOperation(8);
+			//	//ret = s1.enable();
+			//	if (ret == 0) 
+			//	{
+			//		//m.mout() << "enabled at count " << count << std::endl;
+			//		state = 1;
+			//		cos_count = 0;
+			//		//begin_pos = s1.actualPos();
+			//	}
+			//	break;
+			//case 1:
+			//	//s1.setTargetPos(begin_pos + (1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)) * 65536);
+			//	if (cos_count == 5000)
+			//	{
+			//		//m.mout() << "cos finished at count " << count << std::endl;
+			//		state = 2;
+			//	}
+			//	break;
+			//case 2:
+			//	//ret = s1.disable();
+			//	if (ret == 0)
+			//	{
+			//		//m.mout() << "disabled at count " << count << std::endl;
+			//		state = 3;
+			//	}
+			//	break;
+			//default:
+			//	break;
+			//}
 
-			if (++count % 1000 == 0) 
-			{
-				//m.mout() << "count " << count << " : ret " << ret << '\0';
-			}
+			//if (++count % 1000 == 0) 
+			//{
+			//	//m.mout() << "count " << count << " : ret " << ret << '\0';
+			//}
 
 		});
 		std::cout << "test motion enable finished" << std::endl;

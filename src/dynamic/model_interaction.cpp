@@ -41,12 +41,16 @@ namespace aris::dynamic{
 		s_pm2ps(pm_j2i, ps_j2i);
 		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 	}
-	auto Constraint::cptCv(double *cv)const noexcept->void{
+	auto Constraint::cptCvDiff(double *cv)const noexcept->void{
+		// 获取 cv //
+		cptCv(cv);
+		
+		// 获取当前状态下所产生的cv //
 		double dv[6], dv_in_I[6];
 		s_vc(6, makJ()->vs(), dv);
 		s_vs(6, makI()->vs(), dv);
 		s_inv_tv(*makI()->pm(), dv, dv_in_I);
-		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
+		s_mma(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
 	};
 	auto Constraint::cptCa(double *ca)const noexcept->void{
 		double vi_cross_vj[6], tem[6];
@@ -100,7 +104,7 @@ namespace aris::dynamic{
 			cp[0] = ps_j2i[axis()];
 		}
 	}
-	auto Motion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); cv[0] += mv(); }
+	auto Motion::cptCv(double *cv)const noexcept->void { cv[0] = mv(); }
 	auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
 	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
 	auto Motion::updP() noexcept->void { setMpInternal(s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis())); }
@@ -166,12 +170,15 @@ namespace aris::dynamic{
 		// Pj : mak J 的实际位置
 		// Pit: mak I 应该达到的位置
 		// Pc : 需补偿的位姿
+		//
+		// 补偿位姿位于 mak I 内，因此有：
+		// Pi * Pc = Pit
+		//
 		// 理论上应该有：
-		// Pi = Pj * mpm
-		// 那么就有：
 		// Pit = Pj * mpm
+		//
 		// 于是：
-		// Pc = Pi^-1 * Pit
+		// Pc = Pi^-1 * Pj * mpm
 
 		double pm_it[16];
 		s_pm_dot_pm(makJ_pm, *mpm(), pm_it);
@@ -188,7 +195,7 @@ namespace aris::dynamic{
 		s_inv_pm(makI_pm, pm);
 		s_tmf(pm, dm);
 	}
-	auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
+	auto GeneralMotion::cptCv(double *cv)const noexcept->void { s_inv_tv(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
 	auto GeneralMotion::p()const noexcept->const double* { return *imp_->mpm_; }
 	auto GeneralMotion::updP() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
@@ -316,13 +323,11 @@ namespace aris::dynamic{
 		s_tmf(pm, dm);
 	}
 	auto PointMotion::cptCv(double *cv)const noexcept->void { 
-		Constraint::cptCv(cv);
-
 		double vp_in_makI[3], vp_in_ground[3];
 		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
 		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
 
-		s_va(3, vp_in_makI, cv);
+		s_vc(3, vp_in_makI, cv);
 	}
 	auto PointMotion::cptCa(double *ca)const noexcept->void {
 		Constraint::cptCa(ca);
@@ -373,6 +378,116 @@ namespace aris::dynamic{
 	PointMotion::~PointMotion() = default;
 	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
+
+	struct XyztMotion::Imp { double mp_[4], vp_[4], ap_[4]; };
+	auto XyztMotion::locCmI() const noexcept->const double* {
+		static const double loc_cm_I[24]{
+			1,0,0,0,
+			0,1,0,0,
+			0,0,1,0,
+			0,0,0,0,
+			0,0,0,0,
+			0,0,0,1
+		};
+		return loc_cm_I;
+	}
+	auto XyztMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+		// 类似general motion，但仅取其中4维
+		// 先生成mpm
+		double mpm[16];
+		s_rmz(imp_->mp_[3], mpm, 4);
+		s_pp2pm(imp_->mp_, mpm);
+		s_fill(1, 3, 0.0, mpm + 12);
+		mpm[15] = 1.0;
+
+		// 类似general motion 进行计算
+		double pm_it[16];
+		s_pm_dot_pm(makJ_pm, mpm, pm_it);
+
+		double pm_c[16], ps_c[6];
+		s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		s_pm2ps(pm_c, ps_c);
+
+		// locCmI为单位矩阵，此时无需相乘
+		s_vc(3, ps_c, cp);
+		cp[3] = ps_c[5];
+	}
+	auto XyztMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
+	auto XyztMotion::cptCv(double *cv)const noexcept->void {
+		// 点运动所添加的 cv //
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		s_va(3, vp_in_makI, cv);
+
+		// 转动所添加的 cv //
+		cv[3] = imp_->vp_[3];
+	}
+	auto XyztMotion::cptCa(double *ca)const noexcept->void {
+		
+		///////  以下可能不对 ///////////
+		///////  tbd /////
+		
+		Constraint::cptCa(ca);
+
+		// w x R * dr //
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		double vs_J_in_I[6];
+		makJ()->getVs(*makI(), vs_J_in_I);
+
+		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
+
+		// R * ddr //
+		double ap_in_makI[3], ap_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->ap_, ap_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
+
+		s_va(3, ap_in_makI, ca);
+
+
+		// 角度 //
+		ca[3] += imp_->ap_[3];
+	}
+	auto XyztMotion::p()const noexcept->const double* { return imp_->mp_; }
+	auto XyztMotion::updP() noexcept->void {
+		double mpm[16];
+		s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), mpm);
+		imp_->mp_[0] = mpm[3];
+		imp_->mp_[1] = mpm[7];
+		imp_->mp_[2] = mpm[11];
+		imp_->mp_[3] = std::atan2(mpm[4] - mpm[1], mpm[0] + mpm[5]);
+	}
+	auto XyztMotion::setP(const double *mp) noexcept->void { s_vc(4, mp, imp_->mp_); }
+	auto XyztMotion::getP(double *mp)const noexcept->void { s_vc(4, imp_->mp_, mp); }
+	auto XyztMotion::v()const noexcept->const double* { return imp_->vp_; }
+	auto XyztMotion::updV() noexcept->void {
+		double mvs[6];
+		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), mvs);
+		s_vs2vp(mvs, imp_->mp_, imp_->vp_);
+		imp_->vp_[3] = mvs[5];
+	}
+	auto XyztMotion::setV(const double *mv) noexcept->void { s_vc(4, mv, imp_->vp_); }
+	auto XyztMotion::getV(double *mv)const noexcept->void { s_vc(4, imp_->vp_, mv); }
+	auto XyztMotion::a()const noexcept->const double* { return imp_->ap_; }
+	auto XyztMotion::updA() noexcept->void {
+		double mvs[6], mas[6];
+		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), mas, mvs);
+		s_as2ap(mvs, mas, imp_->mp_, imp_->ap_);
+		imp_->ap_[3] = mas[5];
+	}
+	auto XyztMotion::setA(const double *ma) noexcept->void { s_vc(4, ma, imp_->ap_); }
+	auto XyztMotion::getA(double *ma)const noexcept->void { s_vc(4, imp_->ap_, ma); }
+	XyztMotion::~XyztMotion() = default;
+	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(XyztMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[30] {
@@ -640,6 +755,10 @@ namespace aris::dynamic{
 			;
 
 		aris::core::class_<PointMotion>("PointMotion")
+			.inherit<aris::dynamic::MotionBase>()
+			;
+
+		aris::core::class_<XyztMotion>("XyztMotion")
 			.inherit<aris::dynamic::MotionBase>()
 			;
 

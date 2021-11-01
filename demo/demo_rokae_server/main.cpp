@@ -157,7 +157,7 @@ public:
 		//);
 	}
 };
-
+/*
 int main(int argc, char *argv[])
 {
 	Quad quad;
@@ -252,4 +252,100 @@ int main(int argc, char *argv[])
 	std::cin >> a;
 
 	return 0;
+}
+*/
+struct B1 {
+	int x;
+	virtual ~B1() { }
+};
+
+struct B2 {
+	int y;
+	virtual ~B2() { }
+};
+
+struct D : B1, B2 { };
+
+#define ERROR1 aris::core::LogLvl::kDebug, -1001, {"ERROR:%s is not correct", "错误%s"}
+
+int print_out(int level, int code, std::initializer_list<const char*> msg) {
+	std::cout << level << code << msg.begin()[1] << std::endl;
+	return 0;
+}
+
+
+#define LOG_ERROR(E) print_out(E);
+
+
+
+
+
+#define _LOG_I(level, code, info, ...)               \
+	aris::core::log(level, code, \
+	std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) + "|"+ __LINE__+"|"+aris::core::localeString(info, __VA_ARGS__)) 
+#define _LOG_II(...) _LOG_I(__VA_ARGS__)
+
+#define LOG(...) _LOG_II(__VA_ARGS__)
+
+//#define PP_CONCAT(A, B) PP_CONCAT_IMPL(A, B)
+//#define PP_CONCAT_IMPL(A, B) A##B
+
+#define PP_CONCAT(A, B) A##B
+
+#define FOO(N) PP_CONCAT(foo_, N)
+
+#define BAR() bar
+
+auto FOO(bar)()->void {
+
+};    // -> foo_bar
+
+
+auto FOO(BAR())(int) {
+	return 0;
+}  // -> foo_bar
+
+
+#define ADD_TWO_IMPL(first, second) first + second
+#define UNPACK(macro, args) macro args
+#define ADD_TWO(...) UNPACK(ADD_TWO_IMPL, (__VA_ARGS__))
+
+#define a_and_b a,b
+
+
+#define ERROR_123 aris::core::LogLvl::kError, -999, { "AAAAAAAAAAAAAAAAAAAAAASSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD" }
+int main() {
+
+	int a=1, b=2;
+	std::cout << ADD_TWO(a_and_b) << std::endl;
+	std::cout << (1+(a,b)) << std::endl;
+
+	D x;
+	B1* b1_ptr = &x;
+	B2* b2_ptr = &x;
+	std::cout << "original address:     " << &x << "\n";
+
+	std::cout << "b1_ptr:               " << b1_ptr << "\n";
+	std::cout << "dynamic_cast b1_ptr:  " << dynamic_cast<void*>(b1_ptr) << "\n";
+
+	std::cout << "b2_ptr:               " << b2_ptr << "\n";
+	std::cout << "dynamic_cast b2_ptr:  " << dynamic_cast<void*>(b2_ptr) << "\n";
+
+	auto b2_void = dynamic_cast<void*>(b2_ptr);
+
+	std::cout << "dynamic_cast b2_ptr:  " << b2_void << "\n";
+
+
+	auto b2_final = static_cast<B2*>(b2_void);
+	std::cout << "dynamic_cast b2_ptr:  " << b2_final << "\n";
+
+
+
+	aris::core::log(aris::core::LogData{std::chrono::system_clock::now(), __FILE__, 1000, aris::core::LogLvl::kError, -999, "AAAAAAAAAAAAAAAAAAAAAASSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD"});
+
+	ARIS_LOG(aris::core::LogLvl::kError, -999, { "AAAAAAAAAAAAAAAAAAAAA\nAS\nSSSSSSDDDDDDDSSSSSSSDDDDDDDDDDDSSSSSSSSSSDDDDDDDDDD%s","sss:%s" },"bbb");
+	ARIS_LOG(ERROR_123);
+
+
+	std::cout << aris::core::logExeName() << std::endl;
 }

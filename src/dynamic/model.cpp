@@ -181,10 +181,14 @@ namespace aris::dynamic{
 	auto Model::forwardKinematics()noexcept->int { return solverPool()[1].kinPos(); }
 	auto Model::inverseKinematicsVel()noexcept->int { return solverPool()[0].kinVel(); }
 	auto Model::forwardKinematicsVel()noexcept->int { return solverPool()[1].kinVel(); }
+	auto Model::inverseKinematicsAcc()noexcept->int { return solverPool()[0].dynAccAndFce(); }
+	auto Model::forwardKinematicsAcc()noexcept->int { return solverPool()[1].dynAccAndFce(); }
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	auto Model::inputPosSize()const noexcept->Size { return imp_->actuator_pos_size_; }
-	auto Model::inputDim()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputVelSize()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputAccSize()const noexcept->Size { return imp_->actuator_dim_; }
+	auto Model::inputFceSize()const noexcept->Size { return imp_->actuator_dim_; }
 	auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
 	auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
 	auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
@@ -194,11 +198,10 @@ namespace aris::dynamic{
 	auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
 	auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
-	auto Model::outputDim()const noexcept->Size { return imp_->end_effector_dim_; }
-	auto Model::setOutputPos(const double *mp)noexcept->void { 
-		for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i)
-			generalMotionPool()[i].setP(mp + pos);
-	}
+	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::setOutputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].setP(mp + pos);	}
 	auto Model::getOutputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].getP(mp + pos); }
 	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setV(mv + pos); }
 	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getV(mv + pos); }
@@ -226,6 +229,7 @@ namespace aris::dynamic{
 	auto Model::solverPool()->aris::core::PointerArray<Solver, Element>& { return *imp_->solver_pool_; }
 	auto Model::simulatorPool()->aris::core::PointerArray<Simulator, Element>& { return *imp_->simulator_pool_; }
 	auto Model::simResultPool()->aris::core::PointerArray<SimResult, Element>& { return *imp_->sim_result_pool_; }
+	auto Model::resetCalibratorPool(aris::core::PointerArray<Calibrator, Element> *pool)->void { imp_->calibrator_pool_.reset(pool); }
 	auto Model::calibratorPool()->aris::core::PointerArray<Calibrator, Element>& { return *imp_->calibrator_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
 	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& { 
@@ -279,7 +283,13 @@ namespace aris::dynamic{
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
-		s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
+
+
+		s_swap_v(3, &glb_pm[0], 4, &glb_pm[2], 4);
+		s_iv(3, glb_pm, 4);
+
+
+		//s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
 
@@ -435,8 +445,7 @@ namespace aris::dynamic{
 			.prop("solver_pool", &Model::resetSolverPool, SolverPoolFunc(&Model::solverPool))
 			//.prop<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
 			//.prop<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
-			//.prop<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
+			.prop("calibrator_pool", &Model::resetCalibratorPool, CalibratorPoolFunc(&Model::calibratorPool))
 			;
 	}
-
 }

@@ -543,7 +543,7 @@ namespace aris::dynamic
 		ra_in = ra_in ? ra_in : default_ra();
 		rm_out = rm_out ? rm_out : default_out();
 
-		double theta = sqrt(ra_in[0] * ra_in[0] + ra_in[1] * ra_in[1] + ra_in[2] * ra_in[2]);
+		double theta = std::sqrt(ra_in[0] * ra_in[0] + ra_in[1] * ra_in[1] + ra_in[2] * ra_in[2]);
 
 		const double &a = ra_in[0];
 		const double &b = ra_in[1];
@@ -3681,4 +3681,28 @@ namespace aris::dynamic
 			return std::atan2(Pcb - Pbc, Pbb + Pcc);
 		}
 	}
+
+	auto s_calib_tool_two_pnts(const double* input, double*result, double mini_angle)noexcept->int {
+		// check diff angle
+		auto diff = input[5] - input[2];
+
+		while (diff > aris::PI) diff -= 2 * aris::PI;
+		while (diff < -aris::PI)diff += 2 * aris::PI;
+
+		if (std::abs(diff) < mini_angle)return -1;
+
+		auto c1 = std::cos(input[2]);
+		auto s1 = std::sin(input[2]);
+		auto c2 = std::cos(input[5]);
+		auto s2 = std::sin(input[5]);
+
+		const double A[4]{c1 - c2, -s1 + s2, s1 - s2, c1 - c2 };
+		const double tem = 1.0 / (A[0] * A[3] - A[1] * A[2]);
+		
+		double inv_A[4]{A[3]*tem, -A[1]*tem, -A[2]*tem, A[0]*tem};
+
+		double b[2]{ input[3] - input[0], input[4] - input[1] };
+		s_mm(2, 1, 2, inv_A, b, result);
+		return 0;
+ 	}
 }

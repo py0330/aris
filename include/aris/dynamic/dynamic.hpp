@@ -12,6 +12,8 @@
 #include <aris/dynamic/stewart.hpp>
 #include <aris/dynamic/ur.hpp>
 #include <aris/dynamic/puma.hpp>
+#include <aris/dynamic/delta.hpp>
+#include <aris/dynamic/scara.hpp>
 #include <aris/dynamic/seven_axis.hpp>
 #include <aris/dynamic/seven_axis2.hpp>
 #include <aris/dynamic/seven_axis3.hpp>

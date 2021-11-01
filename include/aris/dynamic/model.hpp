@@ -212,28 +212,34 @@ namespace aris::dynamic{
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
 		auto virtual forwardKinematicsVel()noexcept->int override;
+		auto virtual inverseKinematicsAcc()noexcept->int override;
+		auto virtual forwardKinematicsAcc()noexcept->int override;
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
 		auto virtual inputPosSize()const noexcept->Size override;
-		auto virtual inputDim()const noexcept->Size override;
 		auto virtual getInputPos(double *mp)const noexcept->void override;
 		auto virtual setInputPos(const double *mp)noexcept->void override;
+		auto virtual inputVelSize()const noexcept->Size override;
 		auto virtual getInputVel(double *mv)const noexcept->void override;
 		auto virtual setInputVel(const double *mv)noexcept->void override;
+		auto virtual inputAccSize()const noexcept->Size override;
 		auto virtual getInputAcc(double *ma)const noexcept->void override;
 		auto virtual setInputAcc(const double *ma)noexcept->void override;
+		auto virtual inputFceSize()const noexcept->Size override;
 		auto virtual getInputFce(double *mf)const noexcept->void override;
 		auto virtual setInputFce(const double *mf)noexcept->void override;
 
 		auto virtual outputPosSize()const noexcept->Size override;
-		auto virtual outputDim()const noexcept->Size override;
 		auto virtual getOutputPos(double *mp)const noexcept->void override;
 		auto virtual setOutputPos(const double *mp)noexcept->void override;
+		auto virtual outputVelSize()const noexcept->Size override;
 		auto virtual getOutputVel(double *mv)const noexcept->void override;
 		auto virtual setOutputVel(const double *mv)noexcept->void override;
+		auto virtual outputAccSize()const noexcept->Size override;
 		auto virtual getOutputAcc(double *ma)const noexcept->void override;
 		auto virtual setOutputAcc(const double *ma)noexcept->void override;
+		auto virtual outputFceSize()const noexcept->Size override;
 		auto virtual getOutputFce(double *mf)const noexcept->void override;
 		auto virtual setOutputFce(const double *mf)noexcept->void override;
 		/// @}
@@ -301,6 +307,20 @@ namespace aris::dynamic{
 		auto addPartByPq(const double*pq, const double *prt_iv = nullptr)->Part&;
 		auto addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&;
 		auto addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&;
+		// 
+		// first  axis 位于 first  part
+		// second axis 位于 second part
+		// 添加完时，makI 与 makJ的以下轴完全一样
+		//    makI : makJ
+		//     x   :  -z
+		//     y   :   y
+		//     z   :   x
+		// 
+		// 若已知相对于原点，makI 相对于 makJ 转动了 a, b 角度，其中 b 是makI的-z轴(makJ的-x轴)，a 是makJ的z轴
+		// 于是：
+		// makI 相对于 makJ的 312 的欧拉角为： [  a,    b, PI/2]
+		// makJ 相对于 makI的 213 的欧拉角为： [-PI/2, -b,  -a ]
+		//
 		auto addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&;
 		auto addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&;
 		auto addMotion(Joint &joint)->Motion&;

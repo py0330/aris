@@ -517,7 +517,7 @@ namespace aris::dynamic {
 						continue;
 					}
 					else if (d[at(0, i, d_t)] - d[at(0, i - 1, d_t)] < epsilon_strict) {
-						mu[at(0, Mn - 1, mu_t)] = i - 1;
+						mu[at(0, Mn - 1, mu_t)] = (double)(i - 1);
 						auto z_im1 = std::sqrt(z[at(0, i, z_t)] * z[at(0, i, z_t)] + z[at(0, i - 1, z_t)] * z[at(0, i - 1, z_t)]);
 						auto z_i = std::atan2(z[at(0, i, z_t)], z[at(0, i - 1, z_t)]);
 						z[at(0, i - 1, z_t)] = z_im1;

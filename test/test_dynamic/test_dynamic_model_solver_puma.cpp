@@ -7,23 +7,21 @@
 
 using namespace aris::dynamic;
 
-const double j_pos[6][3]
-{
-	{ 0.0, 0.0, 0.176 },
-	{ 0.04, -0.0465, 0.3295, },
-	{ 0.04, 0.0508, 0.6045 },
-	{ -0.1233, 0.1, 0.6295, },// 珞石的需要把这里的0.1去掉
-	{ 0.32,-0.03235, 0.6295, },
-	{ 0.383,0.1, 0.6295, },// 珞石的需要把这里的0.1去掉
+const double j_pos[6][3]{
+	{ 0.0,     0.0,     0.176 },
+	{ 0.04,   -0.0465,  0.3295, },
+	{ 0.06,    0.0508,  0.6045 },
+	{ -0.1233, 0.1,     0.6295, },// 珞石的需要把这里的0.1去掉
+	{ 0.32,   -0.03235, 0.6295, },
+	{ 0.32,   0.1,     0.6295, },// 珞石的需要把这里的0.1去掉
 };
-const double j_axis[6][3]
-{
+const double j_axis[6][3]{
 	{ 0.0, 0.0, 1.0 },
 	{ 0.0, 1.0, 0.0 },
 	{ 0.0, -1.0, 0.0 },
 	{ 1.0, 0.0, 0.0 },
 	{ 0.0, 1.0, 0.0 },
-	{ -1.0, 0.0, 0.0 }
+	{ 0.0, 0.0, 1.0 }
 };
 
 const double pe_ee_i[6]{ 0.315, 0.05, 0.63, 0.1, 0.03, 0.15 };
@@ -73,21 +71,21 @@ auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const 
 	// add solver
 	auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
 	auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+	auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
+	auto &forward_dynamic = model->solverPool().add<ForwardDynamicSolver>();
+
+	inverse_kinematic.setWhichRoot(8);
 
 	model->init();
 
 	return model;
 }
-void test_puma_forward_solver()
-{
+void test_puma_forward_solver(){
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
-	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
 
 	const double input_series[5]{ aris::PI * 0 / 2.5, aris::PI * 1 / 2.5, aris::PI * 2 / 2.5, aris::PI * 3 / 2.5, aris::PI * 4 / 2.5 };
-	for (int i = 0; i < 5 * 5 * 5 * 5 * 5 * 5; ++i)
-	{
-		double q[6]
-		{
+	for (int i = 0; i < 5 * 5 * 5 * 5 * 5 * 5; ++i){
+		double q[6]{
 			input_series[(i / 1) % 5],
 			input_series[(i / 5) % 5],
 			input_series[(i / 25) % 5],
@@ -96,27 +94,21 @@ void test_puma_forward_solver()
 			input_series[(i / 3125) % 5],
 		};
 
-		for (int i = 0; i < 6; ++i)m->motionPool().at(i).setMp(q[i]);
+		m->setInputPos(q);
 
-		if (fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (m->forwardKinematics())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 	}
 }
-void test_puma_inverse_solver()
-{
+void test_puma_inverse_solver(){
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
-	
-	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
-	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
 	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
 	
 	double ee_pm[16];
 	aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.1, 0.3, 0.2}.data(), ee_pm);
 
 	const double input_series[5]{ aris::PI * 0 / 2.5, aris::PI * 1 / 2.5, aris::PI * 2 / 2.5, aris::PI * 3 / 2.5, aris::PI * 4 / 2.5 };
-	for (int i = 0; i < 5 * 5 * 5 * 5 * 5 * 5; ++i)
-	{
-		double q[6]
-		{
+	for (int i = 0; i < 5 * 5 * 5 * 5 * 5 * 5; ++i){
+		double q[6]{
 			input_series[(i / 1) % 5],
 			input_series[(i / 5) % 5],
 			input_series[(i / 25) % 5],
@@ -124,14 +116,11 @@ void test_puma_inverse_solver()
 			input_series[(i / 625) % 5],
 			input_series[(i / 3125) % 5],
 		};
-
-		for (int i = 0; i < 6; ++i)m->motionPool().at(i).setMp(q[i]);
-
-		if (fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		m->setInputPos(q);
+		if (m->forwardKinematics())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
 		double j_pos[6][3], j_axis[6][3], pe_ee_i[6], pe_ee_j[6];
-		for (int i = 0; i < 6; ++i)
-		{
+		for (int i = 0; i < 6; ++i){
 			s_vc(3, *m->motionPool().at(i).makI()->pm() + 3, 4, j_pos[i], 1);
 			s_vc(3, *m->motionPool().at(i).makI()->pm() + 2, 4, j_axis[i], 1);
 		}
@@ -139,16 +128,14 @@ void test_puma_inverse_solver()
 		ee.makJ()->getPe(pe_ee_j);
 		auto new_m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(new_m->solverPool().at(0));
-		auto &new_fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(new_m->solverPool().at(1));
 		auto &new_ee = dynamic_cast<aris::dynamic::GeneralMotion&>(new_m->generalMotionPool().at(0));
 
-		for (int i = 0; i < 8; ++i)
-		{
+		for (int i = 0; i < 8; ++i){
 			new_ee.setMpm(ee_pm);
 			new_inv.setWhichRoot(i);
-			if (new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
+			if (new_m->inverseKinematics())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
 
-			if (new_fwd.kinPos())std::cout << "forward failed" << std::endl;
+			if (new_m->forwardKinematics())std::cout << "forward failed" << std::endl;
 			new_ee.updP();
 			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
 			{
@@ -158,63 +145,75 @@ void test_puma_inverse_solver()
 		}
 	}
 }
+void test_puma_vel() {
+	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
+
+	// 计算正解 //
+	double input_pos[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	double input_vel[6]{ 0.11,-0.22,0.33,-0.44,0.5,-0.66 };
+	double input_acc[6]{ 0.15,0.25,0.35,0.45,0.55,0.65 };
+	double output_pm[16], output_vs[6], output_as[6];
+
+	m->setInputPos(input_pos);
+	m->setInputVel(input_vel);
+	m->setInputAcc(input_acc);
+	
+	if (m->forwardKinematics())std::cout << "failed" << std::endl;
+	if (m->forwardKinematicsVel())std::cout << "failed" << std::endl;
+	if (m->forwardKinematicsAcc())std::cout << "failed" << std::endl;
+
+	m->getOutputPos(output_pm);
+	m->getOutputVel(output_vs);
+	m->getOutputAcc(output_as);
+
+	// 将输入都设置为零，方便后续验证 //
+	double zeros[6]{ 0,0,0,0,0,0 };
+	m->setInputPos(zeros);
+	m->setInputVel(zeros);
+	m->setInputAcc(zeros);
+
+	// 计算反解，看看是否能够计算正确 //
+	if (m->inverseKinematics())std::cout << "failed" << std::endl;
+	if (m->inverseKinematicsVel())std::cout << "failed" << std::endl;
+	if (m->inverseKinematicsAcc())std::cout << "failed" << std::endl;
+
+	double result[6];
+	m->getInputPos(result);
+	if (!s_is_equal(6, result, input_pos, 1e-9))std::cout << "failed" << std::endl;
+	m->getInputVel(result);
+	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << "failed" << std::endl;
+	m->getInputAcc(result);
+	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << "failed" << std::endl;
+
+	// 验证雅可比 //
+	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
+	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
+
+	inv.cptJacobi();
+	s_mm(6, 1, 6, inv.Ji(), output_vs, result);
+	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << "failed" << std::endl;
+
+	s_vc(6, inv.ci(), result);
+	s_mma(6, 1, 6, inv.Ji(), output_as, result);
+	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << "failed" << std::endl;
+
+	fwd.cptJacobi();
+	s_mm(6, 1, 6, fwd.Jf(), input_vel, result);
+	if (!s_is_equal(6, result, output_vs, 1e-9))std::cout << "failed" << std::endl;
+
+	s_vc(6, fwd.cf(), result);
+	s_mma(6, 1, 6, fwd.Jf(), input_acc, result);
+	if (!s_is_equal(6, result, output_as, 1e-9))std::cout << "failed" << std::endl;
+}
 
 void test_model_solver_puma()
 {
 	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
 
-	test_puma_forward_solver();
-	test_puma_inverse_solver();
+	//test_puma_forward_solver();
+	//test_puma_inverse_solver();
+	test_puma_vel();
 
-	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
-
-	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
-	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
-	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
-
-	double ee_pm[16];
-	aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.6, 0.3, 0.2}.data(), ee_pm);
-	ee.setMpm(ee_pm);
-	double vs[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-	ee.setMvs(vs);
-	double as[6]{ -0.01,0.02,-0.03,0.04,-0.05,0.06 };
-	ee.setMas(as);
-
-	inv.setWhichRoot(1);
-
-	if (inv.kinPos())std::cout << "failed" << std::endl;
-	inv.kinVel();
-	inv.dynAccAndFce();
-
-	double tem[6];
-
-
-	inv.cptJacobi();
-	for (auto &mot : m->motionPool())std::cout << mot.mv() << "  ";	std::cout << std::endl;
-	s_mm(6, 1, 6, inv.Ji(), ee.mvs(), tem);
-	dsp(1, 6, tem);
-
-	for (auto &mot : m->motionPool())std::cout << mot.ma() << "  "; std::cout << std::endl;
-	s_vc(6, inv.ci(), tem);
-	s_mma(6, 1, 6, inv.Ji(), ee.mas(), tem);
-	dsp(1, 6, tem);
-
-	double mv[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-	for (int i = 0; i < 6; ++i)m->motionPool()[i].setMv(mv[i]);
-	fwd.kinVel();
-	double ma[6]{ 0.01,-0.02,0.03,-0.04,0.05,-0.06 };
-	for (int i = 0; i < 6; ++i)m->motionPool()[i].setMa(ma[i]);
-	fwd.dynAccAndFce();
-
-	fwd.cptJacobi();
-	dsp(1, 6, ee.mvs());
-	s_mm(6, 1, 6, fwd.Jf(), mv, tem);
-	dsp(1, 6, tem);
-
-	dsp(1, 6, ee.mas());
-	s_vc(6, fwd.cf(), tem);
-	s_mma(6, 1, 6, fwd.Jf(), ma, tem);
-	dsp(1, 6, tem);
 	//double tem2[6];
 	//
 

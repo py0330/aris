@@ -6,8 +6,7 @@ using namespace aris::dynamic;
 
 const double error = 1e-10;
 
-void test_pm_operation()
-{
+void test_pm_operation(){
 	const double pm[16] { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -73,8 +72,7 @@ void test_pm_operation()
 	s_inv_pm_dot_v3(inv_pm, from_v1_ld, 2, result, 3);
 	if (!s_is_equal(3, result, to_v1_ld, error))std::cout << "\"s_pm_dot_v3 with ld\" failed" << std::endl;
 }
-void test_cross_3()
-{
+void test_cross_3(){
 	double result[36];
 	
 	const double cm3[9] = { 0,  -0.6, 0.25, 0.6, 0,  -0.12, -0.25, 0.12, 0 };
@@ -274,8 +272,7 @@ void test_cross_3()
 	s_c3s_n(2, a24, 5, b24, 4, c24, 3);
 	if (!s_is_equal(9, c24, r24, error))std::cout << "\"s_c3s_n with ld\" failed" << std::endl;
 }
-void test_cross_f()
-{
+void test_cross_f(){
 	double result[36];
 
 	const double cmf[]{ 0,-0.63,0.52,0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0,0,0,0,0,-0.3,0.2,0,-0.63,0.52,0.3,0,-0.1,0.63,0,-0.41,-0.2,0.1,0,-0.52,0.41,0 };
@@ -476,8 +473,7 @@ void test_cross_f()
 	s_cfs_n(2, vs24, 5, f24, 4, cf24, 3);
 	if (!s_is_equal(9, cf24, rf24, error))std::cout << "\"s_cfs_n with ld\" failed" << std::endl;
 }
-void test_cross_v()
-{
+void test_cross_v(){
 	double result[36];
 
 	const double cmv[]{ 0,-0.63,0.52,0,-0.3,0.2,0.63,0,-0.41,0.3,0,-0.1,-0.52,0.41,0,-0.2,0.1,0,0,0,0,0,-0.63,0.52,	0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0 };
@@ -678,8 +674,7 @@ void test_cross_v()
 	s_cvs_n(2, v24, 5, w24, 4, cv24, 3);
 	if (!s_is_equal(9, rv24, cv24, error))std::cout << "\"s_cvs_n with ld\" failed" << std::endl;
 }
-void test_transform()
-{
+void test_transform(){
 	double result[36];
 
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
@@ -1075,8 +1070,7 @@ void test_transform()
 
 
 }
-void test_variable_change()
-{
+void test_variable_change(){
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
@@ -1436,8 +1430,7 @@ void test_variable_change()
 	if (!s_is_equal(10, result, iv, error))std::cout << "\"s_im2iv\" failed" << std::endl;
 
 }
-void test_coordinate_transform()
-{
+void test_coordinate_transform(){
 	const double relative_vs[16] = { 0.12, -0.35, 0.26, 0.58, 0.36, -0.135 };
 	const double relative_as[16] = { 0.14, 1.35, -0.35, -0.56, -0.34, 0.14 };
 	const double relative_pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071,   0.1,
@@ -1749,8 +1742,7 @@ void test_coordinate_transform()
 	if (!(s_is_equal(6, from_as, result, error) && s_is_equal(6, from_vs, result2, error)))std::cout << "\"s_inv_as2as\" failed" << std::endl;
 
 }
-void test_solve()
-{
+void test_solve(){
 	double result[36], result2[36], result3[36];
 	
 	const double pm[16]{ -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
@@ -1835,6 +1827,10 @@ void test_solve()
 	for (int i = 0; i < 6; ++i) result[i]=s_sov_axis_distance(from_pm, to_pm, i);
 	if (!s_is_equal(6, axis_distance, result, error))std::cout << "\"s_sov_axis_distance\" failed" << std::endl;
 	
+	double calib_tool_two_pnts[6]{ 0.5,0.4,0.3,0.6,0.4,0.9 };
+	const double calib_tool_two_pnts_result[2]{ 0.09553364891256,   0.13964114742507 };
+	s_calib_tool_two_pnts(calib_tool_two_pnts, result);
+	if (!s_is_equal(2, calib_tool_two_pnts_result, result, error))std::cout << "\"s_sov_axis_distance\" failed" << std::endl;
 }
 
 void test_screw()
