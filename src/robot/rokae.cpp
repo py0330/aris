@@ -8,6 +8,7 @@ namespace aris::robot::rokae::xb4{
 	auto createMaster()->std::unique_ptr<aris::control::Master> {
 		std::unique_ptr<aris::control::Master> master(new aris::control::EthercatMaster);
 
+		// motor slaves //
 		for (aris::Size i = 0; i < 6; ++i){
 			std::string xml_str =
 				"<EthercatSlave phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
@@ -46,15 +47,80 @@ namespace aris::robot::rokae::xb4{
 			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
 #endif
 		}
+		// ft sensor slaves //
+		for (aris::Size i = 6; i < 7; ++i) {
+			std::string xml_str =
+				"<EthercatSlave phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
+				" vendor_id=\"0x00\" revision_num=\"0x00\" dc_assign_activate=\"0x0300\">"
+				"	<SyncManagerPoolObject>"
+				"		<SyncManager is_tx=\"false\"/>"
+				"		<SyncManager is_tx=\"true\"/>"
+				"		<SyncManager is_tx=\"false\">"
+				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
+				"				<PdoEntry name=\"control_word\" index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"		<SyncManager is_tx=\"true\">"
+				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"11\" size=\"32\"/>"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"12\" size=\"32\"/>"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"13\" size=\"32\"/>"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"14\" size=\"32\"/>"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"15\" size=\"32\"/>"
+				"				<PdoEntry name=\"status_word\" index=\"0x6020\" subindex=\"16\" size=\"32\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"	</SyncManagerPoolObject>"
+				"</EthercatSlave>";
 
+			master->slavePool().push_back(new aris::control::EthercatSlave());
+			aris::core::fromXmlString(master->slavePool().back(), xml_str);
+
+#ifndef ARIS_USE_ETHERCAT_SIMULATION
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).scanInfoForCurrentSlave();
+#else
+			//dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
+#endif
+		}
+		// io slaves //
+		for (aris::Size i = 7; i < 8; ++i) {
+			std::string xml_str =
+				"<EthercatSlave phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
+				" vendor_id=\"0x00\" revision_num=\"0x00\" dc_assign_activate=\"0x0300\">"
+				"	<SyncManagerPoolObject>"
+				"		<SyncManager is_tx=\"false\"/>"
+				"		<SyncManager is_tx=\"true\"/>"
+				"		<SyncManager is_tx=\"false\">"
+				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
+				"				<PdoEntry name=\"do\" index=\"0x7001\" subindex=\"0x01\" size=\"8\"/>"
+				"				<PdoEntry name=\"do\" index=\"0x7001\" subindex=\"0x02\" size=\"8\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"		<SyncManager is_tx=\"true\">"
+				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
+				"				<PdoEntry name=\"di\" index=\"0x6001\" subindex=\"0x01\" size=\"8\"/>"
+				"				<PdoEntry name=\"di\" index=\"0x6002\" subindex=\"0x02\" size=\"8\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"	</SyncManagerPoolObject>"
+				"</EthercatSlave>";
+
+			master->slavePool().push_back(new aris::control::EthercatSlave());
+			aris::core::fromXmlString(master->slavePool().back(), xml_str);
+
+#ifndef ARIS_USE_ETHERCAT_SIMULATION
+			dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).scanInfoForCurrentSlave();
+#else
+			//dynamic_cast<aris::control::EthercatSlave&>(master->slavePool().back()).setVirtual(true);
+#endif
+		}
 		return master;
 	}
-	auto createController()->std::unique_ptr<aris::control::Controller>
-	{
+	auto createController()->std::unique_ptr<aris::control::Controller>{
 		std::unique_ptr<aris::control::Controller> controller(new aris::control::Controller);
 
-		for (aris::Size i = 0; i < 6; ++i)
-		{
+		// motors //
+		for (aris::Size i = 0; i < 6; ++i){
 #ifdef ARIS_USE_ETHERCAT_SIMULATION
 			double pos_offset[6]
 			{
@@ -96,7 +162,24 @@ namespace aris::robot::rokae::xb4{
 			controller->motorPool().push_back(new aris::control::EthercatMotor());
 			aris::core::fromXmlString(controller->motorPool().back(), xml_str);
 		}
+		// ft sensors //
+		for (aris::Size i = 6; i < 7; ++i) {
+			std::string xml_str =
+				"<Aris::EthercatFtSensorKW slave=\"" + std::to_string(i) + "\">"
+				"</Aris::EthercatFtSensorKW>";
 
+			controller->ftSensorPool().push_back(new aris::control::EthercatFtSensorKW());
+			aris::core::fromXmlString(controller->ftSensorPool().back(), xml_str);
+		}
+		// io //
+		for (aris::Size i = 7; i < 8; ++i) {
+			std::string xml_str =
+				"<Aris::EthercatIoBeckhoff slave=\"" + std::to_string(i) + "\">"
+				"</Aris::EthercatIoBeckhoff>";
+
+			controller->digitalIoPool().push_back(new aris::control::EthercatIoBeckhoff());
+			aris::core::fromXmlString(controller->digitalIoPool().back(), xml_str);
+		}
 		return controller;
 	};
 	auto createModel(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model> 

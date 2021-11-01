@@ -11,8 +11,7 @@
 
 #include "aris/control/controller_motion.hpp"
 
-namespace aris::control
-{
+namespace aris::control{
 	struct Motor::Imp
 	{
 		double max_pos_, min_pos_, max_vel_, min_vel_, max_acc_, min_acc_, max_pos_following_error_, max_vel_following_error_;
@@ -44,8 +43,7 @@ namespace aris::control
 	auto Motor::homePos()const->double { return imp_->home_pos_; }
 	auto Motor::setHomePos(double home_pos)->void { imp_->home_pos_ = home_pos; }
 	Motor::~Motor() = default;
-	Motor::Motor(const std::string &name
-		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
+	Motor::Motor(double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
 		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos) 
 	{
 		imp_->max_pos_ = max_pos;
@@ -63,17 +61,45 @@ namespace aris::control
 	Motor::Motor(const Motor &other) = default;
 	Motor& Motor::operator=(const Motor &other) = default;
 
+	struct DigitalIo::Imp{
+		std::uint16_t num_of_di_, num_of_do_;
+	};
+	auto DigitalIo::numOfDi() const->std::uint16_t {
+		return imp_->num_of_di_;
+	}
+	auto DigitalIo::setNumOfDi(std::uint16_t num_of_di)->void {
+		imp_->num_of_di_ = num_of_di;
+	}
+	auto DigitalIo::numOfDo() const->std::uint16_t {
+		return imp_->num_of_do_;
+	}
+	auto DigitalIo::setNumOfDo(std::uint16_t num_of_do)->void {
+		imp_->num_of_do_ = num_of_do;
+	}
+	DigitalIo::~DigitalIo() = default;
+	DigitalIo::DigitalIo(std::uint16_t num_of_di, std::uint16_t num_of_do){
+		imp_->num_of_di_ = num_of_di;
+		imp_->num_of_do_ = num_of_do;
+	}
+	DigitalIo::DigitalIo(const DigitalIo &other) = default;
+	DigitalIo& DigitalIo::operator=(const DigitalIo &other) = default;
+
 	struct Controller::Imp { 
 		std::unique_ptr<aris::core::PointerArray<Motor>> motor_pool_{ new aris::core::PointerArray<Motor> };
+		std::unique_ptr<aris::core::PointerArray<DigitalIo>> digital_io_pool_{ new aris::core::PointerArray<DigitalIo> };
+		std::unique_ptr<aris::core::PointerArray<FtSensor>> ft_sensor_pool_{ new aris::core::PointerArray<FtSensor> };
 	};
 	auto Controller::resetMotorPool(aris::core::PointerArray<Motor> *pool) { imp_->motor_pool_.reset(pool); }
 	auto Controller::motorPool()->aris::core::PointerArray<Motor>& { return *imp_->motor_pool_; }
+	auto Controller::resetDigitalIoPool(aris::core::PointerArray<DigitalIo> *pool) { imp_->digital_io_pool_.reset(pool); }
+	auto Controller::digitalIoPool()->aris::core::PointerArray<DigitalIo>& { return *imp_->digital_io_pool_; }
+	auto Controller::resetFtSensorPool(aris::core::PointerArray<FtSensor> *pool) { imp_->ft_sensor_pool_.reset(pool); }
+	auto Controller::ftSensorPool()->aris::core::PointerArray<FtSensor>& { return *imp_->ft_sensor_pool_; }
 	auto Controller::init()->void{}
 	Controller::~Controller() = default;
 	Controller::Controller(const std::string &name) :imp_(new Imp) {}
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Motor>("Motor")
 			.prop("max_pos", &Motor::setMaxPos, &Motor::maxPos)
 			.prop("min_pos", &Motor::setMinPos, &Motor::minPos)
@@ -88,12 +114,30 @@ namespace aris::control
 			.prop("home_pos", &Motor::setHomePos, &Motor::homePos)
 			;
 
-	aris::core::class_<aris::core::PointerArray<Motor>>("MotorPoolObject")
-		.asRefArray();
+		aris::core::class_<DigitalIo>("DigitalIo")
+			.prop("num_of_di", &DigitalIo::setNumOfDi, &DigitalIo::numOfDi)
+			.prop("num_of_do", &DigitalIo::setNumOfDo, &DigitalIo::numOfDo)
+			;
+
+		aris::core::class_<FtSensor>("FtSensor")
+			;
+
+		aris::core::class_<aris::core::PointerArray<Motor>>("MotorPoolObject")
+			.asRefArray();
+
+		aris::core::class_<aris::core::PointerArray<DigitalIo>>("DigitalIoPoolObject")
+			.asRefArray();
+
+		aris::core::class_<aris::core::PointerArray<FtSensor>>("FtSensorPoolObject")
+			.asRefArray();
 
 		typedef aris::core::PointerArray<Motor>&(Controller::*MotorPoolFunc)();
+		typedef aris::core::PointerArray<DigitalIo>&(Controller::*DigitalIoPoolFunc)();
+		typedef aris::core::PointerArray<FtSensor>&(Controller::*FtSensorPoolFunc)();
 		aris::core::class_<Controller>("Controller")
 			.prop("motor_pool", &Controller::resetMotorPool, MotorPoolFunc(&Controller::motorPool))
+			.prop("digital_io_pool", &Controller::resetDigitalIoPool, DigitalIoPoolFunc(&Controller::digitalIoPool))
+			.prop("ft_sensor_pool", &Controller::resetFtSensorPool, FtSensorPoolFunc(&Controller::ftSensorPool))
 			;
 	}
 }

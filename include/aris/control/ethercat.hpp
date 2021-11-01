@@ -244,7 +244,7 @@ namespace aris::control
 		auto setSlave(EthercatSlave*)->void;
 
 		virtual ~EthercatMotor();
-		EthercatMotor(EthercatSlave* slave = nullptr, const std::string &name = "ethercat_motor"
+		EthercatMotor(EthercatSlave* slave = nullptr
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		EthercatMotor(const EthercatMotor &other) = delete;
@@ -255,6 +255,88 @@ namespace aris::control
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+	};
+	class ARIS_API EthercatDigitalIo : public DigitalIo{
+	public:
+		auto slave()->EthercatSlave*;
+		auto setSlave(EthercatSlave*)->void;
+
+		virtual ~EthercatDigitalIo();
+		EthercatDigitalIo(std::uint16_t num_of_di = 8, std::uint16_t num_of_do = 8);
+		EthercatDigitalIo(const EthercatDigitalIo &other) = delete;
+		EthercatDigitalIo(EthercatDigitalIo &&other) = delete;
+		EthercatDigitalIo& operator=(const EthercatDigitalIo &other) = delete;
+		EthercatDigitalIo& operator=(EthercatDigitalIo &&other) = delete;
+
+	private:
+		EthercatSlave *slave_{ nullptr };
+	};
+	class ARIS_API EthercatFtSensor : public FtSensor {
+	public:
+		auto slave()->EthercatSlave* { return slave_; }
+		auto setSlave(EthercatSlave* slave)->void { slave_ = slave; }
+
+	private:
+		EthercatSlave *slave_{ nullptr };
+	};
+
+
+	class ARIS_API EthercatIoBeckhoff : public EthercatDigitalIo{
+	public:
+		virtual auto getDi(const std::uint16_t index)->bool override {
+			if (index > 15) return false;
+			std::uint8_t ret;
+			if (index > 7) {
+				slave()->readPdo(0x6001, 0x02, ret);
+				return (bool)(ret & (0x01 << index - 8));
+			}
+			else {
+				slave()->readPdo(0x6001, 0x01, ret);
+				return (bool)(ret & (0x01 << index));
+			}
+		}
+		virtual auto getDo(const std::uint16_t index)->bool override {
+			if (index > 15) return false;
+			std::uint8_t ret;
+			if (index > 7) {
+				slave()->readPdo(0x7001, 0x02, ret);
+				return (bool)(ret & (0x01 << index - 8));
+			}
+			else {
+				slave()->readPdo(0x7001, 0x01, ret);
+				return (bool)(ret & (0x01 << index));
+			}
+		}
+		virtual auto setDo(const std::uint16_t index, const bool status)->void override {
+			if (index > 15) return;
+			std::uint8_t tmp;
+			if (index > 7) {
+				slave()->readPdo(0x7001, 0x02, tmp);
+				if (status)
+					tmp |= 0x01 << index - 8;
+				else
+					tmp &= 0xFF ^ (0x1 << index - 8);
+				slave()->writePdo(0x7001, 0x02, tmp);
+			}
+			else {
+				slave()->readPdo(0x7001, 0x01, tmp);
+				if (status)
+					tmp |= 0x01 << index;
+				else
+					tmp &= 0xFF ^ (0x1 << index);
+				slave()->writePdo(0x7001, 0x01, tmp);
+			}
+		}
+	};
+	class ARIS_API EthercatFtSensorKW : public EthercatFtSensor {
+	public:
+		virtual auto getFtData(double *data_address)->void override {
+			for (int i = 0; i < 6; i++) {
+				float data;
+				auto ret = slave()->readPdo(0x6020, i + 11, &data, 32);
+				data_address[i] = (double)data;
+			}
+		}
 	};
 }
 
