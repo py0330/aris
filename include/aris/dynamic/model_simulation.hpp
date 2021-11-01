@@ -168,21 +168,51 @@ namespace aris::dynamic
 		auto b()->double*;
 		auto clb()->void;
 		
-		// 设置位置、速度、电流/力矩的index，以及每个电机共记录多少个数据
+		// 设置位置、速度、力矩的index，以及每个电机共记录多少个数据
+		// pos_idx            : 第一个电机位置的index
+		// vel_idx            : 第一个电机速度的index
+		// fce_idx            : 第一个电机力矩的index
+		// data_num_per_motor : 每一个电机共记录多少个数据
+		// 例如，所需标定的数据如下，共有3个电机：
+		//
+		// ***   1#速度 1#位置 1#电流 1#力矩   2#速度 2#位置 2#电流 2#力矩   3#速度 3#位置 3#电流 3#力矩  ***
+		//
+		// 那么需要设置
+		// setDataIndex(1, 0, 2, 4);
 		auto setDataIndex(int pos_idx, int vel_idx, int fce_idx, int data_num_per_motor)->void;
 		auto dataIndex()const->std::tuple<int, int, int, int>;
+		
+		// 滤波窗口
 		auto setFilterWindowSize(int window_size)->void;
 		auto filterWindowSize()const->int;
 
+		// 速度系数：真实速度 = 标定表格中速度 * 系数
 		auto velocityRatio()const->std::vector<double>;
 		auto setVelocityRatio(std::vector<double> constant)->void;
 
+		// 力矩系数：真实力矩 = 标定表格中力矩 * 系数
 		auto torqueConstant()const->std::vector<double>;
 		auto setTorqueConstant(std::vector<double> constant)->void;
 
+		// 力矩权重：每个电机对误差的承受能力
+		//           力矩越大的电机，应该承受能力越强
+		// !! 因此 ：力矩权重一般设置成: 电机额定扭矩 / 系统中最大的电机额定扭矩！！
+		//           默认为 1
+		auto torqueWeight()const->std::vector<double>;
+		auto setTorqueWeight(std::vector<double> constant)->void;
+
+		// 速度死区：电机在死区内，摩擦力模型不适用，此时忽略该电机的力矩（不建模型）
+		//           默认为0.01
+		auto velocityDeadZone()const->std::vector<double>;
+		auto setVelocityDeadZone(std::vector<double> constant)->void;
+
+		// 允许的最大方差：若经过计算，结果的方差小于该值，则可以接受，否则返回错误
+		auto tolerableVariance()const->double;
+		auto setTolerableVariance(double variance)->void;
+
 		// tbd //
 		auto clbFile(const std::string &file_path)->void;
-		auto clbFiles(const std::vector<std::string> &file_paths)->void;
+		auto clbFiles(const std::vector<std::string> &file_paths)->int;
 		auto verifyFiles(const std::vector<std::string> &file_paths)->void;
 		auto updateInertiaParam(const double *inertia_param)->void;
 

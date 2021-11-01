@@ -27,22 +27,23 @@
 #include "aris/core/basic_type.hpp"
 #include "aris/core/msg.hpp"
 
+namespace aris::core{
+	// 语言 //
+	int global_lang_id = 0;
+	auto setLanguage(int language_id_)->void { global_lang_id = language_id_;}
+	auto currentLanguage()->int { return global_lang_id; }
 
-namespace aris::core
-{
-	class ThreadSafeStreamBuf :public std::streambuf
-	{
+	// 默认log实现 //
+	class ThreadSafeStreamBuf :public std::streambuf {
 	public:
-		virtual auto overflow(int_type c)->int_type override
-		{
+		virtual auto overflow(int_type c)->int_type override {
 			msg_.resize(msg_.capacity());// 保证在下次resize的时候，所有数据都会被copy，这是因为在resize重新分配内存时，不是按照capacity来copy
 			msg_.resize(msg_.capacity() + 1);
 			setp(msg_.data() + msg_.size(), msg_.data() + msg_.capacity());
 			*(pptr() - 1) = c;
 			return c;
 		}
-		virtual auto sync()->int override
-		{
+		virtual auto sync()->int override {
 			std::unique_lock<std::recursive_mutex> lck(*real_mutex_);
 
 			msg_.resize(msg_.capacity() - static_cast<MsgSize>(epptr() - pptr()));
@@ -53,7 +54,7 @@ namespace aris::core
 
 			return 0;
 		}
-		explicit ThreadSafeStreamBuf(std::ostream** real_stream, std::recursive_mutex *real_mutex): real_stream_(real_stream), real_mutex_(real_mutex) { }
+		explicit ThreadSafeStreamBuf(std::ostream** real_stream, std::recursive_mutex *real_mutex) : real_stream_(real_stream), real_mutex_(real_mutex) { }
 
 	private:
 		aris::core::Msg msg_;
@@ -61,20 +62,17 @@ namespace aris::core
 		std::recursive_mutex* real_mutex_;
 	};
 	template<int>
-	class ThreadSafeStream :public std::ostream 
-	{ 
-	public: 
-		static auto setStream(std::ostream& stream) ->void
-		{ 
+	class ThreadSafeStream :public std::ostream {
+	public:
+		static auto setStream(std::ostream& stream) ->void {
 			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
-			real_stream_ = &stream; 
+			real_stream_ = &stream;
 		}
 		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
-		ThreadSafeStream(std::ostream &default_stream) :std::ostream(&buf_) 
-		{
+		ThreadSafeStream(std::ostream &default_stream) :std::ostream(&buf_) {
 			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
 			real_stream_ = real_stream_ ? real_stream_ : &default_stream;
-		}; 
+		};
 
 		static std::recursive_mutex real_mutex_;
 	private:
@@ -86,14 +84,6 @@ namespace aris::core
 	template <int a>
 	std::ostream* ThreadSafeStream<a>::real_stream_;
 
-	auto cout()->std::ostream&
-	{
-		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
-		static thread_local ThreadSafeStream<0> local_stream_(std::cout);
-		return local_stream_;
-	}
-	auto setCoutStream(std::ostream& cout_stream) { ThreadSafeStream<0>::setStream(cout_stream); }
-
 	static std::filesystem::path log_dir_path_;
 	static std::filesystem::path log_file_path_;
 	static std::ofstream log_fstream_;
@@ -101,58 +91,111 @@ namespace aris::core
 	static std::atomic_int max_info_num = 100000, current_info_num = 0;
 	static int log_file_num = 0;
 
-	auto log()->std::ostream&
-	{
+	auto defaultLogStream()->std::ostream& {
 		// 这个参数仅仅用于设置默认值 //
 		static thread_local ThreadSafeStream<1> local_stream_(log_fstream_);
+
+		// 线程锁 //
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		// 如果记录满了，关闭文件，因为上面有锁，所以不可能出现内存stream在sync，而这里在关闭的情况 //
-		if (++current_info_num > max_info_num) 
-		{
+		if (++current_info_num > max_info_num) {
 			log_fstream_.close();
 			current_info_num = 0;
 			log_file_num++;
 		}
-		
+
 		// 如果第一次或之前满了，打开文件 //
-		if (!log_fstream_.is_open())
-		{
-			logFile();
+		if (!log_fstream_.is_open()) {
+			setDefaultLogFile();
 			ThreadSafeStream<1>::setStream(log_fstream_);
 		}
 
 		// 返回memory stream //
 		return local_stream_;
 	}
-	auto logDirectory(const std::filesystem::path &log_dir)->void
-	{
+
+	// 默认log的接口 //
+	auto setDefaultLogDirectory(const std::filesystem::path &log_dir)->void {
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute("log") : std::filesystem::absolute(log_dir);
 		std::filesystem::create_directories(log_dir_path_);
 	}
-	auto logFile(const std::filesystem::path &log_file_path)->void
-	{
+	auto defaultLogDirectory()->std::filesystem::path {
+		if (log_dir_path_.empty())setDefaultLogDirectory();
+		return log_dir_path_;
+	}
+	auto setDefaultLogFile(const std::filesystem::path &log_file_path)->void {
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_file_path_ = log_file_path.empty() ? std::filesystem::path(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt") : log_file_path;
-		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : logDirPath() / log_file_path_;
+		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : defaultLogDirectory() / log_file_path_;
 		log_file_path_.replace_filename(log_file_path_.filename().replace_extension().string() + std::string("_") + std::to_string(log_file_num) + log_file_path_.extension().string());
 		std::filesystem::create_directories(log_file_path_.parent_path());
 
 		log_fstream_.close();
 		log_fstream_.open(log_file_path_, std::ios::out | std::ios::trunc);
 	}
-	auto logMaxInfoNum(int max_info_num_) { max_info_num.store(max_info_num_); }
+	auto setDefaultLogMaxInfoNum(int max_info_num_) { max_info_num.store(max_info_num_); }
 
-	auto logDirPath()->std::filesystem::path 
-	{ 
-		if (log_dir_path_.empty())logDirectory();
-		return log_dir_path_; 
+	// log string //
+	std::function<void(const char *msg)> log_string_ = defaultLogString;
+	auto setLogMethod(std::function<void(const char *msg)> method)->void { log_string_ = method ? method : defaultLogString; }
+	auto log(const char *msg)->void { log_string_(msg);}
+	auto defaultLogString(const char *msg)->void {
+		aris::core::defaultLogStream()
+			<< msg
+			<< std::endl;
 	}
-	auto logExeName()->std::string
-	{
+
+	// 上层日志方法，带日志数据结构 //
+	std::function<void(LogData)> log_data_ = defaultLogData;
+	auto setLogMethod(std::function<void(LogData )> method)->void { log_data_ = method ? method : defaultLogData; }
+	auto log(LogData data)->void { log_data_(data); }
+	auto defaultLogData(LogData d)->void {
+		enum {
+			LOG_TYPE_WIDTH = 7,
+			LOG_TIME_WIDTH = 19,
+			LOG_FILE_WIDTH = 25,
+			LOG_LINE_WIDTH = 5,
+			LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
+		};
+		
+		const char *lvl_str[] {"DEBUG", "INFO", "WARNING", "ERROR", "FATAL"};
+
+		std::stringstream ss;
+		std::string_view data(d.msg);
+		bool is_first_time = true;
+		while (data.size() > 0) {
+			auto print = data.substr(0, data.find_first_of("\n"));
+
+			if (is_first_time) {
+				ss << std::setw(LOG_TYPE_WIDTH) << lvl_str[(int)d.level] << "|"
+					<< std::setw(LOG_TIME_WIDTH) << aris::core::datetimeFormat(d.time) << "|"
+					<< std::setw(LOG_FILE_WIDTH) << std::string_view(d.file_name).substr(std::string_view(d.file_name).find_last_of("/\\") + 1) << "|"
+					<< std::setw(LOG_LINE_WIDTH) << d.line << "|"
+					<< print;
+			}
+			else {
+				ss << "\n"
+					<< std::setw(LOG_SPACE_WIDTH) << "|"
+					<< print;
+					
+			}
+
+
+			is_first_time = false;
+			data = data.substr(print.size() == data.size() ? data.size() : print.size() + 1);
+		}
+		
+		//std::cout << ss.str() << std::endl;
+		aris::core::defaultLogStream()
+			<< ss.str()
+			<< std::endl;
+	}
+
+	auto logExeName()->std::string{
 		const int TASK_NAME_LEN = 1024;
 
 #ifdef WIN32
@@ -207,8 +250,7 @@ namespace aris::core
 		return std::string(proName);
 
 	}
-	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string
-	{
+	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string{
 		auto time_t_var = std::chrono::system_clock::to_time_t(time);
 		auto timeinfo = localtime(&time_t_var);
 		char time_format[1024];
@@ -216,17 +258,23 @@ namespace aris::core
 		return std::string(time_format);
 	}
 
-	auto ARIS_API dateFormat(const std::chrono::system_clock::time_point &time)->std::string {
+	// 线程安全版输入输出 //
+	auto cout()->std::ostream& {
+		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
+		static thread_local ThreadSafeStream<0> local_stream_(std::cout);
+		return local_stream_;
+	}
+	auto setCoutStream(std::ostream& cout_stream) { ThreadSafeStream<0>::setStream(cout_stream); }
+
+	auto dateFormat(const std::chrono::system_clock::time_point &time)->std::string {
 		const auto &str = datetimeFormat(time);
 		return str.substr(0, str.find_first_of(' '));
 	}
-
-	auto ARIS_API timeFormat(const std::chrono::system_clock::time_point &time)->std::string {
+	auto timeFormat(const std::chrono::system_clock::time_point &time)->std::string {
 		const auto &str = datetimeFormat(time);
 		return str.substr(str.find_first_of(' ')+1);
 	}
-
-	auto ARIS_API datetimeFormat(const std::chrono::system_clock::time_point &time)->std::string {
+	auto datetimeFormat(const std::chrono::system_clock::time_point &time)->std::string {
 		auto tt = std::chrono::system_clock::to_time_t(time);
 
 #ifdef UNIX
@@ -243,315 +291,4 @@ namespace aris::core
 		os << std::put_time(&tm, "%F %T");
 		return os.str();
 	}
-
-	std::ostream& operator<<(std::ostream &s, const DbLogCell &cell) {
-		s << std::flush;
-		Sqlite3Log::instance().toDb(cell);
-		return s;
-	}
-
-	Sqlite3Log::~Sqlite3Log() {
-		to_work_ = false;
-		if (worker_.joinable()) worker_.join();
-		sqlite3_close(db_);
-		db_ = nullptr;
-	}
-
-	auto Sqlite3Log::instance()->Sqlite3Log& {
-		static Sqlite3Log obj;
-		return obj;
-	}
-
-	auto Sqlite3Log::open(const std::filesystem::path &db_path)->void {
-		if (isOpen()) throw std::runtime_error("Sqlite3 database has been already opened.");
-	
-		int ret = -1;
-		char *msg = nullptr;
-
-#define CHECK_OP_ERR(rc) if(rc) throw std::runtime_error(msg);
-
-		try {
-			// open database
-			if (sqlite3_open(db_path.filename().string().c_str(), &db_) != SQLITE_OK) {
-				throw std::runtime_error("Unable to open database file '"+db_path.filename().string()+"'.");
-			}
-
-			// check table
-			bool has_tbl = false;
-			auto tbl_check = [](void *context, int, char **, char **)->int {
-				*(bool*)context = true;
-				return 0;
-			};
-			CHECK_OP_ERR(sqlite3_exec(db_, "select * from sqlite_master where type='table' and name ='SYSLOG';", tbl_check, &has_tbl, &msg))
-
-			if (!has_tbl) {
-				const char *sql = "CREATE TABLE SYSLOG("
-										"ID INTEGER PRIMARY KEY AUTOINCREMENT,"
-										"TIME TIMESTAMP DEFAULT (datetime('now', 'localtime')),"
-										"LEVEL INTEGER NOT NULL,"
-										"TYPE INTEGER NOT NULL,"
-										"CODE INTEGER DEFAULT 0,"
-										"TEXT TEXT DEFAULT ''"
-								   ");";
-				CHECK_OP_ERR(sqlite3_exec(db_, sql, nullptr, nullptr, &msg))
-			}
-
-			// check column
-			struct ColCheck {
-				bool ok{true};
-				std::map<std::string, std::pair<std::string, bool>> cols{
-					{"ID", {"INTEGER", false}},
-					{"TIME", {"TIMESTAMP", false}},
-					{"LEVEL", {"INTEGER", false}},
-					{"TYPE", {"INTEGER", false}},
-					{"CODE", {"INTEGER", false}},
-					{"TEXT", {"TEXT", false}},
-				};
-
-				auto isOk() const->bool {
-					if (!ok) return ok;
-					for (const auto &[name, tpair] : cols) {
-						if (tpair.second == false) return false;
-					}
-					return true;
-				}
-			};
-			auto col_check = [](void *context, int count, char **value, char **name)->int {
-				std::string cname;
-				std::string ctype;
-				for (int i=0;i<count;++i) {
-					if (!strcmp(name[i], "name")) cname = value[i];
-            		if (!strcmp(name[i], "type")) ctype = value[i];
-				}
-
-				auto cell = static_cast<ColCheck*>(context);
-				auto iter = cell->cols.find(cname);
-				if (iter == cell->cols.end() || iter->second.first != ctype) {
-					cell->ok = false;
-				} else {
-					iter->second.second = true;
-				}
-
-				return 0;
-			};
-			ColCheck col_check_cell;
-			CHECK_OP_ERR(sqlite3_exec(db_, "PRAGMA table_info(SYSLOG)", col_check, &col_check_cell, &msg))
-			if (!col_check_cell.isOk()) throw std::runtime_error("Incompitible columns.");
-
-			to_work_ = true;
-			worker_ = std::thread([this]() {
-				while(this->to_work_) {
-					if (this->queue_->isEmpty()) {
-						std::this_thread::sleep_for(std::chrono::milliseconds(50));
-						continue;
-					}
-
-					DbLogCell cell;
-					this->queue_->pop(cell, AccessStrategy::kYield);
-
-					if (cell.needCheck()) {
-						++this->id_;
-						std::lock_guard<std::recursive_mutex> lg(this->unchecked_mu_);
-						this->unchecked_cells_.insert({this->currentId(), cell});
-						if (cell.logLvl() == LogLvl::kError) {
-							this->error_ids_.insert(this->currentId());
-						}
-					}
-
-					char *msg{nullptr};
-					std::string sql = "INSERT INTO SYSLOG (TIME, LEVEL, TYPE, CODE, TEXT) VALUES(";
-					sql += "'"+datetimeFormat(cell.timeStamp())+"',";
-					sql += std::to_string((int)cell.logLvl())+",";
-					sql += std::to_string((int)cell.logType())+",";
-					sql += std::to_string(cell.code())+",";
-					sql += "'"+cell.text() + "');";
-					this->mu_.lock();
-					if(sqlite3_exec(this->db_, sql.c_str(), nullptr, nullptr, &msg)) {
-						std::cout<<msg<<std::endl;
-					}
-					this->mu_.unlock();
-					sqlite3_free(msg);
-				}
-			});
-		} catch (const std::exception &e) {
-			sqlite3_free(msg);
-			sqlite3_close(db_);
-			db_ = nullptr;
-			throw std::runtime_error(e.what());
-		}		
-#undef CHECK_OP_ERR
-	}
-
-	auto Sqlite3Log::toDb(const DbLogCell &cell)->void {
-		if (!isOpen()) throw std::runtime_error("Database has not been opened.");
-		// TODO: set cpu affinity or use mutex to solve probable cell missing
-		if (!queue_->push(cell, cell.strategy())) {
-			std::fstream fstrm_status("trace.log", std::ios::out | std::ios::app);
-			fstrm_status << "log '" << cell.text() << "' inserted to the queue failed -- " << datetimeFormat(cell.timeStamp()) << std::endl;
-			fstrm_status.close();
-			throw std::runtime_error("log to queue failed");
-		}
-		if (cell.logLvl() == LogLvl::kError) {
-			has_error_.store(true, std::memory_order_release);
-		}
-	}
-
-	auto Sqlite3Log::close()->void {
-		if (!isOpen()) return;
-		to_work_ = false;
-		worker_.join();
-		sqlite3_close(db_);
-		db_ = nullptr;
-		queue_->clear();
-	}
-
-	auto Sqlite3Log::isOpen() const->bool { return db_ != nullptr; }
-
-	auto Sqlite3Log::select(const LogFilter &filter) const->std::vector<DbLogCell> {
-		if (!isOpen()) throw std::runtime_error("Database has not been opened.");
-
-		std::string sql = "SELECT * FROM SYSLOG";
-
-		std::vector<std::string> rules;
-
-		// time rule
-		if (filter.timeRule().enable) {
-			const auto &rule = filter.timeRule();
-			if (rule.begin > rule.end) return {};
-			rules.push_back("TIME BETWEEN '"+datetimeFormat(rule.begin)+"' AND '"+datetimeFormat(rule.end)+"'");
-		}
-
-		// lvl rule
-		if (filter.lvlRule().enable) {
-			const auto &rule = filter.lvlRule();
-			if (rule.lvls.empty()) return {};
-
-			std::string rule_str;
-			for (const auto &lvl : rule.lvls) {
-				rule_str += "LEVEL = "+std::to_string((int)(lvl))+" OR ";
-			}
-			rule_str.erase(rule_str.size()-4);
-			rules.push_back(rule_str);
-		}
-
-		// type rule
-		if (filter.typeRule().enable) {
-			const auto &rule = filter.typeRule();
-			if (rule.types.empty()) return {};
-
-			std::string rule_str;
-			for (const auto &type : rule.types) {
-				rule_str += "TYPE = "+std::to_string((int)(type))+" OR ";
-			}
-			rule_str.erase(rule_str.size()-4);
-			rules.push_back(rule_str);
-		}
-
-		// code rule
-		if (filter.codeRule().enable) {
-			const auto &rule = filter.codeRule();
-			if (rule.min_code > rule.max_code) return {};
-			rules.push_back("CODE BETWEEN "+std::to_string(rule.min_code)+" AND "+std::to_string(rule.max_code));
-		}
-
-		if (!rules.empty()) {
-			sql += " WHERE ";
-			for (const auto &rule : rules) sql += "(" + rule + ") AND ";
-			sql.erase(sql.size()-5);
-		}
-
-		// order
-		if (filter.order()) {
-			sql += " ORDER BY ID ASC";
-		} else {
-			sql += " ORDER BY ID DESC";
-		}
-
-		// count rule
-		if (filter.countRule().enable) {
-			const auto &rule = filter.countRule();
-			if (rule.offset == 0) return {};
-
-			sql += " LIMIT "+std::to_string(rule.start)+","+std::to_string(rule.offset);
- 		}
-
-		sql += ";";
-
-		std::vector<DbLogCell> ret;
-		auto ret_construct = [](void *context, int count, char **value, char **name)->int {
-			auto &ret = *static_cast<std::vector<DbLogCell>*>(context);
-
-			DbLogCell cell;
-			for (int i=0; i<count; ++i) {
-				if (!strcmp(name[i], "TIME")) {
-					std::tm t={};
-					std::istringstream is(value[i]);
-					is.imbue(std::locale("de_DE.utf-8"));
-					is >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
-					cell.setTimeStamp(std::chrono::system_clock::from_time_t(std::mktime(&t)));
-				} else if (!strcmp(name[i], "LEVEL")) {
-					cell.setLogLvl((LogLvl)(atoi(value[i])));
-				} else if (!strcmp(name[i], "TYPE")) {
-					cell.setLogType((LogType)(atoi(value[i])));
-				} else if (!strcmp(name[i], "CODE")) {
-					cell.setCode(atoi(value[i]));
-				} else if (!strcmp(name[i], "TEXT")) {
-					cell.setText(std::string(value[i]));
-				}
-			}
-
-			ret.push_back(cell);
-
-			return 0;
-		};
-
-		char *msg = nullptr;
-		mu_.lock();
-		if (sqlite3_exec(db_, sql.c_str(), ret_construct, &ret, &msg)) {
-			std::string str_msg(msg);
-			sqlite3_free(msg);
-			mu_.unlock();
-			throw std::runtime_error(str_msg);
-		}
-		mu_.unlock();
-
-		return ret;
-
-	}
-
-	auto Sqlite3Log::unchecked() const->std::map<uint64_t, DbLogCell> {
-		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
-		return unchecked_cells_;
-	}
-	
-	auto Sqlite3Log::check(uint64_t id)->void {
-		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
-		auto iter = unchecked_cells_.find(id);
-		if (iter == unchecked_cells_.end()) return;
-		if (iter->second.logLvl() == LogLvl::kError) {
-			error_ids_.erase(iter->first);
-		}
-		unchecked_cells_.erase(iter);
-		if (error_ids_.empty())
-			has_error_.store(false, std::memory_order_release);
-	}
-
-	auto Sqlite3Log::checkAll()->void {
-		std::lock_guard<std::recursive_mutex> lg(unchecked_mu_);
-		unchecked_cells_.clear();
-		error_ids_.clear();
-		has_error_.store(false, std::memory_order_release);
-	}
-
-	// auto CodeTextTable::getAndFormat(int code, int language, ...) const->std::string {
-	// 	va_list va;
-	// 	va_start(va, language);
-	// 	char buf[1024];
-	// 	vsnprintf(buf, 1023, get(code, language).c_str(), va);
-	// 	va_end(va);
-
-	// 	return std::string(buf);
-	// }
-
-	unsigned LocaleString::locale_{CHN};
 }

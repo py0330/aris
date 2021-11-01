@@ -102,12 +102,10 @@ namespace aris::core
 		return ret;
 	}
 	template <typename MATRIX_LIST>
-	Matrix combineRowMatrices(const MATRIX_LIST &matrices)
-	{
+	Matrix combineRowMatrices(const MATRIX_LIST &matrices){
 		// 获取全部矩阵的行数和列数 //
 		Size m = 0, n = 0;
-		for (const auto &mat : matrices)
-		{
+		for (const auto &mat : matrices){
 			if (mat.size() == 0)continue;
 			if ((m != 0) && (m != mat.m()))THROW_FILE_LINE("input do not have valid size");
 			m = mat.m();
@@ -117,12 +115,9 @@ namespace aris::core
 
 		// 赋值 //
 		Size beginCol = 0;
-		for (const auto &mat : matrices)
-		{
-			for (Size i = 0; i < mat.m(); i++)
-			{
-				for (Size j = 0; j < mat.n(); j++)
-				{
+		for (const auto &mat : matrices){
+			for (Size i = 0; i < mat.m(); i++){
+				for (Size j = 0; j < mat.n(); j++){
 					ret(i, j + beginCol) = mat(i, j);
 				}
 			}

@@ -162,7 +162,7 @@ namespace aris::control
 		imp_->mout_thread_ = std::thread([this]()
 		{
 			// prepare lout //
-			auto file_name = aris::core::logDirPath() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
+			auto file_name = aris::core::defaultLogDirectory() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
 			std::fstream file;
 			file.open(file_name.string() + "0.txt", std::ios::out | std::ios::trunc);
 
@@ -179,7 +179,7 @@ namespace aris::control
 					}
 					else if (msg.msgID() == Imp::LOG_NEW_FILE_RAW_NAME)
 					{
-						auto raw_name = aris::core::logDirPath() / (msg.toString() + ".txt");
+						auto raw_name = aris::core::defaultLogDirectory() / (msg.toString() + ".txt");
 						file.close();
 						file.open(raw_name, std::ios::out | std::ios::trunc);
 					}

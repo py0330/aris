@@ -28,8 +28,6 @@ if(UNIX)
 endif(UNIX)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
-
-
 ## set rely libs ##
 # std & socker rely #
 if(UNIX)
@@ -177,7 +175,7 @@ endif(BUILD_TESTS)
 option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)
 	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
-					demo_model_scara demo_stewart demo_hulk demo_ur demo_server demo_rokae_server demo_reflection)
+					demo_model_delta demo_model_scara demo_model_multi demo_stewart demo_hulk demo_ur demo_server demo_rokae_server demo_reflection)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})

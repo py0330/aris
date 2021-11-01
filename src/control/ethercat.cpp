@@ -475,23 +475,23 @@ namespace aris::control
 	}
 	auto EthercatMotor::modeOfDisplay()const->std::uint8_t{
 		std::uint8_t mode{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6061, 0x00, mode)        != 0) ? imp_->mode_of_operation : mode;
 	}
 	auto EthercatMotor::actualPos()const->double{
 		std::int32_t pos_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6064, 0x00, pos_count)   != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
 	auto EthercatMotor::actualVel()const->double{
 		std::int32_t vel_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count)   != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
 	}
 	auto EthercatMotor::actualToq()const->double{
 		std::int16_t fce_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6077, 0x00, fce_count)   != 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
 	}
 	auto EthercatMotor::actualCur()const->double{
 		std::int16_t cur_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6078, 0x00, cur_count)   != 0) ? imp_->target_toq_: static_cast<double>(cur_count);
 	}
 	auto EthercatMotor::disable()->int{
 		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x40;

@@ -1531,7 +1531,7 @@ namespace aris::dynamic{
 	//    dir : direction
 	//    r   : radius
 	//    l   : length
-	//    p  : point need to check
+	//    p   : point need to check
 	auto inline s_is_in_cylinder(const double *p0, const double *dir, double r, double l, const double *p, double zero_check = 1e-10)->bool {
 		double v[3]{ p[0] - p0[0],p[1] - p0[1], p[2] - p0[2] };
 		double dir_norm[3]{ dir[0],dir[1],dir[2] };

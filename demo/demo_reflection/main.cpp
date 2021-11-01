@@ -71,7 +71,6 @@ private:
 auto setValue5(ChildClass *c, double v)->void { c->global_value_ = v; }
 auto getValue5(ChildClass *c)->double { return c->global_value_; }
 
-
 ARIS_REGISTRATION{
 
 	// 注册 Basic 类型，以及它和字符串的转换关系(此时不能有其他 prop 属性) //
@@ -104,14 +103,74 @@ ARIS_REGISTRATION{
 }
 
 
+class func_ {
+public:
+	//template <typename R, typename... Param>
+	//func_(std::string name, std::function<R(Param...)> f) {
+	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+	//	inside_func = [=]()->void* {
+	//		std::apply(f, *(Arguments*)inside_tuple.get());
+	//		return nullptr;
+	//	};
+	//}
+
+	//template <typename... Param>
+	//auto invoke(Param&&... params)->void{
+	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+	//	inside_tuple.reset(new Arguments(params... ));
+	//	inside_func();
+	//}
+
+	
+
+	template <typename R, typename... Param>
+	func_(std::string name, std::function<R(Param...)> f) {
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_func = [=](std::vector<aris::core::Instance> &param_ins_vec)->void* {
+			auto t = make_param_tuple<Arguments>(
+				param_ins_vec,
+				std::make_index_sequence<std::tuple_size_v<Arguments>>{}
+			);
+			std::apply(f, t);
+			return nullptr;
+		};
+	}
+
+	template <typename... Param>
+	auto invoke(Param&&... params)->void{
+		auto ins_vec = std::vector<aris::core::Instance>({params...});
+		inside_func(ins_vec);
+	}
+
+private:
+	std::function<void*(std::vector<aris::core::Instance> &)> inside_func;
+
+	template <class MyTuple, std::size_t... I>
+	auto make_param_tuple(std::vector<aris::core::Instance> &param_ins_vec, std::index_sequence<I...>)->MyTuple {
+		return MyTuple(*param_ins_vec[I].castTo<std::remove_reference_t<std::tuple_element_t<I, MyTuple>>>()...);
+	}
+};
+
+//template <typename R, typename... Param>
+//auto select_overload(std::function<R(Param...)> f)->std::function<R(Param...)> { return f; }
+
+template<typename Signature >
+Signature* select_overload(Signature * 	func) { return func; }
+
+
+
+void f1(int a) { std::cout << "f1:a  " << a << std::endl; }
+void f1(double b) { std::cout << "f1:b  " << b << std::endl; }
+
 int main(){
 	std::cout << std::setiosflags(std::ios::left);
 
 	//# 使用反射 #//
 	{
 		//## 基础类型 ##//
-		// 基础类型只有和字符串交互的，无法序列化
+		// 基础类型可以和字符串交互，也可直接序列化
 		Basic basic1{ "jack", 12 };
+		std::cout << aris::core::toXmlString(basic1) << std::endl;
 
 		// 使用 Instance 进行反射交互，Instance 是basic1的引用，不负责其生命周期
 		aris::core::Instance ins = basic1;
@@ -273,6 +332,34 @@ int main(){
 		delete base_ptr;
 	}
 	
+
+	auto f = [](int &a, double b)->double {
+		std::cout << "a:" << a << std::endl;
+		std::cout << "b:" << b << std::endl;
+		std::cout << &a << std::endl;
+		a = 123456;
+		b = 0.0001;
+		return 0.0;
+	};
+	std::function<double(int&, double)> ff = f;
+
+
+	func_ aaa("aaa", ff);
+
+	auto ffff = select_overload<void(int)>(f1);
+
+	std::function<void(int)> fffff = select_overload<void(int)>(f1);
+	func_ f1_("f1", fffff);
+	//func_ f1_("f1", select_overload<void(int)>(f1));
+
+	int bc = 1;
+	int &bd = bc;
+	double ccc(145.67);
+
+	std::cout << &bc << std::endl;
+	std::cout << &bd << std::endl;
+	aaa.invoke(bd, ccc);
+
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0; 

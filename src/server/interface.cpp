@@ -82,14 +82,14 @@ namespace aris::server
 		
 		auto msg_data = std::string_view(msg.data(), msg.size());
 
-		LOG_INFO << "receive cmd:"
-			<< msg.header().msg_size_ << "&"
-			<< msg.header().msg_id_ << "&"
-			<< msg.header().msg_type_ << "&"
-			<< msg.header().reserved1_ << "&"
-			<< msg.header().reserved2_ << "&"
-			<< msg.header().reserved3_ << ":"
-			<< msg_data << std::endl;
+		//LOG_INFO << "receive cmd:"
+		//	<< msg.header().msg_size_ << "&"
+		//	<< msg.header().msg_id_ << "&"
+		//	<< msg.header().msg_type_ << "&"
+		//	<< msg.header().reserved1_ << "&"
+		//	<< msg.header().reserved2_ << "&"
+		//	<< msg.header().reserved3_ << ":"
+		//	<< msg_data << std::endl;
 
 		try
 		{
@@ -118,7 +118,7 @@ namespace aris::server
 				catch (std::exception &e)
 				{
 					ARIS_COUT << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					//LOG_ERROR << e.what() << std::endl;
 				}
 			});
 		}
@@ -130,7 +130,7 @@ namespace aris::server
 			std::string ret_str = parse_ret_value(ret_pair);
 
 			ARIS_COUT << ret_str << std::endl;
-			LOG_ERROR << ret_str << std::endl;
+			//LOG_ERROR << ret_str << std::endl;
 
 			try
 			{
@@ -141,7 +141,7 @@ namespace aris::server
 			catch (std::exception &e)
 			{
 				ARIS_COUT << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
+				//LOG_ERROR << e.what() << std::endl;
 			}
 		}
 
@@ -150,15 +150,15 @@ namespace aris::server
 	auto onReceivedConnection(aris::core::Socket *sock, const char *ip, int port)->int
 	{
 		ARIS_COUT << "socket receive connection" << std::endl;
-		LOG_INFO << "socket receive connection:\n"
-			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
-			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
+		//LOG_INFO << "socket receive connection:\n"
+		//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
+		//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 		return 0;
 	}
 	auto onLoseConnection(aris::core::Socket *socket)->int
 	{
 		ARIS_COUT << "socket lose connection" << std::endl;
-		LOG_INFO << "socket lose connection" << std::endl;
+		//LOG_INFO << "socket lose connection" << std::endl;
 		for (;;)
 		{
 			try
@@ -169,12 +169,12 @@ namespace aris::server
 			catch (std::runtime_error &e)
 			{
 				ARIS_COUT << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				//LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
 		}
 		ARIS_COUT << "socket restart successful" << std::endl;
-		LOG_INFO << "socket restart successful" << std::endl;
+		//LOG_INFO << "socket restart successful" << std::endl;
 
 		return 0;
 	}
@@ -213,18 +213,18 @@ namespace aris::server
 				catch (std::exception &e)
 				{
 					ARIS_COUT << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					//LOG_ERROR << e.what() << std::endl;
 				}
 			};
 				
-			LOG_INFO << this->name() << "receive cmd:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< std::string_view(msg.data(), msg.size()) << std::endl;
+			//LOG_INFO << this->name() << "receive cmd:"
+			//	<< msg.header().msg_size_ << "&"
+			//	<< msg.header().msg_id_ << "&"
+			//	<< msg.header().msg_type_ << "&"
+			//	<< msg.header().reserved1_ << "&"
+			//	<< msg.header().reserved2_ << "&"
+			//	<< msg.header().reserved3_ << ":"
+			//	<< std::string_view(msg.data(), msg.size()) << std::endl;
 
 			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret, dynamic_cast<Interface*>(this));
 
@@ -233,9 +233,9 @@ namespace aris::server
 		
 		imp_->onReceiveConnection_ = [this](aris::core::Socket *socket, const char *ip, int port)->int {
 			ARIS_COUT << this->name() << " receive connection" << std::endl;
-			LOG_INFO << this->name() << " receive connection:\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
+			//LOG_INFO << this->name() << " receive connection:\n"
+			//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
+			//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 
 			for (const auto &[priority, cbk] : Interface::imp_->on_connecteds_) {
 				cbk(this);
@@ -246,10 +246,7 @@ namespace aris::server
 
 		imp_->onLoseConnection_ = [this](aris::core::Socket *socket)->int {
 			ARIS_COUT << this->name() << " lose connection" << std::endl;
-			LOG_INFO << this->name() << " lose connection" << std::endl;
-			for (const auto &[priority, cbk] : Interface::imp_->on_disconnecteds_) {
-				cbk(this);
-			}
+			//LOG_INFO << this->name() << " lose connection" << std::endl;
 			for (;;)
 			{
 				try
@@ -260,12 +257,12 @@ namespace aris::server
 				catch (std::runtime_error &e)
 				{
 					ARIS_COUT << e.what() << std::endl << this->name() << " will try to restart server socket in 1s" << std::endl;
-					LOG_ERROR << e.what() << std::endl << this->name() << " will try to restart server socket in 1s" << std::endl;
+					//LOG_ERROR << e.what() << std::endl << this->name() << " will try to restart server socket in 1s" << std::endl;
 					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
 			}
 			ARIS_COUT << this->name() << " restart successful" << std::endl;
-			LOG_INFO << this->name() << " restart successful" << std::endl;
+			//LOG_INFO << this->name() << " restart successful" << std::endl;
 
 			return 0;
 		};
@@ -357,18 +354,18 @@ namespace aris::server
 				catch (std::exception &e)
 				{
 					ARIS_COUT << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					//LOG_ERROR << e.what() << std::endl;
 				}
 			};
 			
-			LOG_INFO << "receive cmd:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< std::string_view(msg.data(), msg.size()) << std::endl;
+			//LOG_INFO << "receive cmd:"
+			//	<< msg.header().msg_size_ << "&"
+			//	<< msg.header().msg_id_ << "&"
+			//	<< msg.header().msg_type_ << "&"
+			//	<< msg.header().reserved1_ << "&"
+			//	<< msg.header().reserved2_ << "&"
+			//	<< msg.header().reserved3_ << ":"
+			//	<< std::string_view(msg.data(), msg.size()) << std::endl;
 
 			aris::server::ControlServer::instance().middleWare().executeCmd(std::string_view(msg.data(), msg.size()), send_ret, dynamic_cast<Interface*>(this));
 
@@ -377,21 +374,15 @@ namespace aris::server
 		imp_->onReceiveConnection_ = [this](aris::core::Socket *sock, const char *ip, int port)->int
 		{
 			ARIS_COUT << "socket receive connection" << std::endl;
-			LOG_INFO << "socket receive connection:\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
-			for (const auto &[priority, cbk] : Interface::imp_->on_connecteds_) {
-				cbk(this);
-			}
+			//LOG_INFO << "socket receive connection:\n"
+			//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
+			//	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 			return 0;
 		};
 		imp_->onLoseConnection_ = [this](aris::core::Socket *socket)->int
 		{
 			ARIS_COUT << "socket lose connection" << std::endl;
-			LOG_INFO << "socket lose connection" << std::endl;
-			for (const auto &[priority, cbk] : Interface::imp_->on_disconnecteds_) {
-				cbk(this);
-			}
+			//LOG_INFO << "socket lose connection" << std::endl;
 			for (;;)
 			{
 				try
@@ -402,12 +393,12 @@ namespace aris::server
 				catch (std::runtime_error &e)
 				{
 					ARIS_COUT << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+					//LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
 			}
 			ARIS_COUT << "socket restart successful" << std::endl;
-			LOG_INFO << "socket restart successful" << std::endl;
+			//LOG_INFO << "socket restart successful" << std::endl;
 
 			return 0;
 		};
@@ -482,7 +473,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.find("/api/dashboards") != std::string::npos)
@@ -496,7 +487,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri.find("/api/dashboards") != std::string::npos && uri.find("cells") != std::string::npos)
@@ -511,7 +502,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "DELETE" && uri.find("/api/dashboards") != std::string::npos	&& uri.find("cells") != std::string::npos)
@@ -525,7 +516,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/programs")
@@ -539,7 +530,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri == "/api/programs")
@@ -553,7 +544,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
@@ -567,7 +558,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "DELETE" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
@@ -583,7 +574,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 						else
 						{
@@ -594,7 +585,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 
 						break;
@@ -612,7 +603,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 						else
 						{
@@ -623,7 +614,7 @@ namespace aris::server
 								ret.size()
 							);
 
-							mg_send(nc, ret.c_str(), ret.size());
+							mg_send(nc, ret.c_str(), (int)ret.size());
 						}
 
 						break;
@@ -640,7 +631,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/esi/path")
@@ -654,7 +645,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/obj_picture_list")
@@ -668,7 +659,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else if (method == "POST" && uri == "/api/obj_picture")
@@ -685,7 +676,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_send(nc, ret.c_str(), ret.size());
+						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
 					else

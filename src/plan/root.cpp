@@ -954,7 +954,7 @@ namespace aris::plan
 			}
 		}
 
-		return total_count - static_cast<int>(count());
+		return static_cast<int>(total_count - count());
 	}
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) :imp_(new Imp)

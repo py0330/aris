@@ -9,6 +9,29 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
+	// puma机器人构型： !!!! 注意，末端的位置姿态还不是完全符合，tbd !!!!
+	//                                                   y    EE(tool0)
+	//                                                   ^  x
+	//                         x4           y5    x6     | /
+	//                       \ - ********** o *** - ***  *----> z                                
+	//                    d3 * | ... d4 ... | ... d5 ... |             
+	//                  \  *
+	//               --- *                              
+	//               a3  *                                
+	//                .  *                              
+	//               --- o  y3
+	//                .  *                               
+	//               a2  *                                   
+	//                .  *                               
+	//  --- | *** a1 *** o                               
+	//   .  z1           y2	
+	//  d1
+	//   .  z
+	//   .  ^  y
+	//   .  | /
+	//  --- *----> x  
+	//     O(wobj0)
+	//
 	struct ARIS_API PumaParam
 	{
 		// DH PARAM //

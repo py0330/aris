@@ -13,17 +13,15 @@
 
 #include "aris/core/reflection.hpp"
 
-namespace aris::core
-{
-	auto reflect_types_raw()->std::map<std::size_t, Type>&
-	{
+namespace aris::core{
+
+	auto reflect_types_raw()->std::map<std::size_t, Type>&{
 		static std::map<std::size_t, Type> reflection_types_;
 		return reflection_types_;
 	}
 
 
-	struct Property::Imp 
-	{
+	struct Property::Imp {
 		std::string name_;
 
 		std::function<Instance(Instance *obj)> get_;
@@ -37,8 +35,7 @@ namespace aris::core
 		std::function<std::string(void* value)> to_str_func_;
 		std::function<void(void* value, std::string_view str)> from_str_func_;
 	};
-	struct Instance::Imp
-	{
+	struct Instance::Imp{
 		const Property *belong_to_{ nullptr };
 		const std::type_info *type_info_;
 
@@ -55,7 +52,7 @@ namespace aris::core
 		std::vector<Property> this_properties_;// 不包含父类properties
 		std::vector<Property*> properties_ptr_;// 包含父类的properties，为了保持插入顺序，所以不得不用vector替代map
 
-											   // inherit types //
+		// inherit types //
 		std::vector<const std::type_info *> inherit_type_infos_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
 		std::vector<const Type *> inherit_types_;
 		std::vector<std::function<void*(void*)>> inherit_cast_vec_; // 将自己cast成基类的函数
@@ -86,8 +83,7 @@ namespace aris::core
 
 	auto Property::name()const->std::string { return imp_->name_; };
 	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
-	auto Property::get(Instance *ins)const->Instance 
-	{ 
+	auto Property::get(Instance *ins)const->Instance { 
 		auto ret = imp_->get_(ins);
 		ret.imp_->belong_to_ = this;
 		return ret;
@@ -159,16 +155,13 @@ namespace aris::core
 		imp_->inherit_type_infos_.push_back(inherit_type_info);
 		imp_->inherit_cast_vec_.push_back(func);// 多继承可能改变指针所指向的位置，坑爹！！//
 	}
-	auto Type::init()const->void
-	{
-		if (!imp_->inited)
-		{
+	auto Type::init()const->void{
+		if (!imp_->inited){
 			auto this_type = const_cast<Type*>(this);
 			this_type->imp_->inited = true;
 			
 			// init inherit types //
-			for (auto &t : imp_->inherit_type_infos_)
-			{
+			for (auto &t : imp_->inherit_type_infos_){
 				if (reflect_types().find(t->hash_code()) == reflect_types().end()) std::cout << "Unregistered inherited type:" << t->name() << std::endl;
 				if (reflect_types().find(t->hash_code()) == reflect_types().end())	THROW_FILE_LINE("Unregistered inherited type:" + t->name());
 				this_type->imp_->inherit_types_.push_back(&reflect_types().at(t->hash_code()));
@@ -176,33 +169,27 @@ namespace aris::core
 			}
 			
 			// init inherit properties //
-			auto insert_prop = [this_type](Property* ist)
-			{
+			auto insert_prop = [this_type](Property* ist){
 				// 防止重名的数据
 				auto &vec = this_type->imp_->properties_ptr_;
-				auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool
-				{
+				auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool{
 					return prop->name() == ist->name();
 				});
 
 				if (found == vec.end())	vec.push_back(ist);
 				else *found = ist;
 			};
-			for (auto t : inheritTypes())
-			{
-				for (auto ist : t->properties())
-				{
+			for (auto t : inheritTypes()){
+				for (auto ist : t->properties()){
 					insert_prop(ist);
 				}
 			}
 			for (auto &ist : this_type->this_properties())insert_prop(const_cast<Property*>(&ist));
 
 			// copy inherited, text methods & array_infos //
-			for (auto &t : imp_->inherit_types_)
-			{
+			for (auto &t : imp_->inherit_types_){
 				// copy array_infos //
-				if (!isArray() && t->isArray())
-				{
+				if (!isArray() && t->isArray()){
 					this_type->imp_->array_data_.reset(new Type::Imp::ArrayData(*t->imp_->array_data_));
 				}
 
@@ -212,15 +199,13 @@ namespace aris::core
 			}
 		}
 	}
-	auto Type::initAllTypes()->void
-	{
+	auto Type::initAllTypes()->void{
 		static bool init_all_ = false;
 
 		if (init_all_)return;
 		init_all_ = true;
 
-		for (auto &t : reflect_types_raw())
-		{
+		for (auto &t : reflect_types_raw()){
 			t.second.init();
 		}
 	}
@@ -255,16 +240,13 @@ namespace aris::core
 	Type::~Type() = default;
 	Type::Type(std::string_view name) :imp_(new Imp) { imp_->type_name_ = name; }
 
-	auto Instance::castToType(const Type*t)const->void* 
-	{
+	auto Instance::castToType(const Type*t)const->void* {
 		if (type() == t) return toVoidPtr();
 
-		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void*
-		{
+		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void* {
 			auto inherit_types = type->inheritTypes();
 
-			for (Size i = 0; i < inherit_types.size(); ++i)
-			{
+			for (Size i = 0; i < inherit_types.size(); ++i)	{
 				if (inherit_types[i] == t)
 					return type->imp_->inherit_cast_vec_[i](data);
 				
@@ -278,61 +260,50 @@ namespace aris::core
 		return iterative_cast(type(), toVoidPtr());
 	}
 	auto Instance::toVoidPtr()const->void* {return isReference() ? std::get<Imp::InstanceRef>(imp_->data_).data_ : std::get<Imp::InstancePtr>(imp_->data_).data_.get();}
-	auto Instance::set(std::string_view prop_name, Instance arg)->void
-	{
+	auto Instance::set(std::string_view prop_name, Instance arg)->void {
 		type()->propertyAt(prop_name)->set(this, arg);
 	}
-	auto Instance::get(std::string_view prop_name)->Instance
-	{
+	auto Instance::get(std::string_view prop_name)->Instance {
 		return type()->propertyAt(prop_name)->get(this);
 	}
 	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
 	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
-	auto Instance::type()const->const Type* 
-	{ 
+	auto Instance::type()const->const Type* { 
 		if (isEmpty()) return nullptr;
 		return Type::reflect_types().find(imp_->type_info_->hash_code()) == Type::reflect_types().end() ? nullptr : &Type::reflect_types().at(imp_->type_info_->hash_code());
 	}
 	auto Instance::isBasic()const->bool { return type()->isBasic(); }
 	auto Instance::isArray()const->bool { return type()->isArray(); }
-	auto Instance::toString()->std::string 
-	{ 
+	auto Instance::toString()->std::string { 
 		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(toVoidPtr());
 		if (type()->imp_->to_string_)return type()->imp_->to_string_(this);
 		return "";
 	}
-	auto Instance::fromString(std::string_view str)->void 
-	{ 
+	auto Instance::fromString(std::string_view str)->void { 
 		if (imp_->belong_to_ && imp_->belong_to_->imp_->from_str_func_)return imp_->belong_to_->imp_->from_str_func_(toVoidPtr(), str);
 		if (type()->imp_->from_string_)type()->imp_->from_string_(this, str);
 	}
-	auto Instance::size()->std::size_t
-	{
+	auto Instance::size()->std::size_t{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		return type()->imp_->array_data_->size_func_(this);
 	}
-	auto Instance::at(std::size_t id)->Instance
-	{
+	auto Instance::at(std::size_t id)->Instance	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		return type()->imp_->array_data_->at_func_(this, id);
 	}
-	auto Instance::push_back(Instance element)->void
-	{
+	auto Instance::push_back(Instance element)->void {
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->imp_->array_data_->push_back_func_(this, element);
 	}
-	auto Instance::clear()->void 
-	{
+	auto Instance::clear()->void {
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->imp_->array_data_->clear_func_(this);
 	}
-	Instance::Instance(const std::type_info *info, void* data):imp_(new Imp)
-	{
+	Instance::Instance(const std::type_info *info, void* data):imp_(new Imp) {
 		imp_->type_info_ = info;
 		imp_->data_ = Imp::InstanceRef{ data };
 	}
-	Instance::Instance(const std::type_info *info, std::shared_ptr<void> data) : imp_(new Imp)
-	{
+	Instance::Instance(const std::type_info *info, std::shared_ptr<void> data) : imp_(new Imp) {
 		imp_->type_info_ = info;
 		imp_->data_ = Imp::InstancePtr{ data };
 	}
@@ -404,7 +375,7 @@ namespace aris::core
 				return std::to_string(*reinterpret_cast<float*>(v));
 			}, [](float *v, std::string_view str)->void
 			{
-				float result = std::stod(std::string(str));
+				float result = (float)std::stod(std::string(str));
 				*reinterpret_cast<float*>(v) = result;
 			});
 

@@ -50,7 +50,7 @@ documentation and/or software.
 class MD5
 {
 public:
-	typedef unsigned int size_type; // must be 32bit
+	typedef std::uint32_t size_type; // must be 32bit
 
 	MD5();
 	MD5(const std::string& text);
@@ -58,7 +58,6 @@ public:
 	void update(const char *buf, size_type length);
 	MD5& finalize();
 	std::string hexdigest() const;
-	friend std::ostream& operator<<(std::ostream&, MD5 md5);
 
 private:
 	void init();
