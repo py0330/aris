@@ -85,14 +85,32 @@ auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynami
 
 int main(int argc, char *argv[])
 {
-	
+	auto &cs = aris::server::ControlServer::instance();
 
-
+	cs.resetMaster(aris::robot::rokae::xb4::createMaster().release());
+	cs.resetController(aris::robot::rokae::xb4::createController().release());
+	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
+	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
 
 
 	try
 	{
+		cs.init();
+		cs.open();
+		cs.start();
+
+
+		// 读取数据 //
+		double data[6];
+		cs.controller().ftSensorPool()[0].getFtData(data);
+
+		std::cout << aris::core::toXmlString(cs) << std::endl;
+
+
+
+
+		cs.runCmdLine();
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 		//aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 	}
@@ -100,6 +118,8 @@ int main(int argc, char *argv[])
 	{
 		std::cout << e.what() << std::endl;
 	}
+	
+
 	
 
 	return 0;
