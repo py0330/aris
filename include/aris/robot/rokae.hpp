@@ -19,5 +19,4 @@ namespace aris::robot::rokae::xb4{
 	auto ARIS_API createPlanRoot()->std::unique_ptr<aris::plan::PlanRoot>;
 }
 
-
 #endif

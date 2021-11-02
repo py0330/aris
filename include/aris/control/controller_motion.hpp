@@ -61,8 +61,7 @@ namespace aris::control
 		auto virtual mode(std::uint8_t md)->int = 0;
 
 		virtual ~Motor();
-		explicit Motor(const std::string &name = "motion"
-			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
+		explicit Motor(double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		Motor(const Motor &other);
 		Motor(Motor &&other) = delete;
@@ -75,6 +74,36 @@ namespace aris::control
 
 		friend class Controller;
 	};
+	class ARIS_API DigitalIo {
+	public:
+		auto numOfDi() const->std::uint16_t;
+		auto setNumOfDi(std::uint16_t num_of_di)->void;
+
+		auto numOfDo() const->std::uint16_t;
+		auto setNumOfDo(std::uint16_t num_of_do)->void;
+
+		virtual auto getDi(const std::uint16_t index)->bool = 0;
+		virtual auto getDo(const std::uint16_t index)->bool = 0;
+		virtual auto setDo(const std::uint16_t index, const bool status)->void = 0;
+
+		virtual ~DigitalIo();
+		explicit DigitalIo(std::uint16_t num_of_di = 8, std::uint16_t num_of_do = 8);
+		DigitalIo(const DigitalIo &other);
+		DigitalIo(DigitalIo &&other) = delete;
+		DigitalIo& operator=(const DigitalIo &other);
+		DigitalIo& operator=(DigitalIo &&other) = delete;
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+
+		friend class Controller;
+	};
+	class ARIS_API FtSensor {
+	public:
+		virtual auto getFtData(double *data_address)->void = 0;
+	};
+
 	class ARIS_API Controller {
 	public:
 		auto virtual init()->void;
@@ -83,8 +112,13 @@ namespace aris::control
 		auto motorPool()->aris::core::PointerArray<Motor>&;
 		auto motorPool()const->const aris::core::PointerArray<Motor>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motorPool(); }
 
+		auto resetDigitalIoPool(aris::core::PointerArray<DigitalIo> *pool);
+		auto digitalIoPool()->aris::core::PointerArray<DigitalIo>&;
+		auto digitalIoPool()const->const aris::core::PointerArray<DigitalIo>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->digitalIoPool(); }
 
-
+		auto resetFtSensorPool(aris::core::PointerArray<FtSensor> *pool);
+		auto ftSensorPool()->aris::core::PointerArray<FtSensor>&;
+		auto ftSensorPool()const->const aris::core::PointerArray<FtSensor>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ftSensorPool(); }
 
 		virtual ~Controller();
 		Controller(const std::string &name = "controller");
