@@ -17,6 +17,9 @@ namespace aris::server {
 		auto virtual init()->void {}
 		auto virtual executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int;     // 默认实现仅转发指令到控制器
 		auto virtual executeCmd(std::string_view cmd_str, Interface *interface)->void;
+
+	protected:
+		static std::uint64_t cmd_id_;
 	};
 
 }   // namespace aris::server
