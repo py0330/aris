@@ -408,7 +408,7 @@ namespace aris::dynamic
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k] / (avg_size * 2 - 1);
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k] / (avg_size * 2 - 1);
 				}
-				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j]);
+				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j] * clb->velocityRatio()[j]);
 
 				// make actual fce //
 				fce[j].push_back(0.0);
