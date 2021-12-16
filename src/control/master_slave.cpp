@@ -14,7 +14,11 @@
 
 namespace aris::control
 {
-	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; Master *mst_; bool is_virtual{ false }; };
+	struct Slave::Imp { 
+		std::uint16_t phy_id_{ 0 }, sla_id_{ 0 }; 
+		Master* mst_{nullptr}; 
+		bool is_virtual{ false }; 
+	};
 	auto Slave::master()->Master* { return imp_->mst_; }
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
@@ -23,16 +27,14 @@ namespace aris::control
 	auto Slave::id()const->std::uint16_t { return imp_->sla_id_; }
 	Slave::~Slave() = default;
 	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp), NamedObject(name) { imp_->phy_id_ = phy_id; }
-	ARIS_DEFINE_BIG_FOUR_CPP(Slave);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(Slave);
 
 	struct Master::Imp{
 	public:
 		enum { LOG_NEW_FILE = 1, LOG_NEW_FILE_RAW_NAME = 2 };
-		static auto rt_task_func(void *master)->void
-		{
+		static auto rt_task_func(void *master)->void{
 			auto &mst = *reinterpret_cast<Master*>(master);
-			auto add_time_to_stastics = [](std::int64_t time, RtStasticsData *data) 
-			{
+			auto add_time_to_stastics = [](std::int64_t time, RtStasticsData *data) {
 				data->avg_time_consumed += (double(time) - data->avg_time_consumed) / (data->total_count + 1);
 				data->max_time_occur_count = time < data->max_time_consumed ? data->max_time_occur_count : data->total_count;
 				data->max_time_consumed = std::max(time, data->max_time_consumed);
@@ -44,8 +46,7 @@ namespace aris::control
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
-			while (mst.imp_->is_rt_thread_running_)
-			{
+			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();
 				
@@ -60,16 +61,14 @@ namespace aris::control
 
 				// flush lout
 				mst.lout() << std::flush;
-				if (!mst.imp_->lout_msg_.empty())
-				{
+				if (!mst.imp_->lout_msg_.empty()){
 					mst.imp_->lout_pipe_.sendMsg(mst.imp_->lout_msg_);
 					mst.lout().reset();
 				}
 
 				// flush mout
 				mst.mout() << std::flush;
-				if (!mst.imp_->mout_msg_.empty())
-				{
+				if (!mst.imp_->mout_msg_.empty()){
 					mst.imp_->mout_pipe_.sendMsg(mst.imp_->mout_msg_);
 					mst.mout().reset();
 				}
@@ -113,38 +112,31 @@ namespace aris::control
 		friend class Slave;
 		friend class Master;
 	};
-	auto Master::init()->void
-	{
+	auto Master::init()->void{
 		// make vec_phy2abs //
 		imp_->sla_vec_phy2abs_.clear();
-		for (std::uint16_t i = 0; i< slavePool().size(); ++i)
-		{
+		for (std::uint16_t i = 0; i< slavePool().size(); ++i){
 			auto &sla = slavePool()[i];
 			sla.imp_->sla_id_ = i;
 			sla.imp_->mst_ = this;
 
-			if (!sla.isVirtual())
-			{
+			if (!sla.isVirtual()){
 				imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
 				if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 				imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
 			}
 		}
 	}
-	auto Master::start()->void
-	{
+	auto Master::start()->void{
 		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, so cannot start");
 		imp_->is_rt_thread_running_ = true;
 
-		struct RaiiCollector
-		{
+		struct RaiiCollector{
 			Master *self_;
 			auto reset()->void { self_ = nullptr; }
 			RaiiCollector(Master *self) :self_(self) {}
-			~RaiiCollector()
-			{
-				if (self_)
-				{
+			~RaiiCollector(){
+				if (self_){
 					self_->imp_->is_rt_thread_running_ = false;
 					aris_rt_task_join(self_->rtHandle());
 					self_->imp_->is_mout_thread_running_ = false;
@@ -159,8 +151,7 @@ namespace aris::control
 
 		// create mout & lout thread //
 		imp_->is_mout_thread_running_ = true;
-		imp_->mout_thread_ = std::thread([this]()
-		{
+		imp_->mout_thread_ = std::thread([this](){
 			// prepare lout //
 			auto file_name = aris::core::defaultLogDirectory() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
 			std::fstream file;
@@ -168,47 +159,37 @@ namespace aris::control
 
 			// start read mout and lout //
 			aris::core::Msg msg;
-			while (imp_->is_mout_thread_running_)
-			{
-				if (imp_->lout_pipe_.recvMsg(msg))
-				{
-					if (msg.msgID() == Imp::LOG_NEW_FILE)
-					{
+			while (imp_->is_mout_thread_running_){
+				if (imp_->lout_pipe_.recvMsg(msg)){
+					if (msg.msgID() == Imp::LOG_NEW_FILE){
 						file.close();
 						file.open(file_name.string() + msg.toString() + ".txt", std::ios::out | std::ios::trunc);
 					}
-					else if (msg.msgID() == Imp::LOG_NEW_FILE_RAW_NAME)
-					{
+					else if (msg.msgID() == Imp::LOG_NEW_FILE_RAW_NAME){
 						auto raw_name = aris::core::defaultLogDirectory() / (msg.toString() + ".txt");
 						file.close();
 						file.open(raw_name, std::ios::out | std::ios::trunc);
 					}
-					else if (!msg.empty())
-					{
+					else if (!msg.empty()){
 						file << msg.toString();
 					}
 				}
-				else if (imp_->mout_pipe_.recvMsg(msg))
-				{
+				else if (imp_->mout_pipe_.recvMsg(msg)){
 					if (!msg.empty())aris::core::cout() << msg.toString() << std::flush;
 				}
-				else
-				{
+				else{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				}
 			}
 
 			// 结束前最后一次接收，此时实时线程已经结束 //
 			while (imp_->mout_pipe_.recvMsg(msg)) if (!msg.empty())std::cout << msg.toString() << std::endl;
-			while (imp_->lout_pipe_.recvMsg(msg))
-			{
-				if (msg.msgID() == Imp::LOG_NEW_FILE)
-				{
+			while (imp_->lout_pipe_.recvMsg(msg)){
+				if (msg.msgID() == Imp::LOG_NEW_FILE){
 					file.close();
 					file.open(file_name.string() + msg.toString() + ".txt", std::ios::out | std::ios::trunc);
 				}
-				else if (!msg.empty())
-				{
+				else if (!msg.empty()){
 					file << msg.toString();
 				}
 			}
@@ -221,8 +202,7 @@ namespace aris::control
 
 		raii_collector.reset();
 	}
-	auto Master::stop()->void
-	{
+	auto Master::stop()->void{
 		if (!imp_->is_rt_thread_running_)THROW_FILE_LINE("master is not running, so can't stop");
 		
 		// join rt task //
@@ -236,17 +216,14 @@ namespace aris::control
 		// release child resources //
 		release();
 	}
-	auto Master::setControlStrategy(std::function<void()> strategy)->void
-	{
+	auto Master::setControlStrategy(std::function<void()> strategy)->void{
 		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, cannot set control strategy");
 		imp_->strategy_ = strategy;
 	}
 	auto Master::rtHandle()->std::any& { return imp_->rt_task_handle_; }
-	auto Master::logFile(const char *file_name)->void
-	{
+	auto Master::logFile(const char *file_name)->void{
 		// 将已有的log数据发送过去 //
-		if (!imp_->lout_msg_.empty())
-		{
+		if (!imp_->lout_msg_.empty()){
 			// 补充一个0作为结尾 //
 			lout() << std::flush;
 			imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
@@ -262,11 +239,9 @@ namespace aris::control
 		imp_->lout_msg_.setMsgID(0);
 		imp_->lout_msg_.resize(0);
 	}
-	auto Master::logFileRawName(const char *file_name)->void
-	{
+	auto Master::logFileRawName(const char *file_name)->void{
 		// 将已有的log数据发送过去 //
-		if (!imp_->lout_msg_.empty())
-		{
+		if (!imp_->lout_msg_.empty()){
 			// 补充一个0作为结尾 //
 			lout() << std::flush;
 			imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
@@ -287,18 +262,15 @@ namespace aris::control
 	auto Master::slaveAtPhy(aris::Size id)->Slave& { return slavePool().at(imp_->sla_vec_phy2abs_.at(id)); }
 	auto Master::resetSlavePool(aris::core::PointerArray<Slave> *pool) { imp_->slave_pool_.reset(pool); }
 	auto Master::slavePool()->aris::core::PointerArray<Slave>& { return *imp_->slave_pool_; }
-	auto Master::resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count)->void
-	{
+	auto Master::resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count)->void{
 		if (stastics)*stastics = RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
 		
-		if (is_new_data_include_this_count)
-		{
+		if (is_new_data_include_this_count){
 			// make new stastics //
 			imp_->this_stastics_ = stastics;
 			imp_->is_need_change_ = !is_new_data_include_this_count;
 		}
-		else
-		{
+		else{
 			// mark need to change when this count finished //
 			imp_->next_stastics_ = stastics;
 			imp_->is_need_change_ = !is_new_data_include_this_count;

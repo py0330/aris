@@ -34,8 +34,7 @@ namespace aris::server
 		bool is_open_{false};
 	};
 
-	class ARIS_API ControlServer
-	{
+	class ARIS_API ControlServer	{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
 		using PostCallback = std::add_pointer<void(ControlServer&)>::type;

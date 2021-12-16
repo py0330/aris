@@ -21,8 +21,7 @@
 
 #include "aris/server/control_server.hpp"
 
-namespace aris::control
-{
+namespace aris::control{
 	using XmlDocument = tinyxml2::XMLDocument;
 	using XmlDeclaration = tinyxml2::XMLDeclaration;
 	using XmlNode = tinyxml2::XMLNode;
@@ -48,8 +47,7 @@ namespace aris::control
 		return s.str();
 	}
 
-	struct PdoEntry::Imp
-	{
+	struct PdoEntry::Imp{
 		std::any ec_handle_;
 		std::uint16_t index_;
 		std::uint8_t subindex_;
@@ -63,16 +61,14 @@ namespace aris::control
 	auto PdoEntry::setBitSize(Size size)->void { imp_->bit_size_ = size; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
 	PdoEntry::~PdoEntry() = default;
-	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size)
-	{
+	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size){
 		imp_->index_ = index;
 		imp_->subindex_ = sub_index;
 		imp_->bit_size_ = bit_size;
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(PdoEntry)
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(PdoEntry);
 
-		struct Pdo::Imp
-	{
+	struct Pdo::Imp{
 		std::any handle_;
 		std::uint16_t index_;
 	};
@@ -81,15 +77,15 @@ namespace aris::control
 	auto Pdo::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
 	Pdo::~Pdo() = default;
 	Pdo::Pdo(const std::string &name, std::uint16_t index) :imp_(new Imp) { imp_->index_ = index; }
-	ARIS_DEFINE_BIG_FOUR_CPP(Pdo);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(Pdo);
 
-		struct SyncManager::Imp { std::any handle_; bool is_tx_; };
+	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	auto SyncManager::setTx(bool is_tx)->void { imp_->is_tx_ = is_tx; }
 	SyncManager::~SyncManager() = default;
 	SyncManager::SyncManager(const std::string &name, bool is_tx) :imp_(new Imp) { imp_->is_tx_ = is_tx; }
-	ARIS_DEFINE_BIG_FOUR_CPP(SyncManager);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(SyncManager);
 
 	struct EthercatSlave::Imp{
 	public:
@@ -114,8 +110,7 @@ namespace aris::control
 	auto EthercatSlave::setDcAssignActivate(std::uint32_t dc_assign_activate)->void { imp_->dc_assign_activate_ = dc_assign_activate; }
 	auto EthercatSlave::sync0ShiftNs()const->std::int32_t { return imp_->sync0_shift_ns_; }
 	auto EthercatSlave::setSync0ShiftNs(std::int32_t sync0_shift_ns)->void { imp_->sync0_shift_ns_ = sync0_shift_ns; }
-	auto EthercatSlave::scanInfoForCurrentSlave()->void
-	{
+	auto EthercatSlave::scanInfoForCurrentSlave()->void{
 		if (!isVirtual()) {
 			aris::control::EthercatMaster mst;
 			mst.scan();
@@ -127,8 +122,7 @@ namespace aris::control
 			this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).dcAssignActivate());
 		}
 	}
-	auto EthercatSlave::scanPdoForCurrentSlave()->void
-	{
+	auto EthercatSlave::scanPdoForCurrentSlave()->void{
 		if (!isVirtual()) {
 			aris::control::EthercatMaster mst;
 			mst.scan();
@@ -137,8 +131,7 @@ namespace aris::control
 			this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
 		}
 	}
-	auto EthercatSlave::findPdoEntry(std::uint16_t index, std::uint8_t subindex)->PdoEntry*
-	{
+	auto EthercatSlave::findPdoEntry(std::uint16_t index, std::uint8_t subindex)->PdoEntry*{
 		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
 			return nullptr;
 		else if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
@@ -146,8 +139,7 @@ namespace aris::control
 		else
 			return found_entry->second;
 	}
-	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int
-	{
+	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int{
 		if (isVirtual())return 0;
 
 		if (auto entry = findPdoEntry(index, subindex)) {
@@ -156,8 +148,7 @@ namespace aris::control
 		}
 		return -1;
 	}
-	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int
-	{
+	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int{
 		if (isVirtual())return 0;
 
 		if (auto entry = findPdoEntry(index, subindex)) {
@@ -166,24 +157,21 @@ namespace aris::control
 		}
 		return -1;
 	}
-	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
-	{
+	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void{
 		if (isVirtual())return;
 
 		std::size_t result_size;
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_read(ecMaster()->ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 	}
-	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
-	{
+	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void{
 		if (isVirtual())return;
 
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_write(ecMaster()->ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
 	EthercatSlave::~EthercatSlave() = default;
-	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc, std::int32_t sync0_shift_ns) :Slave(name, phy_id), imp_(new Imp)
-	{
+	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc, std::int32_t sync0_shift_ns) :Slave(name, phy_id), imp_(new Imp){
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;
 		imp_->revision_num_ = r_num;
@@ -193,8 +181,7 @@ namespace aris::control
 		imp_->sm_pool_ptr_.reset(new std::vector<SyncManager>);
 	}
 
-	struct EthercatMaster::Imp
-	{
+	struct EthercatMaster::Imp{
 		std::any ec_handle_;
 		aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>> slave_pool_{ nullptr };
 
@@ -248,31 +235,26 @@ namespace aris::control
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
 	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
-	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&
-	{
+	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&{
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>(&Master::slavePool());
 		return imp_->slave_pool_;
 	}
 	auto EthercatMaster::getLinkState(MasterLinkState *ms, SlaveLinkState *ss)->void { aris_ecrt_master_link_state(this, ms, ss); }
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatMaster::setEsiDirs(std::vector<std::filesystem::path> esi_dirs)->void { imp_->esi_dirs_ = esi_dirs; }
-	auto EthercatMaster::updateDeviceList()->void
-	{
+	auto EthercatMaster::updateDeviceList()->void{
 		imp_->vendor_device_revision_map_.clear();
 
-		auto getUInt32 = [](std::string str)->std::uint32_t
-		{
+		auto getUInt32 = [](std::string str)->std::uint32_t{
 			std::replace(str.begin(), str.end(), '#', '0');
 			return std::stoul(str, 0, 16);
 		};
 
-		for (const auto &dir : imp_->esi_dirs_)
-		{
+		for (const auto &dir : imp_->esi_dirs_){
 			std::error_code err_code;
 			if (!std::filesystem::is_directory(dir, err_code)) THROW_FILE_LINE("Esi directory not found:" + dir.string());
 
-			for (auto &p : std::filesystem::directory_iterator(dir))
-			{
+			for (auto &p : std::filesystem::directory_iterator(dir)){
 				// not regular file//
 				if (!p.is_regular_file())continue;
 
@@ -289,8 +271,7 @@ namespace aris::control
 				// devices not found //
 				if (auto description = esi_doc.RootElement()->FirstChildElement("Descriptions"); (!description) || (!description->FirstChildElement("Devices")))continue;
 				auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
-				for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())
-				{
+				for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement()){
 					// invisible //
 					if (auto visible = device->Attribute("Invisible"); visible && (std::string("true") == visible || std::string("1") == visible)) continue;
 
@@ -306,14 +287,12 @@ namespace aris::control
 			}
 		}
 	}
-	auto EthercatMaster::getDeviceList()->std::string
-	{
+	auto EthercatMaster::getDeviceList()->std::string{
 		XmlDocument xml_doc;
 		auto root_xml_ele = xml_doc.NewElement("DeviceList");
 		xml_doc.InsertEndChild(root_xml_ele);
 
-		for (auto &vendor : imp_->vendor_device_revision_map_)
-		{
+		for (auto &vendor : imp_->vendor_device_revision_map_){
 			auto vendor_ele = (XmlElement*)root_xml_ele->InsertEndChild(xml_doc.NewElement("Vendor"));
 
 			std::stringstream s;
@@ -321,10 +300,8 @@ namespace aris::control
 			vendor_ele->SetAttribute("Id", s.str().c_str());
 			vendor_ele->SetAttribute("Name", std::get<0>(vendor.second).c_str());
 
-			for (auto &device : std::get<1>(vendor.second))
-			{
-				for (auto &revision : std::get<1>(device.second))
-				{
+			for (auto &device : std::get<1>(vendor.second)){
+				for (auto &revision : std::get<1>(device.second)){
 					auto device_ele = (XmlElement*)vendor_ele->InsertEndChild(xml_doc.NewElement("Device"));
 
 					device_ele->SetAttribute("Name", std::get<0>(device.second).c_str());
@@ -344,10 +321,8 @@ namespace aris::control
 		xml_doc.Print(&printer);
 		return std::string(printer.CStr());
 	}
-	auto EthercatMaster::getPdoList(int vendor_id, int product_code, int revision_no)->std::string
-	{
-		auto getUInt32 = [](std::string str)->std::uint32_t
-		{
+	auto EthercatMaster::getPdoList(int vendor_id, int product_code, int revision_no)->std::string{
+		auto getUInt32 = [](std::string str)->std::uint32_t{
 			std::replace(str.begin(), str.end(), '#', '0');
 			return std::stol(str, 0, 16);
 		};
@@ -359,8 +334,7 @@ namespace aris::control
 		XmlDocument esi_doc;
 		if (esi_doc.LoadFile(slave_path.string().c_str()) != 0)THROW_FILE_LINE(std::string("could not open file:") + slave_path.string());
 		auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
-		for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())
-		{
+		for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement()){
 			auto product_code_ = getUInt32(device->FirstChildElement("Type")->Attribute("ProductCode"));
 			auto revision_no_ = device->FirstChildElement("Type")->Attribute("RevisionNo") ? getUInt32(device->FirstChildElement("Type")->Attribute("RevisionNo")) : 0x00;
 
@@ -373,26 +347,20 @@ namespace aris::control
 			slave.setRevisionNum(revision_no);
 
 			auto last_sm_id = 0;
-			for (auto ele = device->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-			{
-				if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Inputs")
-				{
+			for (auto ele = device->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
+				if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Inputs"){
 					slave.smPool().push_back(SyncManager("", true));
 				}
-				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxIn")
-				{
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxIn"){
 					slave.smPool().push_back(SyncManager("", true));
 				}
-				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Outputs")
-				{
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Outputs"){
 					slave.smPool().push_back(SyncManager("", false));
 				}
-				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxOut")
-				{
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxOut"){
 					slave.smPool().push_back(SyncManager("", false));
 				}
-				else if (std::string(ele->Name()) == "RxPdo" || std::string(ele->Name()) == "TxPdo")
-				{
+				else if (std::string(ele->Name()) == "RxPdo" || std::string(ele->Name()) == "TxPdo"){
 					auto sm_id = ele->Attribute("Sm") ? std::stoi(ele->Attribute("Sm"), nullptr, 0) : last_sm_id;
 					last_sm_id = sm_id;
 
@@ -401,8 +369,7 @@ namespace aris::control
 
 					slave.smPool()[sm_id].push_back(Pdo(pdo_name, pdo_index));
 					auto &pdo = slave.smPool()[sm_id].back();
-					for (auto entry_ele = ele->FirstChildElement("Entry"); entry_ele; entry_ele = entry_ele->NextSiblingElement())
-					{
+					for (auto entry_ele = ele->FirstChildElement("Entry"); entry_ele; entry_ele = entry_ele->NextSiblingElement()){
 						auto index = getUInt32(entry_ele->FirstChildElement("Index")->GetText());
 						auto sub_index = entry_ele->FirstChildElement("SubIndex") ? getUInt32(entry_ele->FirstChildElement("SubIndex")->GetText()) : 0;
 						auto bit_length = std::stol(entry_ele->FirstChildElement("BitLen")->GetText());
@@ -454,7 +421,7 @@ namespace aris::control
 	}
 	auto EthercatMotor::setTargetVel(double vel)->void {
 		imp_->target_vel_ = vel;
-		imp_->slave_->writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor()));
+		imp_->slave_->writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor() * velFactor()));
 	}
 	auto EthercatMotor::setTargetToq(double toq)->void {
 		imp_->target_toq_ = toq;
@@ -462,7 +429,7 @@ namespace aris::control
 	}
 	auto EthercatMotor::setOffsetVel(double vel)->void {
 		imp_->offset_vel_ = vel;
-		imp_->slave_->writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor()));
+		imp_->slave_->writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor() * velFactor()));
 	}
 	auto EthercatMotor::setOffsetToq(double cur)->void {
 		imp_->offset_toq_ = cur;
@@ -482,7 +449,7 @@ namespace aris::control
 	}
 	auto EthercatMotor::actualVel()const->double {
 		std::int32_t vel_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor() / velFactor();
 	}
 	auto EthercatMotor::actualToq()const->double {
 		std::int16_t fce_count{ 0 };
@@ -689,34 +656,27 @@ namespace aris::control
 
 
 		// 查看此前是否已经使能（status ：operation enabled） //
-		if (imp_->need_clear && ((statusWord() & 0x6F) != 0x27))
-		{
+		if (imp_->need_clear && ((statusWord() & 0x6F) != 0x27)){
 			imp_->home_count = 0;
 			imp_->need_clear = true;
 			return -1;
 		}
 		// 更改mode //
-		else if (modeOfDisplay() != 0x06)
-		{
+		else if (modeOfDisplay() != 0x06){
 			setModeOfOperation(0x06);
 			return 2;
 		}
 		// 将home已经到达的标志位去掉 //
-		else if (imp_->need_clear)
-		{
-			if (statusWord() & 0x3400)
-			{
-				if (++imp_->home_count % 20 < 10)
-				{
+		else if (imp_->need_clear){
+			if (statusWord() & 0x3400){
+				if (++imp_->home_count % 20 < 10){
 					setControlWord(0x1F);
 				}
-				else
-				{
+				else{
 					setControlWord(0x0F);
 				}
 			}
-			else
-			{
+			else{
 				setControlWord(0x0F);
 				imp_->need_clear = false;
 			}
@@ -724,29 +684,25 @@ namespace aris::control
 			return 3;
 		}
 		// 开始执行home //
-		else if ((statusWord() & 0x3400) == 0x0000)
-		{
+		else if ((statusWord() & 0x3400) == 0x0000){
 			setControlWord(0x1F);
 			return 4;
 		}
 		// home attained //
-		else if ((statusWord() & 0x3400) == 0x1400)
-		{
+		else if ((statusWord() & 0x3400) == 0x1400){
 			setControlWord(0x0F);
 			imp_->home_count = 0;
 			imp_->need_clear = true;
 			return 0;
 		}
 		// home error //
-		else if (statusWord() & 0x2000)
-		{
+		else if (statusWord() & 0x2000){
 			imp_->home_count = 0;
 			imp_->need_clear = true;
 			return -2;
 		}
 		// homing ... //
-		else
-		{
+		else{
 			return -3;
 		}
 	}

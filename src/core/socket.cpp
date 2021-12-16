@@ -128,13 +128,13 @@ namespace aris::core{
 	auto pack_data_server(const char *data, int size)->std::string{
 		std::string s;
 		if (size < 126){
-			s.resize(size + 2);
+			s.resize(std::size_t(size) + 2);
 			s[0] = char(0x82);// binary data, 0x81 is text data
 			s[1] = char(size);
 			std::copy_n(data, size, &s[2]);
 		}
 		else if (size < 0xFFFF){
-			s.resize(size + 4);
+			s.resize(std::size_t(size) + 4);
 			s[0] = char(0x82);
 			s[1] = char(126);
 			s[2] = size >> 8;
@@ -142,7 +142,7 @@ namespace aris::core{
 			std::copy_n(data, size, &s[4]);
 		}
 		else{
-			s.resize(size + 10);
+			s.resize(std::size_t(size) + 10);
 			s[0] = char(0x82);
 			s[1] = char(127);
 			s[2] = 0;
@@ -161,13 +161,13 @@ namespace aris::core{
 	auto pack_data_client(const char *data, int size)->std::string{
 		std::string s;
 		if (size < 126){
-			s.resize(size + 6);
+			s.resize(std::size_t(size) + 6);
 			s[0] = char(0x82);// binary data, 0x81 is text data
 			s[1] = char(size) | char(0x80);
 			std::copy_n(data, size, &s[6]);
 		}
 		else if (size < 0xFFFF){
-			s.resize(size + 8);
+			s.resize(std::size_t(size) + 8);
 			s[0] = char(0x82);
 			s[1] = char(126) | char(0x80);
 			s[2] = size >> 8;
@@ -175,7 +175,7 @@ namespace aris::core{
 			std::copy_n(data, size, &s[8]);
 		}
 		else{
-			s.resize(size + 14);
+			s.resize(std::size_t(size) + 14);
 			s[0] = char(0x82);
 			s[1] = char(127) | char(0x80);
 			s[2] = 0;
@@ -223,9 +223,9 @@ namespace aris::core{
 
 	struct Socket::Imp{
 		Socket* socket_;
-		Socket::State state_;
-		Socket::TYPE type_;
-		bool is_server_;
+		Socket::State state_{ IDLE };
+		Socket::TYPE type_{ TCP };
+		bool is_server_{false};
 
 		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
 		std::function<int(Socket *, const char *data, int size)> onReceivedData;

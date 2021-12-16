@@ -8,8 +8,7 @@
 
 namespace aris::control
 {
-	class ARIS_API PdoEntry:public aris::core::NamedObject
-	{
+	class ARIS_API PdoEntry:public aris::core::NamedObject{
 	public:
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
@@ -22,14 +21,13 @@ namespace aris::control
 
 		virtual ~PdoEntry();
 		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
-		ARIS_DECLARE_BIG_FOUR(PdoEntry);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(PdoEntry);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API Pdo :public std::vector<PdoEntry>, public aris::core::NamedObject
-	{
+	class ARIS_API Pdo :public std::vector<PdoEntry>, public aris::core::NamedObject{
 	public:
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
@@ -38,14 +36,13 @@ namespace aris::control
 
 		virtual ~Pdo();
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
-		ARIS_DECLARE_BIG_FOUR(Pdo);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(Pdo);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ARIS_API SyncManager :public std::vector<Pdo>, public aris::core::NamedObject
-	{
+	class ARIS_API SyncManager :public std::vector<Pdo>, public aris::core::NamedObject{
 	public:
 		auto tx()const->bool;
 		auto rx()const->bool;
@@ -53,7 +50,7 @@ namespace aris::control
 
 		virtual ~SyncManager();
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
-		ARIS_DECLARE_BIG_FOUR(SyncManager);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(SyncManager);
 
 	private:
 		struct Imp;
@@ -61,8 +58,7 @@ namespace aris::control
 	};
 
 	class ARIS_API EthercatMaster;
-	class ARIS_API EthercatSlave : virtual public Slave
-	{
+	class ARIS_API EthercatSlave : virtual public Slave{
 	public:
 		auto ecMaster()->EthercatMaster*;
 		auto ecMaster()const->const EthercatMaster* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecMaster(); }
@@ -118,8 +114,7 @@ namespace aris::control
 
 		friend class EthercatMaster;
 	};
-	class ARIS_API EthercatMaster : virtual public Master
-	{
+	class ARIS_API EthercatMaster : virtual public Master{
 	public:
 		typedef struct {
 			unsigned int online : 1; /**< The slave is online. */
@@ -288,7 +283,7 @@ namespace aris::control
 			std::uint8_t ret;
 			if (index > 7) {
 				slave()->readPdo(0x6001, 0x02, ret);
-				return (bool)(ret & (0x01 << index - 8));
+				return (bool)(ret & (0x01 << (index - 8)));
 			}
 			else {
 				slave()->readPdo(0x6001, 0x01, ret);
@@ -300,7 +295,7 @@ namespace aris::control
 			std::uint8_t ret;
 			if (index > 7) {
 				slave()->readPdo(0x7001, 0x02, ret);
-				return (bool)(ret & (0x01 << index - 8));
+				return (bool)(ret & (0x01 << (index - 8)));
 			}
 			else {
 				slave()->readPdo(0x7001, 0x01, ret);
@@ -313,9 +308,9 @@ namespace aris::control
 			if (index > 7) {
 				slave()->readPdo(0x7001, 0x02, tmp);
 				if (status)
-					tmp |= 0x01 << index - 8;
+					tmp |= 0x01 << (index - 8);
 				else
-					tmp &= 0xFF ^ (0x1 << index - 8);
+					tmp &= 0xFF ^ (0x01 << (index - 8));
 				slave()->writePdo(0x7001, 0x02, tmp);
 			}
 			else {

@@ -108,6 +108,14 @@ int main()
 
 	
 	UrParam param;
+	param.H1 = 0.147;
+	param.L1 = 0.427;
+	param.L2 = 0.357;
+	param.H2 = 0.116;
+	param.W1 = 0.141;
+	param.W2 = 0.105;
+
+
 	auto r = aris::dynamic::createModelUr(param);
 
 	//for (auto &p : r->partPool())
@@ -122,13 +130,13 @@ int main()
 	//	0.00000000000000   0.00000000000000   0.00000000000000   1.00000000000000
 
 	// add solvers //
-	auto &forward_kinematic = r->solverPool().add<ForwardKinematicSolver>();
-	auto &inverse_kinematic = r->solverPool().add<aris::dynamic::UrInverseKinematicSolver>();
-
-	inverse_kinematic.allocateMemory();
+	auto &forward_kinematic = r->solverPool()[1];
+	auto &inverse_kinematic = r->solverPool()[0];
 
 	auto &sim = r->simulatorPool().add<aris::dynamic::Simulator>("sim");
 	auto &result = r->simResultPool().add<aris::dynamic::SimResult>("result");
+
+	r->init();
 
 	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(r->generalMotionPool().at(0));
 
@@ -137,19 +145,40 @@ int main()
 	forward_kinematic.allocateMemory();
 
 	ee.setMpe(std::array<double, 6>{0.7, 0.1, 0.2, 0, PI + 0.2 , -PI / 2.0 + 0.1}.data(), "321");
-	inverse_kinematic.kinPos();
+	if(inverse_kinematic.kinPos())
+		std::cout <<"failed"<<std::endl;
 
 	std::cout << std::setprecision(16);
 	dsp(4, 4, *ee.mpm());
 
-	for (auto &m : r->motionPool()) 
-	{
-		m.updP();
-		std::cout << m.mp() << std::endl;
+	for (int i = 0; i < 100; ++i) {
+		ee.setMpe(std::array<double, 6>{0.7, 0.1 + std::sin(i*0.1) * 0.1, 0.2, 0, PI + 0.2, -PI / 2.0 + 0.1}.data(), "321");
+		if (inverse_kinematic.kinPos())
+			std::cout << "failed" << std::endl;
+		
+		double mp[6];
+		r->getInputPos(mp);
+		dsp(1, 6, mp);
+
 	}
 
 
 
+
+
+
+	for (auto &m : r->motionPool()) 
+	{
+		m.updP();
+		m.setMp(m.mp() + 0.01);
+		std::cout << m.mp() << std::endl;
+	}
+
+	if (forward_kinematic.kinPos())
+		std::cout << "failed" << std::endl;
+
+	ee.updP();
+	dsp(4, 4, *ee.mpm());
 
 	double pin[6]{ -0.22007211565796,
 		- 1.39951770491866,
@@ -193,7 +222,7 @@ int main()
 
 
 	auto &s = r->simulatorPool().add<aris::dynamic::AdamsSimulator>();
-	s.saveAdams("C:\\Users\\py033\\Desktop\\ur5.cmd", result);
+	s.saveAdams("C:\\Users\\py0330\\Desktop\\ur5.cmd", result);
 
 
 

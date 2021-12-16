@@ -5,6 +5,11 @@
 #include <aris/dynamic/model_solver.hpp>
 
 namespace aris::dynamic {
+	/// @defgroup dynamic_model_group 动力学建模模块
+	/// @{
+	///
+	
+	// Delta 机器人
 	//---------------------------------------------------------------------------------------------
 	// 包含4个自由度。共4个杆件  link1~4
 	// 尺寸示意：
@@ -44,11 +49,6 @@ namespace aris::dynamic {
 	//                    o
 	//               支联3
 	//
-
-
-	/// @defgroup dynamic_model_group 动力学建模模块
-	/// @{
-	///
 
 	// 简化版的delta参数
 	// 适用于：三根支联对称分布
@@ -100,6 +100,41 @@ namespace aris::dynamic {
 
 	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model>;
 	auto ARIS_API createModelDelta(const DeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model>;
+
+
+	// Planar Delta
+	//---------------------------------------------------------------------------------------------
+	// 包含4个自由度。共4个杆件  link1~4
+	// 尺寸示意：
+	//                   上平台 
+	//                     
+	//                     o------o      
+	//                    /         \    
+	//                   /            \   
+	//                   o              o   
+	//                     \           /  
+	//                       \        /  
+	//                         \     /     
+	//                           \  /        
+	//                             o
+	//                       ee(长度e)
+	//---------------------------------------------------------------------------------------------
+	// 零位示意：
+	//                         y 
+	//                         ^
+	//                         | a |<- b ->|
+	//             o-------o---*---o-------o   ->  x             
+	//            / \                     / 
+	//                \                 /   
+	//                  \             /        
+	//                 c  \         /       
+	//                      \     /        
+	//                        \ /     
+	//                         o         
+	//                        /|
+	//                            
+	//                       ee(长度e)
+	//---------------------------------------------------------------------------------------------
 
 	///
 	/// @}

@@ -11,10 +11,8 @@
 #include "aris/core/reflection.hpp"
 #include "aris/core/serialization.hpp"
 
-namespace aris::core
-{
-	struct ParamBase::Imp 
-	{ 
+namespace aris::core{
+	struct ParamBase::Imp { 
 		bool is_taken_{ false };
 		Command *command_{ nullptr };
 		ParamBase *father_{ nullptr };
@@ -26,23 +24,19 @@ namespace aris::core
 	auto ParamBase::setName(std::string_view name)->void { imp_->name_ = name; }
 	ParamBase::~ParamBase() = default;
 	ParamBase::ParamBase(const std::string &name) :imp_(new Imp) { imp_->name_ = name; }
-	ParamBase::ParamBase(const ParamBase&other):imp_(other.imp_)
-	{
-		for (auto &base : other)
-		{
+	ParamBase::ParamBase(const ParamBase&other):imp_(other.imp_){
+		for (auto &base : other){
 			if (auto p = dynamic_cast<const Param*>(&base))	push_back(new Param(*p));
 			else if (auto u = dynamic_cast<const UniqueParam*>(&base))	push_back(new UniqueParam(*u));
 			else if (auto g = dynamic_cast<const GroupParam*>(&base))	push_back(new GroupParam(*g));
 			else THROW_FILE_LINE("INVALID CHILDREN");
 		}
 	}
-	ParamBase::ParamBase(ParamBase&&) = default;
-	ParamBase& ParamBase::operator=(const ParamBase&other)
-	{
+	ParamBase::ParamBase(ParamBase&&)noexcept = default;
+	ParamBase& ParamBase::operator=(const ParamBase&other){
 		imp_ = other.imp_;
 		clear();
-		for (auto &base : other)
-		{
+		for (auto &base : other){
 			if (auto p = dynamic_cast<const Param*>(&base))	push_back(new Param(*p));
 			else if (auto u = dynamic_cast<const UniqueParam*>(&base))	push_back(new UniqueParam(*u));
 			else if (auto g = dynamic_cast<const GroupParam*>(&base))	push_back(new GroupParam(*g));
@@ -50,10 +44,9 @@ namespace aris::core
 		}
 		return *this;
 	}
-	ParamBase& ParamBase::operator=(ParamBase&&) = default;
+	ParamBase& ParamBase::operator=(ParamBase&&)noexcept = default;
 
-	struct Param::Imp
-	{
+	struct Param::Imp{
 		std::string default_value_{ "" };
 		char abbreviation_{ 0 };
 
@@ -65,25 +58,32 @@ namespace aris::core
 	auto Param::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	Param::~Param() = default;
 	Param::Param(const std::string &name, const std::string &default_param, char abbrev) :ParamBase(name), imp_(new Imp(default_param, abbrev)) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(Param);
+	Param::Param(const Param&) = default;
+	Param::Param(Param&&)noexcept = default;
+	Param& Param::operator=(const Param&) = default;
+	Param& Param::operator=(Param&&)noexcept = default;
+
+	struct UniqueParam::Imp {
+		std::string default_value_{ "" };
+		Imp(const std::string& default_param = std::string("")) :default_value_(default_param) {}
+	};
+	auto UniqueParam::defaultValue()const->const std::string& { return imp_->default_value_; }
+	auto UniqueParam::setDefaultValue(const std::string& default_value)->void { imp_->default_value_ = default_value; }
+	UniqueParam::~UniqueParam() = default;
+	UniqueParam::UniqueParam(const std::string & name, const std::string & default_param) :ParamBase(name), imp_(new Imp(default_param)) {}
+	UniqueParam::UniqueParam(const UniqueParam&) = default;
+	UniqueParam::UniqueParam(UniqueParam&&)noexcept = default;
+	UniqueParam& UniqueParam::operator=(const UniqueParam&) = default;
+	UniqueParam& UniqueParam::operator=(UniqueParam&&)noexcept = default;
 
 	GroupParam::~GroupParam() = default;
 	GroupParam::GroupParam(const std::string &name) :ParamBase(name) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(GroupParam);
+	GroupParam::GroupParam(const GroupParam&) = default;
+	GroupParam::GroupParam(GroupParam&&)noexcept = default;
+	GroupParam& GroupParam::operator=(const GroupParam&) = default;
+	GroupParam& GroupParam::operator=(GroupParam&&)noexcept = default;
 
-	struct UniqueParam::Imp
-	{
-		std::string default_value_{ "" };
-		Imp(const std::string &default_param = std::string("")) :default_value_(default_param) {}
-	};
-	auto UniqueParam::defaultValue()const->const std::string & { return imp_->default_value_; }
-	auto UniqueParam::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
-	UniqueParam::~UniqueParam() = default;
-	UniqueParam::UniqueParam(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(UniqueParam);
-
-	struct Command::Imp
-	{
+	struct Command::Imp{
 		bool is_taken_;
 		std::string default_value_{ "" };
 		std::map<std::string, Param*> param_map_;
@@ -91,79 +91,62 @@ namespace aris::core
 
 		Imp(const std::string &default_param = std::string("")) :default_value_(default_param) {}
 
-		static auto take(ParamBase* param)->void
-		{
-			if (auto p = dynamic_cast<Param*>(param))
-			{
+		static auto take(ParamBase* param)->void{
+			if (auto p = dynamic_cast<Param*>(param)){
 				if (p->ParamBase::imp_->is_taken_)
 					THROW_FILE_LINE("parse command error: command \"" + p->command().name() + "\"'s param \"" + p->name() + "\" has been set more than once");
 				p->ParamBase::imp_->is_taken_ = true;
 				take(p->father());
 			}
-			else if (auto g = dynamic_cast<GroupParam*>(param))
-			{
-				if (!g->ParamBase::imp_->is_taken_)
-				{
+			else if (auto g = dynamic_cast<GroupParam*>(param)){
+				if (!g->ParamBase::imp_->is_taken_){
 					g->ParamBase::imp_->is_taken_ = true;
 					take(g->father());
 				}
 			}
-			else if (auto u = dynamic_cast<UniqueParam*>(param))
-			{
+			else if (auto u = dynamic_cast<UniqueParam*>(param)){
 				if (u->ParamBase::imp_->is_taken_)
 					THROW_FILE_LINE("parse command error: command \"" + u->command().name() + "\"'s UNIQUE param \"" + u->name() + "\" has been set more than once");
 				u->ParamBase::imp_->is_taken_ = true;
 				take(u->father());
 			}
-			else if (auto c = dynamic_cast<Command*>(param))
-			{
+			else if (auto c = dynamic_cast<Command*>(param)){
 				if (c->imp_->is_taken_)
 					THROW_FILE_LINE("invalid param: some params of command \"" + c->name() + "\" has been set more than once");
 				c->imp_->is_taken_ = true;
 			}
-			else
-			{
+			else{
 				THROW_FILE_LINE("wrong type when cmd parse in take");
 			}
 		}
-		static auto reset(ParamBase* param)->void
-		{
-			if (auto p = dynamic_cast<Param*>(param))
-			{
+		static auto reset(ParamBase* param)->void{
+			if (auto p = dynamic_cast<Param*>(param)){
 				p->ParamBase::imp_->is_taken_ = false;
 			}
-			else if (auto g = dynamic_cast<GroupParam*>(param))
-			{
+			else if (auto g = dynamic_cast<GroupParam*>(param)){
 				g->ParamBase::imp_->is_taken_ = false;
 				for (auto &child : *g)reset(&child);
 			}
-			else if (auto u = dynamic_cast<UniqueParam*>(param))
-			{
+			else if (auto u = dynamic_cast<UniqueParam*>(param)){
 				u->ParamBase::imp_->is_taken_ = false;
 				for (auto &child : *u)reset(&child);
 			}
-			else if (auto c = dynamic_cast<Command*>(param))
-			{
+			else if (auto c = dynamic_cast<Command*>(param)){
 				c->imp_->is_taken_ = false;
 				for (auto &child : *c)reset(&child);
 			}
-			else
-			{
+			else{
 				THROW_FILE_LINE("wrong type when cmd parse in reset");
 			}
 		}
-		static auto addDefaultParam(ParamBase* param, std::map<std::string_view, std::string_view> &param_map_out)->void
-		{
-			if (auto p = dynamic_cast<Param*>(param))
-			{
+		static auto addDefaultParam(ParamBase* param, std::map<std::string_view, std::string_view> &param_map_out)->void{
+			if (auto p = dynamic_cast<Param*>(param)){
 				if (!p->ParamBase::imp_->is_taken_) { param_map_out.insert(std::make_pair(std::string_view(p->ParamBase::imp_->name_), std::string_view(p->imp_->default_value_))); }
 			}
-			else if (auto g = dynamic_cast<GroupParam*>(param))
-			{
+			else if (auto g = dynamic_cast<GroupParam*>(param)){
 				for (auto &child : *g) { addDefaultParam(&child, param_map_out); }
 			}
-			else if (auto u = dynamic_cast<UniqueParam*>(param))
-			{
+			else if (auto u = dynamic_cast<UniqueParam*>(param)){
 				if (u->size() == 0)return;
 
 				auto found_default = std::find_if(u->begin(), u->end(), [u](const auto&value) {return u->imp_->default_value_ == value.name(); });
@@ -176,8 +159,7 @@ namespace aris::core
 
 				addDefaultParam(default_param, param_map_out);
 			}
-			else if (auto c = dynamic_cast<Command*>(param))
-			{
+			else if (auto c = dynamic_cast<Command*>(param)){
 				if (c->size() == 0)return;
 
 				auto found_default = std::find_if(c->begin(), c->end(), [c](const auto&value) {return c->imp_->default_value_ == value.name(); });
@@ -190,15 +172,12 @@ namespace aris::core
 
 				addDefaultParam(default_param, param_map_out);
 			}
-			else
-			{
+			else{
 				THROW_FILE_LINE("wrong type when cmd parse in addDefaultParam");
 			}
 		}
-		static auto add_param_map_and_check_default(Command *cmd, ParamBase &param)->void
-		{
-			if (auto p = dynamic_cast<Param*>(&param))
-			{
+		static auto add_param_map_and_check_default(Command *cmd, ParamBase &param)->void{
+			if (auto p = dynamic_cast<Param*>(&param)){
 				if (cmd->imp_->param_map_.find(param.name()) != cmd->imp_->param_map_.end())
 					THROW_FILE_LINE("failed to add param \"" + param.name() + "\" to cmd \"" + cmd->name() + "\", because this param already exists");
 				if (cmd->imp_->abbreviation_map_.find(p->abbreviation()) != cmd->imp_->abbreviation_map_.end() && p->abbreviation() != 0)
@@ -207,40 +186,33 @@ namespace aris::core
 				cmd->imp_->param_map_.insert(std::make_pair(param.name(), p));
 				cmd->imp_->abbreviation_map_.insert(std::make_pair(p->abbreviation(), param.name()));
 			}
-			else if (auto u = dynamic_cast<UniqueParam*>(&param))
-			{
+			else if (auto u = dynamic_cast<UniqueParam*>(&param)){
 				auto found_default = std::find_if(u->begin(), u->end(), [u](const auto&value) {return u->imp_->default_value_ == value.name(); });
-				if ((u->imp_->default_value_ != "") && (found_default == u->end()))
-				{
+				if ((u->imp_->default_value_ != "") && (found_default == u->end()))	{
 					THROW_FILE_LINE("Unique param \"" + u->name() + "\" has invalid default param name");
 				}
 				for (auto &sub_param : param) add_param_map_and_check_default(cmd, sub_param);
 			}
-			else if (auto g = dynamic_cast<GroupParam*>(&param))
-			{
+			else if (auto g = dynamic_cast<GroupParam*>(&param)){
 				for (auto &sub_param : param) add_param_map_and_check_default(cmd, sub_param);
 			}
 		}
 	};
 	auto Command::defaultValue()const->const std::string & { return imp_->default_value_; }
 	auto Command::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
-	auto Command::findParam(const std::string &param_name)->Param*
-	{
-		std::function<Param*(const std::string &, ParamBase &)> find_func = [&](const std::string &param_name, ParamBase &param)->Param*
-		{
+	auto Command::findParam(const std::string &param_name)->Param*{
+		std::function<Param*(const std::string &, ParamBase &)> find_func = [&](const std::string &param_name, ParamBase &param)->Param*{
 			if (auto p = dynamic_cast<Param*>(&param))
 				return p->name() == param_name ? p : nullptr;
 			
-			for(auto &p: param)
-			{
+			for(auto &p: param){
 				if (auto result = find_func(param_name, p)) return result;
 			}
 
 			return nullptr;
 		};
 
-		for (auto &param : *this)
-		{
+		for (auto &param : *this){
 			auto result = find_func(param_name, param);
 			if (result) return result;
 		}
@@ -249,36 +221,33 @@ namespace aris::core
 	}
 	Command::~Command() = default;
 	Command::Command(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)){}
-	ARIS_DEFINE_BIG_FOUR_CPP(Command);
+	Command::Command(const Command&) = default;
+	Command::Command(Command&&)noexcept = default;
+	Command& Command::operator=(const Command&) = default;
+	Command& Command::operator=(Command&&)noexcept = default;
 
 	struct CommandParser::Imp { std::vector<Command> command_pool_; };
 	auto CommandParser::commandPool()->std::vector<Command> & { return imp_->command_pool_; }
 	auto CommandParser::commandPool()const->const std::vector<Command> & { return imp_->command_pool_; }
-	auto CommandParser::init()->void
-	{
+	auto CommandParser::init()->void{
 		// make command point to correct place //
-		for (auto &c : commandPool())
-		{
-			std::function<void(ParamBase*)> add = [&c, &add](ParamBase* param)->void
-			{
+		for (auto &c : commandPool()){
+			std::function<void(ParamBase*)> add = [&c, &add](ParamBase* param)->void{
 				param->imp_->command_ = &c;
-				for (auto &p : *param)
-				{
+				for (auto &p : *param){
 					p.imp_->father_ = param;
 					add(&p);
 				}
 			};
 
-			for (auto &param : c) 
-			{
+			for (auto &param : c) {
 				param.imp_->father_ = &c;
 				add(&param);
 			}
 		}
 
 		// make map and abbrev map //
-		for (auto &c : commandPool())
-		{
+		for (auto &c : commandPool()){
 			c.imp_->param_map_.clear();
 			c.imp_->abbreviation_map_.clear();
 
@@ -286,34 +255,26 @@ namespace aris::core
 			if ((c.imp_->default_value_ != "") && (found_default == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
 			for (auto &param : c) Command::Imp::add_param_map_and_check_default(&c, param);
 		}
-
-
 	}
-	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
-	{
-		auto cut_str = [](std::string_view &input, const char *c)->std::string_view
-		{
+	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>{
+		auto cut_str = [](std::string_view &input, const char *c)->std::string_view{
 			// 此时c中字符是或的关系 //
 			auto point = input.find_first_of(c);
 			auto ret = input.substr(0, point);
 			input = point == std::string::npos ? std::string_view() : input.substr(point);
 			return ret;
 		};
-		auto trim_left = [](std::string_view input)->std::string_view 
-		{
+		auto trim_left = [](std::string_view input)->std::string_view {
 			auto point = input.find_first_not_of(' ');
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 		};
-		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string_view
-		{
+		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string_view{
 			if (cmd_str.empty() || cmd_str[0] != '=')return param->defaultValue();
 			
 			int brace_num = 0;
 			int i = 1;
-			for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i)
-			{
-				switch (cmd_str[i])
-				{
+			for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i){
+				switch (cmd_str[i]){
 				case '{':
 					++brace_num;
 					break;
@@ -343,8 +304,7 @@ namespace aris::core
 		if (command == commandPool().end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
 
 		Command::Imp::reset(&*command);
-		for (; !cmd_str.empty();)
-		{
+		for (; !cmd_str.empty();){
 			auto param_name_origin = cut_str(cmd_str, " =");
 			cmd_str = trim_left(cmd_str);
 
@@ -352,8 +312,7 @@ namespace aris::core
 			else if (param_name_origin == "-")THROW_FILE_LINE("invalid param: symbol \"-\" must be followed by an abbreviation of param");
 			else if (param_name_origin == "--")THROW_FILE_LINE("invalid param: symbol \"--\" must be followed by a full name of param");
 			else if (param_name_origin.size() > 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')THROW_FILE_LINE("invalid param: param start with single '-' must be an abbreviation");
-			else if (param_name_origin.size() == 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')
-			{
+			else if (param_name_origin.size() == 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-'){
 				char abbrev = param_name_origin.data()[1];
 
 				if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
@@ -366,8 +325,7 @@ namespace aris::core
 				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
-			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-')
-			{
+			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-'){
 				auto param_name = param_name_origin.substr(2);
 
 				if (command->imp_->param_map_.find(std::string(param_name)) == command->imp_->param_map_.end())
@@ -379,10 +337,8 @@ namespace aris::core
 				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
-			else
-			{
-				for (auto abbrev : param_name_origin)
-				{
+			else{
+				for (auto abbrev : param_name_origin){
 					if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
 						THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
@@ -400,7 +356,7 @@ namespace aris::core
 	}
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name){}
-	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(CommandParser);
 
 	ARIS_REGISTRATION {
 		class_<ParamBase>("ParamBase")

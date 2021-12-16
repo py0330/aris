@@ -27,7 +27,7 @@ namespace aris::control
 
 		virtual ~Slave();
 		explicit Slave(const std::string &name = "slave", std::uint16_t phy_id = 0);
-		ARIS_DECLARE_BIG_FOUR(Slave);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(Slave);
 
 	private:
 		struct Imp;

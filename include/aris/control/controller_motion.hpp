@@ -31,6 +31,11 @@ namespace aris::control
 		auto setPosFactor(double pos_factor)->void;
 		auto homePos()const->double;
 		auto setHomePos(double home_pos)->void;
+		// 给电机发的速度 = targetVel() * posFactor() * velFactor()
+		// actualVel() = 电机读回来速度 / posFactor() / velFactor()
+		// 在ethercat 里面，下发的pdo数值
+		auto velFactor()const->double;
+		auto setVelFactor(double vel_factor)->void;
 
 		auto virtual controlWord()const->std::uint16_t = 0;
 		auto virtual modeOfOperation()const->std::uint8_t = 0;
@@ -62,7 +67,7 @@ namespace aris::control
 
 		virtual ~Motor();
 		explicit Motor(double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
-			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
+			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0, double vel_factor = 1.0);
 		Motor(const Motor &other);
 		Motor(Motor &&other) = delete;
 		Motor& operator=(const Motor &other);

@@ -14,22 +14,20 @@
 #include "aris/core/reflection.hpp"
 
 namespace aris::core{
-
 	auto reflect_types_raw()->std::map<std::size_t, Type>&{
 		static std::map<std::size_t, Type> reflection_types_;
 		return reflection_types_;
 	}
-
 
 	struct Property::Imp {
 		std::string name_;
 
 		std::function<Instance(Instance *obj)> get_;
 		std::function<void(Instance *obj, Instance prop)> set_;
-		bool accept_ptr_;// which means prop is a ptr, to support polymorphim
-		Type *type_belong_to_;// obj type, which prop belong to
-		Type *type_;// type of this prop
-		const std::type_info *type_info_;// type info of this prop
+		bool accept_ptr_{ false };// which means prop is a ptr, to support polymorphim
+		Type* type_belong_to_{ nullptr };// obj type, which prop belong to
+		Type* type_{ nullptr };// type of this prop
+		const std::type_info* type_info_{ nullptr };// type info of this prop
 
 		// only for basic type //
 		std::function<std::string(void* value)> to_str_func_;
@@ -37,7 +35,7 @@ namespace aris::core{
 	};
 	struct Instance::Imp{
 		const Property *belong_to_{ nullptr };
-		const std::type_info *type_info_;
+		const std::type_info* type_info_{ nullptr };
 
 		struct InstanceRef { void* data_; };
 		struct InstancePtr { std::shared_ptr<void> data_; };
@@ -57,7 +55,7 @@ namespace aris::core{
 		std::vector<const Type *> inherit_types_;
 		std::vector<std::function<void*(void*)>> inherit_cast_vec_; // 将自己cast成基类的函数
 
-																	// inherit types //
+		// ctor //
 		DefaultCtor default_ctor_;
 
 		// to text // 
@@ -65,10 +63,9 @@ namespace aris::core{
 		std::function<void(Instance*, std::string_view)> from_string_;
 
 		// array //
-		struct ArrayData
-		{
+		struct ArrayData{
 			// for basic //
-			bool is_ref_array_;
+			bool is_ref_array_{ false };
 			const Type* array_type_{ nullptr };
 			std::function<std::size_t(Instance*)> size_func_;
 			std::function<Instance(Instance*, std::size_t id)> at_func_;
@@ -76,7 +73,6 @@ namespace aris::core{
 			std::function<void(Instance*)> clear_func_;
 		};
 		std::unique_ptr<ArrayData> array_data_;
-
 
 		bool is_polymophic_{ false };
 	};
@@ -93,8 +89,7 @@ namespace aris::core{
 	auto Property::setToText(std::function<std::string(void*)> to_text)->void { imp_->to_str_func_ = to_text; }
 	auto Property::setFromText(std::function<void(void*, std::string_view)> from_text)->void { imp_->from_str_func_ = from_text; }
 	Property::~Property() = default;
-	Property::Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp)
-	{
+	Property::Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp){
 		imp_->name_ = name;
 		imp_->type_belong_to_ = type_belong_to;
 		imp_->type_info_ = type_self;
@@ -103,18 +98,15 @@ namespace aris::core{
 		imp_->get_ = get;
 	}
 
-	auto Type::reflect_types()->std::map<std::size_t, Type>&
-	{
+	auto Type::reflect_types()->std::map<std::size_t, Type>&{
 		initAllTypes();
 		return reflect_types_raw();
 	}
-	auto Type::reflect_names()->std::map<std::string, std::size_t>&
-	{
+	auto Type::reflect_names()->std::map<std::string, std::size_t>&{
 		static std::map<std::string, std::size_t> reflection_names_;
 		return reflection_names_;
 	}
-	auto Type::registerType(bool is_polymophic, std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*
-	{
+	auto Type::registerType(bool is_polymophic, std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*{
 		auto[ins, ok] = reflect_types_raw().emplace(std::make_pair(hash_code, Type(name)));
 		if (!ok) THROW_FILE_LINE("class already exist");
 		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
@@ -124,14 +116,12 @@ namespace aris::core{
 		ins->second.imp_->is_polymophic_ = is_polymophic;
 		return &ins->second;
 	}
-	auto Type::alias_impl(Type*type, std::string_view alias_name)->void
-	{
+	auto Type::alias_impl(Type*type, std::string_view alias_name)->void{
 		auto code = reflect_names().at(std::string(type->name()));
 		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(std::string(alias_name), code));
 		if (!ok2) THROW_FILE_LINE("class name already exist");
 	}
-	auto Type::getType(std::string_view name)->Type*
-	{
+	auto Type::getType(std::string_view name)->Type*{
 		auto found = reflect_names().find(std::string(name));
 		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
 	}
@@ -142,16 +132,13 @@ namespace aris::core{
 	auto Type::isBasic()const->bool { return (!imp_->is_polymophic_) && (!isArray()) && imp_->properties_ptr_.empty(); }
 	auto Type::inheritTypes()const->std::vector<const Type*>{ return imp_->inherit_types_; }
 	auto Type::properties()const->const std::vector<Property*>&{return imp_->properties_ptr_;};
-	auto Type::propertyAt(std::string_view name)const->Property*
-	{
-		auto found = std::find_if(properties().begin(), properties().end(), [name](Property* prop) ->bool
-		{
+	auto Type::propertyAt(std::string_view name)const->Property*{
+		auto found = std::find_if(properties().begin(), properties().end(), [name](Property* prop) ->bool{
 			return prop->name() == name;
 		});
 		return found == properties().end() ? nullptr : *found;
 	}
-	auto Type::inherit(const std::type_info *inherit_type_info, CastFunc func)->void
-	{
+	auto Type::inherit(const std::type_info *inherit_type_info, CastFunc func)->void{
 		imp_->inherit_type_infos_.push_back(inherit_type_info);
 		imp_->inherit_cast_vec_.push_back(func);// 多继承可能改变指针所指向的位置，坑爹！！//
 	}
@@ -209,32 +196,26 @@ namespace aris::core{
 			t.second.init();
 		}
 	}
-	auto Type::isBaseOf(const Type* base, const Type* derived)->bool
-	{
+	auto Type::isBaseOf(const Type* base, const Type* derived)->bool{
 		if (base == nullptr) return true;
 		if (derived == nullptr) return false;
 		
-		
-		if (base == derived || std::find(derived->imp_->inherit_types_.begin(), derived->imp_->inherit_types_.end(), base) != derived->imp_->inherit_types_.end())
-		{
+		if (base == derived || std::find(derived->imp_->inherit_types_.begin(), derived->imp_->inherit_types_.end(), base) != derived->imp_->inherit_types_.end()){
 			return true;
 		}
 
-		for (auto t : derived->imp_->inherit_types_)
-		{
+		for (auto t : derived->imp_->inherit_types_){
 			if (isBaseOf(base, t)) return true;
 		}
 
 		return false;
 	}
 	auto Type::this_properties()->std::vector<Property>& { return imp_->this_properties_; }
-	auto Type::text(std::function<std::string(Instance*)> to_string, std::function<void(Instance*, std::string_view)> from_string)->void 
-	{
+	auto Type::text(std::function<std::string(Instance*)> to_string, std::function<void(Instance*, std::string_view)> from_string)->void {
 		imp_->to_string_ = to_string;
 		imp_->from_string_ = from_string;
 	}
-	auto Type::as_array(bool is_ref, std::function<std::size_t(Instance*)> size_func, std::function<Instance(Instance*, std::size_t)>at_func, std::function<void(Instance*, const Instance&)>push_back_func, std::function<void(Instance*)>clear_func)->void
-	{
+	auto Type::as_array(bool is_ref, std::function<std::size_t(Instance*)> size_func, std::function<Instance(Instance*, std::size_t)>at_func, std::function<void(Instance*, const Instance&)>push_back_func, std::function<void(Instance*)>clear_func)->void{
 		imp_->array_data_ = std::unique_ptr<Type::Imp::ArrayData>(new Type::Imp::ArrayData{ is_ref, this, size_func, at_func,push_back_func, clear_func });
 	}
 	Type::~Type() = default;
@@ -312,7 +293,6 @@ namespace aris::core{
 	Instance::Instance(const Instance&) = default;
 	Instance::Instance(Instance&&) = default;
 
-
 	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }
 	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }
 	auto uint32_to_str(std::uint32_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint32_t*>(value)); }
@@ -330,16 +310,14 @@ namespace aris::core{
 	auto int8_to_str(std::int8_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int8_t*>(value)); }
 	auto int8_from_str(std::int8_t *v, std::string_view str)->void { *reinterpret_cast<std::int8_t*>(v) = (std::int8_t)std::strtoll(str.data(), nullptr, 0); }
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<char>("char")
-			.textMethod([](char *v)->std::string
-			{
-				return std::string(1, *v);
-			}, [](char *v, std::string_view str)->void
-			{
-				*v = str[0];
-			})
+			.textMethod(
+				[](char *v)->std::string{
+					return std::string(1, *v);
+				}, [](char *v, std::string_view str)->void{
+					*v = str[0];
+				})
 			;
 		
 		aris::core::class_<std::int8_t>("int8")
@@ -347,11 +325,13 @@ namespace aris::core{
 			;
 
 		aris::core::class_<std::int16_t>("int16")
-			.textMethod(int16_to_str, int16_from_str);
+			.textMethod(int16_to_str, int16_from_str)
+			;
 
 		aris::core::class_<std::int32_t>("int32")
 			.textMethod(int32_to_str, int32_from_str)
-			.alias("int");
+			.alias("int")
+			;
 
 		aris::core::class_<std::int64_t>("int64")
 			.textMethod(int64_to_str, int64_from_str);

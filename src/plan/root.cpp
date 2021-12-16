@@ -13,8 +13,7 @@
 namespace aris::plan
 {
 	// 请务必修改server中的另一份定义
-	struct Plan::Imp 
-	{
+	struct Plan::Imp {
 		std::string name_;
 		
 		std::int64_t count_;
@@ -78,14 +77,12 @@ namespace aris::plan
 	auto Plan::int64Param(std::string_view param_name)->std::int64_t { return std::stoll(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint64Param(std::string_view param_name)->std::uint64_t { return std::stoull(std::string(cmdParams().at(param_name)), nullptr, 0); }
-	auto Plan::matrixParam(std::string_view param_name)->aris::core::Matrix
-	{
+	auto Plan::matrixParam(std::string_view param_name)->aris::core::Matrix{
 		auto &value = cmdParams().at(param_name);
 		auto mat = model()->calculator().calculateExpression(std::string(value));
 		return std::any_cast<double>(&mat.second) ? aris::core::Matrix(std::any_cast<double>(mat.second)): std::any_cast<aris::core::Matrix&>(mat.second);
 	}
-	auto Plan::matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix
-	{
+	auto Plan::matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix{
 		auto mat = matrixParam(param_name);
 		if (mat.m() != m || mat.n() != n) THROW_FILE_LINE("invalid matrix size");
 		return mat;
@@ -101,16 +98,14 @@ namespace aris::plan
 	Plan::Plan(const std::string &name) :imp_(new Imp) { setName(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
 
-	struct PlanRoot::Imp 
-	{
+	struct PlanRoot::Imp {
 		aris::core::CommandParser parser_;
 		std::unique_ptr<aris::core::PointerArray<Plan>> plan_pool_{new aris::core::PointerArray<Plan> };
 	};
 	auto PlanRoot::resetPlanPool(aris::core::PointerArray<Plan> *pool)->void { imp_->plan_pool_.reset(pool); }
 	auto PlanRoot::planPool()->aris::core::PointerArray<Plan> & { return *imp_->plan_pool_; }
 	auto PlanRoot::planParser()->aris::core::CommandParser&{ return imp_->parser_; }
-	auto PlanRoot::init()->void
-	{
+	auto PlanRoot::init()->void{
 		imp_->parser_.commandPool().clear();
 		for (auto &plan : planPool()) imp_->parser_.commandPool().push_back(plan.command());
 		imp_->parser_.init();
@@ -179,12 +174,9 @@ namespace aris::plan
 		"				</UniqueParam>"\
 		"			</GroupParam>"\
 		"		</UniqueParam>"
-	auto set_check_option(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan)->void
-	{
-		for (auto cmd_param : cmd_params)
-		{
-			if (cmd_param.first == "check_all")
-			{
+	auto set_check_option(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan)->void{
+		for (auto cmd_param : cmd_params){
+			if (cmd_param.first == "check_all"){
 				for (auto &option : plan.motorOptions())	option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
@@ -196,8 +188,7 @@ namespace aris::plan
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR);
 			}
-			else if (cmd_param.first == "check_none")
-			{
+			else if (cmd_param.first == "check_none"){
 				for (auto &option : plan.motorOptions())	option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
@@ -209,18 +200,15 @@ namespace aris::plan
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "check_enable")
-			{
+			else if (cmd_param.first == "check_enable"){
 				for (auto &option : plan.motorOptions()) option &= ~(
 					Plan::NOT_CHECK_ENABLE);
 			}
-			else if (cmd_param.first == "not_check_enable")
-			{
+			else if (cmd_param.first == "not_check_enable"){
 				for (auto &option : plan.motorOptions()) option |=
 					Plan::NOT_CHECK_ENABLE;
 			}
-			else if (cmd_param.first == "check_pos")
-			{
+			else if (cmd_param.first == "check_pos"){
 				for (auto &option : plan.motorOptions()) option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
@@ -228,8 +216,7 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR);
 			}
-			else if (cmd_param.first == "not_check_pos")
-			{
+			else if (cmd_param.first == "not_check_pos"){
 				for (auto &option : plan.motorOptions()) option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
@@ -237,92 +224,72 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "check_vel")
-			{
+			else if (cmd_param.first == "check_vel"){
 				for (auto &option : plan.motorOptions()) option &= ~(
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR);
 			}
-			else if (cmd_param.first == "not_check_vel")
-			{
+			else if (cmd_param.first == "not_check_vel"){
 				for (auto &option : plan.motorOptions()) option |=
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "check_pos_min")
-			{
+			else if (cmd_param.first == "check_pos_min"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_POS_MIN;
 			}
-			else if (cmd_param.first == "not_check_pos_min")
-			{
+			else if (cmd_param.first == "not_check_pos_min"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_POS_MIN;
 			}
-			else if (cmd_param.first == "check_pos_max")
-			{
+			else if (cmd_param.first == "check_pos_max"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_POS_MAX;
 			}
-			else if (cmd_param.first == "not_check_pos_max")
-			{
+			else if (cmd_param.first == "not_check_pos_max"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_POS_MAX;
 			}
-			else if (cmd_param.first == "check_pos_continuous")
-			{
+			else if (cmd_param.first == "check_pos_continuous"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
-			else if (cmd_param.first == "not_check_pos_continuous")
-			{
+			else if (cmd_param.first == "not_check_pos_continuous"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
-			else if (cmd_param.first == "check_pos_continuous_second_order")
-			{
+			else if (cmd_param.first == "check_pos_continuous_second_order"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
-			else if (cmd_param.first == "not_check_pos_continuous_second_order")
-			{
+			else if (cmd_param.first == "not_check_pos_continuous_second_order"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
-			else if (cmd_param.first == "check_pos_following_error")
-			{
+			else if (cmd_param.first == "check_pos_following_error"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "not_check_pos_following_error")
-			{
+			else if (cmd_param.first == "not_check_pos_following_error"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "check_vel_min")
-			{
+			else if (cmd_param.first == "check_vel_min"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_VEL_MIN;
 			}
-			else if (cmd_param.first == "not_check_vel_min")
-			{
+			else if (cmd_param.first == "not_check_vel_min"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_VEL_MIN;
 			}
-			else if (cmd_param.first == "check_vel_max")
-			{
+			else if (cmd_param.first == "check_vel_max"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_VEL_MAX;
 			}
-			else if (cmd_param.first == "not_check_vel_max")
-			{
+			else if (cmd_param.first == "not_check_vel_max"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_VEL_MAX;
 			}
-			else if (cmd_param.first == "check_vel_continuous")
-			{
+			else if (cmd_param.first == "check_vel_continuous"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
-			else if (cmd_param.first == "not_check_vel_continuous")
-			{
+			else if (cmd_param.first == "not_check_vel_continuous"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
-			else if (cmd_param.first == "check_vel_following_error")
-			{
+			else if (cmd_param.first == "check_vel_following_error"){
 				for (auto &option : plan.motorOptions()) option &= ~Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
-			else if (cmd_param.first == "not_check_vel_following_error")
-			{
+			else if (cmd_param.first == "not_check_vel_following_error"){
 				for (auto &option : plan.motorOptions()) option |= Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 		}
@@ -334,26 +301,21 @@ namespace aris::plan
 		"			<Param name=\"all\" abbreviation=\"a\"/>"\
 		"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"\
 		"		</UniqueParam>"
-	auto set_active_motor(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetActiveMotor &param)->void
-	{
+	auto set_active_motor(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetActiveMotor &param)->void{
 		param.active_motor.clear();
 		param.active_motor.resize(plan.controller()->motorPool().size(), 0);
 		
-		for (auto cmd_param : cmd_params)
-		{
-			if (cmd_param.first == "all")
-			{
+		for (auto cmd_param : cmd_params){
+			if (cmd_param.first == "all"){
 				std::fill(param.active_motor.begin(), param.active_motor.end(), 1);
 			}
-			else if (cmd_param.first == "motion_id")
-			{
+			else if (cmd_param.first == "motion_id"){
 				param.active_motor.at(plan.int32Param(cmd_param.first)) = 1;
 			}
 		}
 	}
 
-	struct SetInputMovement 
-	{
+	struct SetInputMovement {
 		std::vector<double> axis_begin_pos_vec;
 		std::vector<double> axis_pos_vec;
 		std::vector<double> axis_vel_vec;

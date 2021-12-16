@@ -134,7 +134,7 @@ namespace aris::dynamic {
 		if (std::abs(input[0] - 0.0) < 1e-5 && std::abs(input[1] - 0.0) < 1e-5 && std::abs(input[2] - 0.0) < 1e-5) {
 			k[2] = k[5] = k[8] = 1.0;
 			
-			double inv_k[9], u[9], tau[3], tau2[3], x[3];
+			double u[9], tau[3], tau2[3], x[3];
 			aris::Size p[3], rank;
 			s_householder_utp(3, 3, k, u, tau, p, rank);
 			s_householder_utp_sov(3, 3, 1, rank, u, tau, p, s, x);

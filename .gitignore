@@ -41,3 +41,6 @@ install_manifest.txt
 *.exe
 *.out
 *.app
+/.vs
+/out
+/CMakeSettings.json

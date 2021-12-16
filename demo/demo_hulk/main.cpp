@@ -1,7 +1,137 @@
 ﻿#include "aris.hpp"
 
+auto calibModelLangHe()->std::unique_ptr<aris::dynamic::Model>
+{
+	aris::dynamic::SevenAxisParam2 param;
+
+	param.d1 = 0.203;
+	param.a2 = -0.138;
+	param.d3 = 0.450;
+	param.d5 = 0.300;
+	param.tool0_pe[2] = 0.1048;
+
+	auto m = aris::dynamic::createModelSevenAxis2(param);
+
+	auto& clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
+	clb.setDataIndex(0, 1, 2, 3);
+	clb.setFilterWindowSize(30);
+	clb.setTorqueConstant({
+		1.4 * 101 / 1000,
+		-1.4 * 101 / 1000,
+		1.0 * 101 / 1000,
+		0.7 * 101 / 1000,
+		0.3 * 101 / 1000,
+		0.3 * 101 / 1000,
+		0.3 * 101 / 1000 });
+	clb.setTorqueWeight({
+		1.4 * 101,
+		1.4 * 101,
+		1.0 * 101,
+		0.7 * 101,
+		0.3 * 101,
+		0.3 * 101,
+		0.3 * 101 });
+	clb.setVelocityRatio({
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13,
+		1.0 / 101 / 6.13 });
+
+	m->init();
+
+	clb.clbFiles({
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par2.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par3.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par4.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par5.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par6.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par7.txt",
+		
+		});
+
+	std::cout << "verify" << std::endl;
+	clb.verifyFiles({
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par8.txt",
+		});
+
+
+	
+	
+
+
+	return m;
+}
+
+auto calibModelYuejiang()->std::unique_ptr<aris::dynamic::Model>
+{
+	aris::dynamic::UrParam param;
+	param.H1 = 0.147;
+	param.L1 = 0.427;
+	param.L2 = 0.357;
+	param.H2 = 0.116;
+	param.W1 = 0.141;
+	param.W2 = 0.105;
+
+	auto m = aris::dynamic::createModelUr(param);
+
+	auto& clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
+	clb.setDataIndex(0, 1, 2, 3);
+	clb.setFilterWindowSize(30);
+	clb.setTorqueConstant({
+		-2.0 * 101 / 1000,
+		-2.0 * 101 / 1000,
+		2.0 * 101 / 1000,
+		-0.3 * 101 / 1000,
+		-0.3 * 101 / 1000,
+		-0.3 * 101 / 1000});
+	clb.setTorqueWeight({
+		2.0 * 101,
+		2.0 * 101,
+		2.0 * 101,
+		0.3 * 101,
+		0.3 * 101,
+		0.3 * 101 });
+	clb.setVelocityRatio({
+		1.0,
+		1.0,
+		1.0,
+		1.0, 
+		1.0,
+		1.0 });
+
+	m->init();
+
+	clb.clbFiles({
+		//"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par1.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par3.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par4.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par5.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par10.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par100.txt",
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par200.txt",
+		});
+
+	std::cout << "verify" << std::endl;
+	clb.verifyFiles({
+		"C:\\Users\\py0330\\Desktop\\calib\\calib_dyn_par12.txt",
+		});
+
+
+
+
+
+
+	return m;
+}
 int main()
 {
+	{
+		calibModelYuejiang();
+	}
+	
 	{
 		aris::dynamic::Model m;
 		//aris::core::fromXmlFile(m, "C:\\Users\\py033\\Desktop\\moveSine_log\\model.xml");

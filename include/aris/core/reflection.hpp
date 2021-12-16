@@ -7,12 +7,6 @@
 	#define ARIS_EXTERN extern
 #endif
 
-//#ifdef ARIS_CORE_REFLECTION_CPP_
-//	#define ARIS_EXTERN
-//#else
-//	#define ARIS_EXTERN extern
-//#endif
-
 #include <any>
 #include <map>
 #include <vector>
@@ -32,12 +26,9 @@
 
 #define ARIS_REGISTRATION                                                                 \
 static void aris_reflection_register_function_();                                         \
-namespace                                                                                 \
-{                                                                                         \
-    struct aris_reflection_help_class__                                                   \
-    {                                                                                     \
-        aris_reflection_help_class__()                                                    \
-        {                                                                                 \
+namespace{                                                                                \
+    struct aris_reflection_help_class__{                                                  \
+        aris_reflection_help_class__(){                                                   \
             aris_reflection_register_function_();                                         \
         }                                                                                 \
     };                                                                                    \
