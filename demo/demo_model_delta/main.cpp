@@ -161,6 +161,52 @@ int main(){
 	aris::dynamic::s_pm2pe(*tool1->prtPm(), pe);
 	aris::dynamic::dsp(1, 6, pe);
 
+	////////////////////////////////////////// planar delta ////////////////////////////////////
+	aris::dynamic::PlanarDeltaFullParam planar_delta_param;
+	planar_delta_param.a1 = 0.175;
+	planar_delta_param.b1 = 0.550;
+	planar_delta_param.c1 = 1.160;
+	planar_delta_param.a2 = -0.175;
+	planar_delta_param.b2 = -0.550;
+	planar_delta_param.c2 = -1.160;
+	planar_delta_param.d = 0.118;
+	auto planar_delta = aris::dynamic::createModelPlanarDelta(planar_delta_param);
+	
+	double input_000[3]{ 0.3,0.3,0.2 };
+	planar_delta->setInputPos(input_000);
+	planar_delta->forwardKinematics();
+
+	planar_delta->getOutputPos(pe);
+	aris::dynamic::dsp(1, 3, pe);
+
+	planar_delta->inverseKinematics();
+	planar_delta->getInputPos(input);
+	aris::dynamic::dsp(1, 3, input);
+	//planar_delta->setOutputPos();
+
+
+	////////////////////////////////////////// planar scara ////////////////////////////////////
+	{
+		aris::dynamic::ScaraParam param2;
+		param2.a = 1;
+		param2.b = 1;
+		auto m2 = aris::dynamic::createModelPlanarScara(param2);
+		
+		//////////////////// 反解 ////////////////////
+		double xyz_theta2[4]{ -0.8, -0.9, 0.3 };
+		m2->setOutputPos(xyz_theta2);
+		if (m2->inverseKinematics())
+			std::cout << "failed" << std::endl;
+		m2->getInputPos(input);
+		aris::dynamic::dsp(1, 3, input);
+
+		//////////////////// 正解 ////////////////////
+		m2->setInputPos(input);
+		if (m2->forwardKinematics())
+			std::cout << "failed" << std::endl;
+		m2->getOutputPos(output);
+		aris::dynamic::dsp(1, 3, output);
+	}
 
 
 	std::cout << "demo_model_delta finished, press any key to continue" << std::endl;
