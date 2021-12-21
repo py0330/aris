@@ -32,6 +32,9 @@ namespace aris::server
 
 	private:
 		bool is_open_{false};
+
+	public:
+		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}
 	};
 
 	class ARIS_API ControlServer{

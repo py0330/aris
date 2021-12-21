@@ -208,7 +208,6 @@ namespace aris::server
 					aris::core::Msg ret_msg(msg);
 					ret_msg.copy(str);
 					socket->sendMsg(ret_msg);
-					std::cout << "---" << str << std::endl;
 				}
 				catch (std::exception &e)
 				{
