@@ -15,7 +15,6 @@
 #include "aris/dynamic/model.hpp"
 
 namespace aris::dynamic{
-
 	auto Interaction::prtNameM()const->std::string { return prt_name_M_; }
 	auto Interaction::setPrtNameM(std::string_view name)->void { prt_name_M_ = name; }
 	auto Interaction::prtNameN()const->std::string { return prt_name_N_; }
@@ -423,7 +422,7 @@ namespace aris::dynamic{
 		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
 		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
 
-		s_va(3, vp_in_makI, cv);
+		s_vc(3, vp_in_makI, cv);
 
 		// 转动所添加的 cv //
 		cv[3] = imp_->vp_[3];
@@ -488,6 +487,120 @@ namespace aris::dynamic{
 	XyztMotion::~XyztMotion() = default;
 	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(XyztMotion);
+
+	struct PlanarMotion::Imp { double mp_[3], vp_[3], ap_[3]; };
+	auto PlanarMotion::locCmI() const noexcept->const double* {
+		static const double loc_cm_I[18]{
+			1,0,0,
+			0,1,0,
+			0,0,0,
+			0,0,0,
+			0,0,0,
+			0,0,1,
+		};
+		return loc_cm_I;
+	}
+	auto PlanarMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		// 类似general motion，但仅取其中3维
+		// 先生成mpm
+		double mpm[16];
+		s_rmz(imp_->mp_[2], mpm, 4);
+		s_pp2pm(imp_->mp_, mpm);
+		s_fill(1, 3, 0.0, mpm + 12);
+		mpm[11] = 0.0; // z 为0 
+		mpm[15] = 1.0;
+
+		// 类似general motion 进行计算
+		double pm_it[16];
+		s_pm_dot_pm(makJ_pm, mpm, pm_it);
+
+		double pm_c[16], ps_c[6];
+		s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		s_pm2ps(pm_c, ps_c);
+
+		// locCmI为单位矩阵，此时无需相乘
+		s_vc(2, ps_c, cp);
+		cp[2] = ps_c[5];
+	}
+	auto PlanarMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
+	auto PlanarMotion::cptCv(double* cv)const noexcept->void {
+		// 点运动所添加的 cv //
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		s_vc(2, vp_in_makI, cv);
+
+		// 转动所添加的 cv //
+		cv[2] = imp_->vp_[2];
+	}
+	auto PlanarMotion::cptCa(double* ca)const noexcept->void {
+
+		///////  以下可能不对 ///////////
+		///////  tbd /////
+
+		Constraint::cptCa(ca);
+
+		// w x R * dr //
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		double vs_J_in_I[6];
+		makJ()->getVs(*makI(), vs_J_in_I);
+
+		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
+
+		// R * ddr //
+		double ap_in_makI[3], ap_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), imp_->ap_, ap_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
+
+		s_va(2, ap_in_makI, ca);
+
+
+		// 角度 //
+		ca[2] += imp_->ap_[2];
+	}
+	auto PlanarMotion::p()const noexcept->const double* { return imp_->mp_; }
+	auto PlanarMotion::updP() noexcept->void {
+		double mpm[16];
+		s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), mpm);
+		imp_->mp_[0] = mpm[3];
+		imp_->mp_[1] = mpm[7];
+		imp_->mp_[2] = std::atan2(mpm[4] - mpm[1], mpm[0] + mpm[5]);
+	}
+	auto PlanarMotion::setP(const double* mp) noexcept->void { s_vc(3, mp, imp_->mp_); }
+	auto PlanarMotion::getP(double* mp)const noexcept->void { s_vc(3, imp_->mp_, mp); }
+	auto PlanarMotion::v()const noexcept->const double* { return imp_->vp_; }
+	auto PlanarMotion::updV() noexcept->void {
+		double mvs[6], vp[3];
+		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), mvs);
+		s_vs2vp(mvs, imp_->mp_, vp);
+		imp_->vp_[0] = vp[0];
+		imp_->vp_[1] = vp[1];
+		imp_->vp_[2] = mvs[5];
+	}
+	auto PlanarMotion::setV(const double* mv) noexcept->void { s_vc(3, mv, imp_->vp_); }
+	auto PlanarMotion::getV(double* mv)const noexcept->void { s_vc(3, imp_->vp_, mv); }
+	auto PlanarMotion::a()const noexcept->const double* { return imp_->ap_; }
+	auto PlanarMotion::updA() noexcept->void {
+		double mvs[6], mas[6], ap[3];
+		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), mas, mvs);
+		s_as2ap(mvs, mas, imp_->mp_, ap);
+		imp_->ap_[0] = ap[0];
+		imp_->ap_[1] = ap[1];
+		imp_->ap_[2] = mas[5];
+	}
+	auto PlanarMotion::setA(const double* ma) noexcept->void { s_vc(3, ma, imp_->ap_); }
+	auto PlanarMotion::getA(double* ma)const noexcept->void { s_vc(3, imp_->ap_, ma); }
+	PlanarMotion::~PlanarMotion() = default;
+	PlanarMotion::PlanarMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionBase(name, makI, makJ, active) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(PlanarMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[30] {

@@ -17,7 +17,7 @@
 
 namespace aris::dynamic
 {
-	struct UrParamLocal{
+	struct UrParamLocal {
 		// UR的机构有如下特点：
 		// 1轴和2轴垂直且交于一点： A点
 		// 2轴、3轴、4轴平行
@@ -37,7 +37,7 @@ namespace aris::dynamic
 		// d2：3轴和4轴的距离
 		// d3：C点（4轴5轴的交点）和D点（5轴6轴的交点），到A坐标系xz平面的距离，即 0 位处，C和D在A坐标系内的 y 分量，C和D的连线平行于xz平面
 		// d4：D点到B点的距离，注意这里是z轴为正
-		
+
 		double L1;
 		double L2;
 		double W1;
@@ -166,7 +166,7 @@ namespace aris::dynamic
 		}
 
 		// 这里让每个电机角度都落在[0，2pi]
-		for (Size i = 0; i < 6; ++i){
+		for (Size i = 0; i < 6; ++i) {
 			q[i] = std::fmod(q[i], 2.0 * PI);
 		}
 
@@ -250,7 +250,7 @@ namespace aris::dynamic
 		auto ee_mak_on_L6 = &imp_->ee->makI()->fatherPart() == imp_->L6 ? imp_->ee->makI() : imp_->ee->makJ();
 
 		auto &param = imp_->puma_param;
-		
+
 		// get A pm //
 		{
 			// 构建A坐标系相对于R1 mak的坐标系，它的y轴是R2在R1下的 z 轴，z轴是R1的z轴[0,0,1],x轴为他俩叉乘
@@ -269,7 +269,7 @@ namespace aris::dynamic
 			R1_mak_on_GR->getPm(*ee_mak_on_GR, pm);
 			s_pm_dot_pm(pm, pm_A_in_R1, imp_->puma_param.pm_A_in_Ground);
 		}
-		
+
 		// get D pm //
 		{
 			// 构建D坐标系相对于R6 mak的坐标系，零位下方向与A重合：z轴与R5的z轴重合，y轴与R6的z轴重合
@@ -304,7 +304,7 @@ namespace aris::dynamic
 		// get W1 //
 		{
 			imp_->puma_param.W1 = 0.0;
-			
+
 			// R3相对于R2的偏移 //
 			double pm[16];
 			R3_mak_on_L2->getPm(*R2_mak_on_L2, pm);
@@ -314,7 +314,7 @@ namespace aris::dynamic
 			auto ratio = pm[10] > 0 ? 1.0 : -1.0;
 			R4_mak_on_L3->getPm(*R3_mak_on_L3, pm);
 			imp_->puma_param.W1 += pm[11] * ratio;
-			
+
 			// R5相对于R4的偏移，ratio在考虑R2、R3方向有相反的可能 //
 			ratio *= pm[10] > 0 ? 1.0 : -1.0;
 			R5_mak_on_L4->getPm(*R4_mak_on_L4, pm);
@@ -380,7 +380,7 @@ namespace aris::dynamic
 			// mp_offset[3] 应该能让R5的z轴在零位处和R1的z轴平行
 			R1_mak_on_L1->getPm(*R2_mak_on_L1, pm);
 			double R1_z_in_R2[3]{ pm[2], pm[6], pm[10] };
-			
+
 			R2_mak_on_L2->getPm(*R3_mak_on_L2, pm);
 			double R1_z_in_R3_raw[3];
 			s_pm_dot_v3(pm, R1_z_in_R2, R1_z_in_R3_raw);
@@ -394,9 +394,9 @@ namespace aris::dynamic
 			double R1_z_in_R4[3];
 			R3_mak_on_L3->getPm(*R4_mak_on_L3, pm);
 			s_pm_dot_v3(pm, R1_z_in_R3, R1_z_in_R4);
-			
+
 			R5_mak_on_L4->getPm(*R4_mak_on_L4, pm);
-			double R5_z_in_R4[3]{pm[2], pm[6], pm[10]};
+			double R5_z_in_R4[3]{ pm[2], pm[6], pm[10] };
 
 			imp_->puma_param.mp_offset[3] = -std::atan2(R1_z_in_R4[1], R1_z_in_R4[0]) + std::atan2(R5_z_in_R4[1], R5_z_in_R4[0]);
 			imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == imp_->R4->makI() ? 1.0 : -1.0;
@@ -424,7 +424,7 @@ namespace aris::dynamic
 			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
 		}
 	}
-	auto UrInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void{	imp_->which_root_ = root_of_0_to_7; }
+	auto UrInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto UrInverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto UrInverseKinematicSolver::kinPos()->int {
 		if (imp_->which_root_ == 8) {
@@ -509,7 +509,7 @@ namespace aris::dynamic
 
 	auto createModelUr(const UrParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
-		
+
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
@@ -531,7 +531,7 @@ namespace aris::dynamic
 		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
 		auto &p6 = model->partPool().add<Part>("L6", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv,
 			ee_i_pm);
-		
+
 		// add joints //
 		//const double j1_pos[3]{      0.0,                 0.0, param.H1 };
 		//const double j2_pos[3]{      0.0,                 0.0, param.H1 };
@@ -540,11 +540,11 @@ namespace aris::dynamic
 		//const double j5_pos[3]{ param.L1 + param.L2, param.W1, param.H1 };
 		//const double j6_pos[3]{ param.L1 + param.L2, param.W1, param.H1 + param.H2 };
 
-		const double j1_pos[3]{ 0.0,      0.0, param.H1                                  };
-		const double j2_pos[3]{ 0.0,      0.0, param.H1                                  };
-		const double j3_pos[3]{ 0.0,      0.0, param.H1 + param.L1                       };
-		const double j4_pos[3]{ 0.0,      0.0, param.H1 + param.L1 + param.L2            };
-		const double j5_pos[3]{ 0.0, param.W1, param.H1                                  };
+		const double j1_pos[3]{ 0.0,      0.0, param.H1 };
+		const double j2_pos[3]{ 0.0,      0.0, param.H1 };
+		const double j3_pos[3]{ 0.0,      0.0, param.H1 + param.L1 };
+		const double j4_pos[3]{ 0.0,      0.0, param.H1 + param.L1 + param.L2 };
+		const double j5_pos[3]{ 0.0, param.W1, param.H1 };
 		const double j6_pos[3]{ 0.0, param.W1, param.H1 + param.L1 + param.L2 + param.H2 };
 
 		const double j1_axis[6]{ 0.0, 0.0, 1.0 };

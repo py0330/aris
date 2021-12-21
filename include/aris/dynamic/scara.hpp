@@ -40,8 +40,9 @@ namespace aris::dynamic{
 		std::vector<std::array<double, 3> > mot_frc_vec;
 	};
 
-
 	auto ARIS_API createModelScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model>;
+
+	auto ARIS_API createModelPlanarScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
 	// \brief 求解平面内2点法标定，适用于scara 和 delta等4轴机器人
 	// scara:      4维末端的机器人，例如scara或delta

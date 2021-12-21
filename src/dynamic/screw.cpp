@@ -3546,8 +3546,8 @@ namespace aris::dynamic
 		ab = ab ? ab : default_ab;
 
 		// 正式开始计算 //
-		const Size a = order[0] - '1';
-		const Size b = order[1] - '1';
+		const Size a = Size(order[0] - '1');
+		const Size b = Size(order[1] - '1');
 		const Size c = 3 - a - b;
 		const double pa = pp[a];
 		const double pb = pp[b];
@@ -3585,8 +3585,8 @@ namespace aris::dynamic
 		ab = ab ? ab : default_ab;
 
 		// 正式开始计算 //
-		const Size a = order[0] - '1';
-		const Size b = order[1] - '1';
+		const Size a = Size(order[0] - '1');
+		const Size b = Size(order[1] - '1');
 		const Size c = 3 - a - b;
 		const double pa = pp[a];
 		const double pb = pp[b];
@@ -3629,8 +3629,8 @@ namespace aris::dynamic
 		pp = pp ? pp : default_pp;
 
 		// 正式开始计算 //
-		const Size a = order[0] - '1';
-		const Size b = order[1] - '1';
+		const Size a = Size(order[0] - '1');
+		const Size b = Size(order[1] - '1');
 		const Size c = 3 - a - b;
 		const double xa = pp0[a];
 		const double xb = pp0[b];
