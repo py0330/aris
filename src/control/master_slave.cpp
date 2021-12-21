@@ -155,7 +155,7 @@ namespace aris::control
 			// prepare lout //
 			auto file_name = aris::core::defaultLogDirectory() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
 			std::fstream file;
-			file.open(file_name.string() + "0.txt", std::ios::out | std::ios::trunc);
+			//file.open(file_name.string() + "0.txt", std::ios::out | std::ios::trunc);
 
 			// start read mout and lout //
 			aris::core::Msg msg;
@@ -171,7 +171,7 @@ namespace aris::control
 						file.open(raw_name, std::ios::out | std::ios::trunc);
 					}
 					else if (!msg.empty()){
-						file << msg.toString();
+						if (file.is_open())file << msg.toString();
 					}
 				}
 				else if (imp_->mout_pipe_.recvMsg(msg)){

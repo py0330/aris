@@ -71,7 +71,7 @@ namespace aris::core{
 		kError,
 		kFatal
 	};
-	// 日志数据 //j
+	// 日志数据 //
 	struct LogData {
 		std::chrono::system_clock::time_point time;
 		const char *file_name;
