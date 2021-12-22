@@ -31,7 +31,7 @@ namespace aris::server
 		auto virtual isConnected() const->bool override { return is_open_; }
 
 	private:
-		bool is_open_{false};
+		bool is_open_{true};
 
 	public:
 		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}

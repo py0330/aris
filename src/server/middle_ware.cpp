@@ -51,6 +51,11 @@ auto MiddleWare::executeCmd(std::string_view str, Interface *interface)->void {
 	executeCmd(str, [](std::string ret){}, interface);
 }
 
+auto MiddleWare::executeCmd(std::string_view cmd_str)->void {
+	static InternalInterface interface;
+	executeCmd(cmd_str, [](std::string ret){}, &interface);
+}
+
 ARIS_REGISTRATION{
 		
 		aris::core::class_<MiddleWare>("MiddleWare")
