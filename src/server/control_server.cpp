@@ -546,7 +546,7 @@ namespace aris::server{
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
 	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
-	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back) {
+	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)->void {
 		imp_->error_handle_ = call_back;
 	}
 	
