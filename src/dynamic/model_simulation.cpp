@@ -383,32 +383,32 @@ namespace aris::dynamic
 			fce[i].reserve(num + fce[i].size());
 		}
 
-		for (int i = 1; i < num + 1; ++i){
-			for (int j = 0; j < mot_num; ++j){
+		for (Size i = 1; i < num + 1; ++i){
+			for (Size j = 0; j < mot_num; ++j){
 				// make actual pos //
 				pos[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k){
+				for (Size k = 0; k < filter_size; ++k){
 					pos[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + pos_at] / filter_size;
 				}
 
 				// make actual vel //
 				vel[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k){
+				for (Size k = 0; k < filter_size; ++k){
 					vel[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + vel_at] / filter_size * clb->velocityRatio()[j];
 				}
 
 				// make actual acc //
-				const int avg_size = filter_size / 2;
+				const Size avg_size = filter_size / 2;
 
 				double r = mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * filter_size] / (avg_size * 2 - 1);
 				double l = mtx[i * line_num * filter_size + j * mot_data_num + vel_at] / (avg_size * 2 - 1);
-				for (int k = 1; k < avg_size; ++k){
+				for (Size k = 1; k < avg_size; ++k){
 					r += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k + line_num * filter_size ] / (avg_size * 2 - 1);
 					r += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k + line_num * filter_size ] / (avg_size * 2 - 1);
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k] / (avg_size * 2 - 1);
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k] / (avg_size * 2 - 1);
 				}
-				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j]);
+				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j] * clb->velocityRatio()[j]);
 
 				// make actual fce //
 				fce[j].push_back(0.0);
@@ -485,7 +485,7 @@ namespace aris::dynamic
 
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
-		double zero_check = 1e-8;
+		double zero_check = 1e-4;
 		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "clb----rank:" << rank << std::endl;
@@ -551,16 +551,18 @@ namespace aris::dynamic
 
 		std::cout << "dynamic finished, now output results" << std::endl;
 
+		auto output_path = std::string("C:\\Users\\py0330\\Desktop\\data_after\\");
+
 		for (int i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
-			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
-			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
-			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i);
-			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
-			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
-			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
+			sprintf(posn, (output_path + "pos%d.txt").c_str(), i);
+			sprintf(veln, (output_path + "vel%d.txt").c_str(), i);
+			sprintf(accn, (output_path + "acc%d.txt").c_str(), i);
+			sprintf(fcen, (output_path + "fce%d.txt").c_str(), i);
+			sprintf(fn, (output_path + "f%d.txt").c_str(), i);
+			sprintf(ffn, (output_path + "ff%d.txt").c_str(), i);
+			sprintf(fdn, (output_path + "fd%d.txt").c_str(), i);
 
 			dlmwrite(num, 1, pos[i].data(), posn);
 			dlmwrite(num, 1, vel[i].data(), veln);

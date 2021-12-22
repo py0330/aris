@@ -28,14 +28,12 @@ namespace aris::dynamic
 		auto id()const->Size { return id_; }
 		auto resetModel(Model* m) { model_ = m; }
 
-
-
 		~Element() = default;
 		Element() = default;
 		ARIS_DEFINE_BIG_FOUR(Element);
 
 	private:
-		Model * model_;
+		Model* model_{ nullptr };
 		Size id_{ 0 };
 		friend class Model;
 	};
@@ -89,10 +87,10 @@ namespace aris::dynamic
 
 		virtual ~VariableTemplate() = default;
 		explicit VariableTemplate(const std::string &name = "variable_template", const VariableType &data = VariableType(), bool active = true) : Variable(name), data_(data) {}
-		VariableTemplate(const VariableTemplate &other) = default;
-		VariableTemplate(VariableTemplate &&other) = default;
-		VariableTemplate& operator=(const VariableTemplate &other) = default;
-		VariableTemplate& operator=(VariableTemplate &&other) = default;
+		VariableTemplate(const VariableTemplate &other)noexcept = default;
+		VariableTemplate(VariableTemplate &&other)noexcept = default;
+		VariableTemplate& operator=(const VariableTemplate &other)noexcept = default;
+		VariableTemplate& operator=(VariableTemplate &&other)noexcept = default;
 
 	private:
 		VariableType data_;

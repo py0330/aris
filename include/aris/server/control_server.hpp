@@ -37,8 +37,7 @@ namespace aris::server
 		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}
 	};
 
-	class ARIS_API ControlServer
-	{
+	class ARIS_API ControlServer{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
 		using PostCallback = std::add_pointer<void(ControlServer&)>::type;
@@ -82,11 +81,15 @@ namespace aris::server
 		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
 		auto middleWare()->MiddleWare&;
 		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
-		auto customModule()->CustomModule&;
-		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
 
 		// custom module //
 		auto resetCustomModule(server::CustomModule *custom_module)->void;
+		auto customModule()->CustomModule&;
+		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
+
+		// rt error handler //
+		// p can be nullptr, means idel
+		auto setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)>)->void;
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;
@@ -131,10 +134,8 @@ namespace aris::server
 		std::unique_ptr<Imp> imp_;
 	};
 
-	class ARIS_API ProgramMiddleware : public MiddleWare
-	{
+	class ARIS_API ProgramMiddleware : public MiddleWare{
 	public:
-
 		auto isAutoMode()->bool;
 		auto isAutoRunning()->bool;
 		auto isAutoPaused()->bool;
@@ -153,8 +154,6 @@ namespace aris::server
 	private:
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
-	
-	
 	};
 
 

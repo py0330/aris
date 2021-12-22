@@ -41,28 +41,22 @@ namespace aris::dynamic{
 		Part* ground_;
 	};
 	auto Model::init()->void { 
-		auto init_interaction = [](Interaction &interaction, Model*m)->void
-		{
+		auto init_interaction = [](Interaction &interaction, Model*m)->void{
 			if (interaction.prtNameM().empty() && interaction.prtNameN().empty() && interaction.makNameI().empty() && interaction.makNameJ().empty())return;
 
-			auto find_part = [m](std::string_view name)->Part*
-			{
-				auto found = std::find_if(m->partPool().begin(), m->partPool().end(), [name](const auto &part)->bool 
-				{
+			auto find_part = [m](std::string_view name)->Part*{
+				auto found = std::find_if(m->partPool().begin(), m->partPool().end(), [name](const auto &part)->bool{
 					return part.name() == name;
 				});
 				return found == m->partPool().end() ? nullptr : &*found;
 			};
 
-			auto find_marker = [](Part *part, std::string_view name)->Marker*
-			{
-				auto found = std::find_if(part->markerPool().begin(), part->markerPool().end(), [name](const auto &marker)->bool
-				{
+			auto find_marker = [](Part *part, std::string_view name)->Marker*{
+				auto found = std::find_if(part->markerPool().begin(), part->markerPool().end(), [name](const auto &marker)->bool{
 					return marker.name() == name;
 				});
 				return found == part->markerPool().end() ? nullptr : &*found;
 			};
-
 
 			auto prt_m = find_part(interaction.prtNameM());
 			auto mak_i = find_marker(prt_m, interaction.makNameI());
@@ -73,8 +67,7 @@ namespace aris::dynamic{
 			interaction.makJ_ = &*mak_j;
 		};
 
-		auto ground = std::find_if(partPool().begin(), partPool().end(), [](const auto &part)->bool
-		{
+		auto ground = std::find_if(partPool().begin(), partPool().end(), [](const auto &part)->bool{
 			return part.name() == "ground";
 		});
 		imp_->ground_ = ground == partPool().end() ? &partPool().add<Part>("ground") : &*ground;
@@ -82,20 +75,17 @@ namespace aris::dynamic{
 		variablePool().model_ = this;
 		for (auto &ele : variablePool())ele.model_ = this;
 		partPool().model_ = this;
-		for (Size i = 0; i< partPool().size(); ++i)
-		{
+		for (Size i = 0; i< partPool().size(); ++i){
 			partPool()[i].model_ = this;
 			partPool()[i].id_ = i;
-			for (Size j = 0; j < partPool()[i].markerPool().size(); ++j)
-			{
+			for (Size j = 0; j < partPool()[i].markerPool().size(); ++j){
 				partPool()[i].markerPool()[j].model_ = this;
 				partPool()[i].markerPool()[j].id_ = j;
 				partPool()[i].markerPool()[j].imp_->part_ = &partPool()[i];
 			}
 		}
 		jointPool().model_ = this;
-		for (Size i = 0; i< jointPool().size(); ++i)
-		{
+		for (Size i = 0; i< jointPool().size(); ++i){
 			jointPool()[i].model_ = this;
 			jointPool()[i].id_ = i;
 			init_interaction(jointPool()[i], this);
@@ -138,32 +128,22 @@ namespace aris::dynamic{
 			calibratorPool()[i].model_ = this;
 			calibratorPool()[i].id_ = i;
 		}
-		
-		// make actuator & endeffector pool //
-		//imp_->actuators_.clear();
+
 		imp_->actuator_pos_size_ = 0;
 		imp_->actuator_dim_ = 0;
 		for (auto &m : motionPool()) {
-			//if (m.isActuator()) {
-				//imp_->actuators_.push_back(&m);
-				imp_->actuator_pos_size_ += m.pSize();
-				imp_->actuator_dim_ += m.dim();
-			//}		
+			imp_->actuator_pos_size_ += m.pSize();
+			imp_->actuator_dim_ += m.dim();
 		}
-		//imp_->end_effectors_.clear();
 		imp_->end_effector_pos_size_ = 0;
 		imp_->end_effector_dim_ = 0;
 		for (auto &m : generalMotionPool()) {
-			//if (m.isEndEffector()) {
-				//imp_->end_effectors_.push_back(&m);
-				imp_->end_effector_pos_size_ += m.pSize();
-				imp_->end_effector_dim_ += m.dim();
-			//}
+			imp_->end_effector_pos_size_ += m.pSize();
+			imp_->end_effector_dim_ += m.dim();
 		}
 
 		// alloc mem for solvers //
 		for (auto &s : this->solverPool()) s.allocateMemory();
-			
 	}
 	auto Model::findVariable(std::string_view name)->Variable*{
 		auto found = std::find_if(variablePool().begin(), variablePool().end(), [name](const auto &variable)->auto{

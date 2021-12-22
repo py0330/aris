@@ -5,6 +5,11 @@
 #include <aris/dynamic/model_solver.hpp>
 
 namespace aris::dynamic {
+	/// @defgroup dynamic_model_group 动力学建模模块
+	/// @{
+	///
+	
+	// Delta 机器人
 	//---------------------------------------------------------------------------------------------
 	// 包含4个自由度。共4个杆件  link1~4
 	// 尺寸示意：
@@ -44,11 +49,6 @@ namespace aris::dynamic {
 	//                    o
 	//               支联3
 	//
-
-
-	/// @defgroup dynamic_model_group 动力学建模模块
-	/// @{
-	///
 
 	// 简化版的delta参数
 	// 适用于：三根支联对称分布
@@ -100,6 +100,69 @@ namespace aris::dynamic {
 
 	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model>;
 	auto ARIS_API createModelDelta(const DeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model>;
+
+
+	// Planar Delta
+	//---------------------------------------------------------------------------------------------
+	// 包含4个自由度。共4个杆件  link1~4
+	// 尺寸示意：
+	//                   上平台 
+	//                     
+	//                     o------o      
+	//                    /         \    
+	//                   /            \   
+	//                   o              o   
+	//                     \           /  
+	//                       \        /  
+	//                         \     /     
+	//                           \  /        
+	//                             o
+	//                             *
+	//                             *
+	//                             |
+	//                             *
+	//                             ee
+	//---------------------------------------------------------------------------------------------
+	// 零位示意：
+	//                         y 
+	//                         ^
+	//                         | a |<- b ->|
+	//             o-------o---*---o-------o   ->  x             
+	//            / \                     / 
+	//                \                 /   
+	//                  \             /        
+	//                 c  \         /       
+	//                      \     /        
+	//                        \ /     
+	//                         o         
+	//                        /*
+	//                         *   d
+	//                         |  
+	//                       ee(长度e)
+	//---------------------------------------------------------------------------------------------
+	
+	struct ARIS_API PlanarDeltaFullParam {
+		// DH PARAM //
+		double a1{ 0.0 }, b1{ 0.0 }, c1{ 0.0 };
+		double a2{ 0.0 }, b2{ 0.0 }, c2{ 0.0 }, d{ 0.0 };
+
+		// TOOL 0, by default is 321 type
+		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		std::string tool0_pe_type;
+
+		// BASE wrt REF, by default is 321 type 
+		double base2ref_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		std::string base2ref_pe_type;
+
+		// inertia vector, size must be 4
+		std::vector<std::array<double, 10> > iv_vec;
+
+		// mot friction vector, size must be 4
+		std::vector<std::array<double, 3> > mot_frc_vec;
+	};
+
+	auto ARIS_API createModelPlanarDelta(const PlanarDeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model>;
+
 
 	///
 	/// @}

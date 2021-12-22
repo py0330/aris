@@ -286,8 +286,7 @@ namespace aris::dynamic
 		s_vc(6, q, input);
 		return true;
 	}
-	struct Puma5InverseKinematicSolver::Imp
-	{
+	struct Puma5InverseKinematicSolver::Imp{
 		int which_root_{ 0 };
 		Puma5ParamLocal puma_param;
 		union

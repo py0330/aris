@@ -13,10 +13,8 @@
 #include "aris/server/control_server.hpp"
 #include "aris/server/api.hpp"
 
-namespace aris::plan
-{
-	struct Plan::Imp
-	{
+namespace aris::plan{
+	struct Plan::Imp{
 		std::string name_;
 
 		std::int64_t count_;
@@ -60,7 +58,6 @@ namespace aris::server{
 	//    对于本条出错指令：
 	//    case 3.1 抛异常失败 : 错误码为 PREPARE_EXCEPTION， 同时 不会 执行 collect 函数
 	//    case 3.2 错误码 < 0 : 错误码为 用户设置的错误码 ， 同时   会 执行 collect 函数
-	//
 	//
 	// # 运行流程 #
 	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
@@ -126,7 +123,7 @@ namespace aris::server{
 		std::vector<char> mempool_;
 
 		// 实时循环中的轨迹参数 //
-		enum { CMD_POOL_SIZE = 1000 };
+		enum { CMD_POOL_SIZE = 10000 };
 		std::shared_ptr<InternalData> internal_data_queue_[CMD_POOL_SIZE];
 
 		// 全局count //
@@ -150,9 +147,11 @@ namespace aris::server{
 		std::uint64_t *idle_mot_check_options_, *global_mot_check_options_;
 		std::atomic<std::int64_t> err_code_and_fixed_{ 0 };
 		char err_msg_[1024]{ 0 };
+		// error handle //
+		std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> error_handle_;
 
 		// log 相关
-		std::atomic<bool> is_rt_log_started_{ true };
+		std::atomic<bool> is_rt_log_started_{ false };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		std::unique_ptr<aris::dynamic::Model> model_;
@@ -223,6 +222,7 @@ namespace aris::server{
 			if (((err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count())) < 0) || ((err.code = ret) < 0)){
 				err.fix = fixError();
 				err_code_and_fixed_.store(err_code_and_fixed);
+				if (error_handle_)error_handle_(&plan, err.code, err_msg_);
 
 				// finish //
 				if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
@@ -265,6 +265,7 @@ namespace aris::server{
 		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0){
 			err.fix = fixError();
 			err_code_and_fixed_.store(err_code_and_fixed);
+			if (error_handle_)error_handle_(nullptr, err.code, err_msg_);
 			server_->master().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
 		}
 
@@ -545,6 +546,10 @@ namespace aris::server{
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
 	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
+	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)->void {
+		imp_->error_handle_ = call_back;
+	}
+	
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
 		err.code = err_code;
@@ -733,16 +738,14 @@ namespace aris::server{
 				return a.first.length() < b.first.length();
 			})->first.length();
 			// print
-			if (!(plan->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO))
-			{
+			if (!(plan->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO)){
 				ARIS_COUT << "cmd " << plan->cmdId() << "---" << plan->cmdString() << "\n";
 				ARIS_COUT_PLAN(plan) << plan->cmdName() << "\n";
 				for (auto &p : plan->cmdParams())ARIS_COUT_PLAN(plan) << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << "\n";
 				ARIS_COUT << std::endl;
 			}
 			// log
-			if (!(plan->option() & aris::plan::Plan::NOT_LOG_CMD_INFO))
-			{
+			if (!(plan->option() & aris::plan::Plan::NOT_LOG_CMD_INFO)){
 				std::stringstream ss;
 				ss << plan->cmdName() << "\n";
 				for (auto &p : plan->cmdParams()){
@@ -877,20 +880,16 @@ namespace aris::server{
 		imp_->cmd_end_.store(0);
 		imp_->cmd_collect_.store(0);
 	}
-	auto ControlServer::start()->void
-	{
+	auto ControlServer::start()->void{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (imp_->is_running_)LOG_AND_THROW({ "failed to start server, because it is already started " });
 		
-		struct RaiiCollector
-		{
+		struct RaiiCollector{
 			ControlServer *cs_;
 			auto reset()->void { cs_ = nullptr; }
 			RaiiCollector(ControlServer *cs) :cs_(cs) {}
-			~RaiiCollector() 
-			{
-				if (cs_)
-				{
+			~RaiiCollector(){
+				if (cs_){
 					cs_->imp_->is_running_ = false;
 					cs_->imp_->is_collect_running_ = false;
 					if (cs_->imp_->collect_thread_.joinable())cs_->imp_->collect_thread_.join();
@@ -903,16 +902,13 @@ namespace aris::server{
 
 		// start collect thread //
 		imp_->is_collect_running_ = true;
-		imp_->collect_thread_ = std::thread([this]()
-		{
-			while (this->imp_->is_collect_running_)
-			{
+		imp_->collect_thread_ = std::thread([this](){
+			while (this->imp_->is_collect_running_){
 				auto cmd_collect = imp_->cmd_collect_.load();//原子操作
 				auto cmd_now = imp_->cmd_now_.load();//原子操作
 
 				// step 4b. //
-				if (cmd_collect < cmd_now)
-				{
+				if (cmd_collect < cmd_now){
 					auto &internal_data = imp_->internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE];
 					auto &plan = *internal_data->plan_;
 
@@ -933,8 +929,7 @@ namespace aris::server{
 					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { ss.str().data() });
 
 					// step 4b&5b, 不能用RAII，因为reset的时候先减智能指针引用计数，此时currentCollectPlan 无法再获取到 internal_data了 //
-					if (!(plan.option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
-					{
+					if (!(plan.option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)){
 						ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan.cmdId());
 						plan.collectNrt();
 					}
@@ -942,8 +937,7 @@ namespace aris::server{
 					std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
 					internal_data.reset();
 				}
-				else
-				{
+				else{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				}
 			}
@@ -968,12 +962,10 @@ namespace aris::server{
 		// 停止控制器 //
 		master().stop();
 	}
-	auto ControlServer::waitForAllExecution()->void 
-	{
+	auto ControlServer::waitForAllExecution()->void {
 		while (imp_->cmd_end_.load() != imp_->cmd_now_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
-	auto ControlServer::waitForAllCollection()->void 
-	{
+	auto ControlServer::waitForAllCollection()->void {
 		while (imp_->cmd_end_.load() != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
 	auto ControlServer::currentExecutePlan()->std::shared_ptr<aris::plan::Plan>
@@ -1707,15 +1699,12 @@ namespace aris::server{
 	ProgramMiddleware& ProgramMiddleware::operator=(ProgramMiddleware&& other) = default;
 	ProgramMiddleware::~ProgramMiddleware() = default;
 
-
-
 	ARIS_REGISTRATION {
 		aris::core::class_<CustomModule>("CustomModule");
-
-		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
-		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
+		
 		typedef aris::control::Master &(ControlServer::*MasterFunc)();
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
+		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();

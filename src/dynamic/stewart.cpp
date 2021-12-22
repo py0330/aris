@@ -252,7 +252,7 @@ namespace aris::dynamic
 	{
 		model()->generalMotionPool()[0].makI()->setPm(*model()->generalMotionPool()[0].makJ(), *dynamic_cast<GeneralMotion&>(model()->generalMotionPool()[0]).mpm());
 		
-		for (auto i = 0; i < 6; ++i)
+		for (aris::Size i = 0; i < 6; ++i)
 		{
 			auto u_pmi = imp_->u_[i]->makI()->pm();
 			auto u_pmj = imp_->u_[i]->makJ()->pm();

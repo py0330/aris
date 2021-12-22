@@ -861,6 +861,7 @@ namespace aris::dynamic{
 		// 根据关联拓扑，计算出 part 和 rel 的分组，用于构建subsys
 		std::vector<std::vector<const Part*>> prt_vec_vec;
 		std::vector<std::vector<LocalRelation>> rel_vec_vec;
+		
 		{
 			// make active part pool //
 			std::vector<const Part*> active_part_pool;
@@ -1043,8 +1044,7 @@ namespace aris::dynamic{
 						rel.dim_ = 6;
 					}
 					// 不优化 //
-					else
-					{
+					else{
 						diag.upd_d_and_cp_ = Imp::normal_upd_d_and_cp;
 					}
 				}
@@ -1056,8 +1056,7 @@ namespace aris::dynamic{
 			auto &r_vec = r_vec_vec.back();
 			r_vec.clear();
 			r_vec.resize(rel_vec.size() - prt_vec.size() + 1);
-			for (Size i = 0; i < r_vec.size(); ++i)
-			{
+			for (Size i = 0; i < r_vec.size(); ++i){
 				auto &r = r_vec.at(i);
 				auto &rel = rel_vec.at(i + d_vec.size() - 1);
 
@@ -1069,8 +1068,7 @@ namespace aris::dynamic{
 				r.cm_blk_series.back().diag_ = &*std::find_if(d_vec.begin(), d_vec.end(), [&rel](Diag& d) {return rel.prtJ_ == d.part_; });
 				r.cm_blk_series.back().is_I_ = false;
 
-				for (auto rd = d_vec.rbegin(); rd < d_vec.rend() - 1; ++rd)
-				{
+				for (auto rd = d_vec.rbegin(); rd < d_vec.rend() - 1; ++rd){
 					auto &d = *rd;
 					auto &d_rel = rel_vec.at(d_vec.rend() - rd - 2);
 
@@ -1080,14 +1078,11 @@ namespace aris::dynamic{
 					// 判断当前remainder加法元素是否存在（不为0）
 					auto diag_blk = std::find_if(r.cm_blk_series.begin(), r.cm_blk_series.end(), [&](Remainder::Block &blk) {return blk.diag_->part_ == diag_part; });
 					auto add_blk = std::find_if(r.cm_blk_series.begin(), r.cm_blk_series.end(), [&](Remainder::Block &blk) {return blk.diag_->part_ == add_part; });
-					if (diag_blk != r.cm_blk_series.end())
-					{
-						if (add_blk != r.cm_blk_series.end())
-						{
+					if (diag_blk != r.cm_blk_series.end()){
+						if (add_blk != r.cm_blk_series.end()){
 							r.cm_blk_series.erase(add_blk);
 						}
-						else
-						{
+						else{
 							Remainder::Block blk;
 							blk.is_I_ = diag_blk->is_I_;
 							blk.diag_ = &*std::find_if(d_vec.begin(), d_vec.end(), [&](Diag &d) 
@@ -1197,8 +1192,7 @@ namespace aris::dynamic{
 		}
 
 		// 将内存付给子系统，并初始化 //
-		for (int i = 0; i < sys_vec.size(); ++i)
-		{
+		for (int i = 0; i < sys_vec.size(); ++i){
 			auto &sys = sys_vec[i];
 			auto &prt_vec = prt_vec_vec[i];
 			auto &rel_vec = rel_vec_vec[i];
@@ -1211,8 +1205,7 @@ namespace aris::dynamic{
 			for (int i = 0; i < sys.d_size_; ++i)sys.d_data_[i] = d_vec[i];
 			sys.d_data_[0].pm_ = sys.d_data_[0].pm1_;
 			sys.d_data_[0].last_pm_ = sys.d_data_[0].pm2_;
-			for (Size i = 1; i < sys.d_size_; ++i)
-			{
+			for (Size i = 1; i < sys.d_size_; ++i){
 				auto &diag = sys.d_data_[i];
 				auto &rel = rel_vec.at(i - 1);
 
@@ -1260,8 +1253,7 @@ namespace aris::dynamic{
 
 				// 获取 Remainder::Block 内存
 				r.blk_data_ = core::getMem(imp_->mem_pool_.data(), r.blk_data_);
-				for (int j = 0; j < r.blk_size_; ++j)
-				{
+				for (int j = 0; j < r.blk_size_; ++j){
 					r.blk_data_[j] = r_vec[i].cm_blk_series[j];
 					r.blk_data_[j].diag_ = sys.d_data_ + (r.blk_data_[j].diag_ - d_vec.data());
 				}
@@ -1332,10 +1324,8 @@ namespace aris::dynamic{
 		}
 
 		// 更新外力 //
-		for (auto &fce : model()->forcePool())
-		{
-			if (fce.active())
-			{
+		for (auto &fce : model()->forcePool()){
+			if (fce.active()){
 				double fsI[6], fsJ[6];
 				fce.cptGlbFs(fsI, fsJ);
 
@@ -1513,7 +1503,6 @@ namespace aris::dynamic{
 
 						// restore to old value //
 						const_cast<MotionBase*>(gm)->setA(ma_old);
-
 					}
 
 					pos += b->cst_->dim();
@@ -1607,34 +1596,29 @@ namespace aris::dynamic{
 #undef ARIS_LOOP_SYS_R
 #undef ARIS_LOOP_BLOCK
 
-	class HelpResetRAII
-	{
+	class HelpResetRAII{
 	public:
 		std::vector<bool> prt_active_, jnt_active_, mot_active_, gm_active_, fce_active_;
 		Model *model_;
 
-		HelpResetRAII(Model *model) : model_(model)
-		{
+		HelpResetRAII(Model *model) : model_(model){
 			for (auto &prt : model_->partPool())prt_active_.push_back(prt.active());
 			for (auto &jnt : model_->jointPool())jnt_active_.push_back(jnt.active());
 			for (auto &mot : model_->motionPool())mot_active_.push_back(mot.active());
 			for (auto &gm : model_->generalMotionPool())gm_active_.push_back(gm.active());
 			for (auto &fce : model_->forcePool())fce_active_.push_back(fce.active());
 		}
-		~HelpResetRAII() 
-		{
+		~HelpResetRAII(){
 			for (auto &prt : model_->partPool())prt.activate(prt_active_[prt.id()]);
 			for (auto &jnt : model_->jointPool())jnt.activate(jnt_active_[jnt.id()]);
 			for (auto &mot : model_->motionPool())mot.activate(mot_active_[mot.id()]);
 			for (auto &gm : model_->generalMotionPool())gm.activate(gm_active_[gm.id()]);
 			for (auto &fce : model_->forcePool())fce.activate(fce_active_[fce.id()]);
 		}
-
 	};
 
 	struct ForwardKinematicSolver::Imp { std::vector<double> J_vec_, cf_vec_; };
-	auto ForwardKinematicSolver::allocateMemory()->void
-	{
+	auto ForwardKinematicSolver::allocateMemory()->void{
 		HelpResetRAII help_reset(this->model());
 		
 		for (auto &m : model()->motionPool())m.activate(true);
@@ -1645,20 +1629,17 @@ namespace aris::dynamic{
 
 		UniversalSolver::allocateMemory();
 	}
-	auto ForwardKinematicSolver::kinPos()->int
-	{
+	auto ForwardKinematicSolver::kinPos()->int{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updP();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto ForwardKinematicSolver::kinVel()->int
-	{
+	auto ForwardKinematicSolver::kinVel()->int{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->generalMotionPool())m.updV();
 		return 0;
 	}
-	auto ForwardKinematicSolver::dynAccAndFce()->int
-	{
+	auto ForwardKinematicSolver::dynAccAndFce()->int{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->generalMotionPool())m.updA();
 		return 0;
@@ -1714,8 +1695,7 @@ namespace aris::dynamic{
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardKinematicSolver);
 
 	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
-	auto InverseKinematicSolver::allocateMemory()->void
-	{
+	auto InverseKinematicSolver::allocateMemory()->void{
 		HelpResetRAII help_reset(this->model());
 		
 		for (auto &m : model()->motionPool())m.activate(false);

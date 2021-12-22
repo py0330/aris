@@ -125,9 +125,9 @@ namespace aris::core
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
 		ParamBase(const ParamBase&);
-		ParamBase(ParamBase&&);
+		ParamBase(ParamBase&&)noexcept;
 		ParamBase& operator=(const ParamBase&);
-		ParamBase& operator=(ParamBase&&);
+		ParamBase& operator=(ParamBase&&)noexcept;
 
 	protected:
 		struct Imp;
@@ -150,7 +150,10 @@ namespace aris::core
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
-		ARIS_DECLARE_BIG_FOUR(Param);
+		Param(const Param&);
+		Param(Param&&)noexcept;
+		Param& operator=(const Param&);
+		Param& operator=(Param&&)noexcept;
 
 	private:
 		struct Imp;
@@ -165,7 +168,10 @@ namespace aris::core
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
-		ARIS_DECLARE_BIG_FOUR(UniqueParam);
+		UniqueParam(const UniqueParam&);
+		UniqueParam(UniqueParam&&)noexcept;
+		UniqueParam& operator=(const UniqueParam&);
+		UniqueParam& operator=(UniqueParam&&)noexcept;
 
 	private:
 		struct Imp;
@@ -176,7 +182,10 @@ namespace aris::core
 	public:
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
-		ARIS_DECLARE_BIG_FOUR(GroupParam);
+		GroupParam(const GroupParam&);
+		GroupParam(GroupParam&&)noexcept;
+		GroupParam& operator=(const GroupParam&);
+		GroupParam& operator=(GroupParam&&)noexcept;
 	};
 	class ARIS_API Command :public ParamBase{
 	public:
@@ -187,7 +196,10 @@ namespace aris::core
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
-		ARIS_DECLARE_BIG_FOUR(Command);
+		Command(const Command&);
+		Command(Command&&)noexcept;
+		Command& operator=(const Command&);
+		Command& operator=(Command&&)noexcept;
 
 	private:
 		struct Imp;
@@ -205,7 +217,7 @@ namespace aris::core
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
-		ARIS_DECLARE_BIG_FOUR(CommandParser);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(CommandParser);
 
 	private:
 		struct Imp;

@@ -92,8 +92,6 @@ int main(int argc, char *argv[])
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
-
-
 	try
 	{
 		cs.init();

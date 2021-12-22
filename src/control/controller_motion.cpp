@@ -12,10 +12,9 @@
 #include "aris/control/controller_motion.hpp"
 
 namespace aris::control{
-	struct Motor::Imp
-	{
+	struct Motor::Imp{
 		double max_pos_, min_pos_, max_vel_, min_vel_, max_acc_, min_acc_, max_pos_following_error_, max_vel_following_error_;
-		double pos_factor_, pos_offset_;
+		double pos_factor_, pos_offset_, vel_factor_;
 		double home_pos_;
 		aris::Size mot_id_;
 	};
@@ -42,9 +41,11 @@ namespace aris::control{
 	auto Motor::setPosFactor(double pos_factor)->void { imp_->pos_factor_ = pos_factor; }
 	auto Motor::homePos()const->double { return imp_->home_pos_; }
 	auto Motor::setHomePos(double home_pos)->void { imp_->home_pos_ = home_pos; }
+	auto Motor::velFactor()const->double { return imp_->vel_factor_; }
+	auto Motor::setVelFactor(double vel_factor)->void { imp_->vel_factor_ = vel_factor; }
 	Motor::~Motor() = default;
 	Motor::Motor(double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
-		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos) 
+		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos, double vel_factor)
 	{
 		imp_->max_pos_ = max_pos;
 		imp_->min_pos_ = min_pos;
@@ -56,6 +57,7 @@ namespace aris::control{
 		imp_->max_vel_following_error_ = max_vel_following_error;
 		imp_->pos_factor_ = pos_factor;
 		imp_->pos_offset_ = pos_offset;
+		imp_->vel_factor_ = vel_factor;
 		imp_->home_pos_ = home_pos;
 	}
 	Motor::Motor(const Motor &other) = default;
@@ -112,6 +114,7 @@ namespace aris::control{
 			.prop("pos_factor", &Motor::setPosFactor, &Motor::posFactor)
 			.prop("pos_offset", &Motor::setPosOffset, &Motor::posOffset)
 			.prop("home_pos", &Motor::setHomePos, &Motor::homePos)
+			.prop("vel_factor", &Motor::setVelFactor, &Motor::velFactor)
 			;
 
 		aris::core::class_<DigitalIo>("DigitalIo")

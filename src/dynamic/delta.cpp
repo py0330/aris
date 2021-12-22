@@ -134,7 +134,7 @@ namespace aris::dynamic {
 		if (std::abs(input[0] - 0.0) < 1e-5 && std::abs(input[1] - 0.0) < 1e-5 && std::abs(input[2] - 0.0) < 1e-5) {
 			k[2] = k[5] = k[8] = 1.0;
 			
-			double inv_k[9], u[9], tau[3], tau2[3], x[3];
+			double u[9], tau[3], tau2[3], x[3];
 			aris::Size p[3], rank;
 			s_householder_utp(3, 3, k, u, tau, p, rank);
 			s_householder_utp_sov(3, 3, 1, rank, u, tau, p, s, x);
@@ -545,12 +545,407 @@ namespace aris::dynamic {
 		return model;
 	}
 
+	auto planarDeltaInverse(const double *param, const double *ee_xya, int which_root, double *input)->int {
+		// Planar Delta
+		//---------------------------------------------------------------------------------------------
+		// 包含4个自由度。共4个杆件  link1~4
+		// 尺寸示意：
+		//                   上平台 
+		//                     
+		//                     o------o      
+		//                    /         \    
+		//                   /            \   
+		//                   o              o   
+		//                     \           /  
+		//                       \        /  
+		//                         \     /     
+		//                           \  /        
+		//                             o
+		//                       ee(长度e)
+		//---------------------------------------------------------------------------------------------
+		// 零位示意：
+		//                         y 
+		//                         ^
+		//                         | a |<- b ->|
+		//             o-------o---*---o-------o   ->  x             
+		//            / \                     / 
+		//                \                 /   
+		//                  \             /        
+		//                 c  \         /       
+		//                      \     /        
+		//                        \ /     
+		//                         o         
+		//                        /|
+		//                            
+		//                       ee(长度e)
+		//---------------------------------------------------------------------------------------------
+		
+		// 输入输出关系：
+		// 
+		// [ x ] = [ a ] + [ c1 -s1 ] * [ b ] + [ c2 -s2 ] * [ c ] 
+		// [ y ]   [ 0 ]   [ s1  c1 ]   [ 0 ]   [ s2  c2 ]   [ 0 ]
+		//
+		// 其中 theta1 为电机的转角，theta2 为转动副2的转角减去电机的转角
+		//  
+		// 进一步的：
+		// [ x ] = [ a + b * c1 + c * c2 ] 
+		// [ y ]   [     b * s1 + c * s2 ]
+		//
+		// 消除未知数 theta2：
+		//
+		// x - a - b * c1 = c * c2  
+		// y     - b * s1 = c * s2 
+		//
+		// -> : c^2 = (x - a - b * c1)^2 + (y - b * s1)^2
+		//
+		// -> : c^2 - b^2 = (x - a)^2 - 2 (x - a) b c1 + y^2 - 2 y b s1  
+		// -> : c^2 - b^2 - (x - a)^2 - y^2 = - 2 y b s1 - 2 (x - a) b c1
+		
+		for (int i = 0; i < 2; ++i) {
+			//尺寸
+			auto a = param[0 + i * 3];
+			auto b = param[1 + i * 3];
+			auto c = param[2 + i * 3];
+			auto d = param[6];
+
+			auto x = ee_xya[0];
+			auto y = ee_xya[1] + d;
+
+			auto k1 = -2 * y * b;
+			auto k2 = -2 * (x - a) * b;
+			auto right_side = c * c - b * b - (x - a)*(x - a) - y * y;
+
+			double result[2];
+			auto ret = s_sov_theta(k1, k2, right_side, result);
+
+			input[i] = result[(0x01 << i) & which_root];
+		}
+
+		input[2] = ee_xya[2];
+		return 0;
+	}
+	auto planarDeltaForward(const double *param, const double *input, int which_root, double *ee_xya)->int {
+		// 
+		//            ----* p2  
+		//    p1 *----    |
+		//         \     /
+		//           \  /
+		//             *  ee
+		//
+		// p1:[x1 y1]
+		// p2:[x2 y2]
+		// ee:[x  y ]
+		//
+		// 根据余弦公式，求得   p2 - p1 - ee 之间的夹角theta，再求出ee 与 p1的夹角
+		//
+		//
+		auto d = param[6];
+
+		double x[2], y[2];
+		for (int i = 0; i < 2; ++i) {
+			//尺寸
+			auto a = param[0 + i * 3];
+			auto b = param[1 + i * 3];
+			auto c = param[2 + i * 3];
+			
+
+			auto c1 = std::cos(input[i]);
+			auto s1 = std::sin(input[i]);
+			
+			x[i] = a + b * c1;
+			y[i] = b * s1;
+		}
+		
+		auto c1 = param[2];
+		auto c2 = param[5];
+		
+		auto d_p1_p2 = std::sqrt((x[1] - x[0]) * (x[1] - x[0]) + (y[1] - y[0])* (y[1] - y[0]));
+
+		auto theta = std::acos((c1 * c1 + d_p1_p2 * d_p1_p2 - c2 * c2) / (2.0* c1 * d_p1_p2));
+		if (which_root != 0)theta = -theta;
+
+
+		double p1_p2[2]{ (x[1] - x[0])/ d_p1_p2, (y[1] - y[0])/ d_p1_p2 };
+		double c1_axis[2]{p1_p2[0] * std::cos(theta) - p1_p2[1] * std::sin(theta), p1_p2[1] * std::cos(theta) + p1_p2[0] * std::sin(theta) };
+
+		ee_xya[0] = x[0] + c1_axis[0] * c1;
+		ee_xya[1] = y[0] + c1_axis[1] * c1 - d;
+		ee_xya[2] = input[2];
+
+		return 0;
+	}
+
+	class PlanarDeltaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
+	public:
+		auto virtual kinPos()->int override {
+			double input[4], output[4];
+
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+
+			model()->getOutputPos(output);
+			if (auto ret = planarDeltaInverse(dh, output, 0, input))
+				return ret;
+
+			//// ee //
+			//double pe[6]{ output[0],output[1],output[2],output[3], 0.0, 0.0 }, pp[3];
+			//model()->generalMotionPool()[0].makI()->setPe(*model()->generalMotionPool()[0].makJ(), pe, "321");
+
+			//// up //
+			//s_fill(1, 3, 0.0, pe);
+			//pe[3] = -pe[3];
+			//model()->jointPool()[15].makJ()->setPe(*model()->jointPool()[15].makI(), pe, "321");
+
+			//// link1 //
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[0];
+			//model()->jointPool()[0].makI()->setPe(*model()->jointPool()[0].makJ(), pe, "123");
+
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[1];
+			//model()->jointPool()[5].makI()->setPe(*model()->jointPool()[5].makJ(), pe, "123");
+
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[2];
+			//model()->jointPool()[10].makI()->setPe(*model()->jointPool()[10].makJ(), pe, "123");
+
+			//// link2&3 //
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = PI / 2;
+			//model()->jointPool()[3].makI()->getPp(*model()->jointPool()[1].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[1].makI()->setPe(*model()->jointPool()[1].makJ(), pe, "312");
+
+			//model()->jointPool()[4].makI()->getPp(*model()->jointPool()[2].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[2].makI()->setPe(*model()->jointPool()[2].makJ(), pe, "312");
+
+			//model()->jointPool()[8].makI()->getPp(*model()->jointPool()[6].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[6].makI()->setPe(*model()->jointPool()[6].makJ(), pe, "312");
+
+			//model()->jointPool()[9].makI()->getPp(*model()->jointPool()[7].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[7].makI()->setPe(*model()->jointPool()[7].makJ(), pe, "312");
+
+			//model()->jointPool()[13].makI()->getPp(*model()->jointPool()[11].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[11].makI()->setPe(*model()->jointPool()[11].makJ(), pe, "312");
+
+			//model()->jointPool()[14].makI()->getPp(*model()->jointPool()[12].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[12].makI()->setPe(*model()->jointPool()[12].makJ(), pe, "312");
+
+			model()->motionPool()[0].setMp(input[0]);
+			model()->motionPool()[1].setMp(input[1]);
+			model()->motionPool()[2].setMp(input[2]);
+			return 0;
+		}
+
+		PlanarDeltaInverseKinematicSolver() = default;
+	};
+	class PlanarDeltaForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
+	public:
+		auto virtual kinPos()->int override {
+			double input[4], output[4];
+
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+
+			model()->getInputPos(input);
+			if (auto ret = planarDeltaForward(dh, input, 0, output))
+				return ret;
+
+			// ee //
+			double pe[6]{ output[0], output[1], 0.0, output[2], 0.0, 0.0 };
+			model()->generalMotionPool()[0].makI()->setPe(*model()->generalMotionPool()[0].makJ(), pe, "321");
+
+			//// up //
+			//s_fill(1, 3, 0.0, pe);
+			//pe[3] = -pe[3];
+			//model()->jointPool()[15].makJ()->setPe(*model()->jointPool()[15].makI(), pe, "321");
+
+			//// link1 //
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[0];
+			//model()->jointPool()[0].makI()->setPe(*model()->jointPool()[0].makJ(), pe, "123");
+
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[1];
+			//model()->jointPool()[5].makI()->setPe(*model()->jointPool()[5].makJ(), pe, "123");
+
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = input[2];
+			//model()->jointPool()[10].makI()->setPe(*model()->jointPool()[10].makJ(), pe, "123");
+
+			//// link2&3 //
+			//s_fill(1, 6, 0.0, pe);
+			//pe[5] = PI / 2;
+			//model()->jointPool()[3].makI()->getPp(*model()->jointPool()[1].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[1].makI()->setPe(*model()->jointPool()[1].makJ(), pe, "312");
+
+			//model()->jointPool()[4].makI()->getPp(*model()->jointPool()[2].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[2].makI()->setPe(*model()->jointPool()[2].makJ(), pe, "312");
+
+			//model()->jointPool()[8].makI()->getPp(*model()->jointPool()[6].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[6].makI()->setPe(*model()->jointPool()[6].makJ(), pe, "312");
+
+			//model()->jointPool()[9].makI()->getPp(*model()->jointPool()[7].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[7].makI()->setPe(*model()->jointPool()[7].makJ(), pe, "312");
+
+			//model()->jointPool()[13].makI()->getPp(*model()->jointPool()[11].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[11].makI()->setPe(*model()->jointPool()[11].makJ(), pe, "312");
+
+			//model()->jointPool()[14].makI()->getPp(*model()->jointPool()[12].makJ(), pp);
+			//s_sov_ab(pp, pe + 3, "312");
+			//model()->jointPool()[12].makI()->setPe(*model()->jointPool()[12].makJ(), pe, "312");
+
+			for (auto &m : model()->generalMotionPool()) m.updP();
+			return 0;
+		}
+
+		PlanarDeltaForwardKinematicSolver() = default;
+	};
+
+	/*auto ARIS_API createModelPlanarDelta(const PlanarDeltaParam &param)->std::unique_ptr<aris::dynamic::Model> {
+		DeltaFullParam full_param;
+		full_param.a1 = full_param.a2 = full_param.a3 = param.a;
+		full_param.b1 = full_param.b2 = full_param.b3 = param.b;
+		full_param.c1 = full_param.c2 = full_param.c3 = param.c;
+		full_param.d1 = full_param.d2 = full_param.d3 = param.d;
+		full_param.e1 = full_param.e2 = full_param.e3 = param.e;
+
+		full_param.theta1 = 0.0;
+		full_param.theta2 = aris::PI * 2 / 3;
+		full_param.theta3 = -aris::PI * 2 / 3;
+
+		s_vc(6, param.tool0_pe, full_param.tool0_pe);
+		full_param.tool0_pe_type = param.tool0_pe_type;
+
+		s_vc(6, param.base2ref_pe, full_param.base2ref_pe);
+		full_param.base2ref_pe_type = param.base2ref_pe_type;
+
+		full_param.iv_vec = param.iv_vec;
+
+		full_param.mot_frc_vec = param.mot_frc_vec;
+
+		return createModelDelta(full_param);
+	}*/
+	auto ARIS_API createModelPlanarDelta(const PlanarDeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model> {
+		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+
+		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({
+			param.a1, param.b1, param.c1,
+			param.a2, param.b2, param.c2, 
+			param.d
+			}));
+
+		// 设置重力 //
+		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+		model->environment().setGravity(gravity);
+
+		// add part //
+		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
+		auto &p11 = model->partPool().add<Part>("L11", param.iv_vec.size() == 4 ? param.iv_vec[0].data() : default_iv);
+		auto &p12 = model->partPool().add<Part>("L12", param.iv_vec.size() == 4 ? param.iv_vec[1].data() : default_iv);
+		auto &p21 = model->partPool().add<Part>("L31", param.iv_vec.size() == 4 ? param.iv_vec[0].data() : default_iv);
+		auto &p22 = model->partPool().add<Part>("L32", param.iv_vec.size() == 4 ? param.iv_vec[1].data() : default_iv);
+		auto &pup = model->partPool().add<Part>("UP", param.iv_vec.size() == 4 ? param.iv_vec[3].data() : default_iv);
+		auto &pee = model->partPool().add<Part>("EE", param.iv_vec.size() == 4 ? param.iv_vec[3].data() : default_iv);
+
+		// add geometry //
+
+		// add joint //
+		double axis[3]{ 0,0,1 };
+		double r11_pos[3]{ param.a1           ,          0.0, 0.0 };
+		double r12_pos[3]{ param.a1 + param.b1,  param.c1 / 2, 0.0 };
+		double r13_pos[3]{ param.a1 + param.b1, -param.c1 / 2, 0.0 };
+		
+		double r21_pos[3]{ param.a2           ,           0.0, 0.0 };
+		double r22_pos[3]{ param.a2 + param.b2,  param.c2 / 2, 0.0 };
+		double r23_pos[3]{ param.a2 + param.b2, -param.c2 / 2, 0.0 };
+
+		auto &r11 = model->addRevoluteJoint(p11, model->ground(), r11_pos, axis);
+		auto &r12 = model->addRevoluteJoint(p12, p11, r12_pos, axis);
+		auto &r13 = model->addRevoluteJoint(pup, p11, r13_pos, axis);
+
+		auto &r21 = model->addRevoluteJoint(p21, model->ground(), r21_pos, axis);
+		auto &r22 = model->addRevoluteJoint(p22, p21, r22_pos, axis);
+		auto &r23 = model->addRevoluteJoint(pup, p21, r23_pos, axis);
+
+
+		// 求正解计算末端位置 //
+		double input_0[4]{ 0,0,0,0 };
+		double output_0[4]{ 0,0,0,0 };
+		planarDeltaForward(dynamic_cast<aris::dynamic::MatrixVariable&>(model->variablePool()[0]).data().data(), input_0, 0, output_0);
+
+		// 得到末端
+		double re_pos[3]{ output_0[0], output_0[1], output_0[2] };
+		double re_axis[3]{ 0,0,1 };
+		auto &re = model->addRevoluteJoint(pee, pup, re_pos, re_axis);
+		// add actuation //
+		auto &m1 = model->addMotion(r11);
+		auto &m2 = model->addMotion(r21);
+		auto &m3 = model->addMotion(re);
+
+		const double default_mot_frc[3]{ 0.0, 0.0, 0.0 };
+		m1.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[0].data() : default_mot_frc);
+		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);
+		m3.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[2].data() : default_mot_frc);
+
+		// add ee general motion //
+		double ee_i_pm[16]{
+			1,0,0,output_0[0],
+			0,1,0,output_0[1],
+			0,0,1,output_0[2],
+			0,0,0,1 };
+		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+
+		auto &makI = pee.addMarker("tool0", ee_i_pm);
+		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
+		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
+		auto &ee = model->generalMotionPool().add<aris::dynamic::PlanarMotion>("tool", &makI, &makJ, false);
+
+		// change robot pose wrt ground //
+
+		// add tools and wobj //
+		for (int i = 1; i < 17; ++i) {
+			pee.addMarker("tool" + std::to_string(i), ee_i_pm);
+		}
+		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+
+		// add solver
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PlanarDeltaInverseKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::PlanarDeltaForwardKinematicSolver>();
+		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
+		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
+
+		// make topology correct // 
+		for (auto &m : model->motionPool())m.activate(true);
+		for (auto &gm : model->generalMotionPool())gm.activate(false);
+		for (auto &f : model->forcePool())f.activate(false);
+
+		model->init();
+		return model;
+	}
+
 	ARIS_REGISTRATION{
 		aris::core::class_<DeltaInverseKinematicSolver>("DeltaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			;
 
 		aris::core::class_<DeltaForwardKinematicSolver>("DeltaForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
+			;
+
+		aris::core::class_<PlanarDeltaInverseKinematicSolver>("PlanarDeltaInverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			;
+
+		aris::core::class_<PlanarDeltaForwardKinematicSolver>("PlanarDeltaForwardKinematicSolver")
 			.inherit<ForwardKinematicSolver>()
 			;
 	}
