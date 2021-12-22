@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 1.5.0)
+project(aris VERSION 1.5.0.122221)
+
+# version
+configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)
 
 ## set cpp configurations ##
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -141,7 +144,7 @@ set(ARIS_LINK_LIB aris_lib)
 ## install exports ##
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
 install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
-install(FILES include/aris.hpp ${PROJECT_BINARY_DIR}/aris_lib_export.h DESTINATION include)
+install(FILES include/aris.hpp ${PROJECT_BINARY_DIR}/aris_lib_export.h ${PROJECT_BINARY_DIR}/aris_version.h DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
