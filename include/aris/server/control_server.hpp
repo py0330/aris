@@ -31,7 +31,7 @@ namespace aris::server
 		auto virtual isConnected() const->bool override { return is_open_; }
 
 	private:
-		bool is_open_{false};
+		bool is_open_{true};
 
 	public:
 		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}
@@ -89,7 +89,7 @@ namespace aris::server
 
 		// rt error handler //
 		// p can be nullptr, means idel
-		auto setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)>);
+		auto setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)>)->void;
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;

@@ -44,3 +44,7 @@ install_manifest.txt
 /.vs
 /out
 /CMakeSettings.json
+
+# for vscode
+.vscode/
+build/
