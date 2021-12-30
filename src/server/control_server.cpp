@@ -655,7 +655,7 @@ namespace aris::server{
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
 				++cmd_id;
-				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server parse cmd %ji : %s" }, cmd_id, str.data());
+				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server parse cmd %ji : %s", "服务器分析指令 %ji : %s" }, cmd_id, str.data());
 				auto[cmd, params] = planRoot().planParser().parse(std::string_view(cmd_str_local.data(), cmd_str_local.size()));
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
