@@ -47,7 +47,7 @@ namespace aris::core{
 	// 根据语言切换 //
 	template <typename ...Args>
 	auto localeString(std::initializer_list<const char*> format_list, Args ... args)->std::string {
-		auto format = (currentLanguage() <= format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
+		auto format = (currentLanguage() < format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
 		
 		int size_s = std::snprintf(nullptr, 0, format, args ...) + 1;
 		if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }

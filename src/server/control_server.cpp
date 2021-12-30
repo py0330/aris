@@ -549,7 +549,6 @@ namespace aris::server{
 	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)->void {
 		imp_->error_handle_ = call_back;
 	}
-	
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
 		err.code = err_code;
@@ -656,7 +655,7 @@ namespace aris::server{
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
 				++cmd_id;
-				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server parse cmd %ji : %s" }, cmd_id, str.data());
+				ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server parse cmd %ji : %s", "服务器分析指令 %ji : %s" }, cmd_id, str.data());
 				auto[cmd, params] = planRoot().planParser().parse(std::string_view(cmd_str_local.data(), cmd_str_local.size()));
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));

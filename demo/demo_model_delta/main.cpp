@@ -1,5 +1,14 @@
 ﻿#include "aris.hpp"
 
+auto createModelPlanarScaraLansi()->std::unique_ptr<aris::dynamic::Model>
+{
+	aris::dynamic::ScaraParam param;
+	param.a = 0.6;
+	param.b = 0.85;
+	auto m = aris::dynamic::createModelPlanarScara(param);
+	return std::move(m);
+}
+
 int main(){
 	
 	// 构造 delta 的模型 //
@@ -190,10 +199,11 @@ int main(){
 		aris::dynamic::ScaraParam param2;
 		param2.a = 1;
 		param2.b = 1;
-		auto m2 = aris::dynamic::createModelPlanarScara(param2);
+		//auto m2 = aris::dynamic::createModelPlanarScara(param2);
+		auto m2 = createModelPlanarScaraLansi();
 		
 		//////////////////// 反解 ////////////////////
-		double xyz_theta2[4]{ -0.8, -0.9, 0.3 };
+		double xyz_theta2[4]{ 0.61, 0.85, 0.3 };
 		m2->setOutputPos(xyz_theta2);
 		if (m2->inverseKinematics())
 			std::cout << "failed" << std::endl;
