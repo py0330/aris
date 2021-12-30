@@ -177,8 +177,7 @@ namespace aris::server
 
 		return cell_js.dump(-1,' ',true);
 	}
-	auto deleteCell(std::string dash_id, std::string cell_id)->std::string
-	{
+	auto deleteCell(std::string dash_id, std::string cell_id)->std::string{
 		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
 		interface_path = interface_path / "../robot/interface.xml";
@@ -186,10 +185,8 @@ namespace aris::server
 
 		tinyxml2::XMLElement *dash_ele = nullptr;
 
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id)
-			{
+		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
+			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id){
 				dash_ele = ele;
 				break;
 			}
@@ -227,8 +224,7 @@ namespace aris::server
 	}
 
 	template <typename TP>
-	std::time_t to_time_t(TP tp)
-	{
+	std::time_t to_time_t(TP tp){
 		using namespace std::chrono;
 		auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
 			+ system_clock::now());
@@ -236,35 +232,28 @@ namespace aris::server
 	}
 
 
-	std::wstring s2ws(const std::string& str)
-	{
+	std::wstring s2ws(const std::string& str){
 		using convert_typeX = std::codecvt_utf8<wchar_t>;
 		std::wstring_convert<convert_typeX, wchar_t> converterX;
 
 		return converterX.from_bytes(str);
 	}
 
-	std::string ws2s(const std::wstring& wstr)
-	{
+	std::string ws2s(const std::wstring& wstr){
 		using convert_typeX = std::codecvt_utf8<wchar_t>;
 		std::wstring_convert<convert_typeX, wchar_t> converterX;
 
 		return converterX.to_bytes(wstr);
 	}
 
-
-
-	auto fetchPrograms()->std::string
-	{
+	auto fetchPrograms()->std::string{
 		my_json js;
 
 		std::filesystem::path program_path(rootPath());
 		program_path = program_path / "../robot/program";
 
-		for (auto&dir : std::filesystem::directory_iterator(program_path))
-		{
-			if (std::filesystem::is_directory(dir))
-			{
+		for (auto&dir : std::filesystem::directory_iterator(program_path)){
+			if (std::filesystem::is_directory(dir)){
 				my_json pro_dir_js;
 				pro_dir_js["name"] = dir.path().filename().string();
 				pro_dir_js["path"] = "/program/" + dir.path().filename().string();
@@ -281,12 +270,9 @@ namespace aris::server
 				pro_dir_js["isDir"] = true;
 				
 				pro_dir_js["files"] = my_json::array();
-				for (auto&file : std::filesystem::directory_iterator(dir))
-				{
-					if (file.is_regular_file())
-					{
-						if (file.path().extension() == ".dat")
-						{
+				for (auto&file : std::filesystem::directory_iterator(dir)){
+					if (file.is_regular_file()){
+						if (file.path().extension() == ".dat"){
 							// 校验是否为xml //
 							tinyxml2::XMLDocument doc;
 							if (doc.LoadFile(file.path().string().c_str()))continue;
@@ -301,36 +287,29 @@ namespace aris::server
 
 							// add variables //
 							std::function<void(tinyxml2::XMLElement*)> addVariable;
-							addVariable = [&](tinyxml2::XMLElement*blk) ->void
-							{
-								if (blk->Attribute("type", "jointtarget_variable"))
-								{
+							addVariable = [&](tinyxml2::XMLElement*blk) ->void{
+								if (blk->Attribute("type", "jointtarget_variable")){
 									file_js["jointtargets"].push_back(blk->FirstChildElement("field")->GetText());
 								}
-								else if (blk->Attribute("type", "robtarget_variable"))
-								{
+								else if (blk->Attribute("type", "robtarget_variable")){
 									file_js["robtargets"].push_back(blk->FirstChildElement("field")->GetText());
 								}
-								else if (blk->Attribute("type", "speed_variable"))
-								{
+								else if (blk->Attribute("type", "speed_variable")){
 									file_js["speeds"].push_back(blk->FirstChildElement("field")->GetText());
 								}
-								else if (blk->Attribute("type", "zone_variable"))
-								{
+								else if (blk->Attribute("type", "zone_variable")){
 									file_js["zones"].push_back(blk->FirstChildElement("field")->GetText());
 								}
 
 								if (auto next = blk->FirstChildElement("next"))addVariable(next->FirstChildElement());
 							};
-							for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement())
-							{
+							for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement()){
 								addVariable(blk);
 							}
 
 							pro_dir_js["files"].push_back(file_js);
 						}
-						else if (file.path().extension() == ".pro")
-						{
+						else if (file.path().extension() == ".pro"){
 							// 校验是否为xml //
 							tinyxml2::XMLDocument doc;
 							if (doc.LoadFile(file.path().string().c_str()))continue;
@@ -344,23 +323,19 @@ namespace aris::server
 
 							// add functions //
 							std::function<void(tinyxml2::XMLElement*)> addFunction;
-							addFunction = [&](tinyxml2::XMLElement*blk) ->void
-							{
-								if (blk->Attribute("type", "function"))
-								{
+							addFunction = [&](tinyxml2::XMLElement*blk) ->void{
+								if (blk->Attribute("type", "function")){
 									file_js["functions"].push_back(blk->FirstChildElement("field")->GetText());
 								}
 								if (auto next = blk->FirstChildElement("next"))addFunction(next->FirstChildElement());
 							};
-							for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement())
-							{
+							for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement()){
 								addFunction(blk);
 							}
 
 							pro_dir_js["files"].push_back(file_js);
 						}
-						else if (file.path().extension() == ".aris")
-						{
+						else if (file.path().extension() == ".aris"){
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
 							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
@@ -379,8 +354,7 @@ namespace aris::server
 		auto ret = js.dump(-1,' ',true);
 		return ret;
 	}
-	auto createProgram(std::string pro_js_str)->std::string 
-	{
+	auto createProgram(std::string pro_js_str)->std::string {
 		auto js = my_json::parse(pro_js_str);
 		auto pro_name = js["name"].get<std::string>();
 		auto program_path = rootPath() / "../robot/program" / pro_name;
@@ -438,8 +412,7 @@ namespace aris::server
 		auto ret = pro_dir_js.dump(-1, ' ', true);
 		return ret;
 	}
-	auto updateProgram(std::string pro_name, std::string data)->std::string
-	{
+	auto updateProgram(std::string pro_name, std::string data)->std::string{
 		auto program_path = rootPath() / "../robot/program";
 		auto js = my_json::parse(data);
 		
@@ -449,8 +422,7 @@ namespace aris::server
 
 		// 保存，并确认是否出错 //
 		bool has_error{ false };
-		for (auto &file : js["files"])
-		{
+		for (auto &file : js["files"]){
 			std::cout << "update file:" << file["name"].get<std::string>() << std::endl;
 			//LOG_INFO << "HTTP UPDATE PROGRAM FILE:" << file["name"].get<std::string>() << std::endl;
 			
@@ -470,32 +442,25 @@ namespace aris::server
 			if (file.contains("functions"))file.erase("functions");
 			
 			std::function<void(tinyxml2::XMLElement*)> addFunction;
-			addFunction = [&](tinyxml2::XMLElement*blk) ->void
-			{
-				if (blk->Attribute("type", "jointtarget_variable"))
-				{
+			addFunction = [&](tinyxml2::XMLElement*blk) ->void{
+				if (blk->Attribute("type", "jointtarget_variable")){
 					file["jointtargets"].push_back(blk->FirstChildElement("field")->GetText());
 				}
-				else if (blk->Attribute("type", "robtarget_variable"))
-				{
+				else if (blk->Attribute("type", "robtarget_variable")){
 					file["robtargets"].push_back(blk->FirstChildElement("field")->GetText());
 				}
-				else if (blk->Attribute("type", "speed_variable"))
-				{
+				else if (blk->Attribute("type", "speed_variable")){
 					file["speeds"].push_back(blk->FirstChildElement("field")->GetText());
 				}
-				else if (blk->Attribute("type", "zone_variable"))
-				{
+				else if (blk->Attribute("type", "zone_variable")){
 					file["zones"].push_back(blk->FirstChildElement("field")->GetText());
 				}
-				else if (blk->Attribute("type", "function"))
-				{
+				else if (blk->Attribute("type", "function")){
 					file["functions"].push_back(blk->FirstChildElement("field")->GetText());
 				}
 				if (auto next = blk->FirstChildElement("next"))addFunction(next->FirstChildElement());
 			};
-			for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement())
-			{
+			for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement()){
 				addFunction(blk);
 			}
 		}
@@ -521,8 +486,7 @@ namespace aris::server
 
 		return js.dump(-1,' ',true);
 	}
-	auto deleteProgram(std::string pro_name)->std::string
-	{
+	auto deleteProgram(std::string pro_name)->std::string{
 		auto program_path = rootPath() / "../robot/program" / pro_name;
 		if (!std::filesystem::exists(program_path))return "";
 		
@@ -533,8 +497,7 @@ namespace aris::server
 		js["name"] = pro_name;
 		return js.dump(-1,' ',true);
 	}
-	auto renameProgram(std::string old_name, std::string new_name_js)->std::string 
-	{
+	auto renameProgram(std::string old_name, std::string new_name_js)->std::string {
 		if (!std::filesystem::exists(rootPath() / "../robot/program" / old_name))return "";
 
 		auto js = my_json::parse(new_name_js);
@@ -584,13 +547,11 @@ namespace aris::server
 		return pro_dir_js.dump(-1,' ',true);
 	}
 
-	auto fetchConfigXml()->std::string
-	{
+	auto fetchConfigXml()->std::string{
 		return aris::core::toXmlString(aris::server::ControlServer::instance());
 	}
 
-	auto fetchESIPath()->std::string
-	{
+	auto fetchESIPath()->std::string{
 		auto p = std::filesystem::absolute(rootPath() / "../robot/esi");
 		my_json js;
 		js["path"] = p.string();
@@ -606,19 +567,16 @@ namespace aris::server
 	auto fetchLogName()->std::string;
 	auto fetchLogContent()->std::string;
 
-	auto fetchObjPictureList()->std::string
-	{
+	auto fetchObjPictureList()->std::string{
 		auto detech_path = std::filesystem::absolute(rootPath() / "detech/");
 
 		my_json file_list;
 		file_list["fileList"] = my_json::array();
 
 		int uid = 0;
-		for (auto&file : std::filesystem::directory_iterator(detech_path))
-		{
+		for (auto&file : std::filesystem::directory_iterator(detech_path)){
 			my_json file_js;
-			if (file.is_regular_file())
-			{
+			if (file.is_regular_file()){
 				uid--;
 				file_js["uid"] = uid;
 				file_js["name"] = ws2s(file.path().filename().wstring());
@@ -631,8 +589,7 @@ namespace aris::server
 
 		return file_list.dump(-1,' ',true);
 	}
-	auto postObjPicture(std::string str)->std::string
-	{
+	auto postObjPicture(std::string str)->std::string{
 		//std::cout << str << std::endl;
 		std::stringstream ss(str);
 
