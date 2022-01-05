@@ -875,6 +875,10 @@ namespace aris::dynamic{
 			.inherit<aris::dynamic::MotionBase>()
 			;
 
+		aris::core::class_<PlanarMotion>("PlanarMotion")
+			.inherit<aris::dynamic::MotionBase>()
+			;
+
 		aris::core::class_<GeneralForce>("GeneralForce")
 			.inherit<aris::dynamic::Force>()
 			;
