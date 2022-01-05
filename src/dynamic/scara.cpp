@@ -307,5 +307,9 @@ namespace aris::dynamic{
 		aris::core::class_<ScaraInverseKinematicSolver>("ScaraInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			;
+
+		aris::core::class_<PlanarScaraInverseKinematicSolver>("PlanarScaraInverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			;
 	}
 }
