@@ -30,7 +30,16 @@
 namespace aris::core{
 	// 语言 //
 	int global_lang_id = 0;
-	auto setLanguage(int language_id_)->void { global_lang_id = language_id_;}
+	auto setLanguage(int language_id_)->void { 
+#ifdef WIN32
+		// Set console code page to UTF-8 so console known how to interpret string data
+		SetConsoleOutputCP(CP_UTF8);
+
+		// Enable buffering to prevent VS from chopping up UTF-8 byte sequences
+		setvbuf(stdout, nullptr, _IOFBF, 1000);
+#endif
+		global_lang_id = language_id_;
+	}
 	auto currentLanguage()->int { return global_lang_id; }
 
 	// 默认log实现 //

@@ -86,7 +86,7 @@ auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynami
 int main(int argc, char *argv[])
 {
 	aris::core::setLanguage(1);
-	
+
 	auto &cs = aris::server::ControlServer::instance();
 
 	cs.resetMaster(aris::robot::rokae::xb4::createMaster().release());
