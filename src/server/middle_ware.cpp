@@ -14,11 +14,16 @@ auto MiddleWare::executeCmd(std::string_view str, std::function<void(std::string
 
 	std::string cmd(str);
 
-	auto send_and_print = [cmd, interface, send_ret](std::string ret)->void {
-        std::cout << "INTERFACE -- " << interface->name() << std::endl;
-        std::cout << "       ID -- " << MiddleWare::cmd_id_++ << std::endl;
-		std::cout << "      CMD -- " << cmd << std::endl; 
-		std::cout << "   RETURN -- " << ret << std::endl;
+	auto cmd_id = MiddleWare::cmd_id_++;
+
+	std::cout << "INTERFACE -- " << interface->name() << std::endl;
+	std::cout << "       ID -- " << cmd_id << std::endl;
+	std::cout << "      CMD -- " << cmd << std::endl;
+	std::cout << std::endl;
+
+	auto send_and_print = [cmd_id, send_ret](std::string ret)->void {
+        std::cout << "    ID -- " << cmd_id << std::endl;
+		std::cout << "RETURN -- " << ret << std::endl;
         std::cout << std::endl;
 
         send_ret(ret);

@@ -53,9 +53,11 @@ namespace aris::server
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
 	{
 		nlohmann::json js;
-		
-		for (auto &key_value : ret)
-		{
+
+		for (auto &key_value : ret){
+			if (auto value = std::any_cast<std::string>(&key_value.second)) std::cout << key_value.first << ":" << *value << std::endl;
+
+
 #define ARIS_SET_TYPE(TYPE) if (auto value = std::any_cast<TYPE>(&key_value.second)) js[key_value.first] = *value; else
 
 			ARIS_SET_TYPE(bool)
