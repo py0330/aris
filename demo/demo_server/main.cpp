@@ -94,21 +94,32 @@ int main(int argc, char *argv[])
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
+
+
+	cs.init();
+	cs.planRoot().planPool().front().parse("en -m=1");
+	cs.planRoot().planPool().front().prepareNrt();
+	cs.planRoot().planPool().front().executeRT();
+	cs.controller().motorPool()[0].targetToq();
+
+
+	char a;
+	std::cin >> a;
+
+
+
+
 	try
 	{
 		cs.init();
 		cs.open();
 		cs.start();
 
-
 		// 读取数据 //
 		double data[6];
 		cs.controller().ftSensorPool()[0].getFtData(data);
 
 		std::cout << aris::core::toXmlString(cs) << std::endl;
-
-
-
 
 		cs.runCmdLine();
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");

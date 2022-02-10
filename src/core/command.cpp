@@ -219,45 +219,8 @@ namespace aris::core{
 
 		return nullptr;
 	}
-	Command::~Command() = default;
-	Command::Command(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)){}
-	Command::Command(const Command&) = default;
-	Command::Command(Command&&)noexcept = default;
-	Command& Command::operator=(const Command&) = default;
-	Command& Command::operator=(Command&&)noexcept = default;
-
-	struct CommandParser::Imp { std::vector<Command> command_pool_; };
-	auto CommandParser::commandPool()->std::vector<Command> & { return imp_->command_pool_; }
-	auto CommandParser::commandPool()const->const std::vector<Command> & { return imp_->command_pool_; }
-	auto CommandParser::init()->void{
-		// make command point to correct place //
-		for (auto &c : commandPool()){
-			std::function<void(ParamBase*)> add = [&c, &add](ParamBase* param)->void{
-				param->imp_->command_ = &c;
-				for (auto &p : *param){
-					p.imp_->father_ = param;
-					add(&p);
-				}
-			};
-
-			for (auto &param : c) {
-				param.imp_->father_ = &c;
-				add(&param);
-			}
-		}
-
-		// make map and abbrev map //
-		for (auto &c : commandPool()){
-			c.imp_->param_map_.clear();
-			c.imp_->abbreviation_map_.clear();
-
-			auto found_default = std::find_if(c.begin(), c.end(), [&c](const auto&value) {return c.imp_->default_value_ == value.name(); });
-			if ((c.imp_->default_value_ != "") && (found_default == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
-			for (auto &param : c) Command::Imp::add_param_map_and_check_default(&c, param);
-		}
-	}
-	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>{
-		auto cut_str = [](std::string_view &input, const char *c)->std::string_view{
+	auto Command::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>> {
+		auto cut_str = [](std::string_view &input, const char *c)->std::string_view {
 			// 此时c中字符是或的关系 //
 			auto point = input.find_first_of(c);
 			auto ret = input.substr(0, point);
@@ -268,13 +231,13 @@ namespace aris::core{
 			auto point = input.find_first_not_of(' ');
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 		};
-		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string_view{
+		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string_view {
 			if (cmd_str.empty() || cmd_str[0] != '=')return param->defaultValue();
-			
+
 			int brace_num = 0;
 			int i = 1;
-			for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i){
-				switch (cmd_str[i]){
+			for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i) {
+				switch (cmd_str[i]) {
 				case '{':
 					++brace_num;
 					break;
@@ -300,11 +263,10 @@ namespace aris::core{
 		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 		cmd_str = trim_left(cmd_str);
 
-		auto command = std::find_if(commandPool().begin(), commandPool().end(), [&cmd](const auto&obj) {return obj.name() == std::string(cmd); });
-		if (command == commandPool().end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
+		if (cmd != name()) THROW_FILE_LINE("invalid command name: cmd_str and command name not match");
 
-		Command::Imp::reset(&*command);
-		for (; !cmd_str.empty();){
+		Command::Imp::reset(this);
+		for (; !cmd_str.empty();) {
 			auto param_name_origin = cut_str(cmd_str, " =");
 			cmd_str = trim_left(cmd_str);
 
@@ -312,47 +274,95 @@ namespace aris::core{
 			else if (param_name_origin == "-")THROW_FILE_LINE("invalid param: symbol \"-\" must be followed by an abbreviation of param");
 			else if (param_name_origin == "--")THROW_FILE_LINE("invalid param: symbol \"--\" must be followed by a full name of param");
 			else if (param_name_origin.size() > 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')THROW_FILE_LINE("invalid param: param start with single '-' must be an abbreviation");
-			else if (param_name_origin.size() == 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-'){
+			else if (param_name_origin.size() == 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-') {
 				char abbrev = param_name_origin.data()[1];
 
-				if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
+				if (this->imp_->abbreviation_map_.find(abbrev) == this->imp_->abbreviation_map_.end())
 					THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
-				auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
-				auto &param_name = command->imp_->abbreviation_map_.at(abbrev);
+				auto param = this->imp_->param_map_.at(this->imp_->abbreviation_map_.at(abbrev));
+				auto &param_name = this->imp_->abbreviation_map_.at(abbrev);
 				auto param_value = get_param_value(param, cmd_str);
 
 				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
-			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-'){
+			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-') {
 				auto param_name = param_name_origin.substr(2);
 
-				if (command->imp_->param_map_.find(std::string(param_name)) == command->imp_->param_map_.end())
+				if (this->imp_->param_map_.find(std::string(param_name)) == this->imp_->param_map_.end())
 					THROW_FILE_LINE(std::string("invalid param: param \"") + std::string(param_name) + "\" is not a valid param");
 
-				auto param = command->imp_->param_map_.at(std::string(param_name));
+				auto param = this->imp_->param_map_.at(std::string(param_name));
 				auto param_value = get_param_value(param, cmd_str);
 
 				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
-			else{
-				for (auto abbrev : param_name_origin){
-					if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
+			else {
+				for (auto abbrev : param_name_origin) {
+					if (this->imp_->abbreviation_map_.find(abbrev) == this->imp_->abbreviation_map_.end())
 						THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
-					auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
-					std::string_view param_name = command->imp_->abbreviation_map_.at(abbrev);
+					auto param = this->imp_->param_map_.at(this->imp_->abbreviation_map_.at(abbrev));
+					std::string_view param_name = this->imp_->abbreviation_map_.at(abbrev);
 					std::string_view param_value = param->defaultValue();
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);
 				}
 			}
 		}
-		Command::Imp::addDefaultParam(&*command, param_map);
+		Command::Imp::addDefaultParam(&*this, param_map);
 
 		return std::make_tuple(cmd, param_map);
+	}
+	auto Command::init()->void {
+		
+		// add father and command ptr //
+		std::function<void(ParamBase*)> add = [this, &add](ParamBase* param)->void {
+			param->imp_->command_ = this;
+			for (auto &p : *param) {
+				p.imp_->father_ = param;
+				add(&p);
+			}
+		};
+
+		for (auto &param : *this) {
+			param.imp_->father_ = this;
+			add(&param);
+		}
+		
+		// make map //
+		imp_->param_map_.clear();
+		imp_->abbreviation_map_.clear();
+
+		auto found_default = std::find_if(this->begin(), this->end(), [this](const auto&value) {return imp_->default_value_ == value.name(); });
+		if ((imp_->default_value_ != "") && (found_default == end())) THROW_FILE_LINE("Command \"" + name() + "\" has invalid default param name");
+		for (auto &param : *this) Command::Imp::add_param_map_and_check_default(this, param);
+	}
+	Command::~Command() = default;
+	Command::Command(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)){}
+	Command::Command(const Command&) = default;
+	Command::Command(Command&&)noexcept = default;
+	Command& Command::operator=(const Command&) = default;
+	Command& Command::operator=(Command&&)noexcept = default;
+
+	struct CommandParser::Imp { std::vector<Command> command_pool_; };
+	auto CommandParser::commandPool()->std::vector<Command> & { return imp_->command_pool_; }
+	auto CommandParser::commandPool()const->const std::vector<Command> & { return imp_->command_pool_; }
+	auto CommandParser::init()->void{
+		for (auto &c : commandPool()){
+			c.init();
+		}
+	}
+	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>{
+		std::string_view cmd = cmd_str.substr(0, cmd_str.find_first_of(" "));
+		if (cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
+
+		auto command = std::find_if(commandPool().begin(), commandPool().end(), [&cmd](const auto&obj) {return obj.name() == std::string(cmd); });
+		if (command == commandPool().end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
+
+		return command->parse(cmd_str);
 	}
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name){}

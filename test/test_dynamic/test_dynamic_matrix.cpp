@@ -8,13 +8,11 @@ using namespace aris::dynamic;
 
 const double error = 1e-10;
 
-#define ARIS_DEBUG_DYNAMIC_SVD
+//#define ARIS_DEBUG_DYNAMIC_SVD
 
 namespace aris::dynamic {
-	double *global_U, *global_V, *global_S;
-
-
 	//   
+	/*
 	template<typename AType, typename UType, typename SType, typename VType>
 	auto inline s_svd(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *S, SType s_t, double *V, VType v_t, double zero_check = 1e-10)noexcept->void {
 		////////////////////////////////////////////// PART 1: householder变换 /////////////////////////////////
@@ -117,7 +115,7 @@ namespace aris::dynamic {
 		// 
 		//  STEP 1：递归调用
 		//  h = n/2, n为偶数；或 (n-1)/2, n为奇数
-		// 	[U1,S1,V1] = dvc(A(   1:h+1 , 1:h   ));
+		// 	[U1 S1 V1] = dvc(A(   1:h+1 , 1:h   ));
 		//  [U2 S2 V2] = dvc(A( h+2:n+1 , h+2:n ));
 		//
 		//  各矩阵维度：  U1:h+1 x h+1    S1:h+1 x h        V1:    h x h
@@ -486,23 +484,93 @@ namespace aris::dynamic {
 		//
 		//
 
-
-#ifdef ARIS_DEBUG_DYNAMIC_SVD
-		std::cout << "debug svd begin" << std::endl;
-#endif
 		// check size //
 		if (m == 0 || n == 0) return;
 
-		// check m>n
+		// check m > n
 		if (n > m) {
 			s_svd(n, m, A, T(a_t), V, v_t, S, T(s_t), U, u_t);
 			return;
 		}
 
-		// copy to S //
-		s_mc(m, n, A, a_t, S, s_t);
+		// n == 1 //
+		if (n == 1) {
+			s_mc(m, n, A, a_t, S, s_t);
+
+			if (m == 1) {
+				U[at(0, 0, u_t)] = 1;
+				V[at(0, 0, v_t)] = s_sgn2(S[at(0, 0, s_t)]);
+				S[at(0, 0, s_t)] = s_sgn2(S[at(0, 0, s_t)]) * S[at(0, 0, s_t)];
+			}
+			else {
+				// householder 变换 //
+				double rho = -s_sgn2(S[at(0, 0, s_t)]) * std::sqrt(s_vv(m, S + at(0, 0, s_t), s_t, S + at(0, 0, s_t), s_t));
+				s_nm(m - 1, 1, std::abs(rho) > zero_check ? 1.0 / (S[at(0, 0, s_t)] - rho) : 0.0, S + at(1, 0, s_t), s_t);
+				
+				// U //
+				s_eye(m, U, u_t);
+				s_householder_u_q_dot(m, n, m, S + at(0, 0, s_t), s_t, U + at(0, 0, u_t), u_t, U + at(0, 0, u_t), u_t);
+
+				// V //
+				V[at(0, 0, v_t)] = s_sgn2(rho);
+
+				// S //
+				s_fill(m, n, 0.0, S, s_t);
+				S[at(0, 0, s_t)] = s_sgn2(rho) * rho;
+			}
+			return;
+		}
+		
+		// n == 2 //
+		if (n == 2) {
+			s_mc(m, n, A, a_t, S, s_t);
+			
+			double tau[2];
+			s_householder_ut(m, n, S, s_t, S, s_t, tau, 1);
+
+			auto a = S[at(0, 0, s_t)];
+			auto b = S[at(0, 1, s_t)];
+			auto d = S[at(1, 1, s_t)];
+
+			auto theta3 = 0.5 * std::atan2(2 * b * d, a * a + b * b - d * d);
+			auto c3 = std::cos(theta3);
+			auto s3 = std::sin(theta3);
+
+			auto S1 = a * a + b * b + d * d;
+			auto S2 = std::sqrt((a * a + b * b - d * d) * (a * a + b * b - d * d) + 4 * b * b * d * d);
+
+			auto phi = 0.5 * std::atan2(2 * a * b, a * a - b * b - d * d);
+			auto c_p = std::cos(phi);
+			auto s_p = std::sin(phi);
+			auto s11 = (a * c3) * c_p + (b * c3 + d * s3) * s_p;
+			auto s22 = (a * s3) * s_p + (-b * s3 + d * c3) * c_p;
+
+			// U //
+			s_eye(m, U, u_t);
+			U[at(0, 0, u_t)] = s_sgn2(s11) * (c3);
+			U[at(0, 1, u_t)] = s_sgn2(s22) * (-s3);
+			U[at(1, 0, u_t)] = s_sgn2(s11) * (s3);
+			U[at(1, 1, u_t)] = s_sgn2(s22) * (c3);
+
+			// 对U进行反 householder 变换 //
+			s_householder_ut_q_dot(m, n, m, S + at(0, 0, s_t), s_t, tau, 1, U + at(0, 0, u_t), u_t, U + at(0, 0, u_t), u_t);
+
+			// V //
+			V[at(0, 0, v_t)] = c_p;
+			V[at(0, 1, v_t)] = -s_p;
+			V[at(1, 0, v_t)] = s_p;
+			V[at(1, 1, v_t)] = c_p;
+
+			// S //
+			s_fill(m, n, 0.0, S, s_t);
+			S[at(0, 0, s_t)] = std::sqrt((S1 + S2) / 2);
+			S[at(1, 1, s_t)] = std::sqrt((S1 - S2) / 2);
+
+			return;
+		}
 
 		//////////////////////////////////////////////////////////// PART 1: householder 变换 /////////////////////////////////
+		s_mc(m, n, A, a_t, S, s_t);
 		for (Size i = 0; i < n; ++i) {
 			// compute householder vector 1 //
 			if (i < n - 1){
@@ -519,7 +587,7 @@ namespace aris::dynamic {
 				S[at(i, i, s_t)] = rho;
 			}
 
-			// compute householder vector 2, CASE 1 2 3//
+			// compute householder vector 2, CASE 1 2 3 //
 			if ((n > 1 && i < n - 2) || (m == n + 1 && i < n - 1) || (m > n + 1 && i < n)) {
 				double rho = -s_sgn2(S[at(i + 1, i, s_t)]) * std::sqrt(s_vv(m - i - 1, S + at(i + 1, i, s_t), s_t, S + at(i + 1, i, s_t), s_t));
 				double tau_reciprocal = std::abs(rho) > zero_check ? S[at(i + 1, i, s_t)] / rho - 1.0 : -2.0;   // tau 的倒数，tau和论文中定义一致
@@ -533,47 +601,28 @@ namespace aris::dynamic {
 				}
 				S[at(i + 1, i, s_t)] = rho;
 			}
+
+			// 用 U 来存储 d 和 z //
+			U[at(0, i, u_t)] = S[at(i, i, s_t)];
+			U[at(1, i, u_t)] = m == n && i == n - 1 ? 0.0 : S[at(i + 1, i, s_t)];
 		}
 
 		// reconstruct matrix //
-		for (Size i = 1; i < n - 1; ++i) {
-			auto r1 = S[at(i, i, s_t)];
-			auto r2 = S[at(i + 1, i, s_t)];
-
-			for (Size j(i); --j < i;) {
-				S[at(j + 2, i, s_t)] = S[at(j, i, s_t)];
-			}
-
-			S[at(0, i, s_t)] = r1;
-			S[at(1, i, s_t)] = r2;
-		}
-
-		// 处理最后一列，需考虑是否为方阵 //
-		double householder_vec_n = 0.0;
-		if (m == n && n > 1) {
-			auto r1 = S[at(n - 1, n - 1, s_t)];
-			householder_vec_n = S[at(n - 2, n - 1, s_t)];
-
-			for (Size j = n - 3; j < n; --j) {
-				S[at(j + 2, n - 1, s_t)] = S[at(j, n - 1, s_t)];
-			}
-
-			S[at(0, n - 1, s_t)] = r1;
-			S[at(1, n - 1, s_t)] = 0.0;
-		}
-		else {
-			auto r1 = S[at(n - 1, n - 1, s_t)];
-			auto r2 = S[at(n, n - 1, s_t)];
-
-			for (Size j(n - 1); --j < n - 1;) {
-				S[at(j + 2, n - 1, s_t)] = S[at(j, n - 1, s_t)];
-			}
-
-			S[at(0, n - 1, s_t)] = r1;
-			S[at(1, n - 1, s_t)] = r2;
+		double householder_vec_n[2]{ 0.0, S[at(n - 2, n - 1, s_t)] };
+		for (Size i(1); ++i < n;) {
+			s_mc(1, i, S + at(n - 1 - i, n - i, s_t), s_t, S + at(n + 1 - i, n - i, s_t), s_t);
 		}
 
 		//////////////////////////////////////////////////////////// PART 2: devide and conquer ///////////////////////////////
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+		struct DebugStruct {
+			int level;
+			int num;
+			Size n;
+			std::vector<double> U, S, V;
+		};
+		std::list<DebugStruct> _D_list;
+#endif
 		struct DvcPreOut {
 			Size mn;
 			double dn;
@@ -584,22 +633,11 @@ namespace aris::dynamic {
 			Size mn1, mn2;
 		};
 
-#ifdef ARIS_DEBUG_DYNAMIC_SVD
-		struct DebugStruct {
-			int level;
-			int num;
-			Size n;
-			std::vector<double> U, S, V;
-		};
-
-		std::list<DebugStruct> _D_list;
-#endif
-
 		const auto dvc_pre = [
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 			&
 #endif
-		](Size n, double* S, SType s_t, double* V, VType v_t, const auto& dvc, const auto& dvc_pre)->DvcPreOut
+		](Size n, double* S, auto s_t, double* V, VType v_t, const auto& dvc, const auto& dvc_pre)->DvcPreOut
 		{
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 			DebugStruct _D_s;
@@ -623,10 +661,11 @@ namespace aris::dynamic {
 				_D_list.push_back(_D_s);
 			}
 #endif
-
 			DvcPreOut pre_out = {};
 
-			if(n > 2) {
+			const Size MAX_N = 9;
+
+			if (n > 2 && n < MAX_N) {
 				auto h = n / 2;
 				auto U1 = V + at(0, 0, v_t);
 				auto u1_t = v_t;
@@ -634,7 +673,7 @@ namespace aris::dynamic {
 				auto s1_t = s_t;
 				auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
 				auto v1_t = v_t;
-				auto U2 = V + at(h-1, h, v_t);
+				auto U2 = V + at(h - 1, h, v_t);
 				auto u2_t = v_t;
 				auto S2 = S + at(0, h + 1, s_t);
 				auto s2_t = s_t;
@@ -647,15 +686,14 @@ namespace aris::dynamic {
 				const auto a_h_h = S[at(0, h, s_t)];
 				const auto a_hp1_h = S[at(1, h, s_t)];
 
-				auto ret1 = dvc(h, U1, q1, u1_t, S1, s1_t, V1, v1_t, dvc, dvc_pre);
+				auto ret1 = dvc(h, U1, u1_t, q1, u1_t, S1, s1_t, V1, v1_t, dvc, dvc_pre);
 				auto q1_e = h < 3 ? ret1.q01[h] : q1[at(h - 3, 0, u1_t)];
 
-				auto ret2 = dvc(n - h - 1, U2, q2, u2_t, S2, s2_t, V2, v2_t, dvc, dvc_pre);
+				auto ret2 = dvc(n - h - 1, U2, u2_t, q2, u2_t, S2, s2_t, V2, v2_t, dvc, dvc_pre);
 				auto q2_0 = ret2.q01[0];
 
-				//step 2：构造 d、z、mu、p
-				
-				// step 2.1：计算排序的 d z p
+				// # STEP 2：构造 d、z、mu、p  //
+				// ## STEP 2.1：计算排序的 d z p  //
 				auto r0 = std::sqrt(a_h_h * a_h_h * q1_e * q1_e + a_hp1_h * a_hp1_h * q2_0 * q2_0);
 				auto theta = std::atan2(a_hp1_h * q2_0, a_h_h * q1_e);
 				auto c0 = std::cos(theta);
@@ -677,9 +715,9 @@ namespace aris::dynamic {
 				d[at(0, 0, d_t)] = 0.0;
 				z[at(0, 0, z_t)] = r0;
 
-				s_mc(1, h, a_h_h, U1 + at(h, 0, u1_t), z + at(0, 1, z_t));
-				s_mc(1, n - h - 2, a_hp1_h, U2 + at(0, 1, u2_t), z + at(0, h + 2, z_t));
-				z[at(0, h + 1, z_t)] = a_hp1_h * U2[at(0,0,u2_t)];// U2[0,0] 不正确，因为内存重叠
+				s_mc(1, h, a_h_h, U1 + at(h, 0, u1_t), u1_t, z + at(0, 1, z_t), z_t);
+				s_mc(1, n - h - 2, a_hp1_h, U2 + at(0, 1, u2_t), u2_t, z + at(0, h + 2, z_t), z_t);
+				z[at(0, h + 1, z_t)] = a_hp1_h * U2[at(0, 0, u2_t)];// U2[0,0] 不正确，因为内存重叠
 
 				// 排序生成p
 				for (auto i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
@@ -690,7 +728,206 @@ namespace aris::dynamic {
 				// d和z两个一起变换
 				s_permutate(n, 2, RowIterator<decltype(p_t)>(p, p_t), d, T(d_t));
 
-				//step 2.2：deflation
+				// ## STEP 2.2：deflation
+				auto max_abs_z = std::abs(*std::max_element(RowIterator<decltype(z_t)>(z, z_t), RowIterator<decltype(z_t)>(z, z_t) + n, [](const auto& l, const auto& r) {return std::abs(l) < std::abs(r); }));
+				auto max_d = d[at(0, n - 1, d_t)];
+				constexpr auto consider_zero = std::numeric_limits<double>::min();
+				const auto epsilon_strict = std::max(consider_zero, std::numeric_limits<double>::epsilon() * max_d);
+				const auto epsilon_coarse = std::max(consider_zero, 8.0 * std::numeric_limits<double>::epsilon() * std::max(max_abs_z, max_d));
+
+				auto mn = n;
+				for (Size i = 1; i < mn; ) {
+					// check zi near zero, deflation type 2
+					if (std::abs(z[at(0, i, z_t)]) < epsilon_strict) {
+						mu[at(0, mn - 1, mu_t)] = -2;
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+						--mn;
+
+						continue;
+					}
+					else if (std::abs(d[at(0, i, d_t)]) < epsilon_coarse) {
+						mu[at(0, mn - 1, mu_t)] = -1;
+						auto z1 = std::sqrt(z[at(0, 0, z_t)] * z[at(0, 0, z_t)] + z[at(0, i, z_t)] * z[at(0, i, z_t)]);
+						auto zi = std::atan2(z[at(0, i, z_t)], z[at(0, 0, z_t)]);
+						z[at(0, 0, z_t)] = z1;
+						z[at(0, i, z_t)] = zi;
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+						--mn;
+
+						continue;
+					}
+					else if (d[at(0, i, d_t)] - d[at(0, i - 1, d_t)] < epsilon_strict) {
+						mu[at(0, mn - 1, mu_t)] = (double)(i - 1);
+						auto z_im1 = std::sqrt(z[at(0, i, z_t)] * z[at(0, i, z_t)] + z[at(0, i - 1, z_t)] * z[at(0, i - 1, z_t)]);
+						auto z_i = std::atan2(z[at(0, i, z_t)], z[at(0, i - 1, z_t)]);
+						z[at(0, i - 1, z_t)] = z_im1;
+						z[at(0, i, z_t)] = z_i;
+
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+
+						--mn;
+					}
+					else {
+						++i;
+					}
+				}
+
+				auto dn = 0.0;
+				if (mn == 1) {
+					mu[at(0, mn - 1, mu_t)] = -2;
+					mn = 0;
+					d[at(0, 0, d_t)] = z[at(0, 0, z_t)];
+					dn = z[at(0, 0, z_t)];
+				}
+				else {
+					if (z[at(0, 0, z_t)] <= epsilon_coarse)
+						z[at(0, 0, z_t)] = epsilon_coarse;
+
+					dn = d[at(0, mn - 1, d_t)] + std::sqrt(s_vv(mn, z, T(z_t), z, T(z_t)));
+				}
+
+				// ## STEP 2.3：计算奇异值(mu)
+				for (Size i{ 0 }, di{ 0 }; i < mn; ++i, di = next_c(di, d_t)) {
+					auto left = d[di];
+					auto right = i == mn - 1 ? dn : d[next_c(di, d_t)];
+					auto mid = 0.5 * (left + right);
+					auto v = 0.0;
+					for (Size j = 0; j < mn; ++j) {
+						v += z[at(0, j, z_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - mid) / (d[at(0, j, d_t)] + mid);
+					}
+
+					auto base = v < -1 ? right : left;
+					auto lower = v < -1 ? left - right : 0.0;
+					auto upper = v < -1 ? 0.0 : right - left;
+
+					while (std::abs(lower - upper) > (std::max(std::abs(lower), std::abs(upper))) * 2 * std::numeric_limits<double>::epsilon()) {
+						mid = (lower + upper) / 2;
+						auto v = 0.0;
+						for (Size j = 0; j < mn; ++j) {
+							v += z[at(0, j, z_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mid) / (d[at(0, j, d_t)] + base + mid);
+						}
+						v < -1 ? lower = mid : upper = mid;
+					}
+					mu[at(0, i, mu_t)] = (lower + upper) / 2;
+				}
+
+				// ## STEP 2.4：重新计算 z
+				for (Size i = 0, d_i = 0, z_i = 0; i < mn; ++i, d_i = next_c(d_i, d_t), z_i = next_c(z_i, z_t)) {
+					auto base = mu[at(0, mn - 1, mu_t)] < 0.0 ? dn : d[at(0, mn - 1, d_t)];
+					auto zi = (base + d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]) * (base - d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]);
+
+					for (Size k = 0, mu_k = 0, d_k = 0, d_kp1 = next_c(d_k, d_t); k < i; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
+						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_k] - d[d_i]) / (d[d_k] + d[d_i]);
+					}
+
+					for (Size k = i, mu_k = at(0, k, mu_t), d_k = at(0, k, d_t), d_kp1 = next_c(d_k, d_t); k < mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
+						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_kp1] - d[d_i]) / (d[d_kp1] + d[d_i]);
+					}
+
+					z[z_i] = s_sgn2(z[z_i]) * std::sqrt(zi);
+				}
+
+				pre_out = DvcPreOut{
+					mn,
+					dn,
+					ret1.q01, ret2.q01,
+					q2_0, q1_e,
+					r0, c0, s0,
+					std::array<double,3>{0.0, 0.0, 0.0},
+					ret1.mn, ret2.mn,
+				};
+			}
+			else if(n > 2) {
+				auto h = n / 2;
+				auto U1 = V + at(0, 0, v_t);
+				auto u1_t = v_t;
+				auto S1 = S + at(0, 0, s_t);
+				auto s1_t = s_t;
+				auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+				auto v1_t = v_t;
+				auto U2 = V + at(h - 1, h, v_t);
+				auto u2_t = v_t;
+				auto S2 = S + at(0, h + 1, s_t);
+				auto s2_t = s_t;
+				auto V2 = V + at(h + 1, 0, v_t);
+				auto v2_t = v_t;
+
+				auto q1 = V + (h == n - h ? at(h + 1, h - 1, v_t) : at(0, h, v_t));
+				auto q2 = U2 + at(0, n - h - 1, u2_t);
+
+				const auto a_h_h = S[at(0, h, s_t)];
+				const auto a_hp1_h = S[at(1, h, s_t)];
+
+				auto ret1 = dvc(h, U1, u1_t, q1, u1_t, S1, s1_t, V1, v1_t, dvc, dvc_pre);
+				auto q1_e = h < 3 ? ret1.q01[h] : q1[at(h - 3, 0, u1_t)];
+
+				auto ret2 = dvc(n - h - 1, U2, u2_t, q2, u2_t, S2, s2_t, V2, v2_t, dvc, dvc_pre);
+				auto q2_0 = ret2.q01[0];
+
+				// # STEP 2：构造 d、z、mu、p  //
+				// ## STEP 2.1：计算排序的 d z p  //
+				auto r0 = std::sqrt(a_h_h * a_h_h * q1_e * q1_e + a_hp1_h * a_hp1_h * q2_0 * q2_0);
+				auto theta = std::atan2(a_hp1_h * q2_0, a_h_h * q1_e);
+				auto c0 = std::cos(theta);
+				auto s0 = std::sin(theta);
+
+				auto d = S;
+				auto d_t = s_t;
+				auto z = S + at(1, 0, s_t);
+				auto z_t = s_t;
+				auto mu = V + at(n - 1, 0, v_t);
+				auto mu_t = v_t;
+				auto p = S + at(2, 0, s_t);
+				auto p_t = s_t;
+
+				// 把S1的内存右移一格
+				for (Size i = h; --i < h;) {
+					d[at(0, i + 1, d_t)] = d[at(0, i, d_t)];
+				}
+				d[at(0, 0, d_t)] = 0.0;
+				z[at(0, 0, z_t)] = r0;
+
+				s_mc(1, h, a_h_h, U1 + at(h, 0, u1_t), u1_t, z + at(0, 1, z_t), z_t);
+				s_mc(1, n - h - 2, a_hp1_h, U2 + at(0, 1, u2_t), u2_t, z + at(0, h + 2, z_t), z_t);
+				z[at(0, h + 1, z_t)] = a_hp1_h * U2[at(0, 0, u2_t)];// U2[0,0] 不正确，因为内存重叠
+
+				// 排序生成p
+				for (auto i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
+				std::sort(RowIterator<decltype(p_t)>(p, p_t), RowIterator<decltype(p_t)>(p, p_t) + n, [&d, &d_t](const auto& left, const auto& right) {
+					return d[at(0, static_cast<Size>(left), d_t)] < d[at(0, static_cast<Size>(right), d_t)];
+				});
+
+				// d和z两个一起变换
+				s_permutate(n, 2, RowIterator<decltype(p_t)>(p, p_t), d, T(d_t));
+
+				// ## STEP 2.2：deflation
 				auto max_abs_z = std::abs(*std::max_element(RowIterator<decltype(z_t)>(z, z_t), RowIterator<decltype(z_t)>(z, z_t) + n, [](const auto& l, const auto& r) {return std::abs(l) < std::abs(r); }));
 				auto max_d = d[at(0, n - 1, d_t)];
 				constexpr auto consider_zero = std::numeric_limits<double>::min();
@@ -773,7 +1010,7 @@ namespace aris::dynamic {
 					dn = d[at(0, mn - 1, d_t)] + std::sqrt(s_vv(mn, z, T(z_t), z, T(z_t)));
 				}
 
-				//step 2.3：计算奇异值(mu)
+				// ## STEP 2.3：计算奇异值(mu)
 				for (Size i{ 0 }, di{ 0 }; i < mn; ++i, di = next_c(di, d_t)) {
 					auto left = d[di];
 					auto right = i == mn - 1 ? dn : d[next_c(di, d_t)];
@@ -798,7 +1035,7 @@ namespace aris::dynamic {
 					mu[at(0, i, mu_t)] = (lower + upper) / 2;
 				}
 
-				//step 2.4：重新计算 z
+				// ## STEP 2.4：重新计算 z
 				for (Size i = 0, d_i = 0, z_i = 0; i < mn; ++i, d_i = next_c(d_i, d_t), z_i = next_c(z_i, z_t)) {
 					auto base = mu[at(0, mn - 1, mu_t)] < 0.0 ? dn : d[at(0, mn - 1, d_t)];
 					auto zi = (base + d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]) * (base - d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]);
@@ -808,7 +1045,7 @@ namespace aris::dynamic {
 						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_k] - d[d_i]) / (d[d_k] + d[d_i]);
 					}
 
-					for (Size k = i, mu_k = at(0, k, d_t), d_k = at(0, k, d_t), d_kp1 = next_c(d_k, d_t); k < mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+					for (Size k = i, mu_k = at(0, k, mu_t), d_k = at(0, k, d_t), d_kp1 = next_c(d_k, d_t); k < mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
 						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
 						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_kp1] - d[d_i]) / (d[d_kp1] + d[d_i]);
 					}
@@ -834,10 +1071,11 @@ namespace aris::dynamic {
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 			&
 #endif
-		](Size n, double *U, double*q, UType u_t, double *S, SType s_t, double *V, VType v_t, const auto&dvc, const auto& dvc_pre)->DvcPreOut
+		](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre)->DvcPreOut
 		{
-
 			auto pre_out = dvc_pre(n, S, s_t, V, v_t, dvc, dvc_pre);
+
+			const Size MAX_N = 9;
 
 			if (n == 1) {
 				auto& a1 = S[at(0, 0, s_t)];
@@ -996,7 +1234,7 @@ namespace aris::dynamic {
 				if (!_D_list.empty())_D_list.back().num = 1;
 #endif
 			}
-			else if (n > 2) {
+			else if (n < MAX_N){
 				auto h = n / 2;
 				auto U1 = V + at(0, 0, v_t);
 				auto u1_t = v_t;
@@ -1042,12 +1280,145 @@ namespace aris::dynamic {
 						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
 
 						for (Size j = 0; j < n; ++j) {
-							ui[at(j, 0, ui_t)] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+							ui[uij] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
 						}
 					}
 					else {
 						s_fill(n, 1, 0.0, ui, ui_t);
-						ui[at(i, 0, ui_t)] = 1.0;
+						auto uii = at(static_cast<Size>(p[at(0, i, p_t)]), 0, ui_t);
+						ui[uii] = 1.0;
+					}
+
+					// apply deflation
+					for (Size j = mn; j < n; ++j) {
+						if (mu[at(0, j, mu_t)] == -2) {
+						}
+						else if (mu[at(0, j, mu_t)] == -1) {
+							auto ui0 = at(static_cast<Size>(p[at(0, 0, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+
+							// type 3
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[ui0] = uia;
+							ui[uij] = uib;
+						}
+						else {
+							// type 4
+							auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
+							auto uik = at(static_cast<Size>(p[at(0, idx, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[uik] = uia;
+							ui[uij] = uib;
+						}
+					}
+
+					if (i < mn) {
+						s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
+					}
+
+					// 生成 U，基于U1 //
+					s_mc(q1_012_sz, 1, c0 * ui[at(0, 0, ui_t)], pre_out.q1_01.data(), 1, U + at(0, i, u_t), u_t);
+					s_mc(h + 1 - q1_012_sz, 1, c0 * ui[at(0, 0, ui_t)], q1, u1_t, U + at(q1_012_sz, i, u_t), u_t);
+					s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
+
+					// 生成 U，基于U2 //
+					s_mc(q2_012_sz, 1, s0 * ui[at(0, 0, ui_t)], pre_out.q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
+					s_mc(n - h - q2_012_sz, 1, s0 * ui[at(0, 0, ui_t)], q2, u2_t, U + at(h + 1 + q2_012_sz, i, u_t), u_t);
+					s_mma(n - h, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
+				}
+
+				// 生成 q //
+				s_mc(q1_012_sz, 1, -s0, pre_out.q1_01.data(), 1, pre_out.q01.data(), 1);
+
+				if (q1_012_sz == 2) {
+					pre_out.q01[2] = c0 * pre_out.q2_01[0];
+					s_mc(q2_012_sz - 1, 1, c0, pre_out.q2_01.data() + 1, 1, q + at(0, 0, u_t), u_t);
+					s_mc(n - h - q2_012_sz, 1, c0, q2, u2_t, q + at(q2_012_sz - 1, 0, u_t), u_t);
+				}
+				else {
+					s_mc(h + 1 - q1_012_sz, 1, -s0, q1, u1_t, q + at(0, 0, u_t), u_t);
+					s_mc(q2_012_sz, 1, c0, pre_out.q2_01.data(), 1, q + at(h + 1 - 3, 0, u_t), u_t);
+					s_mc(n - h - q2_012_sz, 1, c0, q2, u2_t, q + at(h + 1 + q2_012_sz - 3, 0, u_t), u_t);
+				}
+
+				// step 7：复原V1 & V2到正确位置
+				auto v_data = S + at(3, 0, s_t);
+				auto v_data_t = s_t;
+
+				// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
+				if (h == 1) {
+					v_data[at(0, 0, v_data_t)] = 1.0;
+				}
+				else if (h == 2) {
+					s_mc(1, 2, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+					v_data[at(1, 0, v_data_t)] = -v_data[at(0, 1, v_data_t)];
+					v_data[at(1, 1, v_data_t)] = v_data[at(0, 0, v_data_t)];
+				}
+				else {
+					s_mc(h / 2, h, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+					s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, v_data + at(h / 2 + 1, 0, v_data_t), v_data_t);
+					s_fill(1, pre_out.mn1, -1.0, v_data + at(h / 2, 0, v_data_t), v_data_t);
+					s_fill(1, h - pre_out.mn1, 0.0, v_data + at(h / 2, pre_out.mn1, v_data_t), v_data_t);
+					if (pre_out.mn1 == 0)v_data[at(h / 2, 0, v_data_t)] = 1.0;
+
+					for (Size i = -1; ++i < h;) {
+						s_nm(h, 1, 1.0 / s_norm(h, v_data + at(0, i, v_data_t), v_data_t), v_data + at(0, i, v_data_t), v_data_t);
+					}
+				}
+
+				// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
+				if (n - h - 1 == 1) {
+					v_data[at(0, h, v_data_t)] = 1.0;
+				}
+				else if (n - h - 1 == 2) {
+					s_mc(1, 2, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
+					v_data[at(1, h + 0, v_data_t)] = -v_data[at(0, h + 1, v_data_t)];
+					v_data[at(1, h + 1, v_data_t)] = v_data[at(0, h + 0, v_data_t)];
+				}
+				else {
+					auto k = n - h - 1;
+					s_mc(k / 2, k, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
+					s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, v_data + at(k / 2 + 1, h, v_data_t), v_data_t);
+					s_fill(1, pre_out.mn2, -1.0, v_data + at(k / 2, h, v_data_t), v_data_t);
+					s_fill(1, k - pre_out.mn2, 0.0, v_data + at(k / 2, h + pre_out.mn2, v_data_t), v_data_t);
+					if (pre_out.mn2 == 0)v_data[at(k / 2, h + pre_out.mn2, v_data_t)] = 1.0;
+
+					for (Size i = -1; ++i < k;) {
+						s_nm(k, 1, 1.0 / s_norm(k, v_data + at(0, i + h, v_data_t), v_data_t), v_data + at(0, i + h, v_data_t), v_data_t);
+					}
+				}
+
+				// 使用复原后的 V1 & V2
+				V1 = v_data;
+				V2 = v_data + at(0, h, v_data_t);
+				auto v1_t2 = v_data_t;
+				auto v2_t2 = v_data_t;
+
+				//step 8：计算V
+				// 若 n < 5，此时将p暂存至局部变量中
+				double p_tem[5];
+				if (n < 5)	s_mc(1, 5, p, p_t, p_tem, 5);
+
+				// 此时vi的位置也可能会变化
+				auto vi = n < 5 ? S + at(2, 0, s_t) : S + at(n, 0, s_t);
+				auto vi_t = T(s_t);
+
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+						for (Size j = 1; j < n; ++j) {
+							vi[at(j, 0, vi_t)] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+						}
+					}
+					else {
+						s_fill(n, 1, 0.0, vi, vi_t);
+						vi[at(i, 0, vi_t)] = 1.0;
 					}
 
 					// apply deflation
@@ -1056,24 +1427,180 @@ namespace aris::dynamic {
 						}
 						else if (mu[at(0, j, mu_t)] == -1) {
 							// type 3
-							auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] - std::sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
-							auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] + std::cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
-							ui[at(0, 0, ui_t)] = uia;
-							ui[at(j, 0, ui_t)] = uib;
 						}
 						else {
 							// type 4
-							auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
-
-							auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] - std::sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
-							auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] + std::cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
-							ui[at(idx, 0, ui_t)] = uia;
-							ui[at(j, 0, ui_t)] = uib;
+							auto via = std::cos(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] - std::sin(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							auto vib = std::sin(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] + std::cos(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
+							vi[at(j, 0, vi_t)] = vib;
 						}
 					}
 
 					// apply permutation
-					s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), ui, ui_t);
+					if (n < 5)
+						s_permutate_inv(n, 1, RowIterator<Size>(p_tem, 5), vi, vi_t);
+					else
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
+
+					// 左乘V1 V2
+					s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
+					s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h, i, v_t), v_t);
+				}
+
+				//step 8：计算S
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						S[at(0, i, s_t)] = base + mu[at(0, i, mu_t)];
+					}
+					else {
+						S[at(0, i, s_t)] = d[at(0, i, d_t)];
+					}
+				}
+
+	#ifdef ARIS_DEBUG_DYNAMIC_SVD
+				// make U //
+				std::vector<double> _D_U((n + 1)* (n + 1));
+				s_mc(n + 1, n, U, u_t, _D_U.data(), n + 1);
+				s_mc(3, 1, pre_out.q01.data(), 1, _D_U.data() + n, n + 1);
+				s_mc(n + 1 - 3, 1, q, u_t, _D_U.data() + at(3, n, n + 1), n + 1);
+
+				// make V //
+				std::vector<double> _D_V(n* n, 0.0);
+				s_mc(n / 2, n, V, v_t, _D_V.data() + at(0, 0, n), n);
+				s_mc(n - n / 2 - 1, n, V + at(n / 2, 0, v_t), v_t, _D_V.data() + at(n / 2 + 1, 0, n), n);
+				s_fill(1, mn, -1.0, _D_V.data() + at(n / 2, 0, n), n);
+				s_fill(1, n - mn, 0.0, _D_V.data() + at(n / 2, mn, n), n);
+				if (mn == 0)_D_V.data()[at(n / 2, 0, n)] = 1.0;
+
+				for (Size i = -1; ++i < n;) {
+					s_nm(n, 1, 1.0 / s_norm(n, _D_V.data() + at(0, i, n), n), _D_V.data() + at(0, i, n), n);
+				}
+
+				// make S //
+				std::vector<double> _D_S((n + 1) * n);
+				s_fill(n + 1, n, 0.0, _D_S.data(), n);
+				for (Size i(-1); ++i < n;) {
+					_D_S.data()[at(i, i, n)] = S[at(0, i, s_t)];
+				}
+
+				std::vector<double> _D_Result((n + 1)* n), _D_Tem((n + 1)* n);
+				s_mm(n + 1, n, n + 1, _D_U.data(), _D_S.data(), _D_Tem.data());
+				s_mm(n + 1, n, n, _D_Tem.data(), n, _D_V.data(), T(n), _D_Result.data(), n);
+
+				std::vector<double> _D_result_compare((n + 1)*n, 0.0);
+				for (Size i(-1); ++i < n;) {
+					_D_result_compare[at(i, i, n)] = _D_list.back().S[at(0, i, n)];
+					_D_result_compare[at(i + 1, i, n)] = _D_list.back().S[at(1, i, n)];
+				}
+
+				if (!s_is_equal(n + 1, n, _D_Result.data(), _D_result_compare.data(), 1e-10)) {
+					std::cout << "debug error:" << std::endl;
+					std::cout << "debug level:" << _D_list.back().level << "  num:" << _D_list.back().num << std::endl;
+
+					std::cout << "dvc U:" << std::endl;
+					dsp(n + 1, n + 1, _D_U.data());
+					std::cout << "dvc S:" << std::endl;
+					dsp(n + 1, n, _D_S.data());
+					std::cout << "dvc V:" << std::endl;
+					dsp(n, n, _D_V.data());
+
+					std::cout << "dvc result:" << std::endl;
+					dsp(n + 1, n, _D_Result.data());
+
+					std::cout << "dvc result should be:" << std::endl;
+					dsp(n + 1, n, _D_result_compare.data());
+
+					std::exit(0);
+				}
+
+				_D_list.pop_back();
+				if (!_D_list.empty())_D_list.back().num = 1;
+	#endif
+			}
+			else {
+				auto h = n / 2;
+				auto U1 = V + at(0, 0, v_t);
+				auto u1_t = v_t;
+				auto S1 = S + at(0, 0, s_t);
+				auto s1_t = s_t;
+				auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+				auto v1_t = v_t;
+				auto U2 = V + at(h - 1, h, v_t);
+				auto u2_t = v_t;
+				auto S2 = S + at(0, h + 1, s_t);
+				auto s2_t = s_t;
+				auto V2 = V + at(h + 1, 0, v_t);
+				auto v2_t = v_t;
+
+				auto q1 = V + (h == n - h ? at(h + 1, h - 1, v_t) : at(0, h, v_t));
+				auto q2 = U2 + at(0, n - h - 1, u2_t);
+
+				auto q1_01 = pre_out.q1_01;
+				auto q2_01 = pre_out.q2_01;
+				auto c0 = pre_out.c0;
+				auto s0 = pre_out.s0;
+				auto mn = pre_out.mn;
+				auto dn = pre_out.dn;
+
+				auto d = S;
+				auto d_t = s_t;
+				auto z = S + at(1, 0, s_t);
+				auto z_t = s_t;
+				auto mu = V + at(n - 1, 0, v_t);
+				auto mu_t = v_t;
+				auto p = S + at(2, 0, s_t);
+				auto p_t = s_t;
+
+				//STEP 3：计算U
+				auto ui = S + at(3, 0, s_t);
+				auto ui_t = T(s_t);
+
+				auto q1_012_sz = std::min(h + 1, Size(3));
+				auto q2_012_sz = std::min(n - h, Size(3));
+
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+						for (Size j = 0; j < n; ++j) {
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+							ui[uij] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+						}
+					}
+					else {
+						s_fill(n, 1, 0.0, ui, ui_t);
+						auto uii = at(static_cast<Size>(p[at(0, i, p_t)]), 0, ui_t);
+						ui[uii] = 1.0;
+					}
+
+					// apply deflation
+					for (Size j = mn; j < n; ++j) {
+						if (mu[at(0, j, mu_t)] == -2) {
+						}
+						else if (mu[at(0, j, mu_t)] == -1) {
+							auto ui0 = at(static_cast<Size>(p[at(0, 0, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+							
+							// type 3
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[ui0] = uia;
+							ui[uij] = uib;
+						}
+						else {
+							// type 4
+							auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
+							auto uik = at(static_cast<Size>(p[at(0, idx, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[uik] = uia;
+							ui[uij] = uib;
+						}
+					}
 
 					if (i < mn) {
 						s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
@@ -1153,7 +1680,7 @@ namespace aris::dynamic {
 
 				// 使用复原后的 V1 & V2
 				V1 = v_data;
-				V2 = v_data + h;
+				V2 = v_data + at(0, h, v_data_t);
 				auto v1_t2 = v_data_t;
 				auto v2_t2 = v_data_t;
 
@@ -1256,8 +1783,7 @@ namespace aris::dynamic {
 				if (!s_is_equal(n + 1, n, _D_Result.data(), _D_result_compare.data(), 1e-10)) {
 					std::cout << "debug error:" << std::endl;
 					std::cout << "debug level:"<<_D_list.back().level << "  num:"<< _D_list.back().num << std::endl;
-					
-					
+
 					std::cout << "dvc U:" << std::endl;
 					dsp(n + 1, n + 1, _D_U.data());
 					std::cout << "dvc S:" << std::endl;
@@ -1270,6 +1796,8 @@ namespace aris::dynamic {
 
 					std::cout << "dvc result should be:" << std::endl;
 					dsp(n + 1, n, _D_result_compare.data());
+
+					std::exit(0);
 				}
 
 				_D_list.pop_back();
@@ -1281,112 +1809,9 @@ namespace aris::dynamic {
 		};
 
 		//////////////////////////////////////////////////////////// PART 3: 首次调用 /////////////////////////////////////////
-		if (n == 1) {
-			if (m == 1) {
-				U[at(0, 0, u_t)] = 1;
-				V[at(0, 0, v_t)] = 1;
-			}
-			else {
-				auto a1 = S[at(0, 0, s_t)];
-				auto a2 = S[at(1, 0, s_t)];
-
-				auto theta = std::atan2(a2, a1);
-
-				// U //
-				s_eye(m, U, u_t);
-
-				U[at(0, 0, u_t)] = std::cos(theta);
-				U[at(0, 1, u_t)] = -std::sin(theta);
-				U[at(1, 0, u_t)] = std::sin(theta);
-				U[at(1, 1, u_t)] = std::cos(theta);
-
-				// 对U进行反 householder 变换 //
-				s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
-
-				// V //
-				V[at(0, 0, v_t)] = 1.0;
-
-				// S //
-				s_fill(m, n, 0.0, S, s_t);
-				S[at(0, 0, s_t)] = std::sqrt(a1 * a1 + a2 * a2);
-			}
-		}
-		else if (n == 2) {
-			auto theta1 = std::atan2(S[at(1, 0, s_t)], S[at(0, 0, s_t)]);
-			auto c1 = std::cos(theta1);
-			auto s1 = std::sin(theta1);
-
-			auto theta2 = std::atan2(S[at(1, 1, s_t)], c1 * S[at(0, 1, s_t)]);
-			auto c2 = std::cos(theta2);
-			auto s2 = std::sin(theta2);
-
-			auto a = c1 * S[at(0, 0, s_t)] + s1 * S[at(1, 0, s_t)];
-			auto b = s1 * S[at(0, 1, s_t)];
-			auto d = c2 * c1 * S[at(0, 1, s_t)] + s2 * S[at(1, 1, s_t)];
-
-			auto theta3 = 0.5 * std::atan2(2 * b * d, a * a + b * b - d * d);
-			auto c3 = std::cos(theta3);
-			auto s3 = std::sin(theta3);
-
-			auto S1 = a * a + b * b + d * d;
-			auto S2 = std::sqrt((a * a + b * b - d * d) * (a * a + b * b - d * d) + 4 * b * b * d * d);
-
-			auto phi = 0.5 * std::atan2(2 * a * b, a * a - b * b - d * d);
-			auto c_p = std::cos(phi);
-			auto s_p = std::sin(phi);
-			auto s11 = (a * c3) * c_p + (b * c3 + d * s3) * s_p;
-			auto s22 = (a * s3) * s_p + (-b * s3 + d * c3) * c_p;
-
-			// U //
-			if (m == 2) {
-				// U //
-				U[at(0, 0, u_t)] = s_sgn2(s11) * (c1 * c3 - c2 * s1 * s3);
-				U[at(0, 1, u_t)] = s_sgn2(s22) * (-c1 * s3 - c2 * c3 * s1);
-				U[at(1, 0, u_t)] = s_sgn2(s11) * (c3 * s1 + c1 * c2 * s3);
-				U[at(1, 1, u_t)] = s_sgn2(s22) * (c1 * c2 * c3 - s1 * s3);
-			}
-			else {
-				// U //
-				s_eye(m, U, u_t);
-
-				U[at(0, 0, u_t)] = s_sgn2(s11) * (c1 * c3 - c2 * s1 * s3);
-				U[at(0, 1, u_t)] = s_sgn2(s22) * (-c1 * s3 - c2 * c3 * s1);
-				U[at(0, 2, u_t)] = s1 * s2;
-				U[at(1, 0, u_t)] = s_sgn2(s11) * (c3 * s1 + c1 * c2 * s3);
-				U[at(1, 1, u_t)] = s_sgn2(s22) * (c1 * c2 * c3 - s1 * s3);
-				U[at(1, 2, u_t)] = (-c1 * s2);
-				U[at(2, 0, u_t)] = s_sgn2(s11) * s2 * s3;
-				U[at(2, 1, u_t)] = s_sgn2(s22) * c3 * s2;
-				U[at(2, 2, u_t)] = c2;
-			}
-
-			// 对U进行反 householder 变换 //
-			s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
-
-			// V //
-			V[at(0, 0, v_t)] = c_p;
-			V[at(0, 1, v_t)] = -s_p;
-			V[at(1, 0, v_t)] = s_p;
-			V[at(1, 1, v_t)] = c_p;
-			
-			// 对V进行反 householder 变换 //
-			if (m == n) {
-				double q[2]{ 0.0,0.0 };
-				q[1] = householder_vec_n;
-				s_householder_u_q_dot(2, 1, n, q, 1, V + at(m - 2, 0, v_t), v_t, V + at(m - 2, 0, v_t), v_t);
-				s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
-			}
-			else {
-				s_householder_u_q_dot(n, n, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
-			}
-
-			// S // 
-			s_fill(m, n, 0.0, S, s_t);
-			S[at(0, 0, s_t)] = std::sqrt((S1 + S2) / 2);
-			S[at(1, 1, s_t)] = std::sqrt((S1 - S2) / 2);
-		}
-		else if (n > 2) {
-			s_mc(2, n, S, s_t, U, u_t);
+		const Size MAX_N = 9;
+		
+		if (n < MAX_N) {
 			auto pre_out = dvc_pre(n, U, u_t, V, v_t, dvc, dvc_pre);
 			s_mc(2, n, U, u_t, S, s_t);
 
@@ -1415,7 +1840,285 @@ namespace aris::dynamic {
 			auto z = S + at(1, 0, s_t);
 			auto z_t = s_t;
 
-			double p_when_n_less_6_[6];
+			double mu[MAX_N];
+			double p[MAX_N];
+			double ui[MAX_N];
+			double vi[MAX_N];
+			
+			// 初始化mu p
+			s_mc(1, n, U + at(2, 0, u_t), u_t, p, MAX_N);
+			s_mc(1, n, V + at(n - 1, 0, v_t), v_t, mu, MAX_N);
+
+			// STEP 1: 计算U
+			{
+				// 计算 U //
+				{
+					auto q1_012_sz = std::min(h + 1, Size(3));
+					auto q2_012_sz = std::min(n - h, Size(3));
+
+					// 计算ui所产生的U（不经过householder变换）
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 0; j < n; ++j) {
+								ui[j] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[i]) / (d[at(0, j, d_t)] + base + mu[i]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, ui);
+							ui[i] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[j] == -2) {
+							}
+							else if (mu[j] == -1) {
+								// type 3
+								auto ui0 = 0;
+								auto uij = j;
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[ui0] = uia;
+								ui[uij] = uib;
+							}
+							else {
+								// type 4
+								auto k = static_cast<Size>(mu[j]);
+								auto uik = k;
+								auto uij = j;
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[uik] = uia;
+								ui[uij] = uib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<Size>(p, MAX_N), ui, 1);
+
+						// 归一化
+						if (i < mn) {
+							s_nm(n, 1, 1.0 / s_norm(n, ui, 1), ui, 1);
+						}
+
+						// 生成 U，基于U1 //
+						s_mc(q1_012_sz, 1, c0* ui[0], pre_out.q1_01.data(), 1, U + at(0, i, u_t), u_t);
+						s_mc(h + 1 - q1_012_sz, 1, c0* ui[0], q1, u1_t, U + at(q1_012_sz, i, u_t), u_t);
+						s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + 1, 1, U + at(0, i, u_t), u_t);
+
+						// 生成 U，基于U2 //
+						if (m > n) {
+							auto ui0 = 0;
+							s_mc(q2_012_sz, 1, s0 * ui[ui0], pre_out.q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
+							s_mc(n - h - q2_012_sz, 1, s0 * ui[ui0], q2, u2_t, U + at(h + 1 + q2_012_sz, i, u_t), u_t);
+
+							s_mma(n - h, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + h + 1, 1, U + at(h + 1, i, u_t), u_t);
+						}
+						else {
+							auto minus_1 = n - h - q2_012_sz > 0 ? 0 : 1;
+							auto minus_2 = n - h - q2_012_sz > 0 ? 1 : 0;
+
+							auto ui0 = 0;
+							s_mc(q2_012_sz - minus_1, 1, s0 * ui[ui0], pre_out.q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
+							s_mc(n - h - q2_012_sz - minus_2, 1, s0 * ui[ui0], q2, u2_t, U + at(h + 1 + q2_012_sz, i, u_t), u_t);
+
+							s_mma(n - h - 1, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + h + 1, 1, U + at(h + 1, i, u_t), u_t);
+						}
+					}
+
+					// 计算q1&q2所产生的q //
+					if (m > n) {
+						s_mc(q1_012_sz, 1, -s0, pre_out.q1_01.data(), 1, q + at(0, 0, u_t), u_t);
+						s_mc(h + 1 - q1_012_sz, 1, -s0, q1, u1_t, q + at(q1_012_sz, 0, u_t), u_t);
+
+						s_mc(q2_012_sz, 1, c0, pre_out.q2_01.data(), 1, q + at(h + 1, 0, u_t), u_t);
+						s_mc(n - h - q2_012_sz, 1, c0, q2, u2_t, q + at(h + 1 + q2_012_sz, 0, u_t), u_t);
+					}
+				}
+
+				// 处理 m > n + 1时额外的方阵
+				if (m > n + 1) {
+					s_fill(m - n - 1, n + 1, 0.0, U + at(n + 1, 0, u_t), u_t);
+					s_fill(n + 1, m - n - 1, 0.0, U + at(0, n + 1, u_t), u_t);
+					s_eye(m - n - 1, U + at(n + 1, n + 1, u_t), u_t);
+				}
+
+				// 反 householder 变换 //
+				s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
+			}
+
+			// STEP 2: 计算V
+			{
+				// 根据 vi 计算
+				{
+					// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
+					double V1_new[9], V2_new[9];
+					auto v1_t_new = h;
+					auto v2_t_new = n - h - 1;
+
+					if (h == 1) {
+						V1_new[at(0, 0, 1)] = 1.0;
+					}
+					else if (h == 2) {
+						s_mc(1, 2, V1, v1_t, V1_new, 2);
+						V1_new[at(1, 0, 2)] = -V1_new[at(0, 1, 2)];
+						V1_new[at(1, 1, 2)] = V1_new[at(0, 0, 2)];
+					}
+					else if (h == 3) {
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+					else {
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+
+					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
+					if (n - h - 1 == 1) {
+						V2_new[at(0, 0, 1)] = 1.0;
+					}
+					else if (n - h - 1 == 2) {
+						s_mc(1, 2, V2, v2_t, V2_new + at(0, 0, 2), 2);
+						V2_new[at(1, 0, 2)] = -V2_new[at(0, 1, 2)];
+						V2_new[at(1, 1, 2)] = V2_new[at(0, 0, 2)];
+					}
+					else {
+						auto k = n - h - 1;
+						s_mc(k / 2, k, V2, v2_t, V2_new + at(0, 0, v2_t_new), v2_t_new);
+						s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, V2_new + at(k / 2 + 1, 0, v2_t_new), v2_t_new);
+						s_fill(1, pre_out.mn2, -1.0, V2_new + at(k / 2, 0, v2_t_new), v2_t_new);
+						s_fill(1, k - pre_out.mn2, 0.0, V2_new + at(k / 2, pre_out.mn2, v2_t_new), v2_t_new);
+						if (pre_out.mn2 == 0)V2_new[at(k / 2, pre_out.mn2, v2_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < k;) {
+							s_nm(k, 1, 1.0 / s_norm(k, V2_new + at(0, i, v2_t_new), v2_t_new), V2_new + at(0, i, v2_t_new), v2_t_new);
+						}
+					}
+
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 1; j < n; ++j) {
+								vi[j] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[i]) / (d[at(0, j, d_t)] + base + mu[i]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, vi, 1);
+							vi[i] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[j] == -2) {
+							}
+							else if (mu[j] == -1) {
+								// type 3
+							}
+							else {
+								// type 4
+								auto via = std::cos(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[j])] - std::sin(z[at(0, j, z_t)]) * vi[j];
+								auto vib = std::sin(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[j])] + std::cos(z[at(0, j, z_t)]) * vi[j];
+								vi[static_cast<Size>(mu[j])] = via;
+								vi[j] = vib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<Size>(p, MAX_N), vi, 1);
+
+
+						if (i < mn) {
+							vi[0] = -1.0;
+						}
+
+						// 左乘V1
+						s_mm(h, 1, h, V1_new, h, vi + 1, 1, V + at(0, i, v_t), v_t);
+
+						// 左乘V2
+						s_mm(n - h - 1, 1, n - h - 1, V2_new, n - h - 1, vi + h + 1, 1, V + at(h + 1, i, v_t), v_t);
+					}
+				}
+
+				// 计算第h行
+				for (Size i = 0; i < n; ++i) {
+					V[at(h, i, v_t)] = i < mn ? -1.0 : (i == 0 ? 1.0 : 0.0);
+					s_nm(n, 1, 1.0 / s_norm(n, V + at(0, i, v_t), v_t), V + at(0, i, v_t), v_t);
+				}
+
+				// 反 householder 变换 //
+				s_householder_u_q_dot(2, 1, n, householder_vec_n, 1, V + at(n - 2, 0, v_t), v_t, V + at(n - 2, 0, v_t), v_t);
+				s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
+			}
+
+			// STEP 3：计算S
+			{
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						S[at(0, i, s_t)] = base + mu[i];
+					}
+					else {
+						S[at(0, i, s_t)] = d[at(0, i, d_t)];
+					}
+				}
+
+				s_fill(m - 1, n, 0.0, S + at(1, 0, s_t), s_t);
+				for (Size i = 0; ++i < n;) {
+					S[at(i, i, s_t)] = S[at(0, i, s_t)];
+					S[at(0, i, s_t)] = 0.0;
+				}
+			}
+			
+
+		
+		}
+		else {
+			auto pre_out = dvc_pre(n, U, u_t, V, v_t, dvc, dvc_pre);
+			s_mc(2, n, U, u_t, S, s_t);
+
+			auto q = U + at(0, n, u_t);
+
+			auto h = n / 2;
+			auto U1 = V + at(0, 0, v_t);
+			auto u1_t = v_t;
+			auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+			auto v1_t = v_t;
+			auto U2 = V + at(h - 1, h, v_t);
+			auto u2_t = v_t;
+			auto V2 = V + at(h + 1, 0, v_t);
+			auto v2_t = v_t;
+
+			auto q1 = V + (h == n - h ? at(h + 1, h - 1, v_t) : at(0, h, v_t));
+			auto q2 = U2 + at(0, n - h - 1, u2_t);
+
+			auto c0 = pre_out.c0;
+			auto s0 = pre_out.s0;
+			auto mn = pre_out.mn;
+			auto dn = pre_out.dn;
+
+			auto d = S;
+			auto d_t = s_t;
+			auto z = S + at(1, 0, s_t);
+			auto z_t = s_t;
 
 			// STEP 1: 计算U
 			double r_of_right_corner[12];
@@ -1425,10 +2128,7 @@ namespace aris::dynamic {
 				auto mu_t = v_t;
 
 				// 将 p 移动到 U 的第 n 行
-				if(n > 6)
-					s_mc(1, n, U + at(2, 0, u_t), u_t, U + at(n - 2, 0, u_t), u_t);
-				else
-					s_mc(1, n, U + at(2, 0, u_t), u_t, p_when_n_less_6_, 6);
+				s_mc(1, n, U + at(2, 0, u_t), u_t, U + at(n - 2, 0, u_t), u_t);
 
 				// 根据 U1 计算 //
 				{
@@ -1476,10 +2176,7 @@ namespace aris::dynamic {
 						}
 
 						// apply permutation
-						if(n > 6)
-							s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), ui, ui_t);
-						else
-							s_permutate_inv(n, 1, RowIterator<decltype(6)>(p_when_n_less_6_, 6), ui, ui_t);
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), ui, ui_t);
 
 						if (i < mn) {
 							s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
@@ -1500,19 +2197,14 @@ namespace aris::dynamic {
 				// 根据 U2 计算 //
 				{
 					// 移动 V1 的第一行，为p腾出位置 //
-					if (n > 6) {
-						// 为 p 和 ui 腾出位置
-						s_mc(2, h, V1, v1_t, U1 + at(h - 1, 0, u1_t), u1_t);
-
-						// 移动 p 到新的位置
-						s_mc(1, n, U + at(n - 2, 0, u_t), u_t, V + at(1, 0, v_t), v_t);
-					}
+					// 为 p 和 ui 腾出位置
+					s_mc(2, h, V1, v1_t, U1 + at(h - 1, 0, u1_t), u1_t);
+					// 移动 p 到新的位置
+					s_mc(1, n, U + at(n - 2, 0, u_t), u_t, V + at(1, 0, v_t), v_t);
 
 					auto q2_012_sz = std::min(n - h, Size(3));
 
-					double ui_when_less_5_[100];
-
-					auto ui = n > 6 ? V : ui_when_less_5_;
+					auto ui = V;
 					auto ui_t = T(v_t);
 
 					// 计算U2所产生的U（不经过householder变换）
@@ -1521,17 +2213,14 @@ namespace aris::dynamic {
 							auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
 
 							for (Size j = 0; j < n; ++j) {
-								auto uij = n > 6 ? at(j, 0, ui_t) : j;
+								auto uij = at(j, 0, ui_t);
 								ui[uij] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
 							}
 						}
 						else {
-							if (n > 6)
-								s_fill(n, 1, 0.0, ui, ui_t);
-							else
-								s_fill(6, 1, 0.0, ui);
+							s_fill(n, 1, 0.0, ui, ui_t);
 
-							auto uii = n > 6 ? at(i, 0, ui_t) : i;
+							auto uii = at(i, 0, ui_t);
 							ui[uii] = 1.0;
 						}
 
@@ -1541,8 +2230,8 @@ namespace aris::dynamic {
 							}
 							else if (mu[at(0, j, mu_t)] == -1) {
 								// type 3
-								auto ui0 = n > 6 ? at(0, 0, ui_t) : 0;
-								auto uij = n > 6 ? at(j, 0, ui_t) : j;
+								auto ui0 = at(0, 0, ui_t);
+								auto uij = at(j, 0, ui_t);
 
 								auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
 								auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
@@ -1552,8 +2241,8 @@ namespace aris::dynamic {
 							else {
 								// type 4
 								auto k = static_cast<Size>(mu[at(0, j, mu_t)]);
-								auto uik = n > 6 ? at(k, 0, ui_t) : k;
-								auto uij = n > 6 ? at(j, 0, ui_t) : j;
+								auto uik = at(k, 0, ui_t);
+								auto uij = at(j, 0, ui_t);
 
 								auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
 								auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
@@ -1563,19 +2252,10 @@ namespace aris::dynamic {
 						}
 
 						// apply permutation
-						if (n > 6) {
-							s_permutate_inv(n, 1, RowIterator<decltype(v_t)>(V + at(1,0,v_t), v_t), ui, ui_t);
-						}
-						else {
-							s_permutate_inv(n, 1, RowIterator<decltype(6)>(p_when_n_less_6_, 6), ui, 1);
-						}
-						
+						s_permutate_inv(n, 1, RowIterator<decltype(v_t)>(V + at(1, 0, v_t), v_t), ui, ui_t);
 
 						if (i < mn) {
-							if(n > 6)
-								s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
-							else
-								s_nm(n, 1, 1.0 / s_norm(n, ui, 1), ui, 1);
+							s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
 						}
 
 						// 生成 U，基于U2 //
@@ -1593,15 +2273,11 @@ namespace aris::dynamic {
 							auto minus_1 = n - h - q2_012_sz > 0 ? 0 : 1;
 							auto minus_2 = n - h - q2_012_sz > 0 ? 1 : 0;
 
-							auto ui0 = n > 6 ? at(0, 0, ui_t) : 0;
+							auto ui0 = at(0, 0, ui_t);
 							s_mc(q2_012_sz - minus_1, 1, s0 * ui[ui0], pre_out.q2_01.data(), 1, U + at(h + 1, i, u_t), u_t);
 							s_mc(n - h - q2_012_sz - minus_2, 1, s0 * ui[ui0], q2, u2_t, U + at(h + 1 + q2_012_sz, i, u_t), u_t);
 
-							if (n > 6)
-								s_mma(n - h - 1, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
-							else
-								s_mma(n - h - 1, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + h + 1, 1, U + at(h + 1, i, u_t), u_t);
-							
+							s_mma(n - h - 1, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
 						}
 					}
 
@@ -1623,25 +2299,14 @@ namespace aris::dynamic {
 				s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
 
 				// 复原压缩的V1，并移动 p 和 mu //
-				if (n > 6) {
-					// 为mu和p开辟内存
-					s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner, 4);
-
-					// 为之后复原V1&V2开辟内存
-					s_mc(3, 3, S + at(n - 2 - h, h - 3, s_t), s_t, r_of_tem_memory_for_v1v2, 3);
-
-					// 移动p
-					s_mc(1, n, V + at(1, 0, v_t), v_t, S + at(n - 2, 0, s_t), s_t);
-
-					// 复原 V1
-					s_mc(2, h, U1 + at(h - 1, 0, u1_t), u1_t, V1, v1_t);
-				}
-				else {
-					// 将mu移动到S的第n行
-					r_of_right_corner[0] = S[at(n - 1, n - 2, s_t)];
-					r_of_right_corner[1] = S[at(n - 1, n - 1, s_t)];
-				}
-
+				// 为mu和p开辟内存
+				s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner, 4);
+				// 为之后复原V1&V2开辟内存
+				s_mc(3, 3, S + at(n - 2 - h, h - 3, s_t), s_t, r_of_tem_memory_for_v1v2, 3);
+				// 移动p
+				s_mc(1, n, V + at(1, 0, v_t), v_t, S + at(n - 2, 0, s_t), s_t);
+				// 复原 V1
+				s_mc(2, h, U1 + at(h - 1, 0, u1_t), u1_t, V1, v1_t);
 				// 移动 mu 到新的位置
 				s_mc(1, n, V + at(n - 1, 0, v_t), v_t, S + at(n - 1, 0, s_t), s_t);
 			}
@@ -1726,14 +2391,9 @@ namespace aris::dynamic {
 						}
 
 						// apply permutation
-						if (n > 6) {
-							auto p = S + at(n - 2, 0, s_t);
-							auto p_t = s_t;
-							s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
-						}
-						else {
-							s_permutate_inv(n, 1, RowIterator<decltype(6)>(p_when_n_less_6_, 6), vi, vi_t);
-						}
+						auto p = S + at(n - 2, 0, s_t);
+						auto p_t = s_t;
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
 
 						if (i < mn) {
 							vi[at(0, 0, vi_t)] = -1.0;
@@ -1744,10 +2404,7 @@ namespace aris::dynamic {
 						V1 = V1_new;
 						auto v1_t2 = v1_t_new;
 
-						if (h < 4)
-							s_mm(h, 1, h, V1_data_when_n_less_8_, h, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
-						else
-							s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
+						s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
 					}
 				}
 
@@ -1780,9 +2437,7 @@ namespace aris::dynamic {
 						}
 					}
 
-					
-
-					auto vi = V + at(h,0,v_t);
+					auto vi = V + at(h, 0, v_t);
 					auto vi_t = T(v_t);
 					for (Size i = 0; i < n; ++i) {
 						if (i < mn) {
@@ -1814,14 +2469,9 @@ namespace aris::dynamic {
 						}
 
 						// apply permutation
-						if (n > 6) {
-							auto p = S + at(n - 2, 0, s_t);
-							auto p_t = s_t;
-							s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
-						}
-						else {
-							s_permutate_inv(n, 1, RowIterator<decltype(6)>(p_when_n_less_6_, 6), vi, vi_t);
-						}
+						auto p = S + at(n - 2, 0, s_t);
+						auto p_t = s_t;
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
 
 						if (i < mn) {
 							vi[at(0, 0, vi_t)] = -1.0;
@@ -1830,16 +2480,7 @@ namespace aris::dynamic {
 						// 左乘V2
 						V2 = V2_new;
 						auto v2_t2 = v2_t_new;
-
-						if (n - h - 1 < 3)
-							s_mm(n - h - 1, 1, n - h - 1, V1_data_when_n_less_8_, n - h - 1, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
-						else
-							s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
-
-
-
-						
-						V[at(h, i, v_t)] = vi[at(0, 0, vi_t)];
+						s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
 					}
 				}
 
@@ -1851,41 +2492,18 @@ namespace aris::dynamic {
 
 				// 复原householders //
 				double r_of_right_corner_2[12];
-				if (n > 6) {
-					s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner_2, 4);
+				s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner_2, 4);
 					
-					s_mc(3, 4, r_of_right_corner, 4, S + at(n - 3, n - 4, s_t), s_t);
-					s_mc(3, 3, r_of_tem_memory_for_v1v2, 3, S + at(n - 2 - h, h - 3, s_t), s_t);
-				}
-				else
-				{
-					r_of_right_corner_2[0] = S[at(n - 1, n - 2, s_t)];
-					r_of_right_corner_2[1] = S[at(n - 1, n - 1, s_t)];
+				s_mc(3, 4, r_of_right_corner, 4, S + at(n - 3, n - 4, s_t), s_t);
+				s_mc(3, 3, r_of_tem_memory_for_v1v2, 3, S + at(n - 2 - h, h - 3, s_t), s_t);
 
-					S[at(n - 1, n - 2, s_t)] = r_of_right_corner[0];
-					S[at(n - 1, n - 1, s_t)] = r_of_right_corner[1];
-				}
 
 				// 反 householder 变换 //
-				if (m == n && n > 1) {
-					double q[2]{ 0.0,0.0 };
-					q[1] = householder_vec_n;
-					s_householder_u_q_dot(2, 1, n, q, 1, V + at(m - 2, 0, v_t), v_t, V + at(m - 2, 0, v_t), v_t);
-					s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
-				}
-				else {
-					s_householder_u_q_dot(n, n, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
-				}
+				s_householder_u_q_dot(2, 1, n, householder_vec_n, 1, V + at(n - 2, 0, v_t), v_t, V + at(n - 2, 0, v_t), v_t);
+				s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
 
 				// 复原 mu //
-				if (n > 6) {
-					s_mc(3, 4, r_of_right_corner_2, 4, S + at(n - 3, n - 4, s_t), s_t);
-				}
-				else
-				{
-					S[at(n - 1, n - 2, s_t)] = r_of_right_corner_2[0];
-					S[at(n - 1, n - 1, s_t)] = r_of_right_corner_2[1];
-				}
+				s_mc(3, 4, r_of_right_corner_2, 4, S + at(n - 3, n - 4, s_t), s_t);
 			}
 
 			// STEP 3：计算S
@@ -1910,11 +2528,1999 @@ namespace aris::dynamic {
 		}
 
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
-		std::cout << "debug svd end" << std::endl;
+		// should check result
 #endif
 	}
+	*/
 	//auto inline s_svd(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_svd(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
 
+	template<typename AType, typename UType, typename SType, typename VType>
+	auto inline s_svd(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *S, SType s_t, double *V, VType v_t, double zero_check = 1e-10)noexcept->void {
+		////////////////////////////////////////////// PART 1: householder变换 /////////////////////////////////
+		// 对A做两次 householder 变换：
+		// 其中 [ r ] 是第一次的 householder 向量
+		// 此外 [ l ] 是第二次的 householder 向量
+		//
+		// CASE 1: 当 m = n 时
+		//
+		// 此时A变为：
+		// [ *  r1 r1 ...  r1   r1   r1  ]
+		// | *  *  r2 ...  r2   r2   r2  |
+		// | l1 *  *  ...  r3   r3   r3  |
+		// | l1 l2 *  ...           ..   |
+		// | ..       ...  *   rn-2 rn-2 |
+		// | .. ..    ...  *    *   rn-1 |
+		// [ l1 l2    ... ln-2  *    *   ]
+		//
+		// 以上共计 n-1 次变换1，n-2次变换2
+		//
+		// 最终将其变成：
+		//
+		// [ *  *  *  ... *    ]
+		// | *  *  *  ... 0    |
+		// | l1 r1 r1 ... r1   |
+		// | .. l2 r2 ... r2   |
+		// | .. ..    ...      |
+		// [ l1 l2    ... rn-2 ]
+		// 同时还需额外一个变量存储rn-1
+		//
+		// CASE 2: 当 m = n + 1 时
+		//
+		// 此时A变为：
+		// [ *  r1 r1 ...  r1   r1   r1  ]
+		// | *  *  r2 ...  r2   r2   r2  |
+		// | l1 *  *  ...  r3   r3   r3  |
+		// | l1 l2 *  ...           ..   |
+		// | ..       ...  *   rn-2 rn-2 |
+		// | .. ..    ...  *    *   rn-1 |
+		// | l1 l2    ... ln-2  *    *   |
+		// [ l1 l2    ... ln-2 ln-1  *   ]
+		//
+		// 以上共计 n-1 次变换1，n-1次变换2
+		//
+		// 最终将其变成：
+		//
+		// [ *  *  *  ... *    ]
+		// | *  *  *  ... *    |
+		// | l1 r1 r1 ... r1   |
+		// | .. l2 r2 ... r2   |
+		// | .. ..    ...      |
+		// [ l1 l2    ... rn-1 ]
+		//
+		// CASE 3: 当 m > n + 1 时
+		//
+		// 此时A变为：
+		// [ *  r1 r1 ...  r1   r1   r1  ]
+		// | *  *  r2 ...  r2   r2   r2  |
+		// | l1 *  *  ...  r3   r3   r3  |
+		// | l1 l2 *  ...           ..   |
+		// | ..       ...  *   rn-2 rn-2 |
+		// | .. ..    ...  *    *   rn-1 |
+		// | l1 l2    ... ln-2  *    *   |
+		// | l1 l2    ... ln-2 ln-1  *   |
+		// [ l1 l2    ... ln-2 ln-1  ln  ]
+		//
+		// 以上共计 n-1 次变换1，n次变换2
+		//
+		// 最终将其变成：
+		//
+		// [ *  *  *  ... *    ]
+		// | *  *  *  ... *    |
+		// | l1 r1 r1 ... r1   |
+		// | .. l2 r2 ... r2   |
+		// | .. ..    ...      |
+		// | l1 l2    ... rn-1 |
+		// [ l1 l2    ... ln   ]
+
+		////////////////////////////////////////////// PART 2: devide and conquer /////////////////////////////////
+		// 迭代
+		// [U S V] = dvc(A)
+		// S&A: n+1 x n
+		// U  : n+1 x n+1
+		// V  :   n x n
+		// S 和 A 位于同一片内存
+		//
+		// A 为 双对角矩阵：
+		// [ *         ]
+		// | * *       |
+		// |   * *     |
+		// |     * *   |
+		// |       * * |
+		// [         * ]
+		//
+		// 但是在内存中储存为，记做：
+		// [ * *  ... * ]
+		// | * *  ... * |
+		// |            |
+		// [            ]
+		//
+		//  STEP 1：递归调用
+		//  h = n/2, n为偶数；或 (n-1)/2, n为奇数
+		// 	[U1 S1 V1] = dvc(A(   1:h+1 , 1:h   ));
+		//  [U2 S2 V2] = dvc(A( h+2:n+1 , h+2:n ));
+		//
+		//  各矩阵维度：  U1:h+1 x h+1    S1:h+1 x h        V1:    h x h
+		//                U2:n-h x n-h    S2:n-h x n-h-1    V2:n-h-1 x n-h-1
+		//
+		//  【【注意】】：以上求值顺序不可改变，因后续计算中，需要压缩 V 来省内存空间，因此U2，V2的计算会覆盖V1的最后一行。
+		//  【【注意】】：所有返回的V，为了存储紧凑，均存成n-1 x n 维，因为vi中的首个元素均为-1
+		//
+		//  调用前的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ EMPTY ]
+		//	--------------------------------------------
+		//	S：
+		//	      h   1   n-h-1
+		//	2   [ A1  ek  A2   ]
+		//	n-1 [ EMPTY....... ]
+		//	--------------------------------------------
+		//	V:
+		//	[ empty ]
+		//	--------------------------------------------
+		//
+		//
+		//  调用后的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ EMPTY ]
+		//	--------------------------------------------
+		//	S：
+		//  1  [ d1       d2 ]
+		//  2  | ...empty... |
+		// n+1 [ ...empty... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：  此时 mU1 == mU2 (h+1 == n-h)，此时用额外的3维向量存储 q1 的突出部
+		//           1      h   h+1    h+2    n
+		//                      q1
+		//                      q1
+		//      1  [ u1 ... u1  q1     v1 ... v1 ]
+		//         | .  ... .   .      v1 ... v1 |
+		//         | u1 ... u1  q1     v1 ... v1 |
+		//      h  | u1  ...u1  u2     u2 ... q2 |
+		//     h+1 | u1 ... u1  u2     u2 ... q2 |
+		//     h+2 | v2 ... v2  .      .  ... .  |
+		//         | .  ... .   .      .  ... .  |
+		//     n-1 | v2 ... v2  u2     .  ... q2 |
+		//      n  [ ......   empty  ........    ]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h      h+1    h+2    n-1 n
+		//      1  [ u1 ... u1   u1     v1     v1 ... v1  v1]
+		//         | .  ... .    .      .      .  ... .   . |
+		//     h-1 | .  ... .    u1&q1  v1     v1 ... v1  v1|
+		//      h  | .  ... .    u1&q1  u2     u2 ... u2  q2|
+		//     h+1 | u1 ... u1   u1&q1  u2     u2 ... u2  q2|
+		//     h+2 | v2 ... v2   q1     u2     .  ... .   . |
+		//         | .  ... .    .      .      .  ... .   . |
+		//     n-1 [ v2 ... v2   q1     u2     u2 ... u2  q2]
+		//      n  [ .................empty.................]
+		//
+		// STEP 2：构造  d  z  mu  p
+		//
+		// 其中：
+		// d 和 z 构成了 M：
+		// [ z1            ]
+		// | z2  d2        |
+		// | ...    ...    |
+		// [ zn         dn ]
+		//
+		// 以上内存分别存储于不同的地方，因此调用后的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ EMPTY ]
+		//	--------------------------------------------
+		//	S：
+		//  1  [ ...  d  ... ]
+		//  2  | ...  z  ... |
+		//  3  | ...  p  ... |
+		// n+1 [ ...empty... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：  此时 mU1 == mU2 (h+1 == n-h)，此时用额外的3维向量存储 q1 的突出部
+		//
+		//           1      h   h+1    h+2    n
+		//                      q1
+		//                      q1
+		//      1  [ u1 ... u1  q1     v1 ... v1 ]
+		//         | .  ... .   .      v1 ... v1 |
+		//         | u1 ... u1  q1     v1 ... v1 |
+		//      h  | u1  ...u1  u2     u2 ... q2 |
+		//     h+1 | u1 ... u1  u2     u2 ... q2 |
+		//     h+2 | v2 ... v2  .      .  ... .  |
+		//         | .  ... .   .      .  ... .  |
+		//     n-1 | v2 ... v2  u2     .  ... q2 |
+		//      n  [ .............mu.............]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h      h+1    h+2    n-1 n
+		//      1  [ u1 ... u1   u1     v1     v1 ... v1  v1]
+		//         | .  ... .    .      .      .  ... .   . |
+		//     h-1 | .  ... .    u1&q1  v1     v1 ... v1  v1|
+		//      h  | .  ... .    u1&q1  u2     u2 ... u2  q2|
+		//     h+1 | u1 ... u1   u1&q1  u2     u2 ... u2  q2|
+		//     h+2 | v2 ... v2   q1     u2     .  ... .   . |
+		//         | .  ... .    .      .      .  ... .   . |
+		//     n-1 [ v2 ... v2   q1     u2     u2 ... u2  q2]
+		//      n  [ ...................mu..................]
+		//
+		// STEP 3：构造 U
+		//
+		// 在该步中，ui存于S的第4行处(因 n+1>=4)
+		//
+		//  调用后的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ full of U ]
+		//	--------------------------------------------
+		//	S：
+		//  1  [ ...  d  ... ]
+		//  2  | ...  z  ... |
+		//  3  | ...  p  ... |
+		//  4  | ...  ui ... |
+		// n+1 [ ...empty... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：  此时 mU1 == mU2 (h+1 == n-h)，此时用额外的3维向量存储 q1 的突出部
+		//
+		//           1      h   h+1  h+2    n
+		//      1  [ .....empty..... v1 ... v1 ]
+		//         | .....empty..... v1 ... v1 |
+		//         | .....empty..... v1 ... v1 |
+		//      h  | .....empty.........empty..|
+		//     h+1 | .....empty.........empty..|
+		//     h+2 | v2 ... v2 .........empty..|
+		//         | .  ... .  .........empty..|
+		//     n-1 | v2 ... v2 .........empty..|
+		//      n  [ ..........mu..............]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h   h+1 h+2    n-1 n
+		//      1  [ .....empty..... v1  v1 ... v1  v1]
+		//         | .....empty..... .   .  ... .   . |
+		//     h-1 | .....empty..... v1  v1 ... v1  v1|
+		//      h  | .....empty..........empty........|
+		//     h+1 | .....empty..........empty........|
+		//     h+2 | v2 ... v2 ..........empty........|
+		//         | .  ... .  ..........empty........|
+		//     n-1 | v2 ... v2 ..........empty........|
+		//      n  [ ...............mu................]
+		//
+		//
+		//
+		// STEP 4：构造 V
+		//
+		// 在该步中，vi可能存于p处，或S的最后一行处
+		//
+		// vi位置：
+		//	--------------------------------------------
+		//	S：
+		//    n >= 5 时：
+		//
+		//  1  [ ...  d  ... ]
+		//  2  | ...  z  ... |
+		//  3  | ...  p  ... |
+		// 4.. | V1       V2 |
+		// n+1 [ ...  vi ... ]
+		//    n < 5 时：(p存于其他地方)
+		//
+		//  1  [ ...  d  ... ]
+		//  2  | ...  z  ... |
+		//  3  | ...  vi ... |
+		// 4.. | V1       V2 |
+		//	--------------------------------------------
+		//
+		//
+		//  调用后的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ full of U ]
+		//	--------------------------------------------
+		//	S：
+		//
+		//  1  [ ...  d  ... ]
+		//  2  | ...  z  ... |
+		//  3  | ...  p  ... |
+		//  4  | ...  ui ... |
+		// n+1 [ ...empty... ]
+		//	--------------------------------------------
+		//
+		//	V：
+		//   1:n-1 [ compressed V ]
+		//      n  [ ....mu.......]
+		//
+		// STEP 5：构造 S
+		//
+		//  调用后的内存布局：
+		//  --------------------------------------------
+		//	U：
+		//	[ full of U ]
+		//	--------------------------------------------
+		//	S：
+		//
+		//  1     [ ...  d  ... ]
+		//  2:n+1 [ ...empty... ]
+		//	--------------------------------------------
+		//
+		//	V：
+		//   1:n-1 [ compressed V ]
+		//      n  [ ...empty.....]
+
+		////////////////////////////////////////////// PART 3: 首次调用 /////////////////////////////////
+		//  首次经过dvc调用后，整体的内存布局如下：
+		//  --------------------------------------------
+		//	U：
+		//	1:n-1 [ EMPTY ]
+		//  n     [...p...]
+		//  n+1:m [ EMPTY ]
+		//	--------------------------------------------
+		//	S：
+		//	1   [ ......d....... ]
+		//	2   | ......z....... |
+		//	n-1 [ househoders... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：  此时 mU1 == mU2 (h+1 == n-h)，此时用额外的3维向量存储 q1 的突出部
+		//           1      h   h+1    h+2    n
+		//                      q1
+		//                      q1
+		//      1  [ u1 ... u1  q1     v1 ... v1 ]
+		//         | .  ... .   .      v1 ... v1 |
+		//         | u1 ... u1  q1     v1 ... v1 |
+		//      h  | u1  ...u1  u2     u2 ... q2 |
+		//     h+1 | u1 ... u1  u2     u2 ... q2 |
+		//     h+2 | v2 ... v2  .      .  ... .  |
+		//         | .  ... .   .      .  ... .  |
+		//     n-1 | v2 ... v2  u2     .  ... q2 |
+		//      n  [ .........mu.................]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h      h+1    h+2    n-1 n
+		//      1  [ u1 ... u1   u1     v1     v1 ... v1  v1 ]
+		//         | .  ... .    .      .      .  ... .   .  |
+		//     h-1 | .  ... .    u1&q1  v1     v1 ... v1  v1 |
+		//      h  | .  ... .    u1&q1  u2     u2 ... u2  q2 |
+		//     h+1 | u1 ... u1   u1&q1  u2     u2 ... u2  q2 |
+		//     h+2 | v2 ... v2   q1     u2     .  ... .   .  |
+		//         | .  ... .    .      .      .  ... .   .  |
+		//     n-1 | v2 ... v2   q1     u2     u2 ... u2  q2 |
+		//      n  [ ..................mu....................]
+		//
+		//  STEP 1:计算U
+		//  若 n > 6 时，先计算U1所产生的 U（不做householder变换），此后将此时内存变化如下：
+		//  --------------------------------------------
+		//	U：
+		//	1    [ u ... u ]
+		//  ...  |         |
+		//  h+1  | u ... u |
+		//  ...  | .empty. |
+		//  n    | .empty. |
+		//  ...  | .empty. |
+		//  m    [ .empty. ]
+		//	--------------------------------------------
+		//	S：
+		//	1   [ ......d....... ]
+		//	2   | ......z....... |
+		//	n-1 [ househoders... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：  此时 mU1 == mU2 (h+1 == n-h)
+		//           1      h   h+1    h+2    n
+		//      1  [ ...........ui.............. ]
+		//      2  | ...........p............... |
+		//         | ....EMPTY....     v1 ... v1 |
+		//      h  | v1 ... v1  u2     u2 ... q2 |
+		//     h+1 | v1 ... v1  u2     u2 ... q2 |
+		//     h+2 | v2 ... v2  .      .  ... .  |
+		//         | .  ... .   .      .  ... .  |
+		//     n-1 | v2 ... v2  u2     .  ... q2 |
+		//      n  [ .........mu.................]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h   h+1    h+2    n-1 n
+		//      1  [ ...........ui....................... ]
+		//      2  | ...........p........................ |
+		//         | ....EMPTY....   v1     v1 ... v1  v1 |
+		//     h-1 | ....EMPTY....   v1     v1 ... v1  v1 |
+		//      h  | v1 ... v1   v1  u2     u2 ... u2  q2 |
+		//     h+1 | v1 ... v1   v1  u2     u2 ... u2  q2 |
+		//     h+2 | v2 ... v2       u2     .  ... .   .  |
+		//         | .  ... .        .      .  ... .   .  |
+		//     n-1 | v2 ... v2       u2     u2 ... u2  q2 |
+		//      n  [ ..................mu.................]
+		//
+		//  再计算U2产生的矩阵，并进行反householder变换，结果如下：
+		//
+		//  --------------------------------------------
+		//	U：
+		//	    [ full of U ]
+		//	--------------------------------------------
+		//	S：
+		//	1   [ .......d....... ]
+		//	2   | .......z....... |
+		//	3   | *  r  ......... |
+		//	4   | *  *  r  ...... |
+		//	... | .......p....... |
+		//	n   | ......mu....... |    // 右下角用r_corner 来临时保存，为3 x 4 的矩阵
+		//  ... [ ............... ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：
+		//           1      h   h+1    h+2    n
+		//      1  [ .....EMPTY.....   v1 ... v1 ]
+		//         | .....EMPTY.....   v1 ... v1 |
+		//         | .....EMPTY.....   v1 ... v1 |
+		//      h  | .....EMPTY..........EMPTY.. |
+		//     h+1 | .....EMPTY..........EMPTY.. |
+		//     h+2 | v2 ... v2  .........EMPTY.. |
+		//         | .  ... .   .........EMPTY.. |
+		//     n-1 | v2 ... v2  .........EMPTY.. |
+		//      n  [ .....EMPTY..........EMPTY.. ]
+		//
+		//    n 为偶数时：  此时 mU1 == mU2+1 (h+1 == n-h + 1)
+		//           1      h-1  h      h+1    h+2    n-1 n
+		//      1  [ .....EMPTY.....    v1     v1 ... v1  v1 ]
+		//         | .....EMPTY.....    .      .  ... .   .  |
+		//     h-1 | .....EMPTY.....    v1     v1 ... v1  v1 |
+		//      h  | .....EMPTY..............EMPTY.......... |
+		//     h+1 | .....EMPTY..............EMPTY.......... |
+		//     h+2 | v2 ... v2   ............EMPTY.......... |
+		//         | .  ... .    ............EMPTY.......... |
+		//     n-1 | v2 ... v2   ............EMPTY.......... |
+		//      n  [ .....EMPTY..............EMPTY.......... ]
+		//
+		//
+		//  STEP 2:计算V
+		//  若 n > 6 时，先计算V1所产生的 V（不做householder变换），此后将此时内存变化如下：
+		//  --------------------------------------------
+		//	U：
+		//	    [ full of U ]
+		//	--------------------------------------------
+		//	S：
+		//          1  2  3 ... h
+		//	1     [ .......d.......... ]
+		//	2     | .......z.......... |
+		//	3     | *  r  ............ |
+		//	4     | *  *  r  ......... |
+		//  ...   |                    |
+		//  n-1-h | v1 ........ v1 r   |    // 右上方需要保存起点为 n-1-h, h-3 的 3x3 的矩阵
+		//  ...   |                    |
+		//  n-2   | v1 ........ v1 r   |
+		//	n-1   | .......p.......... |
+		//	n     | ......mu.......... |    // 右下角用r_corner 来临时保存，为3 x 4 的矩阵
+		//  ...   [ .................. ]
+		//	--------------------------------------------
+		//	V：
+		//    n 为奇数时：
+		//           1    n-h-1              n
+		//      1  [ .....EMPTY..........EMPTY.. ]
+		//         | .....EMPTY..........EMPTY.. |
+		//     h+1 | .....EMPTY..........EMPTY.. |
+		//     h+2 | v2 ... v2  .........EMPTY.. |
+		//         | .  ... .   .........EMPTY.. |
+		//     n-1 | v2 ... v2  .........EMPTY.. |
+		//      n  [ .....EMPTY..........EMPTY.. ]
+		//
+		//
+		//
+
+		// check size //
+		if (m == 0 || n == 0) return;
+
+		// check m > n
+		if (n > m) {
+			s_svd(n, m, A, T(a_t), V, v_t, S, T(s_t), U, u_t);
+			return;
+		}
+
+		// n == 1 //
+		if (n == 1) {
+			s_mc(m, n, A, a_t, S, s_t);
+
+			if (m == 1) {
+				U[at(0, 0, u_t)] = 1;
+				V[at(0, 0, v_t)] = s_sgn2(S[at(0, 0, s_t)]);
+				S[at(0, 0, s_t)] = s_sgn2(S[at(0, 0, s_t)]) * S[at(0, 0, s_t)];
+			}
+			else {
+				// householder 变换 //
+				double rho = -s_sgn2(S[at(0, 0, s_t)]) * std::sqrt(s_vv(m, S + at(0, 0, s_t), s_t, S + at(0, 0, s_t), s_t));
+				s_nm(m - 1, 1, std::abs(rho) > zero_check ? 1.0 / (S[at(0, 0, s_t)] - rho) : 0.0, S + at(1, 0, s_t), s_t);
+
+				// U //
+				s_eye(m, U, u_t);
+				s_householder_u_q_dot(m, n, m, S + at(0, 0, s_t), s_t, U + at(0, 0, u_t), u_t, U + at(0, 0, u_t), u_t);
+
+				// V //
+				V[at(0, 0, v_t)] = s_sgn2(rho);
+
+				// S //
+				s_fill(m, n, 0.0, S, s_t);
+				S[at(0, 0, s_t)] = s_sgn2(rho) * rho;
+			}
+			return;
+		}
+
+		// n == 2 //
+		if (n == 2) {
+			s_mc(m, n, A, a_t, S, s_t);
+
+			double tau[2];
+			s_householder_ut(m, n, S, s_t, S, s_t, tau, 1);
+
+			auto a = S[at(0, 0, s_t)];
+			auto b = S[at(0, 1, s_t)];
+			auto d = S[at(1, 1, s_t)];
+
+			auto theta3 = 0.5 * std::atan2(2 * b * d, a * a + b * b - d * d);
+			auto c3 = std::cos(theta3);
+			auto s3 = std::sin(theta3);
+
+			auto S1 = a * a + b * b + d * d;
+			auto S2 = std::sqrt((a * a + b * b - d * d) * (a * a + b * b - d * d) + 4 * b * b * d * d);
+
+			auto phi = 0.5 * std::atan2(2 * a * b, a * a - b * b - d * d);
+			auto c_p = std::cos(phi);
+			auto s_p = std::sin(phi);
+			auto s11 = (a * c3) * c_p + (b * c3 + d * s3) * s_p;
+			auto s22 = (a * s3) * s_p + (-b * s3 + d * c3) * c_p;
+
+			// U //
+			s_eye(m, U, u_t);
+			U[at(0, 0, u_t)] = s_sgn2(s11) * (c3);
+			U[at(0, 1, u_t)] = s_sgn2(s22) * (-s3);
+			U[at(1, 0, u_t)] = s_sgn2(s11) * (s3);
+			U[at(1, 1, u_t)] = s_sgn2(s22) * (c3);
+
+			// 对U进行反 householder 变换 //
+			s_householder_ut_q_dot(m, n, m, S + at(0, 0, s_t), s_t, tau, 1, U + at(0, 0, u_t), u_t, U + at(0, 0, u_t), u_t);
+
+			// V //
+			V[at(0, 0, v_t)] = c_p;
+			V[at(0, 1, v_t)] = -s_p;
+			V[at(1, 0, v_t)] = s_p;
+			V[at(1, 1, v_t)] = c_p;
+
+			// S //
+			s_fill(m, n, 0.0, S, s_t);
+			S[at(0, 0, s_t)] = std::sqrt((S1 + S2) / 2);
+			S[at(1, 1, s_t)] = std::sqrt((S1 - S2) / 2);
+
+			return;
+		}
+
+		//////////////////////////////////////////////////////////// PART 1: householder 变换 /////////////////////////////////
+		s_mc(m, n, A, a_t, S, s_t);
+		for (Size i = 0; i < n; ++i) {
+			// compute householder vector 1 //
+			if (i < n - 1){
+				double rho = -s_sgn2(S[at(i, i, s_t)]) * std::sqrt(s_vv(n - i, S + at(i, i, s_t), T(s_t), S + at(i, i, s_t), T(s_t)));
+				double tau_reciprocal = std::abs(rho) > zero_check ? S[at(i, i, s_t)] / rho - 1.0 : -2.0;   // tau 的倒数，tau和论文中定义一致
+				s_nm(1, n - 1 - i, std::abs(rho) > zero_check ? 1.0 / (S[at(i, i, s_t)] - rho) : 0.0, S + at(i, i + 1, s_t), s_t);
+
+				// update matrix 1 //
+				for (Size j(i); ++j < m;) {
+					double k = tau_reciprocal * (s_vv(n - i - 1, S + at(i, i + 1, s_t), T(s_t), S + at(j, i + 1, s_t), T(s_t)) + S[at(j, i, s_t)]);
+					S[at(j, i, s_t)] += k;
+					s_ma(1, n - i - 1, k, S + at(i, i + 1, s_t), s_t, S + at(j, i + 1, s_t), s_t);
+				}
+				S[at(i, i, s_t)] = rho;
+			}
+
+			// compute householder vector 2, CASE 1 2 3 //
+			if ((n > 1 && i < n - 2) || (m == n + 1 && i < n - 1) || (m > n + 1 && i < n)) {
+				double rho = -s_sgn2(S[at(i + 1, i, s_t)]) * std::sqrt(s_vv(m - i - 1, S + at(i + 1, i, s_t), s_t, S + at(i + 1, i, s_t), s_t));
+				double tau_reciprocal = std::abs(rho) > zero_check ? S[at(i + 1, i, s_t)] / rho - 1.0 : -2.0;   // tau 的倒数，tau和论文中定义一致
+				s_nm(m - 2 - i, 1, std::abs(rho) > zero_check ? 1.0 / (S[at(i + 1, i, s_t)] - rho) : 0.0, S + at(i + 2, i, s_t), s_t);
+
+				// update matrix 2 //
+				for (Size j(i); ++j < n;) {
+					double k = tau_reciprocal * (s_vv(m - i - 2, S + at(i + 2, i, s_t), s_t, S + at(i + 2, j, s_t), s_t) + S[at(i + 1, j, s_t)]);
+					S[at(i + 1, j, s_t)] += k;
+					s_va(m - i - 2, k, S + at(i + 2, i, s_t), s_t, S + at(i + 2, j, s_t), s_t);
+				}
+				S[at(i + 1, i, s_t)] = rho;
+			}
+
+			// 用 U 来存储 d 和 z //
+			U[at(0, i, u_t)] = S[at(i, i, s_t)];
+			U[at(1, i, u_t)] = m == n && i == n - 1 ? 0.0 : S[at(i + 1, i, s_t)];
+		}
+
+		// reconstruct matrix //
+		double householder_vec_n[2]{ 0.0, S[at(n - 2, n - 1, s_t)] };
+		for (Size i(1); ++i < n;) {
+			s_mc(1, i, S + at(n - 1 - i, n - i, s_t), s_t, S + at(n + 1 - i, n - i, s_t), s_t);
+		}
+
+		//////////////////////////////////////////////////////////// PART 2: devide and conquer ///////////////////////////////
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+		struct DebugStruct {
+			int level;
+			int num;
+			Size n;
+			std::vector<double> U, S, V;
+		};
+		std::list<DebugStruct> _D_list;
+#endif
+		struct DvcPreOut {
+			Size mn;
+			double dn;
+			double q2_0, q1_e;
+			double r0, c0, s0;
+			Size mn1, mn2;
+		};
+
+		const auto dvc_pre = [
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+			&
+#else
+			&
+#endif
+		](Size n, double* S, auto s_t, double* V, auto v_t, double* q, auto q_t, const auto& dvc, const auto& dvc_pre)->DvcPreOut
+		{
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+			DebugStruct _D_s;
+			_D_s.n = n;
+			_D_s.U.resize((n + 1)* (n + 1));
+			_D_s.S.resize((n + 1)* (n));
+			_D_s.V.resize((n)* (n));
+
+			s_mc(n + 1, n + 1, U, u_t, _D_s.U.data(), n + 1);
+			s_mc(n + 1, n,     S, s_t, _D_s.S.data(), n);
+			s_mc(n,     n,	   V, v_t, _D_s.V.data(), n);
+
+			if (_D_list.empty()) {
+				_D_s.level = 0;
+				_D_s.num = 0;
+				_D_list.push_back(_D_s);
+			}
+			else {
+				_D_s.num = 0;
+				_D_s.level = _D_list.back().level + 1;
+				_D_list.push_back(_D_s);
+			}
+#endif
+			DvcPreOut pre_out = {};
+
+			const Size MAX_N = 9;
+
+			const auto make_dzpmu = [](Size n, double* S, auto s_t, double* V, auto v_t, double* q, auto q_t, double *dzp, auto dzp_t, DvcPreOut &pre_out, const auto& dvc, const auto& dvc_pre)->void {
+				auto h = n / 2;
+				auto U1 = V + at(0, 0, v_t);
+				auto u1_t = v_t;
+				auto S1 = S + at(0, 0, s_t);
+				auto s1_t = s_t;
+				auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+				auto v1_t = v_t;
+				auto U2 = V + at(h, h, v_t);
+				auto u2_t = v_t;
+				auto S2 = S + at(0, h + 1, s_t);
+				auto s2_t = s_t;
+				auto V2 = V + at(h + 1, 0, v_t);
+				auto v2_t = v_t;
+
+				const auto a_h_h = S[at(0, h, s_t)];
+				const auto a_hp1_h = S[at(1, h, s_t)];
+
+				auto q1 = q + at(0, 0, q_t);
+				auto q2 = q + at(h + 1, 0, q_t);
+
+				auto ret1 = dvc(h, U1, u1_t, q1, q_t, S1, s1_t, V1, v1_t, dvc, dvc_pre);
+				auto q1_e = q1[h];
+
+				auto ret2 = dvc(n - h - 1, U2, u2_t, q2, q_t, S2, s2_t, V2, v2_t, dvc, dvc_pre);
+				auto q2_0 = q2[0];
+
+				// # STEP 2：构造 d、z、mu、p  //
+				// ## STEP 2.1：计算排序的 d z p  //
+				auto r0 = std::sqrt(a_h_h * a_h_h * q1_e * q1_e + a_hp1_h * a_hp1_h * q2_0 * q2_0);
+				auto theta = std::atan2(a_hp1_h * q2_0, a_h_h * q1_e);
+				auto c0 = std::cos(theta);
+				auto s0 = std::sin(theta);
+
+				auto d = S;
+				auto d_t = s_t;
+				auto z = S + at(1, 0, s_t);
+				auto z_t = s_t;
+				auto mu = S + at(2, 0, s_t);
+				auto mu_t = s_t;
+				auto p = S + at(3, 0, s_t);
+				auto p_t = s_t;
+
+				// 把S1的内存右移一格
+				for (Size i = h; --i < h;) {
+					d[at(0, i + 1, d_t)] = d[at(0, i, d_t)];
+				}
+				d[at(0, 0, d_t)] = 0.0;
+				z[at(0, 0, z_t)] = r0;
+
+				// 生成z //
+				s_mc(1, h, a_h_h, U1 + at(h, 0, u1_t), u1_t, z + at(0, 1, z_t), z_t);
+				s_mc(1, n - h - 2, a_hp1_h, U2 + at(0, 1, u2_t), u2_t, z + at(0, h + 2, z_t), z_t);
+				z[at(0, h + 1, z_t)] = a_hp1_h * U2[at(0, 0, u2_t)];
+
+				// 排序生成p
+				for (auto i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
+				std::sort(RowIterator<decltype(p_t)>(p, p_t), RowIterator<decltype(p_t)>(p, p_t) + n, [&d, &d_t](const auto& left, const auto& right) {
+					return d[at(0, static_cast<Size>(left), d_t)] < d[at(0, static_cast<Size>(right), d_t)];
+					});
+
+				// d和z两个一起变换
+				s_permutate(n, 2, RowIterator<decltype(p_t)>(p, p_t), d, T(d_t));
+
+				// ## STEP 2.2：deflation
+				auto max_abs_z = std::abs(*std::max_element(RowIterator<decltype(z_t)>(z, z_t), RowIterator<decltype(z_t)>(z, z_t) + n, [](const auto& l, const auto& r) {return std::abs(l) < std::abs(r); }));
+				auto max_d = d[at(0, n - 1, d_t)];
+				constexpr auto consider_zero = std::numeric_limits<double>::min();
+				const auto epsilon_strict = std::max(consider_zero, std::numeric_limits<double>::epsilon() * max_d);
+				const auto epsilon_coarse = std::max(consider_zero, 8.0 * std::numeric_limits<double>::epsilon() * std::max(max_abs_z, max_d));
+
+				auto mn = n;
+				for (Size i = 1; i < mn; ) {
+					// check zi near zero, deflation type 2
+					if (std::abs(z[at(0, i, z_t)]) < epsilon_strict) {
+						mu[at(0, mn - 1, mu_t)] = -2;
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+						--mn;
+
+						continue;
+					}
+					else if (std::abs(d[at(0, i, d_t)]) < epsilon_coarse) {
+						mu[at(0, mn - 1, mu_t)] = -1;
+						auto z1 = std::sqrt(z[at(0, 0, z_t)] * z[at(0, 0, z_t)] + z[at(0, i, z_t)] * z[at(0, i, z_t)]);
+						auto zi = std::atan2(z[at(0, i, z_t)], z[at(0, 0, z_t)]);
+						z[at(0, 0, z_t)] = z1;
+						z[at(0, i, z_t)] = zi;
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+						--mn;
+
+						continue;
+					}
+					else if (d[at(0, i, d_t)] - d[at(0, i - 1, d_t)] < epsilon_strict) {
+						mu[at(0, mn - 1, mu_t)] = (double)(i - 1);
+						auto z_im1 = std::sqrt(z[at(0, i, z_t)] * z[at(0, i, z_t)] + z[at(0, i - 1, z_t)] * z[at(0, i - 1, z_t)]);
+						auto z_i = std::atan2(z[at(0, i, z_t)], z[at(0, i - 1, z_t)]);
+						z[at(0, i - 1, z_t)] = z_im1;
+						z[at(0, i, z_t)] = z_i;
+
+						auto tem = d[at(0, i, d_t)];
+						s_mc(1, mn - i, d + at(0, i + 1, d_t), d_t, d + at(0, i, d_t), d_t);
+						d[at(0, mn - 1, d_t)] = tem;
+						tem = z[at(0, i, z_t)];
+						s_mc(1, mn - i, z + at(0, i + 1, z_t), z_t, z + at(0, i, z_t), z_t);
+
+						z[at(0, mn - 1, z_t)] = tem;
+						tem = p[at(0, i, d_t)];
+						s_mc(1, mn - i, p + at(0, i + 1, p_t), p_t, p + at(0, i, p_t), p_t);
+						p[at(0, mn - 1, p_t)] = tem;
+
+						--mn;
+					}
+					else {
+						++i;
+					}
+				}
+
+				auto dn = 0.0;
+				if (mn == 1) {
+					mu[at(0, mn - 1, mu_t)] = -2;
+					mn = 0;
+					d[at(0, 0, d_t)] = z[at(0, 0, z_t)];
+					dn = z[at(0, 0, z_t)];
+				}
+				else {
+					if (z[at(0, 0, z_t)] <= epsilon_coarse)
+						z[at(0, 0, z_t)] = epsilon_coarse;
+
+					dn = d[at(0, mn - 1, d_t)] + std::sqrt(s_vv(mn, z, T(z_t), z, T(z_t)));
+				}
+
+				// ## STEP 2.3：计算奇异值(mu)
+				for (Size i{ 0 }, di{ 0 }; i < mn; ++i, di = next_c(di, d_t)) {
+					auto left = d[di];
+					auto right = i == mn - 1 ? dn : d[next_c(di, d_t)];
+					auto mid = 0.5 * (left + right);
+					auto v = 0.0;
+					for (Size j = 0; j < mn; ++j) {
+						v += z[at(0, j, z_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - mid) / (d[at(0, j, d_t)] + mid);
+					}
+
+					auto base = v < -1 ? right : left;
+					auto lower = v < -1 ? left - right : 0.0;
+					auto upper = v < -1 ? 0.0 : right - left;
+
+					while (std::abs(lower - upper) > (std::max(std::abs(lower), std::abs(upper))) * 2 * std::numeric_limits<double>::epsilon()) {
+						mid = (lower + upper) / 2;
+						auto v = 0.0;
+						for (Size j = 0; j < mn; ++j) {
+							v += z[at(0, j, z_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mid) / (d[at(0, j, d_t)] + base + mid);
+						}
+						v < -1 ? lower = mid : upper = mid;
+					}
+					mu[at(0, i, mu_t)] = (lower + upper) / 2;
+				}
+
+				// ## STEP 2.4：重新计算 z
+				for (Size i = 0, d_i = 0, z_i = 0; i < mn; ++i, d_i = next_c(d_i, d_t), z_i = next_c(z_i, z_t)) {
+					auto base = mu[at(0, mn - 1, mu_t)] < 0.0 ? dn : d[at(0, mn - 1, d_t)];
+					auto zi = (base + d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]) * (base - d[at(0, i, d_t)] + mu[at(0, mn - 1, mu_t)]);
+
+					for (Size k = 0, mu_k = 0, d_k = 0, d_kp1 = next_c(d_k, d_t); k < i; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
+						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_k] - d[d_i]) / (d[d_k] + d[d_i]);
+					}
+
+					for (Size k = i, mu_k = at(0, k, mu_t), d_k = at(0, k, d_t), d_kp1 = next_c(d_k, d_t); k < mn - 1; ++k, mu_k = next_c(mu_k, mu_t), d_k = d_kp1, d_kp1 = next_c(d_k, d_t)) {
+						base = mu[mu_k] < 0 ? d[d_kp1] : d[d_k];
+						zi *= (base - d[d_i] + mu[mu_k]) * (base + d[d_i] + mu[mu_k]) / (d[d_kp1] - d[d_i]) / (d[d_kp1] + d[d_i]);
+					}
+
+					z[z_i] = s_sgn2(z[z_i]) * std::sqrt(zi);
+				}
+
+				pre_out = DvcPreOut{
+					mn,
+					dn,
+					q2_0, q1_e,
+					r0, c0, s0,
+					ret1.mn, ret2.mn,
+				};
+			};
+
+			if (n > 2 && n < MAX_N) {
+				double dzp[MAX_N * 3];
+				make_dzpmu(n, S, s_t, V, v_t, q, q_t, dzp, MAX_N, pre_out, dvc, dvc_pre);
+			}
+			else if(n > 2) {
+				double dzp[MAX_N * 3];
+				make_dzpmu(n, S, s_t, V, v_t, q, q_t, dzp, MAX_N, pre_out, dvc, dvc_pre);
+			}
+
+			return pre_out;
+		};
+
+		const auto dvc = [
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+			&
+#else
+			&
+#endif
+		](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre)->DvcPreOut
+		{
+			auto pre_out = dvc_pre(n, S, s_t, V, v_t, q, q_t, dvc, dvc_pre);
+
+			const Size MAX_N = 11;
+
+			const auto dvc_inside = [](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre, DvcPreOut &pre_out) {
+				auto h = n / 2;
+				auto U1 = V + at(0, 0, v_t);
+				auto u1_t = v_t;
+				auto S1 = S + at(0, 0, s_t);
+				auto s1_t = s_t;
+				auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+				auto v1_t = v_t;
+				auto U2 = V + at(h, h, v_t);
+				auto u2_t = v_t;
+				auto S2 = S + at(0, h + 1, s_t);
+				auto s2_t = s_t;
+				auto V2 = V + at(h + 1, 0, v_t);
+				auto v2_t = v_t;
+
+				auto q1 = q;
+				auto q2 = q + at(h + 1, 0, 1);
+
+				auto c0 = pre_out.c0;
+				auto s0 = pre_out.s0;
+				auto mn = pre_out.mn;
+				auto dn = pre_out.dn;
+
+				auto d = S;
+				auto d_t = s_t;
+				auto z = S + at(1, 0, s_t);
+				auto z_t = s_t;
+				auto mu = S + at(2, 0, s_t);
+				auto mu_t = s_t;
+				auto p = S + at(3, 0, s_t);
+				auto p_t = s_t;
+
+				//STEP 3：计算U
+				auto ui = S + at(4, 0, s_t);
+				auto ui_t = T(s_t);
+
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+						for (Size j = 0; j < n; ++j) {
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+							ui[uij] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+						}
+					}
+					else {
+						s_fill(n, 1, 0.0, ui, ui_t);
+						auto uii = at(static_cast<Size>(p[at(0, i, p_t)]), 0, ui_t);
+						ui[uii] = 1.0;
+					}
+
+					// apply deflation
+					for (Size j = mn; j < n; ++j) {
+						if (mu[at(0, j, mu_t)] == -2) {
+						}
+						else if (mu[at(0, j, mu_t)] == -1) {
+							auto ui0 = at(static_cast<Size>(p[at(0, 0, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+
+							// type 3
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[ui0] = uia;
+							ui[uij] = uib;
+						}
+						else {
+							// type 4
+							auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
+							auto uik = at(static_cast<Size>(p[at(0, idx, p_t)]), 0, ui_t);
+							auto uij = at(static_cast<Size>(p[at(0, j, p_t)]), 0, ui_t);
+
+							auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+							auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+							ui[uik] = uia;
+							ui[uij] = uib;
+						}
+					}
+
+					if (i < mn) {
+						s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
+					}
+
+					// 生成 U，基于U1 //
+					s_mc(h + 1, 1, c0 * ui[at(0, 0, ui_t)], q1, 1, U + at(0, i, u_t), u_t);
+					s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
+
+					// 生成 U，基于U2 //
+					s_mc(n - h, 1, s0 * ui[at(0, 0, ui_t)], q2, 1, U + at(h + 1, i, u_t), u_t);
+					s_mma(n - h, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
+				}
+
+				s_nm(h + 1, 1, -s0, q1, q_t);
+				s_nm(n - h, 1, c0, q2, q_t);
+
+				// step 7：复原V1 & V2到正确位置
+				auto v_data = S + at(5, 0, s_t);
+				auto v_data_t = s_t;
+
+				// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
+				if (h == 1) {
+					v_data[at(0, 0, v_data_t)] = 1.0;
+				}
+				else if (h == 2) {
+					s_mc(1, 2, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+					v_data[at(1, 0, v_data_t)] = -v_data[at(0, 1, v_data_t)];
+					v_data[at(1, 1, v_data_t)] = v_data[at(0, 0, v_data_t)];
+				}
+				else {
+					s_mc(h / 2, h, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+					s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, v_data + at(h / 2 + 1, 0, v_data_t), v_data_t);
+					s_fill(1, pre_out.mn1, -1.0, v_data + at(h / 2, 0, v_data_t), v_data_t);
+					s_fill(1, h - pre_out.mn1, 0.0, v_data + at(h / 2, pre_out.mn1, v_data_t), v_data_t);
+					if (pre_out.mn1 == 0)v_data[at(h / 2, 0, v_data_t)] = 1.0;
+
+					for (Size i = -1; ++i < h;) {
+						s_nm(h, 1, 1.0 / s_norm(h, v_data + at(0, i, v_data_t), v_data_t), v_data + at(0, i, v_data_t), v_data_t);
+					}
+				}
+
+				// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
+				if (n - h - 1 == 1) {
+					v_data[at(0, h, v_data_t)] = 1.0;
+				}
+				else if (n - h - 1 == 2) {
+					s_mc(1, 2, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
+					v_data[at(1, h + 0, v_data_t)] = -v_data[at(0, h + 1, v_data_t)];
+					v_data[at(1, h + 1, v_data_t)] = v_data[at(0, h + 0, v_data_t)];
+				}
+				else {
+					auto k = n - h - 1;
+					s_mc(k / 2, k, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
+					s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, v_data + at(k / 2 + 1, h, v_data_t), v_data_t);
+					s_fill(1, pre_out.mn2, -1.0, v_data + at(k / 2, h, v_data_t), v_data_t);
+					s_fill(1, k - pre_out.mn2, 0.0, v_data + at(k / 2, h + pre_out.mn2, v_data_t), v_data_t);
+					if (pre_out.mn2 == 0)v_data[at(k / 2, h + pre_out.mn2, v_data_t)] = 1.0;
+
+					for (Size i = -1; ++i < k;) {
+						s_nm(k, 1, 1.0 / s_norm(k, v_data + at(0, i + h, v_data_t), v_data_t), v_data + at(0, i + h, v_data_t), v_data_t);
+					}
+				}
+
+				// 使用复原后的 V1 & V2
+				V1 = v_data;
+				V2 = v_data + at(0, h, v_data_t);
+				auto v1_t2 = v_data_t;
+				auto v2_t2 = v_data_t;
+
+				//step 8：计算V
+				// 若 n < 5，此时将p暂存至局部变量中
+				double p_tem[5];
+				if (n < 5)	s_mc(1, 5, p, p_t, p_tem, 5);
+
+				// 此时vi的位置也可能会变化
+				auto vi = S + at(4, 0, s_t);
+				auto vi_t = T(s_t);
+
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+						for (Size j = 1; j < n; ++j) {
+							vi[at(j, 0, vi_t)] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+						}
+					}
+					else {
+						s_fill(n, 1, 0.0, vi, vi_t);
+						vi[at(i, 0, vi_t)] = 1.0;
+					}
+
+					// apply deflation
+					for (Size j = mn; j < n; ++j) {
+						if (mu[at(0, j, mu_t)] == -2) {
+						}
+						else if (mu[at(0, j, mu_t)] == -1) {
+							// type 3
+						}
+						else {
+							// type 4
+							auto via = std::cos(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] - std::sin(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							auto vib = std::sin(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] + std::cos(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+							vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
+							vi[at(j, 0, vi_t)] = vib;
+						}
+					}
+
+					// apply permutation
+					if (n < 5)
+						s_permutate_inv(n, 1, RowIterator<Size>(p_tem, 5), vi, vi_t);
+					else
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
+
+					// 左乘V1 V2
+					s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
+					s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h, i, v_t), v_t);
+				}
+
+				//step 8：计算S
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						S[at(0, i, s_t)] = base + mu[at(0, i, mu_t)];
+					}
+					else {
+						S[at(0, i, s_t)] = d[at(0, i, d_t)];
+					}
+				}
+
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+				// make U //
+				std::vector<double> _D_U((n + 1)* (n + 1));
+				s_mc(n + 1, n, U, u_t, _D_U.data(), n + 1);
+				s_mc(3, 1, pre_out.q01.data(), 1, _D_U.data() + n, n + 1);
+				s_mc(n + 1 - 3, 1, q, u_t, _D_U.data() + at(3, n, n + 1), n + 1);
+
+				// make V //
+				std::vector<double> _D_V(n* n, 0.0);
+				s_mc(n / 2, n, V, v_t, _D_V.data() + at(0, 0, n), n);
+				s_mc(n - n / 2 - 1, n, V + at(n / 2, 0, v_t), v_t, _D_V.data() + at(n / 2 + 1, 0, n), n);
+				s_fill(1, mn, -1.0, _D_V.data() + at(n / 2, 0, n), n);
+				s_fill(1, n - mn, 0.0, _D_V.data() + at(n / 2, mn, n), n);
+				if (mn == 0)_D_V.data()[at(n / 2, 0, n)] = 1.0;
+
+				for (Size i = -1; ++i < n;) {
+					s_nm(n, 1, 1.0 / s_norm(n, _D_V.data() + at(0, i, n), n), _D_V.data() + at(0, i, n), n);
+				}
+
+				// make S //
+				std::vector<double> _D_S((n + 1) * n);
+				s_fill(n + 1, n, 0.0, _D_S.data(), n);
+				for (Size i(-1); ++i < n;) {
+					_D_S.data()[at(i, i, n)] = S[at(0, i, s_t)];
+				}
+
+				std::vector<double> _D_Result((n + 1)* n), _D_Tem((n + 1)* n);
+				s_mm(n + 1, n, n + 1, _D_U.data(), _D_S.data(), _D_Tem.data());
+				s_mm(n + 1, n, n, _D_Tem.data(), n, _D_V.data(), T(n), _D_Result.data(), n);
+
+				std::vector<double> _D_result_compare((n + 1)*n, 0.0);
+				for (Size i(-1); ++i < n;) {
+					_D_result_compare[at(i, i, n)] = _D_list.back().S[at(0, i, n)];
+					_D_result_compare[at(i + 1, i, n)] = _D_list.back().S[at(1, i, n)];
+				}
+
+				if (!s_is_equal(n + 1, n, _D_Result.data(), _D_result_compare.data(), 1e-10)) {
+					std::cout << "debug error:" << std::endl;
+					std::cout << "debug level:" << _D_list.back().level << "  num:" << _D_list.back().num << std::endl;
+
+					std::cout << "dvc U:" << std::endl;
+					dsp(n + 1, n + 1, _D_U.data());
+					std::cout << "dvc S:" << std::endl;
+					dsp(n + 1, n, _D_S.data());
+					std::cout << "dvc V:" << std::endl;
+					dsp(n, n, _D_V.data());
+
+					std::cout << "dvc result:" << std::endl;
+					dsp(n + 1, n, _D_Result.data());
+
+					std::cout << "dvc result should be:" << std::endl;
+					dsp(n + 1, n, _D_result_compare.data());
+
+					std::exit(0);
+				}
+
+				_D_list.pop_back();
+				if (!_D_list.empty())_D_list.back().num = 1;
+#endif
+			};
+
+			if (n == 1) {
+				auto& a1 = S[at(0, 0, s_t)];
+				auto& a2 = S[at(1, 0, s_t)];
+
+				auto theta = std::atan2(a2, a1);
+				S[at(0, 0, s_t)] = std::sqrt(a1 * a1 + a2 * a2);
+
+				U[at(0, 0, u_t)] = std::cos(theta);
+				U[at(1, 0, u_t)] = std::sin(theta);
+
+				q[at(0, 0, q_t)] = -std::sin(theta);// U_0_1
+				q[at(1, 0, q_t)] = std::cos(theta);// U_1_1
+
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+				// make U //
+				std::vector<double> _D_U((n + 1)* (n + 1));
+				_D_U[at(0, 0, n + 1)] = U[at(0, 0, u_t)];
+				_D_U[at(0, 1, n + 1)] = pre_out.q01[0];
+				_D_U[at(1, 0, n + 1)] = U[at(1, 0, u_t)];
+				_D_U[at(1, 1, n + 1)] = pre_out.q01[1];
+
+				// make V //
+				std::vector<double> _D_V(n* n);
+				_D_V[at(0, 0, n)] = 1.0;
+
+				// make S //
+				std::vector<double> _D_S((n + 1) * n);
+				_D_S[at(0, 0, n)] = S[at(0, 0, s_t)];
+				_D_S[at(1, 0, n)] = 0.0;
+
+				// verify result //
+				std::vector<double> _D_Result((n + 1) * n), _D_Tem((n + 1) * n);
+				s_mm(n + 1, n, n + 1, _D_U.data(), _D_S.data(), _D_Tem.data());
+				s_mm(n + 1, n, n, _D_Tem.data(), n, _D_V.data(), T(n), _D_Result.data(), n);
+
+				std::vector<double> _D_result_compare((n + 1) * n, 0.0);
+				for (Size i(-1); ++i < n;) {
+					_D_result_compare[at(i, i, n)] = _D_list.back().S[at(0, i, n)];
+					_D_result_compare[at(i + 1, i, n)] = _D_list.back().S[at(1, i, n)];
+				}
+
+				if (!s_is_equal(n + 1, n, _D_Result.data(), _D_result_compare.data(), 1e-10)) {
+					std::cout << "debug error" << std::endl;
+
+					dsp(n + 1, n, _D_Result.data());
+					dsp(n + 1, n, _D_result_compare.data());
+				}
+
+				_D_list.pop_back();
+				if (!_D_list.empty())_D_list.back().num = 1;
+#endif
+			}
+			else if (n == 2) {
+				auto theta1 = std::atan2(S[at(1, 0, s_t)], S[at(0, 0, s_t)]);
+				auto c1 = std::cos(theta1);
+				auto s1 = std::sin(theta1);
+
+				auto theta2 = std::atan2(S[at(1, 1, s_t)], c1 * S[at(0, 1, s_t)]);
+				auto c2 = std::cos(theta2);
+				auto s2 = std::sin(theta2);
+
+				auto a = c1 * S[at(0, 0, s_t)] + s1 * S[at(1, 0, s_t)];
+				auto b = s1 * S[at(0, 1, s_t)];
+				auto d = c2 * c1 * S[at(0, 1, s_t)] + s2 * S[at(1, 1, s_t)];
+
+				auto theta3 = 0.5 * std::atan2(2 * b * d, a * a + b * b - d * d);
+				auto c3 = std::cos(theta3);
+				auto s3 = std::sin(theta3);
+
+				// S //
+				auto S1 = a * a + b * b + d * d;
+				auto S2 = std::sqrt((a * a + b * b - d * d) * (a * a + b * b - d * d) + 4 * b * b * d * d);
+
+				S[at(0, 0, s_t)] = std::sqrt((S1 + S2) / 2);
+				S[at(0, 1, s_t)] = std::sqrt((S1 - S2) / 2);
+
+				auto phi = 0.5 * std::atan2(2 * a * b, a * a - b * b - d * d);
+				auto c_p = std::cos(phi);
+				auto s_p = std::sin(phi);
+				auto s11 = (a * c3) * c_p + (b * c3 + d * s3) * s_p;
+				auto s22 = (a * s3) * s_p + (-b * s3 + d * c3) * c_p;
+
+				// U //
+				U[at(0, 0, u_t)] = s_sgn2(s11) * (c1 * c3 - c2 * s1 * s3);
+				U[at(0, 1, u_t)] = s_sgn2(s22) * (-c1 * s3 - c2 * c3 * s1);
+				U[at(1, 0, u_t)] = s_sgn2(s11) * (c3 * s1 + c1 * c2 * s3);
+				U[at(1, 1, u_t)] = s_sgn2(s22) * (c1 * c2 * c3 - s1 * s3);
+				U[at(2, 0, u_t)] = s_sgn2(s11) * s2 * s3;
+				U[at(2, 1, u_t)] = s_sgn2(s22) * c3 * s2;
+
+				q[at(0, 0, q_t)] = (s1 * s2);
+				q[at(1, 0, q_t)] = (-c1 * s2);
+				q[at(2, 0, q_t)] = c2;
+
+				// V //
+				V[at(0, 0, v_t)] = c_p;
+				V[at(0, 1, v_t)] = -s_p;
+
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+				// make U //
+				std::vector<double> _D_U((n + 1)* (n + 1));
+				_D_U[at(0, 0, n + 1)] = U[at(0, 0, u_t)];
+				_D_U[at(0, 1, n + 1)] = U[at(0, 1, u_t)];
+				_D_U[at(0, 2, n + 1)] = pre_out.q01[0];
+				_D_U[at(1, 0, n + 1)] = U[at(1, 0, u_t)];
+				_D_U[at(1, 1, n + 1)] = U[at(1, 1, u_t)];
+				_D_U[at(1, 2, n + 1)] = pre_out.q01[1];
+				_D_U[at(2, 0, n + 1)] = U[at(2, 0, u_t)];
+				_D_U[at(2, 1, n + 1)] = U[at(2, 1, u_t)];
+				_D_U[at(2, 2, n + 1)] = pre_out.q01[2];
+
+				// make V //
+				std::vector<double> _D_V(n* n);
+				_D_V[at(0, 0, n)] = V[at(0, 0, v_t)];
+				_D_V[at(0, 1, n)] = V[at(0, 1, v_t)];
+				_D_V[at(1, 0, n)] = -_D_V[at(0, 1, n)];
+				_D_V[at(1, 1, n)] = _D_V[at(0, 0, n)];
+
+				// make S //
+				std::vector<double> _D_S((n + 1)* n, 0.0);
+				_D_S[at(0, 0, n)] = S[at(0, 0, s_t)];
+				_D_S[at(1, 1, n)] = S[at(0, 1, s_t)];
+
+				// verify result //
+				std::vector<double> _D_Result((n + 1)* n), _D_Tem((n + 1)* n);
+				s_mm(n + 1, n, n + 1, _D_U.data(), _D_S.data(), _D_Tem.data());
+				s_mm(n + 1, n, n, _D_Tem.data(), n, _D_V.data(), T(n), _D_Result.data(), n);
+
+				std::vector<double> _D_result_compare((n + 1)* n, 0.0);
+				for (Size i(-1); ++i < n;) {
+					_D_result_compare[at(i, i, n)] = _D_list.back().S[at(0, i, n)];
+					_D_result_compare[at(i + 1, i, n)] = _D_list.back().S[at(1, i, n)];
+				}
+
+				if (!s_is_equal(n + 1, n, _D_Result.data(), _D_result_compare.data(), 1e-10)) {
+					std::cout << "debug error:" << std::endl;
+					std::cout << "debug level:" << _D_list.back().level << "  num:" << _D_list.back().num << std::endl;
+
+					std::cout << "dvc U:" << std::endl;
+					dsp(n + 1, n + 1, _D_U.data());
+					std::cout << "dvc S:" << std::endl;
+					dsp(n + 1, n, _D_S.data());
+					std::cout << "dvc V:" << std::endl;
+					dsp(n, n, _D_V.data());
+
+					std::cout << "dvc result:" << std::endl;
+					dsp(n + 1, n, _D_Result.data());
+
+					std::cout << "dvc result should be:" << std::endl;
+					dsp(n + 1, n, _D_result_compare.data());
+				}
+
+				_D_list.pop_back();
+				if (!_D_list.empty())_D_list.back().num = 1;
+#endif
+			}
+			else {
+				dvc_inside(n, U, u_t, q, q_t, S, s_t, V, v_t, dvc, dvc_pre, pre_out);
+			}
+
+			return pre_out;
+		};
+
+		//////////////////////////////////////////////////////////// PART 3: 首次调用 /////////////////////////////////////////
+		const Size MAX_N = 15;
+
+		if (n < MAX_N) {
+			double q[100];
+			Size q_t = 1;
+
+			auto pre_out = dvc_pre(n, U, u_t, V, v_t, q, q_t, dvc, dvc_pre);
+			s_mc(2, n, U, u_t, S, s_t);
+
+			auto q1 = q;
+			auto q2 = q + n/2 + 1;
+
+			auto h = n / 2;
+			auto U1 = V + at(0, 0, v_t);
+			auto u1_t = v_t;
+			auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+			auto v1_t = v_t;
+			auto U2 = V + at(h, h, v_t);
+			auto u2_t = v_t;
+			auto V2 = V + at(h + 1, 0, v_t);
+			auto v2_t = v_t;
+
+			auto c0 = pre_out.c0;
+			auto s0 = pre_out.s0;
+			auto mn = pre_out.mn;
+			auto dn = pre_out.dn;
+
+			auto d = S;
+			auto d_t = s_t;
+			auto z = S + at(1, 0, s_t);
+			auto z_t = s_t;
+
+			double mu[MAX_N];
+			double p[MAX_N];
+			double ui[MAX_N];
+			double vi[MAX_N];
+
+			// 初始化mu p
+			s_mc(1, n, U + at(3, 0, u_t), u_t, p, MAX_N);
+			s_mc(1, n, U + at(2, 0, u_t), u_t, mu, MAX_N);
+
+			// STEP 1: 计算U
+			{
+				// 计算 U //
+				{
+					// 计算ui所产生的U（不经过householder变换）
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 0; j < n; ++j) {
+								ui[j] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[i]) / (d[at(0, j, d_t)] + base + mu[i]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, ui);
+							ui[i] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[j] == -2) {
+							}
+							else if (mu[j] == -1) {
+								// type 3
+								auto ui0 = 0;
+								auto uij = j;
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[ui0] = uia;
+								ui[uij] = uib;
+							}
+							else {
+								// type 4
+								auto k = static_cast<Size>(mu[j]);
+								auto uik = k;
+								auto uij = j;
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[uik] = uia;
+								ui[uij] = uib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<Size>(p, MAX_N), ui, 1);
+
+						// 归一化
+						if (i < mn) {
+							s_nm(n, 1, 1.0 / s_norm(n, ui, 1), ui, 1);
+						}
+
+						// 生成 U，基于U1 //
+						s_mc(h + 1, 1, c0 * ui[0], q1, q_t, U + at(0, i, u_t), u_t);
+						s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + 1, 1, U + at(0, i, u_t), u_t);
+
+						// 生成 U，基于U2 //
+						auto real_m_of_u2 = m == n ? n - h - 1 : n - h;
+						s_mc(real_m_of_u2, 1, s0 * ui[0], q2, q_t, U + at(h + 1, i, u_t), u_t);
+						s_mma(real_m_of_u2, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + h + 1, 1, U + at(h + 1, i, u_t), u_t);
+					}
+
+					// 计算q1&q2所产生的q //
+					if (m > n) {
+						s_mc(h + 1, 1, -s0, q1, q_t, U + at(0, n, u_t), u_t);
+						s_mc(n - h, 1, c0, q2, q_t, U + at(h + 1, n, u_t), u_t);
+					}
+				}
+
+				// 处理 m > n + 1时额外的方阵
+				if (m > n + 1) {
+					s_fill(m - n - 1, n + 1, 0.0, U + at(n + 1, 0, u_t), u_t);
+					s_fill(n + 1, m - n - 1, 0.0, U + at(0, n + 1, u_t), u_t);
+					s_eye(m - n - 1, U + at(n + 1, n + 1, u_t), u_t);
+				}
+
+				// 反 householder 变换 //
+				s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
+			}
+
+			// STEP 2: 计算V
+			{
+				// 根据 vi 计算
+				{
+					// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
+					double V1_new[MAX_N*MAX_N / 4], V2_new[MAX_N*MAX_N / 4];
+					auto v1_t_new = h;
+					auto v2_t_new = n - h - 1;
+
+					if (h == 1) {
+						V1_new[at(0, 0, 1)] = 1.0;
+					}
+					else if (h == 2) {
+						s_mc(1, 2, V1, v1_t, V1_new, 2);
+						V1_new[at(1, 0, 2)] = -V1_new[at(0, 1, 2)];
+						V1_new[at(1, 1, 2)] = V1_new[at(0, 0, 2)];
+					}
+					else if (h == 3) {
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+					else {
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+
+					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
+					if (n - h - 1 == 1) {
+						V2_new[at(0, 0, 1)] = 1.0;
+					}
+					else if (n - h - 1 == 2) {
+						s_mc(1, 2, V2, v2_t, V2_new + at(0, 0, 2), 2);
+						V2_new[at(1, 0, 2)] = -V2_new[at(0, 1, 2)];
+						V2_new[at(1, 1, 2)] = V2_new[at(0, 0, 2)];
+					}
+					else {
+						auto k = n - h - 1;
+						s_mc(k / 2, k, V2, v2_t, V2_new + at(0, 0, v2_t_new), v2_t_new);
+						s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, V2_new + at(k / 2 + 1, 0, v2_t_new), v2_t_new);
+						s_fill(1, pre_out.mn2, -1.0, V2_new + at(k / 2, 0, v2_t_new), v2_t_new);
+						s_fill(1, k - pre_out.mn2, 0.0, V2_new + at(k / 2, pre_out.mn2, v2_t_new), v2_t_new);
+						if (pre_out.mn2 == 0)V2_new[at(k / 2, pre_out.mn2, v2_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < k;) {
+							s_nm(k, 1, 1.0 / s_norm(k, V2_new + at(0, i, v2_t_new), v2_t_new), V2_new + at(0, i, v2_t_new), v2_t_new);
+						}
+					}
+
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 1; j < n; ++j) {
+								vi[j] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[i]) / (d[at(0, j, d_t)] + base + mu[i]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, vi, 1);
+							vi[i] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[j] == -2) {
+							}
+							else if (mu[j] == -1) {
+								// type 3
+							}
+							else {
+								// type 4
+								auto via = std::cos(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[j])] - std::sin(z[at(0, j, z_t)]) * vi[j];
+								auto vib = std::sin(z[at(0, j, z_t)]) * vi[static_cast<Size>(mu[j])] + std::cos(z[at(0, j, z_t)]) * vi[j];
+								vi[static_cast<Size>(mu[j])] = via;
+								vi[j] = vib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<Size>(p, MAX_N), vi, 1);
+
+
+						if (i < mn) {
+							vi[0] = -1.0;
+						}
+
+						// 左乘V1
+						s_mm(h, 1, h, V1_new, h, vi + 1, 1, V + at(0, i, v_t), v_t);
+
+						// 左乘V2
+						s_mm(n - h - 1, 1, n - h - 1, V2_new, n - h - 1, vi + h + 1, 1, V + at(h + 1, i, v_t), v_t);
+					}
+				}
+
+				// 计算第h行
+				for (Size i = 0; i < n; ++i) {
+					V[at(h, i, v_t)] = i < mn ? -1.0 : (i == 0 ? 1.0 : 0.0);
+					s_nm(n, 1, 1.0 / s_norm(n, V + at(0, i, v_t), v_t), V + at(0, i, v_t), v_t);
+				}
+
+				// 反 householder 变换 //
+				s_householder_u_q_dot(2, 1, n, householder_vec_n, 1, V + at(n - 2, 0, v_t), v_t, V + at(n - 2, 0, v_t), v_t);
+				s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
+			}
+
+			// STEP 3：计算S
+			{
+				for (Size i = 0; i < n; ++i) {
+					if (i < mn) {
+						auto base = mu[i] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+						S[at(0, i, s_t)] = base + mu[i];
+					}
+					else {
+						S[at(0, i, s_t)] = d[at(0, i, d_t)];
+					}
+				}
+
+				s_fill(m - 1, n, 0.0, S + at(1, 0, s_t), s_t);
+				for (Size i = 0; ++i < n;) {
+					S[at(i, i, s_t)] = S[at(0, i, s_t)];
+					S[at(0, i, s_t)] = 0.0;
+				}
+			}
+		}
+		else {
+			double q[100];
+			Size q_t = 1;
+			
+			auto pre_out = dvc_pre(n, U, u_t, V, v_t, q, q_t, dvc, dvc_pre);
+			s_mc(2, n, U, u_t, S, s_t);
+
+			auto q1 = q;
+			auto q2 = q + n/2 + 1;
+
+			auto h = n / 2;
+			auto U1 = V + at(0, 0, v_t);
+			auto u1_t = v_t;
+			auto V1 = V + at(0, h == n - h ? h : h + 1, v_t);
+			auto v1_t = v_t;
+			auto U2 = V + at(h, h, v_t);
+			auto u2_t = v_t;
+			auto V2 = V + at(h + 1, 0, v_t);
+			auto v2_t = v_t;
+
+			auto c0 = pre_out.c0;
+			auto s0 = pre_out.s0;
+			auto mn = pre_out.mn;
+			auto dn = pre_out.dn;
+
+			auto d = S;
+			auto d_t = s_t;
+			auto z = S + at(1, 0, s_t);
+			auto z_t = s_t;
+
+			// STEP 1: 计算U
+			double r_of_right_corner[12];
+			double r_of_tem_memory_for_v1v2[9]; // 为保存v1v2，将householder左下方变成方阵，需保存右上角
+			{
+				// 根据 U2 计算 //
+				{
+					auto mu = U + at(2, 0, u_t);
+					auto mu_t = u_t;
+					auto p = U + at(3, 0, u_t);
+					auto p_t = u_t;
+					auto ui = U + at(4, 0, u_t);
+					auto ui_t = T(u_t);
+					
+					// 计算U2所产生的U（不经过householder变换）
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 0; j < n; ++j) {
+								auto uij = at(j, 0, ui_t);
+								ui[uij] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, ui, ui_t);
+
+							auto uii = at(i, 0, ui_t);
+							ui[uii] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[at(0, j, mu_t)] == -2) {
+							}
+							else if (mu[at(0, j, mu_t)] == -1) {
+								// type 3
+								auto ui0 = at(0, 0, ui_t);
+								auto uij = at(j, 0, ui_t);
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[ui0] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[ui0] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[ui0] = uia;
+								ui[uij] = uib;
+							}
+							else {
+								// type 4
+								auto k = static_cast<Size>(mu[at(0, j, mu_t)]);
+								auto uik = at(k, 0, ui_t);
+								auto uij = at(j, 0, ui_t);
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[uik] - std::sin(z[at(0, j, z_t)]) * ui[uij];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[uik] + std::cos(z[at(0, j, z_t)]) * ui[uij];
+								ui[uik] = uia;
+								ui[uij] = uib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), ui, ui_t);
+
+						if (i < mn) {
+							s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
+						}
+
+						// 生成 U，基于U2 //
+						auto real_m_of_u2 = m == n ? n - h - 1 : n - h;
+						s_mc(real_m_of_u2, 1, s0 * ui[at(0, 0, ui_t)], q2, q_t, U + at(h + 1, i, u_t), u_t);
+						s_mma(real_m_of_u2, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
+					}
+
+					// 计算q2所产生的q //
+					if (m > n) {
+						s_mc(n - h, 1, c0, q2, 1, U + at(h + 1, n, u_t), u_t);
+					}
+				}
+
+				s_fill(n - h, n - h - 1, -1000, U2, v_t);
+
+				// 移动 V1 的第一行，为p腾出位置 //
+				// 为 p 和 ui 腾出位置
+				s_mc(3, n - h - 1, V2, v_t, V + at(h + 4, n - h - 1, v_t), v_t);
+
+				// 移动 p 到新的位置
+				s_mc(2, n, U + at(2, 0, u_t), u_t, V2, v_t);
+
+				// 根据 U1 计算 //
+				{
+					auto mu = V2;
+					auto mu_t = v_t;
+					auto p = V2 + at(1, 0, v_t);
+					auto p_t = v_t;
+					auto ui = V2 + at(2, 0, v_t);
+					auto ui_t = T(v_t);
+
+					// 计算U1所产生的U（不经过householder变换）
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 0; j < n; ++j) {
+								ui[at(j, 0, ui_t)] = j < mn ? z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, ui, ui_t);
+							ui[at(i, 0, ui_t)] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[at(0, j, mu_t)] == -2) {
+							}
+							else if (mu[at(0, j, mu_t)] == -1) {
+								// type 3
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] - std::sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(0, 0, ui_t)] + std::cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+								ui[at(0, 0, ui_t)] = uia;
+								ui[at(j, 0, ui_t)] = uib;
+							}
+							else {
+								// type 4
+								auto idx = static_cast<Size>(mu[at(0, j, mu_t)]);
+
+								auto uia = std::cos(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] - std::sin(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+								auto uib = std::sin(z[at(0, j, z_t)]) * ui[at(idx, 0, ui_t)] + std::cos(z[at(0, j, z_t)]) * ui[at(j, 0, ui_t)];
+								ui[at(idx, 0, ui_t)] = uia;
+								ui[at(j, 0, ui_t)] = uib;
+							}
+						}
+
+						// apply permutation
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), ui, ui_t);
+
+						if (i < mn) {
+							s_nm(n, 1, 1.0 / s_norm(n, ui, ui_t), ui, ui_t);
+						}
+
+						// 生成 U，基于U1 //
+						s_mc(h + 1, 1, c0* ui[at(0, 0, ui_t)], q1, q_t, U + at(0, i, u_t), u_t);
+						s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
+					}
+					// 计算q1所产生的q //
+					if (m > n) {
+						s_mc(h + 1, 1, -s0, q1, q_t, U + at(0, n, u_t), u_t);
+					}
+				}
+
+				// 处理 m > n + 1时额外的方阵
+				if (m > n + 1) {
+					s_fill(m - n - 1, n + 1, 0.0, U + at(n + 1, 0, u_t), u_t);
+					s_fill(n + 1, m - n - 1, 0.0, U + at(0, n + 1, u_t), u_t);
+					s_eye(m - n - 1, U + at(n + 1, n + 1, u_t), u_t);
+				}
+
+				// 对U进行反 householder 变换 //
+				s_householder_u_q_dot(m - 1, n, m, S + at(1, 0, s_t), s_t, U + at(1, 0, u_t), u_t, U + at(1, 0, u_t), u_t);
+
+				// 复原压缩的V1，并移动 p 和 mu //
+				// 为mu和p开辟内存
+				s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner, 4);
+				// 为之后复原V1&V2开辟内存
+				s_mc(3, 3, S + at(n - 2 - h, h - 3, s_t), s_t, r_of_tem_memory_for_v1v2, 3);
+				// 移动p
+				s_mc(1, n, V + at(h + 2, 0, v_t), v_t, S + at(n - 2, 0, s_t), s_t);
+				// 移动 mu 到新的位置
+				s_mc(1, n, V + at(h + 1, 0, v_t), v_t, S + at(n - 1, 0, s_t), s_t);
+				// 复原 V1
+				s_mc(3, n - h - 1, V + at(h + 4, n - h - 1, v_t), v_t, V2, v2_t);
+			}
+
+			// STEP 2: 计算V
+			{
+				auto mu = S + at(n - 1, 0, s_t);
+				auto mu_t = s_t;
+
+				// 根据 V1 计算
+				{
+					// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
+					double V1_data_when_n_less_8_[9];
+
+					auto V1_new = S + at(n - 2 - h, 0, s_t);
+					auto v1_t_new = s_t;
+
+					if (h == 1) {
+						V1_data_when_n_less_8_[at(0, 0, 1)] = 1.0;
+					}
+					else if (h == 2) {
+						s_mc(1, 2, V1, v1_t, V1_data_when_n_less_8_, 2);
+						V1_data_when_n_less_8_[at(1, 0, 2)] = -V1_data_when_n_less_8_[at(0, 1, 2)];
+						V1_data_when_n_less_8_[at(1, 1, 2)] = V1_data_when_n_less_8_[at(0, 0, 2)];
+					}
+					else if (h == 3) {
+
+						V1_new = V1_data_when_n_less_8_;
+						auto v1_t_new = 3;
+
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+					else {
+						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
+						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
+						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
+						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
+						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < h;) {
+							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
+						}
+					}
+
+					auto vi = V + at(h, 0, v_t);
+					auto vi_t = T(v_t);
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 1; j < n; ++j) {
+								vi[at(j, 0, vi_t)] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, vi, vi_t);
+							vi[at(i, 0, vi_t)] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[at(0, j, mu_t)] == -2) {
+							}
+							else if (mu[at(0, j, mu_t)] == -1) {
+								// type 3
+							}
+							else {
+								// type 4
+								auto via = std::cos(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] - std::sin(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+								auto vib = std::sin(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] + std::cos(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+								vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
+								vi[at(j, 0, vi_t)] = vib;
+							}
+						}
+
+						// apply permutation
+						auto p = S + at(n - 2, 0, s_t);
+						auto p_t = s_t;
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
+
+						if (i < mn) {
+							vi[at(0, 0, vi_t)] = -1.0;
+							//s_nm(n, 1, 1.0 / s_norm(n, vi, vi_t), vi, vi_t);
+						}
+
+						// 左乘V1
+						V1 = V1_new;
+						auto v1_t2 = v1_t_new;
+
+						s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
+					}
+				}
+
+				// 根据 V2 计算
+				{
+					double V1_data_when_n_less_8_[9];
+
+					auto V2_new = S + at(n - 2 - h, 0, s_t);
+					auto v2_t_new = s_t;
+
+					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
+					if (n - h - 1 == 1) {
+						V1_data_when_n_less_8_[at(0, 0, 1)] = 1.0;
+					}
+					else if (n - h - 1 == 2) {
+						s_mc(1, 2, V2, v2_t, V1_data_when_n_less_8_ + at(0, 0, 2), 2);
+						V1_data_when_n_less_8_[at(1, 0, 2)] = -V1_data_when_n_less_8_[at(0, 1, 2)];
+						V1_data_when_n_less_8_[at(1, 1, 2)] = V1_data_when_n_less_8_[at(0, 0, 2)];
+					}
+					else {
+						auto k = n - h - 1;
+						s_mc(k / 2, k, V2, v2_t, V2_new + at(0, 0, v2_t_new), v2_t_new);
+						s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, V2_new + at(k / 2 + 1, 0, v2_t_new), v2_t_new);
+						s_fill(1, pre_out.mn2, -1.0, V2_new + at(k / 2, 0, v2_t_new), v2_t_new);
+						s_fill(1, k - pre_out.mn2, 0.0, V2_new + at(k / 2, pre_out.mn2, v2_t_new), v2_t_new);
+						if (pre_out.mn2 == 0)V2_new[at(k / 2, pre_out.mn2, v2_t_new)] = 1.0;
+
+						for (Size i = -1; ++i < k;) {
+							s_nm(k, 1, 1.0 / s_norm(k, V2_new + at(0, i, v2_t_new), v2_t_new), V2_new + at(0, i, v2_t_new), v2_t_new);
+						}
+					}
+
+					auto vi = V + at(h, 0, v_t);
+					auto vi_t = T(v_t);
+					for (Size i = 0; i < n; ++i) {
+						if (i < mn) {
+							auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+
+							for (Size j = 1; j < n; ++j) {
+								vi[at(j, 0, vi_t)] = j < mn ? d[at(0, j, d_t)] * z[at(0, j, z_t)] / (d[at(0, j, d_t)] - base - mu[at(0, i, mu_t)]) / (d[at(0, j, d_t)] + base + mu[at(0, i, mu_t)]) : 0.0;
+							}
+						}
+						else {
+							s_fill(n, 1, 0.0, vi, vi_t);
+							vi[at(i, 0, vi_t)] = 1.0;
+						}
+
+						// apply deflation
+						for (Size j = mn; j < n; ++j) {
+							if (mu[at(0, j, mu_t)] == -2) {
+							}
+							else if (mu[at(0, j, mu_t)] == -1) {
+								// type 3
+							}
+							else {
+								// type 4
+								auto via = std::cos(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] - std::sin(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+								auto vib = std::sin(z[at(0, j, z_t)]) * vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] + std::cos(z[at(0, j, z_t)]) * vi[at(j, 0, vi_t)];
+								vi[at(static_cast<Size>(mu[at(0, j, mu_t)]), 0, vi_t)] = via;
+								vi[at(j, 0, vi_t)] = vib;
+							}
+						}
+
+						// apply permutation
+						auto p = S + at(n - 2, 0, s_t);
+						auto p_t = s_t;
+						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
+
+						if (i < mn) {
+							vi[at(0, 0, vi_t)] = -1.0;
+						}
+
+						// 左乘V2
+						V2 = V2_new;
+						auto v2_t2 = v2_t_new;
+						s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
+					}
+				}
+
+				// 计算第h行
+				for (Size i = 0; i < n; ++i) {
+					V[at(h, i, v_t)] = i < mn ? -1.0 : (i == 0 ? 1.0 : 0.0);
+					s_nm(n, 1, 1.0 / s_norm(n, V + at(0, i, v_t), v_t), V + at(0, i, v_t), v_t);
+				}
+
+				// 复原householders //
+				double r_of_right_corner_2[12];
+				s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner_2, 4);
+
+				s_mc(3, 4, r_of_right_corner, 4, S + at(n - 3, n - 4, s_t), s_t);
+				s_mc(3, 3, r_of_tem_memory_for_v1v2, 3, S + at(n - 2 - h, h - 3, s_t), s_t);
+
+
+				// 反 householder 变换 //
+				s_householder_u_q_dot(2, 1, n, householder_vec_n, 1, V + at(n - 2, 0, v_t), v_t, V + at(n - 2, 0, v_t), v_t);
+				s_householder_u_q_dot(n, n - 2, n, S + at(2, 0, s_t), T(s_t), V, v_t, V, v_t);
+
+				// 复原 mu //
+				s_mc(3, 4, r_of_right_corner_2, 4, S + at(n - 3, n - 4, s_t), s_t);
+			}
+
+			// STEP 3：计算S
+			auto mu = S + at(n - 1, 0, s_t);
+			auto mu_t = s_t;
+
+			for (Size i = 0; i < n; ++i) {
+				if (i < mn) {
+					auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
+					S[at(0, i, s_t)] = base + mu[at(0, i, mu_t)];
+				}
+				else {
+					S[at(0, i, s_t)] = d[at(0, i, d_t)];
+				}
+			}
+
+			s_fill(m - 1, n, 0.0, S + at(1, 0, s_t), s_t);
+			for (Size i = 0; ++i < n;) {
+				S[at(i, i, s_t)] = S[at(0, i, s_t)];
+				S[at(0, i, s_t)] = 0.0;
+			}
+		}
+
+#ifdef ARIS_DEBUG_DYNAMIC_SVD
+		// should check result
+#endif
+	}
+	
 }
 
 void test_basic_operation()
@@ -3152,46 +5758,60 @@ void test_householder(){
 	check_household(1, 0, 0, nullptr, nullptr, tau, q, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, tau_p, nullptr, nullptr, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 }
 void test_svd(){
-	auto test_svd_mat = [](aris::Size m, aris::Size n, const double *A, aris::Size a_t) {
-		std::vector<double> U_data_(m*m), S_data_(m*n), V_data_(n*n);
+	auto test_svd_mat = [](aris::Size m, aris::Size n, const double *A_old, auto a_t_old) {
+		std::vector<double> A_data_((m + 1)*(n + 2)), U_data_((m + 3)*(m + 4)), S_data_((m + 5)*(n + 6)), V_data_((n + 7)*(n + 8));
+		
+		auto A = A_data_.data();
 		auto U = U_data_.data();
 		auto S = S_data_.data();
 		auto V = V_data_.data();
-		//auto a_t = n;
+		
+		auto a_t = n;
 		auto u_t = m;
 		auto s_t = n;
 		auto v_t = n;
 
-		std::fill_n(U, m * m, -9999.0);
-		std::fill_n(S, m * n, -9999.0);
-		std::fill_n(V, n * n, -9999.0);
+		auto verify_result = [](aris::Size m, aris::Size n, const double *A_old, auto a_t_old, 
+			double *A, auto a_t, double *U, auto u_t, double *S, auto s_t, double *V, auto v_t) 
+		{
+			s_mc(m, n, A_old, a_t_old, A, a_t);
+			s_fill(m, m, -9999.0, U, u_t);
+			s_fill(m, n, -9999.0, S, s_t);
+			s_fill(n, n, -9999.0, V, v_t);
 
-		s_svd(m, n, A, a_t, U, u_t, S, s_t, V, v_t);
+			s_svd(m, n, A, a_t, U, u_t, S, s_t, V, v_t);
 
-		// verify result //
-		std::vector<double> result1_data_(m*n), result2_data_(m*n), result3_data_(m*m), result4_data_(m * m), result5_data_(n * n), result6_data_(m * m);
-		s_mm(m, n, m, U, u_t, S, s_t, result1_data_.data(), n);
-		s_mm(m, n, n, result1_data_.data(), n, V, T(v_t), result2_data_.data(), n);
-		if (!s_is_equal(m, n, result2_data_.data(), n, A, a_t, 1e-10)) {
-			std::cout << "svd error 1!" << std::endl;
-			dsp(m, n, result2_data_.data());
-			dsp(m, n, A, a_t);
-		}
+			// verify result //
+			std::vector<double> result1_data_(m*n), result2_data_(m*n), result3_data_(m*m), result4_data_(m * m), result5_data_(n * n), result6_data_(n * n);
+			s_mm(m, n, m, U, u_t, S, s_t, result1_data_.data(), n);
+			s_mm(m, n, n, result1_data_.data(), n, V, T(v_t), result2_data_.data(), n);
+			if (!s_is_equal(m, n, result2_data_.data(), n, A, a_t, 1e-10)) {
+				std::cout << "svd error 1!" << std::endl;
+				dsp(m, n, result2_data_.data());
+				dsp(m, n, A, a_t);
+			}
 
-		s_mm(m, m, m, U, u_t, U, T(u_t), result3_data_.data(), m);
-		s_eye(m, result4_data_.data());
-		if (!s_is_equal(m, m, result3_data_.data(), result4_data_.data(), 1e-10)) {
-			std::cout << "svd error 2!" << std::endl;
+			s_mm(m, m, m, U, u_t, U, T(u_t), result3_data_.data(), m);
+			s_eye(m, result4_data_.data());
+			if (!s_is_equal(m, m, result3_data_.data(), result4_data_.data(), 1e-10)) {
+				std::cout << "svd error 2!" << std::endl;
+				dsp(m, m, result3_data_.data());
+			}
 
-			dsp(m, m, result3_data_.data());
-		}
+			s_mm(n, n, n, V, v_t, V, T(v_t), result5_data_.data(), n);
+			s_eye(n, result6_data_.data());
+			if (!s_is_equal(n, n, result5_data_.data(), result6_data_.data(), 1e-10)) {
+				std::cout << "svd error 3!" << std::endl;
+				dsp(n, n, result5_data_.data());
+			}
+		};
 
-		s_mm(n, n, n, V, v_t, V, T(v_t), result5_data_.data(), n);
-		s_eye(n, result6_data_.data());
-		if (!s_is_equal(n, n, result5_data_.data(), result6_data_.data(), 1e-10)) {
-			std::cout << "svd error 3!" << std::endl;
-			dsp(n, n, result5_data_.data());
-		}
+		verify_result(m, n, A_old, a_t_old, A, n, U, m, S, n, V, n);
+		verify_result(m, n, A_old, a_t_old, A, n + 2, U, m + 4, S, n + 6, V, n + 8);
+		verify_result(m, n, A_old, a_t_old, A, T(m + 1), U, T(m + 3), S, n + 6, V, n + 8);
+		verify_result(m, n, A_old, a_t_old, A, T(m + 1), U, m + 4, S, T(m + 5), V, n + 8);
+		verify_result(m, n, A_old, a_t_old, A, T(m + 1), U, m + 4, S, n + 6, V, T(n + 7));
+		verify_result(m, n, A_old, a_t_old, A, T(m + 1), U, T(m + 3), S, T(m + 5), V, T(n + 7));
 	};
 	
 	
@@ -3301,24 +5921,34 @@ void test_svd(){
 
 	s_eye(24, C);
 
-
-	//test_svd_mat(m, n, A);
-
+	
 	//test_svd_mat(1, 1, A, 1);
 	//test_svd_mat(2, 1, A, 1);
 	//test_svd_mat(3, 1, A, 1);
 	//test_svd_mat(5, 1, A, 1);
 	//test_svd_mat(10, 1, A, 1);
+	//test_svd_mat(1, 2, A, 2);
+	//test_svd_mat(1, 3, A, 3);
+	//test_svd_mat(1, 5, A, 5);
+	//test_svd_mat(1, 10, A, 10);
 	//test_svd_mat(2, 2, A, 2);
 	//test_svd_mat(3, 2, A, 2);
 	//test_svd_mat(4, 2, A, 2);
 	//test_svd_mat(7, 2, A, 2);
 	//test_svd_mat(10, 2, A, 2);
+	//test_svd_mat(2, 3, A, 3);
+	//test_svd_mat(2, 4, A, 4);
+	//test_svd_mat(2, 7, A, 7);
+	//test_svd_mat(2, 10, A, 10);
 	//test_svd_mat(3, 3, A, 3);
 	//test_svd_mat(4, 3, A, 3);
 	//test_svd_mat(5, 3, A, 3);
 	//test_svd_mat(7, 3, A, 3);
 	//test_svd_mat(10, 3, A, 3);
+	//test_svd_mat(3, 4, A, 4);
+	//test_svd_mat(3, 5, A, 5);
+	//test_svd_mat(3, 7, A, 7);
+	//test_svd_mat(3, 10, A, 10);
 	//test_svd_mat(5, 4, A, 4);
 	//test_svd_mat(6, 5, A, 5);
 	//test_svd_mat(7, 6, A, 6);
@@ -3327,14 +5957,18 @@ void test_svd(){
 	//test_svd_mat(4, 3, A, 8);
 	//test_svd_mat(8, 7, A, 8); 
 	//test_svd_mat(10, 9, A, 9);
-	//test_svd_mat(11, 10, A, 10);
+	//test_svd_mat(10, 10, A, 10);
+	test_svd_mat(11, 10, A, 10);
+	//test_svd_mat(10, 11, A, 11);
+	//test_svd_mat(21, 10, A, 10);
+	//test_svd_mat(10, 21, A, 21);
 	//test_svd_mat(12, 11, A, 11);
 	//test_svd_mat(13, 12, A, 12);
 	//test_svd_mat(14, 13, A, 13);
 	//test_svd_mat(15, 14, A, 14);
 	//test_svd_mat(16, 15, A, 15);
 	//test_svd_mat(17, 16, A, 16);
-	//test_svd_mat(18, 17, A, 17);
+	test_svd_mat(18, 17, A, 17);
 	//test_svd_mat(19, 18, A, 18);
 	//test_svd_mat(20, 19, A, 19);
 	//test_svd_mat(21, 20, A, 20);
@@ -3342,71 +5976,105 @@ void test_svd(){
 	//test_svd_mat(23, 22, A, 22);
 	//test_svd_mat(24, 23, A, 23);
 	//test_svd_mat(25, 24, A, 24);
-	//
-	//aris::dynamic::s_nm(25, 24, -1.0, A);
-	//test_svd_mat(4, 3, A, 3);
-	//test_svd_mat(5, 4, A, 4);
-	//test_svd_mat(6, 5, A, 5);
-	//test_svd_mat(7, 6, A, 6);
-	//test_svd_mat(2, 1, A, 8);
-	//test_svd_mat(3, 2, A, 8);
-	//test_svd_mat(4, 3, A, 8);
-	//test_svd_mat(8, 7, A, 8);
-	//test_svd_mat(10, 9, A, 9);
-	//test_svd_mat(11, 10, A, 10);
-	//test_svd_mat(12, 11, A, 11);
-	//test_svd_mat(13, 12, A, 12);
-	//test_svd_mat(14, 13, A, 13);
-	//test_svd_mat(15, 14, A, 14);
-	//test_svd_mat(16, 15, A, 15);
-	//test_svd_mat(17, 16, A, 16);
-	//test_svd_mat(18, 17, A, 17);
-	//test_svd_mat(19, 18, A, 18);
-	//test_svd_mat(20, 19, A, 19);
-	//test_svd_mat(21, 20, A, 20);
-	//test_svd_mat(22, 21, A, 21);
-	//test_svd_mat(23, 22, A, 22);
-	//test_svd_mat(24, 23, A, 23);
-	//test_svd_mat(25, 24, A, 24);
+	//test_svd_mat(24, 24, A, 24);
+	//test_svd_mat(24, 25, A, 24);
+	/*
+	aris::dynamic::s_nm(25, 24, -1.0, A);
+	test_svd_mat(1, 1, A, 1);
+	test_svd_mat(2, 1, A, 1);
+	test_svd_mat(3, 1, A, 1);
+	test_svd_mat(5, 1, A, 1);
+	test_svd_mat(10, 1, A, 1);
+	test_svd_mat(1, 2, A, 2);
+	test_svd_mat(1, 3, A, 3);
+	test_svd_mat(1, 5, A, 5);
+	test_svd_mat(1, 10, A, 10);
+	test_svd_mat(2, 2, A, 2);
+	test_svd_mat(3, 2, A, 2);
+	test_svd_mat(4, 2, A, 2);
+	test_svd_mat(7, 2, A, 2);
+	test_svd_mat(10, 2, A, 2);
+	test_svd_mat(2, 3, A, 3);
+	test_svd_mat(2, 4, A, 4);
+	test_svd_mat(2, 7, A, 7);
+	test_svd_mat(2, 10, A, 10);
+	test_svd_mat(3, 3, A, 3);
+	test_svd_mat(4, 3, A, 3);
+	test_svd_mat(5, 3, A, 3);
+	test_svd_mat(7, 3, A, 3);
+	test_svd_mat(10, 3, A, 3);
+	test_svd_mat(3, 4, A, 4);
+	test_svd_mat(3, 5, A, 5);
+	test_svd_mat(3, 7, A, 7);
+	test_svd_mat(3, 10, A, 10);
+	test_svd_mat(5, 4, A, 4);
+	test_svd_mat(6, 5, A, 5);
+	test_svd_mat(7, 6, A, 6);
+	test_svd_mat(2, 1, A, 8);
+	test_svd_mat(3, 2, A, 8);
+	test_svd_mat(4, 3, A, 8);
+	test_svd_mat(8, 7, A, 8);
+	test_svd_mat(10, 9, A, 9);
+	test_svd_mat(10, 10, A, 10);
+	test_svd_mat(11, 10, A, 10);
+	test_svd_mat(10, 11, A, 11);
+	test_svd_mat(21, 10, A, 10);
+	test_svd_mat(10, 21, A, 21);
+	test_svd_mat(12, 11, A, 11);
+	test_svd_mat(13, 12, A, 12);
+	test_svd_mat(14, 13, A, 13);
+	test_svd_mat(15, 14, A, 14);
+	test_svd_mat(16, 15, A, 15);
+	test_svd_mat(17, 16, A, 16);
+	test_svd_mat(18, 17, A, 17);
+	test_svd_mat(19, 18, A, 18);
+	test_svd_mat(20, 19, A, 19);
+	test_svd_mat(21, 20, A, 20);
+	test_svd_mat(22, 21, A, 21);
+	test_svd_mat(23, 22, A, 22);
+	test_svd_mat(24, 23, A, 23);
+	test_svd_mat(25, 24, A, 24);
+	test_svd_mat(24, 24, A, 24);
+	test_svd_mat(24, 25, A, 24);
 
-	//test_svd_mat(2, 1, B, 1);
-	//test_svd_mat(3, 2, B, 2);
-	//test_svd_mat(4, 3, B, 3);
-	//test_svd_mat(5, 4, B, 4);
-	//test_svd_mat(6, 5, B, 5);
-	//test_svd_mat(7, 6, B, 6);
-	//test_svd_mat(2, 1, C, 24);
-	//test_svd_mat(5, 4, C + 24, 24);
-	//test_svd_mat(5, 4, C + 1, 24);
-	//test_svd_mat(4, 3, C + 24, 24);
-	//test_svd_mat(4, 3, C + 1, 24);
-	//test_svd_mat(4, 3, C, 3);
-	//test_svd_mat(5, 4, C, 4);
-	//test_svd_mat(6, 5, C, 5);
-	//test_svd_mat(7, 6, C, 6);
-	//test_svd_mat(4, 3, C, 24);
-	//test_svd_mat(2, 1, C, 8);
-	//test_svd_mat(3, 2, C, 8);
-	//test_svd_mat(4, 3, C, 8);
-	//test_svd_mat(8, 7, C, 8);
-	//test_svd_mat(10, 9, C, 9);
-	//test_svd_mat(11, 10, C, 10);
-	//test_svd_mat(12, 11, C, 11);
-	//test_svd_mat(13, 12, C, 12);
-	//test_svd_mat(14, 13, C, 13);
-	//test_svd_mat(15, 14, C, 14);
-	//test_svd_mat(16, 15, C, 15);
-	//test_svd_mat(17, 16, C, 16);
-	//test_svd_mat(18, 17, C, 17);
-	//test_svd_mat(19, 18, C, 18);
-	//test_svd_mat(20, 19, C, 19);
-	//test_svd_mat(21, 20, C, 20);
-	//test_svd_mat(22, 21, C, 21);
-	//test_svd_mat(23, 22, C, 22);
-	//test_svd_mat(24, 23, C, 23);
-	//test_svd_mat(25, 24, C, 24);
+	test_svd_mat(2, 1, B, 1);
+	test_svd_mat(3, 2, B, 2);
+	test_svd_mat(4, 3, B, 3);
+	test_svd_mat(5, 4, B, 4);
+	test_svd_mat(6, 5, B, 5);
+	test_svd_mat(7, 6, B, 6);
+	test_svd_mat(2, 1, C, 24);
+	test_svd_mat(5, 4, C + 24, 24);
+	test_svd_mat(5, 4, C + 1, 24);
+	test_svd_mat(4, 3, C + 24, 24);
+	test_svd_mat(4, 3, C + 1, 24);
+	test_svd_mat(4, 3, C, 3);
+	test_svd_mat(5, 4, C, 4);
+	test_svd_mat(6, 5, C, 5);
+	test_svd_mat(7, 6, C, 6);
+	test_svd_mat(4, 3, C, 24);
+	test_svd_mat(2, 1, C, 8);
+	test_svd_mat(3, 2, C, 8);
+	test_svd_mat(4, 3, C, 8);
+	test_svd_mat(8, 7, C, 8);
+	test_svd_mat(10, 9, C, 9);
+	test_svd_mat(11, 10, C, 10);
+	test_svd_mat(12, 11, C, 11);
+	test_svd_mat(13, 12, C, 12);
+	test_svd_mat(14, 13, C, 13);
+	test_svd_mat(15, 14, C, 14);
+	test_svd_mat(16, 15, C, 15);
+	test_svd_mat(17, 16, C, 16);
+	test_svd_mat(18, 17, C, 17);
+	test_svd_mat(19, 18, C, 18);
+	test_svd_mat(20, 19, C, 19);
+	test_svd_mat(21, 20, C, 20);
+	test_svd_mat(22, 21, C, 21);
+	test_svd_mat(23, 22, C, 22);
+	test_svd_mat(24, 23, C, 23);
+	test_svd_mat(25, 24, C, 24);
 
-
+	*/
 	
 
 }
