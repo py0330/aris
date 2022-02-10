@@ -3147,9 +3147,7 @@ namespace aris::dynamic {
 		struct DvcPreOut {
 			Size mn;
 			double dn;
-			double q2_0, q1_e;
-			double r0, c0, s0;
-			Size mn1, mn2;
+			double c0, s0;
 		};
 
 		const auto dvc_pre = [
@@ -3379,9 +3377,7 @@ namespace aris::dynamic {
 				pre_out = DvcPreOut{
 					mn,
 					dn,
-					q2_0, q1_e,
-					r0, c0, s0,
-					ret1.mn, ret2.mn,
+					c0, s0,
 				};
 			};
 
@@ -3406,8 +3402,6 @@ namespace aris::dynamic {
 		](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre)->DvcPreOut
 		{
 			auto pre_out = dvc_pre(n, S, s_t, V, v_t, q, q_t, dvc, dvc_pre);
-
-			const Size MAX_N = 11;
 
 			const auto dvc_inside = [](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre, DvcPreOut &pre_out) {
 				auto h = n / 2;
@@ -3503,52 +3497,12 @@ namespace aris::dynamic {
 				s_nm(h + 1, 1, -s0, q1, q_t);
 				s_nm(n - h, 1, c0, q2, q_t);
 
-				// step 7：复原V1 & V2到正确位置
+				//STEP 4: 计算V
 				auto v_data = S + at(5, 0, s_t);
 				auto v_data_t = s_t;
 
-				// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
-				if (h == 1) {
-					v_data[at(0, 0, v_data_t)] = 1.0;
-				}
-				else if (h == 2) {
-					s_mc(1, 2, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
-					v_data[at(1, 0, v_data_t)] = -v_data[at(0, 1, v_data_t)];
-					v_data[at(1, 1, v_data_t)] = v_data[at(0, 0, v_data_t)];
-				}
-				else {
-					s_mc(h / 2, h, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
-					s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, v_data + at(h / 2 + 1, 0, v_data_t), v_data_t);
-					s_fill(1, pre_out.mn1, -1.0, v_data + at(h / 2, 0, v_data_t), v_data_t);
-					s_fill(1, h - pre_out.mn1, 0.0, v_data + at(h / 2, pre_out.mn1, v_data_t), v_data_t);
-					if (pre_out.mn1 == 0)v_data[at(h / 2, 0, v_data_t)] = 1.0;
-
-					for (Size i = -1; ++i < h;) {
-						s_nm(h, 1, 1.0 / s_norm(h, v_data + at(0, i, v_data_t), v_data_t), v_data + at(0, i, v_data_t), v_data_t);
-					}
-				}
-
-				// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
-				if (n - h - 1 == 1) {
-					v_data[at(0, h, v_data_t)] = 1.0;
-				}
-				else if (n - h - 1 == 2) {
-					s_mc(1, 2, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
-					v_data[at(1, h + 0, v_data_t)] = -v_data[at(0, h + 1, v_data_t)];
-					v_data[at(1, h + 1, v_data_t)] = v_data[at(0, h + 0, v_data_t)];
-				}
-				else {
-					auto k = n - h - 1;
-					s_mc(k / 2, k, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
-					s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, v_data + at(k / 2 + 1, h, v_data_t), v_data_t);
-					s_fill(1, pre_out.mn2, -1.0, v_data + at(k / 2, h, v_data_t), v_data_t);
-					s_fill(1, k - pre_out.mn2, 0.0, v_data + at(k / 2, h + pre_out.mn2, v_data_t), v_data_t);
-					if (pre_out.mn2 == 0)v_data[at(k / 2, h + pre_out.mn2, v_data_t)] = 1.0;
-
-					for (Size i = -1; ++i < k;) {
-						s_nm(k, 1, 1.0 / s_norm(k, v_data + at(0, i + h, v_data_t), v_data_t), v_data + at(0, i + h, v_data_t), v_data_t);
-					}
-				}
+				s_mc(h, h, V1, v1_t, v_data + at(0, 0, v_data_t), v_data_t);
+				s_mc(n - h - 1, n - h - 1, V2, v2_t, v_data + at(0, h, v_data_t), v_data_t);
 
 				// 使用复原后的 V1 & V2
 				V1 = v_data;
@@ -3600,12 +3554,17 @@ namespace aris::dynamic {
 					else
 						s_permutate_inv(n, 1, RowIterator<decltype(p_t)>(p, p_t), vi, vi_t);
 
+					if (i < mn) {
+						vi[at(0, 0, vi_t)] = -1.0;
+						s_nm(n, 1, 1.0 / s_norm(n, vi, vi_t), vi, vi_t);
+					}
+
 					// 左乘V1 V2
 					s_mm(h, 1, h, V1, v1_t2, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
-					s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h, i, v_t), v_t);
+					V[at(h, i, v_t)] = vi[at(0, 0, vi_t)];
+					s_mm(n - h - 1, 1, n - h - 1, V2, v2_t2, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
 				}
-
-				//step 8：计算S
+				//STEP 5：计算S
 				for (Size i = 0; i < n; ++i) {
 					if (i < mn) {
 						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
@@ -3690,6 +3649,7 @@ namespace aris::dynamic {
 				q[at(0, 0, q_t)] = -std::sin(theta);// U_0_1
 				q[at(1, 0, q_t)] = std::cos(theta);// U_1_1
 
+				V[at(0, 0, v_t)] = 1.0;
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 				// make U //
 				std::vector<double> _D_U((n + 1)* (n + 1));
@@ -3774,7 +3734,8 @@ namespace aris::dynamic {
 				// V //
 				V[at(0, 0, v_t)] = c_p;
 				V[at(0, 1, v_t)] = -s_p;
-
+				V[at(1, 0, v_t)] = s_p;
+				V[at(1, 1, v_t)] = c_p;
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 				// make U //
 				std::vector<double> _D_U((n + 1)* (n + 1));
@@ -3972,58 +3933,8 @@ namespace aris::dynamic {
 					auto v1_t_new = h;
 					auto v2_t_new = n - h - 1;
 
-					if (h == 1) {
-						V1_new[at(0, 0, 1)] = 1.0;
-					}
-					else if (h == 2) {
-						s_mc(1, 2, V1, v1_t, V1_new, 2);
-						V1_new[at(1, 0, 2)] = -V1_new[at(0, 1, 2)];
-						V1_new[at(1, 1, 2)] = V1_new[at(0, 0, 2)];
-					}
-					else if (h == 3) {
-						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
-						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
-						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
-						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
-						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < h;) {
-							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
-						}
-					}
-					else {
-						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
-						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
-						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
-						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
-						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < h;) {
-							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
-						}
-					}
-
-					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
-					if (n - h - 1 == 1) {
-						V2_new[at(0, 0, 1)] = 1.0;
-					}
-					else if (n - h - 1 == 2) {
-						s_mc(1, 2, V2, v2_t, V2_new + at(0, 0, 2), 2);
-						V2_new[at(1, 0, 2)] = -V2_new[at(0, 1, 2)];
-						V2_new[at(1, 1, 2)] = V2_new[at(0, 0, 2)];
-					}
-					else {
-						auto k = n - h - 1;
-						s_mc(k / 2, k, V2, v2_t, V2_new + at(0, 0, v2_t_new), v2_t_new);
-						s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, V2_new + at(k / 2 + 1, 0, v2_t_new), v2_t_new);
-						s_fill(1, pre_out.mn2, -1.0, V2_new + at(k / 2, 0, v2_t_new), v2_t_new);
-						s_fill(1, k - pre_out.mn2, 0.0, V2_new + at(k / 2, pre_out.mn2, v2_t_new), v2_t_new);
-						if (pre_out.mn2 == 0)V2_new[at(k / 2, pre_out.mn2, v2_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < k;) {
-							s_nm(k, 1, 1.0 / s_norm(k, V2_new + at(0, i, v2_t_new), v2_t_new), V2_new + at(0, i, v2_t_new), v2_t_new);
-						}
-					}
+					s_mc(h, h, V1, v1_t, V1_new, v1_t_new);
+					s_mc(n - h - 1, n - h - 1, V2, v2_t, V2_new, v2_t_new);
 
 					for (Size i = 0; i < n; ++i) {
 						if (i < mn) {
@@ -4308,45 +4219,11 @@ namespace aris::dynamic {
 				// 根据 V1 计算
 				{
 					// 因为前面压缩了一行，所以这里复原 V1 到新的内存位置 //
-					double V1_data_when_n_less_8_[9];
 
 					auto V1_new = S + at(n - 2 - h, 0, s_t);
 					auto v1_t_new = s_t;
 
-					if (h == 1) {
-						V1_data_when_n_less_8_[at(0, 0, 1)] = 1.0;
-					}
-					else if (h == 2) {
-						s_mc(1, 2, V1, v1_t, V1_data_when_n_less_8_, 2);
-						V1_data_when_n_less_8_[at(1, 0, 2)] = -V1_data_when_n_less_8_[at(0, 1, 2)];
-						V1_data_when_n_less_8_[at(1, 1, 2)] = V1_data_when_n_less_8_[at(0, 0, 2)];
-					}
-					else if (h == 3) {
-
-						V1_new = V1_data_when_n_less_8_;
-						auto v1_t_new = 3;
-
-						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
-						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
-						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
-						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
-						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < h;) {
-							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
-						}
-					}
-					else {
-						s_mc(h / 2, h, V1, v1_t, V1_new + at(0, 0, v1_t_new), v1_t_new);
-						s_mc(h - h / 2 - 1, h, V1 + at(h / 2, 0, v1_t), v1_t, V1_new + at(h / 2 + 1, 0, v1_t_new), v1_t_new);
-						s_fill(1, pre_out.mn1, -1.0, V1_new + at(h / 2, 0, v1_t_new), v1_t_new);
-						s_fill(1, h - pre_out.mn1, 0.0, V1_new + at(h / 2, pre_out.mn1, v1_t_new), v1_t_new);
-						if (pre_out.mn1 == 0)V1_new[at(h / 2, 0, v1_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < h;) {
-							s_nm(h, 1, 1.0 / s_norm(h, V1_new + at(0, i, v1_t_new), v1_t_new), V1_new + at(0, i, v1_t_new), v1_t_new);
-						}
-					}
+					s_mc(h, h, V1, v1_t, V1_new, v1_t_new);
 
 					auto vi = V + at(h, 0, v_t);
 					auto vi_t = T(v_t);
@@ -4399,32 +4276,11 @@ namespace aris::dynamic {
 
 				// 根据 V2 计算
 				{
-					double V1_data_when_n_less_8_[9];
-
 					auto V2_new = S + at(n - 2 - h, 0, s_t);
 					auto v2_t_new = s_t;
 
 					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
-					if (n - h - 1 == 1) {
-						V1_data_when_n_less_8_[at(0, 0, 1)] = 1.0;
-					}
-					else if (n - h - 1 == 2) {
-						s_mc(1, 2, V2, v2_t, V1_data_when_n_less_8_ + at(0, 0, 2), 2);
-						V1_data_when_n_less_8_[at(1, 0, 2)] = -V1_data_when_n_less_8_[at(0, 1, 2)];
-						V1_data_when_n_less_8_[at(1, 1, 2)] = V1_data_when_n_less_8_[at(0, 0, 2)];
-					}
-					else {
-						auto k = n - h - 1;
-						s_mc(k / 2, k, V2, v2_t, V2_new + at(0, 0, v2_t_new), v2_t_new);
-						s_mc(k - k / 2 - 1, k, V2 + at(k / 2, 0, v2_t), v2_t, V2_new + at(k / 2 + 1, 0, v2_t_new), v2_t_new);
-						s_fill(1, pre_out.mn2, -1.0, V2_new + at(k / 2, 0, v2_t_new), v2_t_new);
-						s_fill(1, k - pre_out.mn2, 0.0, V2_new + at(k / 2, pre_out.mn2, v2_t_new), v2_t_new);
-						if (pre_out.mn2 == 0)V2_new[at(k / 2, pre_out.mn2, v2_t_new)] = 1.0;
-
-						for (Size i = -1; ++i < k;) {
-							s_nm(k, 1, 1.0 / s_norm(k, V2_new + at(0, i, v2_t_new), v2_t_new), V2_new + at(0, i, v2_t_new), v2_t_new);
-						}
-					}
+					s_mc(n - h - 1, n - h - 1, V2, v2_t, V2_new, v2_t_new);
 
 					auto vi = V + at(h, 0, v_t);
 					auto vi_t = T(v_t);
@@ -4478,7 +4334,7 @@ namespace aris::dynamic {
 					V[at(h, i, v_t)] = i < mn ? -1.0 : (i == 0 ? 1.0 : 0.0);
 					s_nm(n, 1, 1.0 / s_norm(n, V + at(0, i, v_t), v_t), V + at(0, i, v_t), v_t);
 				}
-
+				
 				// 复原householders //
 				double r_of_right_corner_2[12];
 				s_mc(3, 4, S + at(n - 3, n - 4, s_t), s_t, r_of_right_corner_2, 4);
@@ -4520,7 +4376,6 @@ namespace aris::dynamic {
 		// should check result
 #endif
 	}
-	
 }
 
 void test_basic_operation()
@@ -5922,62 +5777,62 @@ void test_svd(){
 	s_eye(24, C);
 
 	
-	//test_svd_mat(1, 1, A, 1);
-	//test_svd_mat(2, 1, A, 1);
-	//test_svd_mat(3, 1, A, 1);
-	//test_svd_mat(5, 1, A, 1);
-	//test_svd_mat(10, 1, A, 1);
-	//test_svd_mat(1, 2, A, 2);
-	//test_svd_mat(1, 3, A, 3);
-	//test_svd_mat(1, 5, A, 5);
-	//test_svd_mat(1, 10, A, 10);
-	//test_svd_mat(2, 2, A, 2);
-	//test_svd_mat(3, 2, A, 2);
-	//test_svd_mat(4, 2, A, 2);
-	//test_svd_mat(7, 2, A, 2);
-	//test_svd_mat(10, 2, A, 2);
-	//test_svd_mat(2, 3, A, 3);
-	//test_svd_mat(2, 4, A, 4);
-	//test_svd_mat(2, 7, A, 7);
-	//test_svd_mat(2, 10, A, 10);
-	//test_svd_mat(3, 3, A, 3);
-	//test_svd_mat(4, 3, A, 3);
-	//test_svd_mat(5, 3, A, 3);
-	//test_svd_mat(7, 3, A, 3);
-	//test_svd_mat(10, 3, A, 3);
-	//test_svd_mat(3, 4, A, 4);
-	//test_svd_mat(3, 5, A, 5);
-	//test_svd_mat(3, 7, A, 7);
-	//test_svd_mat(3, 10, A, 10);
-	//test_svd_mat(5, 4, A, 4);
-	//test_svd_mat(6, 5, A, 5);
-	//test_svd_mat(7, 6, A, 6);
-	//test_svd_mat(2, 1, A, 8);
-	//test_svd_mat(3, 2, A, 8);
-	//test_svd_mat(4, 3, A, 8);
-	//test_svd_mat(8, 7, A, 8); 
-	//test_svd_mat(10, 9, A, 9);
-	//test_svd_mat(10, 10, A, 10);
+	test_svd_mat(1, 1, A, 1);
+	test_svd_mat(2, 1, A, 1);
+	test_svd_mat(3, 1, A, 1);
+	test_svd_mat(5, 1, A, 1);
+	test_svd_mat(10, 1, A, 1);
+	test_svd_mat(1, 2, A, 2);
+	test_svd_mat(1, 3, A, 3);
+	test_svd_mat(1, 5, A, 5);
+	test_svd_mat(1, 10, A, 10);
+	test_svd_mat(2, 2, A, 2);
+	test_svd_mat(3, 2, A, 2);
+	test_svd_mat(4, 2, A, 2);
+	test_svd_mat(7, 2, A, 2);
+	test_svd_mat(10, 2, A, 2);
+	test_svd_mat(2, 3, A, 3);
+	test_svd_mat(2, 4, A, 4);
+	test_svd_mat(2, 7, A, 7);
+	test_svd_mat(2, 10, A, 10);
+	test_svd_mat(3, 3, A, 3);
+	test_svd_mat(4, 3, A, 3);
+	test_svd_mat(5, 3, A, 3);
+	test_svd_mat(7, 3, A, 3);
+	test_svd_mat(10, 3, A, 3);
+	test_svd_mat(3, 4, A, 4);
+	test_svd_mat(3, 5, A, 5);
+	test_svd_mat(3, 7, A, 7);
+	test_svd_mat(3, 10, A, 10);
+	test_svd_mat(5, 4, A, 4);
+	test_svd_mat(6, 5, A, 5);
+	test_svd_mat(7, 6, A, 6);
+	test_svd_mat(2, 1, A, 8);
+	test_svd_mat(3, 2, A, 8);
+	test_svd_mat(4, 3, A, 8);
+	test_svd_mat(8, 7, A, 8); 
+	test_svd_mat(10, 9, A, 9);
+	test_svd_mat(10, 10, A, 10);
 	test_svd_mat(11, 10, A, 10);
-	//test_svd_mat(10, 11, A, 11);
-	//test_svd_mat(21, 10, A, 10);
-	//test_svd_mat(10, 21, A, 21);
-	//test_svd_mat(12, 11, A, 11);
-	//test_svd_mat(13, 12, A, 12);
-	//test_svd_mat(14, 13, A, 13);
-	//test_svd_mat(15, 14, A, 14);
-	//test_svd_mat(16, 15, A, 15);
-	//test_svd_mat(17, 16, A, 16);
+	test_svd_mat(10, 11, A, 11);
+	test_svd_mat(21, 10, A, 10);
+	test_svd_mat(10, 21, A, 21);
+	test_svd_mat(12, 11, A, 11);
+	test_svd_mat(13, 12, A, 12);
+	test_svd_mat(14, 13, A, 13);
+	test_svd_mat(15, 14, A, 14);
+	test_svd_mat(16, 15, A, 15);
+	test_svd_mat(17, 16, A, 16);
 	test_svd_mat(18, 17, A, 17);
-	//test_svd_mat(19, 18, A, 18);
-	//test_svd_mat(20, 19, A, 19);
-	//test_svd_mat(21, 20, A, 20);
-	//test_svd_mat(22, 21, A, 21);
-	//test_svd_mat(23, 22, A, 22);
-	//test_svd_mat(24, 23, A, 23);
-	//test_svd_mat(25, 24, A, 24);
-	//test_svd_mat(24, 24, A, 24);
-	//test_svd_mat(24, 25, A, 24);
+	test_svd_mat(19, 18, A, 18);
+	test_svd_mat(20, 19, A, 19);
+	test_svd_mat(21, 20, A, 20);
+	test_svd_mat(22, 21, A, 21);
+	test_svd_mat(23, 22, A, 22);
+	test_svd_mat(24, 23, A, 23);
+	test_svd_mat(25, 24, A, 24);
+	test_svd_mat(24, 24, A, 24);
+	test_svd_mat(24, 25, A, 24);
 	/*
 	aris::dynamic::s_nm(25, 24, -1.0, A);
 	test_svd_mat(1, 1, A, 1);
