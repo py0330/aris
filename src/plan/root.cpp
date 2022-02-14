@@ -15,7 +15,7 @@ namespace aris::plan{
 		std::string name_;
 		std::weak_ptr<Plan> shared_for_this_;
 
-		aris::dynamic::Model *model_;
+		aris::dynamic::ModelBase *model_base_;
 		aris::control::Master *master_;
 		aris::control::Controller *controller_;
 		aris::control::EthercatMaster *ec_master_;
@@ -76,8 +76,8 @@ namespace aris::plan{
 		imp_->cs_ = cs;
 	}
 	auto Plan::controlServer()noexcept->aris::server::ControlServer * { return imp_->cs_; }
-	auto Plan::setModel(aris::dynamic::Model* m)noexcept->void { imp_->model_ = m; }
-	auto Plan::model()noexcept->aris::dynamic::Model* { return imp_->model_; }
+	auto Plan::setModelBase(aris::dynamic::ModelBase* m)noexcept->void { imp_->model_base_ = m; }
+	auto Plan::modelBase()noexcept->aris::dynamic::ModelBase* { return imp_->model_base_; }
 	auto Plan::setMaster(aris::control::Master* m)noexcept->void { imp_->master_ = m; }
 	auto Plan::master()noexcept->aris::control::Master* { return imp_->master_; }
 	auto Plan::setController(aris::control::Controller*c)noexcept->void { imp_->controller_ = c; }

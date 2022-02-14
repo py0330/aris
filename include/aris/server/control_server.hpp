@@ -44,12 +44,19 @@ namespace aris::server
 
 		static auto instance()->ControlServer &;
 
-		// model //
+		// model base //
 		template<typename T = aris::dynamic::Model, typename... Args>
-		auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
-		auto resetModel(dynamic::Model *model)->void;
-		auto model()->dynamic::Model&;
-		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
+		auto makeModel(Args&&... args)->void { this->resetModelBase(new T(std::forward<Args>(args)...)); }
+		auto resetModel(dynamic::ModelBase* model)->void;
+		auto model()->dynamic::ModelBase&;
+		auto model()const->const dynamic::ModelBase& { return const_cast<ControlServer*>(this)->model(); }
+
+		// model //
+		//template<typename T = aris::dynamic::Model, typename... Args>
+		//auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
+		//auto resetModel(dynamic::Model *model)->void;
+		//auto model()->dynamic::Model&;
+		//auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 
 		// master //
 		template<typename T = aris::control::Master, typename... Args>

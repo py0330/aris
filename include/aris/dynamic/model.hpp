@@ -343,6 +343,175 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 		friend class Motion;
 	};
+
+	// 多轴模型，覆盖了ModelBase类的虚方法 //
+	// 本质是在将所有子模型的对应方法全部调用了一遍 //
+	class ARIS_API MultiModel :public aris::dynamic::ModelBase {
+	public:
+		// kinematics & dynamics //
+		auto virtual inverseKinematics()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.inverseKinematics())
+					return ret;
+			return 0;
+		}
+		auto virtual forwardKinematics()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.forwardKinematics())
+					return ret;
+			return 0;
+		}
+		auto virtual inverseKinematicsVel()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.inverseKinematicsVel())
+					return ret;
+			return 0;
+		}
+		auto virtual forwardKinematicsVel()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.forwardKinematicsVel())
+					return ret;
+			return 0;
+		}
+		auto virtual inverseDynamics()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.inverseDynamics())
+					return ret;
+			return 0;
+		}
+		auto virtual forwardDynamics()noexcept->int override {
+			for (auto& model : subModels())
+				if (auto ret = model.forwardDynamics())
+					return ret;
+			return 0;
+		}
+
+		// inputs //
+		auto virtual inputPosSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.inputPosSize();
+			return size;
+		}
+		auto virtual getInputPos(double* mp)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
+				models_[idx].getInputPos(mp + pos);
+		}
+		auto virtual setInputPos(const double* mp)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
+				models_[idx].setInputPos(mp + pos);
+		}
+
+		auto virtual inputVelSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.inputVelSize();
+			return size;
+		}
+		auto virtual getInputVel(double* mv)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
+				models_[idx].getInputVel(mv + pos);
+		}
+		auto virtual setInputVel(const double* mv)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
+				models_[idx].setInputVel(mv + pos);
+		}
+
+		auto virtual inputAccSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.inputAccSize();
+			return size;
+		}
+		auto virtual getInputAcc(double* ma)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
+				models_[idx].getInputAcc(ma + pos);
+		}
+		auto virtual setInputAcc(const double* ma)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
+				models_[idx].setInputAcc(ma + pos);
+		}
+
+		auto virtual inputFceSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.inputFceSize();
+			return size;
+		}
+		auto virtual getInputFce(double* mf)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
+				models_[idx].getInputFce(mf + pos);
+		}
+		auto virtual setInputFce(const double* mf)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
+				models_[idx].setInputFce(mf + pos);
+		}
+
+		// outputs //
+		auto virtual outputPosSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.outputPosSize();
+			return size;
+		}
+		auto virtual getOutputPos(double* mp)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
+				models_[idx].getOutputPos(mp + pos);
+		}
+		auto virtual setOutputPos(const double* mp)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
+				models_[idx].setOutputPos(mp + pos);
+		}
+
+		auto virtual outputVelSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.outputVelSize();
+			return size;
+		}
+		auto virtual getOutputVel(double* mv)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
+				models_[idx].getOutputVel(mv + pos);
+		}
+		auto virtual setOutputVel(const double* mv)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
+				models_[idx].setOutputVel(mv + pos);
+		}
+
+		auto virtual outputAccSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.outputAccSize();
+			return size;
+		}
+		auto virtual getOutputAcc(double* ma)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
+				models_[idx].getOutputAcc(ma + pos);
+		}
+		auto virtual setOutputAcc(const double* ma)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
+				models_[idx].setOutputAcc(ma + pos);
+		}
+
+		auto virtual outputFceSize()const noexcept->aris::Size override {
+			aris::Size size = 0;
+			for (auto& m : subModels())size += m.outputFceSize();
+			return size;
+		}
+		auto virtual getOutputFce(double* mf)const noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
+				models_[idx].getOutputFce(mf + pos);
+		}
+		auto virtual setOutputFce(const double* mf)noexcept->void override {
+			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
+				models_[idx].setOutputFce(mf + pos);
+		}
+
+		auto subModels()->aris::core::PointerArray<ModelBase>& { return models_; }
+		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return models_; }
+
+		// 方便函数 //
+
+
+
+	private:
+		aris::core::PointerArray<ModelBase> models_;
+	};
+
+
 	/// @}
 }
 

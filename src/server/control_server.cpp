@@ -121,7 +121,7 @@ namespace aris::server{
 		std::atomic<bool> is_rt_log_started_{ false };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
-		std::unique_ptr<aris::dynamic::Model> model_;
+		std::unique_ptr<aris::dynamic::ModelBase> model_;
 		std::unique_ptr<aris::control::Controller> controller_;
 		std::unique_ptr<aris::control::Master> master_;
 		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
@@ -562,7 +562,7 @@ namespace aris::server{
 		return fix_finished;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
-	auto ControlServer::resetModel(dynamic::Model *model)->void { imp_->model_.reset(model); }
+	auto ControlServer::resetModel(dynamic::ModelBase *model)->void { imp_->model_.reset(model); }
 	auto ControlServer::resetMaster(control::Master *master)->void { imp_->master_.reset(master); }
 	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
@@ -571,7 +571,7 @@ namespace aris::server{
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
 	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
-	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
+	auto ControlServer::model()->dynamic::ModelBase& { return *imp_->model_; }
 	auto ControlServer::master()->control::Master& { return *imp_->master_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
@@ -697,7 +697,7 @@ namespace aris::server{
 				plan->setBeginGlobalCount(0);
 				
 				plan->setControlServer(this);
-				plan->setModel(imp_->model_.get());
+				plan->setModelBase(imp_->model_.get());
 				plan->setMaster(imp_->master_.get());
 				plan->setController(imp_->controller_.get());
 				
@@ -880,7 +880,7 @@ namespace aris::server{
 			p.setBeginGlobalCount(0);
 
 			p.setControlServer(this);
-			p.setModel(imp_->model_.get());
+			p.setModelBase(imp_->model_.get());
 			p.setMaster(imp_->master_.get());
 			p.setController(imp_->controller_.get());
 
@@ -1180,7 +1180,7 @@ namespace aris::server{
 
 						try
 						{
-							imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
+							//imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
 							auto &c = imp_->calculator_;
 
 							auto js = nlohmann::json::parse(cmd_str);
@@ -1300,8 +1300,8 @@ namespace aris::server{
 					}
 					else
 					{
-						std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
-						auto &c = aris::server::ControlServer::instance().model().calculator();
+						//std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+						//auto &c = aris::server::ControlServer::instance().model().calculator();
 						auto &cs = aris::server::ControlServer::instance();
 
 						if (imp_->language_parser_.isEnd())

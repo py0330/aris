@@ -140,14 +140,17 @@ namespace aris::plan{
 		// 子模块索引 //
 		auto setControlServer(aris::server::ControlServer*)noexcept->void;
 		auto controlServer()noexcept->aris::server::ControlServer*;
-		auto setModel(aris::dynamic::Model*)noexcept->void;
-		auto model()noexcept->aris::dynamic::Model*;
+		auto setModelBase(aris::dynamic::ModelBase*)noexcept->void;
+		auto modelBase()noexcept->aris::dynamic::ModelBase*;
 		auto setMaster(aris::control::Master*)noexcept->void;
 		auto master()noexcept->aris::control::Master*;
 		auto setController(aris::control::Controller*)noexcept->void;
 		auto controller()noexcept->aris::control::Controller*;
-		auto ecMaster()noexcept->aris::control::EthercatMaster* { return dynamic_cast<aris::control::EthercatMaster*>(master()); }
 		
+		// 方便函数，自动转换为ecMaster //
+		auto ecMaster()noexcept->aris::control::EthercatMaster* { return dynamic_cast<aris::control::EthercatMaster*>(master()); }
+		auto model()noexcept->aris::dynamic::Model* { return dynamic_cast<aris::dynamic::Model*>(modelBase()); };
+
 		// 日志与打印 //
 		auto lout()->aris::core::MsgStream & { return master()->lout(); }
 		auto mout()->aris::core::MsgStream & { return master()->mout(); }

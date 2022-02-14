@@ -47,6 +47,8 @@ namespace aris::dynamic{
 		auto virtual outputFceSize()const noexcept->Size { return 0; }
 		auto virtual getOutputFce(double *mf)const noexcept->void { }
 		auto virtual setOutputFce(const double *mf)noexcept->void { }
+
+
 	};
 }
 
