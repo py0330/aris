@@ -22,6 +22,8 @@ namespace aris::dynamic
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
+		model->setName("PumaModel");
+
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
@@ -44,7 +46,7 @@ namespace aris::dynamic
 		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
 		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 6 ? param.iv_vec[3].data() : default_iv);
 		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
-		auto &p6 = model->partPool().add<Part>("L6", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv,
+		auto &p6 = model->partPool().add<Part>("EE", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv,
 			ee_i_pm);
 
 		// add joint //

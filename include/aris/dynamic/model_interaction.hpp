@@ -260,6 +260,17 @@ namespace aris::dynamic
 	// 六维末端
 	class ARIS_API GeneralMotion final :public MotionBase{
 	public:
+		enum class PoseType{
+			EULER313,
+			EULER321,
+			EULER123,
+			QUATERNION,
+			POSE_MATRIX,
+		};
+
+		auto setPoseType(PoseType type)->void;
+		auto poseType()const->PoseType;
+
 		static auto Dim()->Size { return 6; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
@@ -267,11 +278,11 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
-		auto virtual pSize()const noexcept->Size { return 16; }
+		auto virtual pSize()const noexcept->Size;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
-		auto virtual setP(const double *mp) noexcept->void override { setMpm(mp); }
-		auto virtual getP(double *mp)const noexcept->void override { getMpm(mp); }
+		auto virtual setP(const double* mp) noexcept->void override;
+		auto virtual getP(double* mp)const noexcept->void override;
 		auto virtual v()const noexcept->const double* override;
 		auto virtual updV() noexcept->void override;
 		auto virtual setV(const double *mv) noexcept->void override { setMvs(mv); }

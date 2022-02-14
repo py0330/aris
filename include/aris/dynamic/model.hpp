@@ -244,7 +244,7 @@ namespace aris::dynamic{
 		auto virtual setOutputFce(const double *mf)noexcept->void override;
 		/// @}
 
-		auto virtual init()->void;
+		auto virtual init()->void override;
 		/// @{
 		auto findVariable(std::string_view name)->Variable*;
 		auto findPart(std::string_view name)->Part*;
@@ -393,12 +393,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getInputPos(double* mp)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
-				models_[idx].getInputPos(mp + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputPosSize(), ++idx)
+				subModels()[idx].getInputPos(mp + pos);
 		}
 		auto virtual setInputPos(const double* mp)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
-				models_[idx].setInputPos(mp + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputPosSize(), ++idx)
+				subModels()[idx].setInputPos(mp + pos);
 		}
 
 		auto virtual inputVelSize()const noexcept->aris::Size override {
@@ -407,12 +407,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getInputVel(double* mv)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
-				models_[idx].getInputVel(mv + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputVelSize(), ++idx)
+				subModels()[idx].getInputVel(mv + pos);
 		}
 		auto virtual setInputVel(const double* mv)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
-				models_[idx].setInputVel(mv + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputVelSize(), ++idx)
+				subModels()[idx].setInputVel(mv + pos);
 		}
 
 		auto virtual inputAccSize()const noexcept->aris::Size override {
@@ -421,12 +421,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getInputAcc(double* ma)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
-				models_[idx].getInputAcc(ma + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputAccSize(), ++idx)
+				subModels()[idx].getInputAcc(ma + pos);
 		}
 		auto virtual setInputAcc(const double* ma)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
-				models_[idx].setInputAcc(ma + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputAccSize(), ++idx)
+				subModels()[idx].setInputAcc(ma + pos);
 		}
 
 		auto virtual inputFceSize()const noexcept->aris::Size override {
@@ -435,12 +435,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getInputFce(double* mf)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
-				models_[idx].getInputFce(mf + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputFceSize(), ++idx)
+				subModels()[idx].getInputFce(mf + pos);
 		}
 		auto virtual setInputFce(const double* mf)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
-				models_[idx].setInputFce(mf + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputFceSize(), ++idx)
+				subModels()[idx].setInputFce(mf + pos);
 		}
 
 		// outputs //
@@ -450,12 +450,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getOutputPos(double* mp)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
-				models_[idx].getOutputPos(mp + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputPosSize(), ++idx)
+				subModels()[idx].getOutputPos(mp + pos);
 		}
 		auto virtual setOutputPos(const double* mp)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
-				models_[idx].setOutputPos(mp + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputPosSize(), ++idx)
+				subModels()[idx].setOutputPos(mp + pos);
 		}
 
 		auto virtual outputVelSize()const noexcept->aris::Size override {
@@ -464,12 +464,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getOutputVel(double* mv)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
-				models_[idx].getOutputVel(mv + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputVelSize(), ++idx)
+				subModels()[idx].getOutputVel(mv + pos);
 		}
 		auto virtual setOutputVel(const double* mv)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
-				models_[idx].setOutputVel(mv + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputVelSize(), ++idx)
+				subModels()[idx].setOutputVel(mv + pos);
 		}
 
 		auto virtual outputAccSize()const noexcept->aris::Size override {
@@ -478,12 +478,12 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getOutputAcc(double* ma)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
-				models_[idx].getOutputAcc(ma + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputAccSize(), ++idx)
+				subModels()[idx].getOutputAcc(ma + pos);
 		}
 		auto virtual setOutputAcc(const double* ma)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
-				models_[idx].setOutputAcc(ma + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputAccSize(), ++idx)
+				subModels()[idx].setOutputAcc(ma + pos);
 		}
 
 		auto virtual outputFceSize()const noexcept->aris::Size override {
@@ -492,24 +492,86 @@ namespace aris::dynamic{
 			return size;
 		}
 		auto virtual getOutputFce(double* mf)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
-				models_[idx].getOutputFce(mf + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputFceSize(), ++idx)
+				subModels()[idx].getOutputFce(mf + pos);
 		}
 		auto virtual setOutputFce(const double* mf)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
-				models_[idx].setOutputFce(mf + pos);
+			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputFceSize(), ++idx)
+				subModels()[idx].setOutputFce(mf + pos);
 		}
 
-		auto subModels()->aris::core::PointerArray<ModelBase>& { return models_; }
-		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return models_; }
+		auto virtual init()->void override{
+			for (auto& m : subModels())
+				m.init();
+		}
+
+		auto resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void;
+		auto subModels()->aris::core::PointerArray<ModelBase>&;
+		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
 
 		// 方便函数 //
+		auto updP()->void {
+			for(auto &m:subModels())
+				if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+					for (auto& ee : model->generalMotionPool()) {
+						ee.updP();
+					}
+				}
+		}
 
+		auto tools()->std::vector<aris::dynamic::Marker*>&;
+		auto wobjs()->std::vector<aris::dynamic::Marker*>&;
 
+		auto findTool(std::string_view name)->aris::dynamic::Marker*;
+		auto findWobj(std::string_view name)->aris::dynamic::Marker*;
+
+		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
+
+		virtual ~MultiModel();
+		explicit MultiModel();
+		MultiModel(MultiModel&&);
+		MultiModel& operator=(MultiModel&&);
 
 	private:
-		aris::core::PointerArray<ModelBase> models_;
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
+
+	// axis 为外部轴的轴，0,1,2,3,4,5 分别代表xyz（平移）abc（旋转）
+	// pm 为外部轴的位置姿态
+
+	auto inline createExternalAxisModel(const double *pos, const double *axis, bool is_revolute)->std::unique_ptr < Model > {
+		auto m = std::make_unique<aris::dynamic::Model>();
+		m->setName("ExAxisModel");
+
+		auto &platform = m->partPool().add<Part>("EE");
+		
+		if (is_revolute) {
+			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
+			auto& motion = m->addMotion(joint);
+			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 5);
+		}
+		else{
+			auto& joint = m->addPrismaticJoint(platform, m->ground(), pos, axis);
+			auto& motion = m->addMotion(joint);
+			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 2);
+		}
+
+		for (int i = 1; i < 8; ++i) {
+			platform.addMarker("tool" + std::to_string(i));
+		}
+		for (int i = 1; i < 8; ++i) m->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i));
+
+		// add solver
+		auto& inverse_kinematic = m->solverPool().add<aris::dynamic::InverseKinematicSolver>();
+		auto& forward_kinematic = m->solverPool().add<ForwardKinematicSolver>();
+		auto& inverse_dynamic = m->solverPool().add<aris::dynamic::InverseDynamicSolver>();
+		auto& forward_dynamic = m->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
+
+		m->init();
+
+		return m;
+	}
 
 
 	/// @}

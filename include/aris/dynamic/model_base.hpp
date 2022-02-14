@@ -2,7 +2,7 @@
 #define ARIS_DYNAMIC_MODEL_BASE_H_
 
 namespace aris::dynamic{
-	class ARIS_API ModelBase{
+	class ARIS_API ModelBase: public aris::core::NamedObject{
 	public:
 		// kinematics & dynamics //
 		auto virtual inverseKinematics()noexcept->int { return -1; }
@@ -48,7 +48,7 @@ namespace aris::dynamic{
 		auto virtual getOutputFce(double *mf)const noexcept->void { }
 		auto virtual setOutputFce(const double *mf)noexcept->void { }
 
-
+		auto virtual init()->void {};
 	};
 }
 

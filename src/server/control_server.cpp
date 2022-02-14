@@ -1300,8 +1300,8 @@ namespace aris::server{
 					}
 					else
 					{
-						//std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
-						//auto &c = aris::server::ControlServer::instance().model().calculator();
+						std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
+						auto &c = dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator();
 						auto &cs = aris::server::ControlServer::instance();
 
 						if (imp_->language_parser_.isEnd())
@@ -1419,7 +1419,7 @@ namespace aris::server{
 
 						}
 
-						std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+						std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
 						return send_code_and_msg(imp_->last_error_code_, imp_->last_error_);
 					}
 				}
@@ -1452,8 +1452,8 @@ namespace aris::server{
 						imp_->auto_thread_ = std::thread([&]()->void
 						{
 							// 交换calculator，保证每个程序开始时的变量都是之前的 //
-							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
-							auto &c = aris::server::ControlServer::instance().model().calculator();
+							std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
+							auto &c = dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator();
 							auto &cs = aris::server::ControlServer::instance();
 							std::unique_lock<std::mutex> lck(imp_->auto_mu_);
 							imp_->current_line_ = imp_->language_parser_.currentLine();
@@ -1609,7 +1609,7 @@ namespace aris::server{
 							imp_->current_line_ = imp_->language_parser_.currentLine();
 							lck.unlock();
 
-							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+							//std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 							ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 							//LOG_INFO << "pro " << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
@@ -1756,7 +1756,7 @@ namespace aris::server{
 		
 		typedef aris::control::Master &(ControlServer::*MasterFunc)();
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
-		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
+		typedef aris::dynamic::ModelBase &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
