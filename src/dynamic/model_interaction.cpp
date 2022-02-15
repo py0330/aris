@@ -159,7 +159,15 @@ namespace aris::dynamic{
 
 	struct GeneralMotion::Imp {
 		double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
+		mutable double p_[16];
+		PoseType pose_type_{PoseType::EULER321};
 	};
+	auto GeneralMotion::setPoseType(PoseType type)->void {
+		imp_->pose_type_ = type;
+	}
+	auto GeneralMotion::poseType()const->PoseType {
+		return imp_->pose_type_;
+	}
 	auto GeneralMotion::locCmI() const noexcept->const double*{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 		return loc_cm_I;
@@ -196,8 +204,40 @@ namespace aris::dynamic{
 	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { s_inv_tv(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-	auto GeneralMotion::p()const noexcept->const double* { return *imp_->mpm_; }
+	
+	auto GeneralMotion::pSize()const noexcept->Size { 
+		switch (poseType()) {
+		case GeneralMotion::PoseType::EULER123:return 6;
+		case GeneralMotion::PoseType::EULER321:return 6;
+		case GeneralMotion::PoseType::EULER313:return 6;
+		case GeneralMotion::PoseType::QUATERNION:return 7;
+		case GeneralMotion::PoseType::POSE_MATRIX:return 16;
+		default:return 6;
+		}
+	}
+	auto GeneralMotion::p()const noexcept->const double* { 
+		switch (poseType()) {
+		case GeneralMotion::PoseType::EULER123:s_pm2pe(*imp_->mpm_, imp_->p_, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pm2pe(*imp_->mpm_, imp_->p_, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pm2pe(*imp_->mpm_, imp_->p_, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pm2pq(*imp_->mpm_, imp_->p_); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, *imp_->mpm_, imp_->p_); break;
+		}
+		
+		return imp_->p_; 
+	}
 	auto GeneralMotion::updP() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
+	auto GeneralMotion::setP(const double* mp) noexcept->void { 
+		switch (poseType()) {
+		case GeneralMotion::PoseType::EULER123:s_pe2pm(mp, *imp_->mpm_, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pe2pm(mp, *imp_->mpm_, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pe2pm(mp, *imp_->mpm_, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(mp, *imp_->mpm_); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, mp, *imp_->mpm_); break;
+		}
+	}
+	auto GeneralMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
+	
 	auto GeneralMotion::v()const noexcept->const double* { return imp_->mvs_; }
 	auto GeneralMotion::updV() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
 	auto GeneralMotion::a()const noexcept->const double* { return imp_->mas_; }
@@ -863,8 +903,29 @@ namespace aris::dynamic{
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
+		aris::core::class_<GeneralMotion::PoseType>("PoseType")
+			.textMethod([](GeneralMotion::PoseType*type)->std::string {
+					switch (*type) {
+					case GeneralMotion::PoseType::EULER123:return "EULER123";
+					case GeneralMotion::PoseType::EULER321:return "EULER321";
+					case GeneralMotion::PoseType::EULER313:return "EULER313";
+					case GeneralMotion::PoseType::QUATERNION:return "QUATERNION";
+					case GeneralMotion::PoseType::POSE_MATRIX:return "POSE_MATRIX";
+					default:return "EULER123";
+					}
+				}, [](GeneralMotion::PoseType* type, std::string_view name)->void {
+					if (name == "EULER123")*type = GeneralMotion::PoseType::EULER123;
+					if (name == "EULER321")*type = GeneralMotion::PoseType::EULER321;
+					if (name == "EULER313")*type = GeneralMotion::PoseType::EULER313;
+					if (name == "QUATERNION")*type = GeneralMotion::PoseType::QUATERNION;
+					if (name == "POSE_MATRIX")*type = GeneralMotion::PoseType::POSE_MATRIX;
+				
+				})
+			;
+
 		aris::core::class_<GeneralMotion>("GeneralMotion")
 			.inherit<aris::dynamic::MotionBase>()
+			.prop("pose_type", &GeneralMotion::setPoseType, &GeneralMotion::poseType)
 			;
 
 		aris::core::class_<PointMotion>("PointMotion")

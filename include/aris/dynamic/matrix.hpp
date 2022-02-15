@@ -104,7 +104,7 @@ namespace aris::dynamic{
 
 	template <typename T, typename TType>
 	auto inline dsp(Size m, Size n, const T *data, TType d_t)noexcept->void{
-		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(14);
+		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(4);
 
 		std::cout << std::endl;
 		for (Size i = 0; i < m; i++){
@@ -390,6 +390,16 @@ namespace aris::dynamic{
 		}
 	}
 	auto inline s_permutate(Size m, Size rhs, const Size *p, double *x)noexcept->void { s_permutate(m, rhs, p, x, rhs); }
+
+	// y[i] = x[p[i]]
+	template<typename PIter, typename XType, typename YType>
+	auto inline s_permutate(Size m, Size rhs, PIter p, const double *x, XType x_t, double *y, YType y_t)noexcept->void {
+		for (Size i(-1); ++i < m;)
+			for (Size j(-1); ++j < rhs; )
+				y[at(i, j)] = x[at(static_cast<Size>(p[i]), j)];
+	}
+	auto inline s_permutate(Size m, Size rhs, const Size *p, const double *x, double *y)noexcept->void { s_permutate(m, rhs, p, x, rhs, y, rhs); }
+	
 	// x_new[p[i]] = x[i]
 	template<typename PIter, typename XType>
 	auto inline s_permutate_inv(Size m, Size rhs, PIter p, double *x, XType x_t)noexcept->void{
@@ -405,6 +415,15 @@ namespace aris::dynamic{
 		}
 	}
 	auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x)noexcept->void { s_permutate_inv(m, rhs, p, x, rhs); }
+
+	// y[i] = x[p[i]]
+	template<typename PIter, typename XType, typename YType>
+	auto inline s_permutate_inv(Size m, Size rhs, PIter p, const double *x, XType x_t, double *y, YType y_t)noexcept->void {
+		for (Size i(-1); ++i < m;)
+			for (Size j(-1); ++j < rhs; )
+				y[at(static_cast<Size>(p[i]), j)] = x[at(i, j)];
+	}
+	auto inline s_permutate_inv(Size m, Size rhs, const Size *p, const double *x, double *y)noexcept->void { s_permutate(m, rhs, p, x, rhs, y, rhs); }
 
 	// A can be the same as L, only when they have same type
 	template<typename AType, typename LType>
@@ -517,7 +536,7 @@ namespace aris::dynamic{
 	//    Q = f(U,tau)  where Q * R = A 
 	//
 	//    U :        m x n
-	//  tau : max(m,n) x 1
+	//  tau :        n x 1
 	//    Q :        m x m
 	//
 	//    Q can be the same address with U, if m < n
@@ -849,7 +868,6 @@ namespace aris::dynamic{
 		// x = P^-1 * y;
 		// 
 		//
-
 
 		// step 1:
 		// change x to:
@@ -1323,7 +1341,8 @@ namespace aris::dynamic{
 	auto inline s_householder_up2pinv(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_householder_up2pinv(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
 
 
-	extern double *global_U, *global_V, *global_S;
+
+
 
 
 	// find plane using point clouds //

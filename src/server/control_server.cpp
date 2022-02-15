@@ -13,39 +13,6 @@
 #include "aris/server/control_server.hpp"
 #include "aris/server/api.hpp"
 
-namespace aris::plan{
-	struct Plan::Imp{
-		std::string name_;
-
-		std::int64_t count_;
-
-		aris::dynamic::Model *model_;
-		aris::control::Master *master_;
-		aris::control::Controller *controller_;
-		aris::control::EthercatMaster *ec_master_;
-		aris::server::ControlServer *cs_;
-
-		std::weak_ptr<Plan> shared_for_this_;
-
-		std::uint64_t option_;
-		std::vector<std::uint64_t> mot_options_;
-
-		aris::core::Command cmd_struct_;
-		std::vector<char> cmd_str_;
-		std::string_view cmd_name_;
-		std::map<std::string_view, std::string_view> cmd_params_;
-
-		std::int64_t begin_global_count_;
-		std::uint64_t command_id_{ 0 };
-		aris::control::Master::RtStasticsData rt_stastic_;
-
-		std::any param;
-		std::any ret;
-		std::int32_t ret_code;
-		char ret_msg[1024]{};
-	};
-}
-
 namespace aris::server{
 	//
 	// # 基本规则 #
@@ -154,7 +121,7 @@ namespace aris::server{
 		std::atomic<bool> is_rt_log_started_{ false };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
-		std::unique_ptr<aris::dynamic::Model> model_;
+		std::unique_ptr<aris::dynamic::ModelBase> model_;
 		std::unique_ptr<aris::control::Controller> controller_;
 		std::unique_ptr<aris::control::Master> master_;
 		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
@@ -200,9 +167,9 @@ namespace aris::server{
 			auto &plan = *internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
 
 			// 在第一回合初始化，包括log，初始化target等 //
-			if (++plan.imp_->count_ == 1){
+			if (plan.setCount(plan.count() + 1), plan.count() == 1){
 				// 初始化target
-				plan.imp_->begin_global_count_ = global_count;
+				plan.setBeginGlobalCount(global_count);
 
 				// 创建rt_log文件 //
 				if (is_rt_log_started_)	{
@@ -226,17 +193,17 @@ namespace aris::server{
 
 				// finish //
 				if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
-					std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
-					plan.imp_->ret_code = err.code;
-				} else {
-					std::copy_n(plan.imp_->ret_msg, 1024, err_msg_);
-					plan.imp_->ret_code = err.code;
+					plan.setRetMsg(err_msg_);
+					plan.setRetCode(err.code);
+				} 
+				else {
+					std::copy_n(plan.retMsg(), 1024, err_msg_);
+					plan.setRetCode(err.code);
 				}
 				for(auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id){
 					auto &p = *internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
-					p.imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
-					const char err[] = "execute has been cancelled.";
-					std::copy_n(err, sizeof(err), p.imp_->ret_msg);
+					p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					p.setRetMsg("execute has been cancelled.");
 				}
 
 				server_->master().resetRtStasticData(nullptr, false);
@@ -247,7 +214,7 @@ namespace aris::server{
 			else if (ret == 0){
 				// print info //
 				if (!(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-					ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.imp_->count_ << " counts\n";
+					ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.count() << " counts\n";
 
 				// finish //
 				server_->master().resetRtStasticData(nullptr, false);
@@ -257,8 +224,8 @@ namespace aris::server{
 			// 命令仍在执行 //
 			else{
 				// print info //
-				if (plan.imp_->count_ % 1000 == 0 && !(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-					ARIS_MOUT_PLAN((&plan)) << "execute cmd in count: " << plan.imp_->count_ << "\n";
+				if (plan.count() % 1000 == 0 && !(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
+					ARIS_MOUT_PLAN((&plan)) << "execute cmd in count: " << plan.count() << "\n";
 			}
 		}
 		// 否则检查idle状态
@@ -567,14 +534,11 @@ namespace aris::server{
 	auto ControlServer::Imp::fixError()->std::int32_t{
 		// 只要在check里面执行，都说明修复没有结束 //
 		std::int32_t fix_finished{ 0 };
-		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i)
-		{
+		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
 			// correct
 			auto &cm = controller_->motorPool().at(i);
-			switch (cm.modeOfOperation())
-			{
+			switch (cm.modeOfOperation()){
 			case 1:
-				
 			case 8:
 				cm.setTargetPos(std::abs(last_pvc_[i].p - cm.actualPos()) > cm.maxPosFollowingError() ? cm.actualPos() : last_pvc_[i].p);
 				break;
@@ -598,7 +562,7 @@ namespace aris::server{
 		return fix_finished;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
-	auto ControlServer::resetModel(dynamic::Model *model)->void { imp_->model_.reset(model); }
+	auto ControlServer::resetModel(dynamic::ModelBase *model)->void { imp_->model_.reset(model); }
 	auto ControlServer::resetMaster(control::Master *master)->void { imp_->master_.reset(master); }
 	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
@@ -607,7 +571,7 @@ namespace aris::server{
 	}
 	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
 	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
-	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
+	auto ControlServer::model()->dynamic::ModelBase& { return *imp_->model_; }
 	auto ControlServer::master()->control::Master& { return *imp_->master_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
@@ -683,8 +647,7 @@ namespace aris::server{
 			}
 		}
 	}
-	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
-	{
+	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>{
 		// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
 		// 1.   parse list
 		//   1.1 ---   all success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
@@ -727,39 +690,45 @@ namespace aris::server{
 				auto[cmd, params] = planRoot().planParser().parse(std::string_view(cmd_str_local.data(), cmd_str_local.size()));
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
-				plan->imp_->count_ = 0;
-				plan->imp_->model_ = imp_->model_.get();
-				plan->imp_->master_ = imp_->master_.get();
-				plan->imp_->controller_ = imp_->controller_.get();
-				plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
-				plan->imp_->cs_ = this;
-				plan->imp_->shared_for_this_ = plan;
-				plan->imp_->option_ = 0;
-				plan->imp_->mot_options_.resize(plan->imp_->controller_->motorPool().size(), 0);
-				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motorPool().size(), plan->imp_->mot_options_.data());
-				plan->imp_->cmd_str_ = std::move(cmd_str_local);
-				plan->imp_->cmd_name_ = std::move(cmd);
-				plan->imp_->cmd_params_ = std::move(params);
-				plan->imp_->begin_global_count_ = 0;
-				plan->imp_->command_id_ = cmd_id;
-				plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
-				plan->imp_->ret_code = aris::plan::Plan::SUCCESS;
-				std::fill_n(plan->imp_->ret_msg, 1024, '\0');
+				plan->setSharedPtrForThis(plan);
+
+				plan->setCmdId(cmd_id);
+				plan->setCount(0);
+				plan->setBeginGlobalCount(0);
+				
+				plan->setControlServer(this);
+				plan->setModelBase(imp_->model_.get());
+				plan->setMaster(imp_->master_.get());
+				plan->setController(imp_->controller_.get());
+				
+				plan->option() = 0;
+				plan->motorOptions().resize(plan->controller()->motorPool().size(), 0);
+				std::copy_n(imp_->global_mot_check_options_, plan->controller()->motorPool().size(), plan->motorOptions().data());
+				
+				//plan->setCmdString(std::move(cmd_str_local));
+				//plan->setCmdName(cmd);
+				//plan->setCmdParams(std::move(params));
+				plan->command().init();
+				plan->parse(str);
+
+				plan->rtStastic() = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+				plan->setRetCode(aris::plan::Plan::SUCCESS);
+				std::fill_n(plan->retMsg(), 1024, '\0');
 				ret_plan.push_back(plan);
 			}
 			catch (std::exception &e){ // case 1.2 : exception
 				
-				for (auto &p : ret_plan)p->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+				for (auto &p : ret_plan)p->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				plan = std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
-				plan->imp_->ret_code = aris::plan::Plan::PARSE_EXCEPTION;
-				std::fill_n(plan->imp_->ret_msg, 1024, '\0');
-				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
+				plan->setRetCode(aris::plan::Plan::PARSE_EXCEPTION);
+				std::fill_n(plan->retMsg(), 1024, '\0');
+				std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 				ret_plan.push_back(plan);
 
 				// 确保每个输入str都有输出plan //
 				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i){
 					ret_plan.push_back(std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan));
-					ret_plan.back()->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+					ret_plan.back()->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				}
 
 				return ret_plan;
@@ -778,8 +747,8 @@ namespace aris::server{
 				// false : case 2.1    true : case 2.2 
 				if (plan->retCode() < 0) { 
 					for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp) {
-						if (pp < p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
-						if (pp > p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+						if (pp < p) (*pp)->plan_->setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+						if (pp > p) (*pp)->plan_->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 					}
 					prepare_error = true;
 					break;
@@ -787,21 +756,19 @@ namespace aris::server{
 			}
 			catch (std::exception &e){ // case 2.3
 				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp){
-					if (pp < p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
-					if (pp > p) (*pp)->plan_->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+					if (pp < p) (*pp)->plan_->setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					if (pp > p) (*pp)->plan_->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				}
-				plan->imp_->ret_code = aris::plan::Plan::PREPARE_EXCEPTION;
-				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
+				plan->setRetCode(aris::plan::Plan::PREPARE_EXCEPTION);
+				std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 				prepare_error = true;
 				break;
 			}
 		}
 
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		for (auto &plan : ret_plan)
-		{
-			auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
-			{
+		for (auto &plan : ret_plan){
+			auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b){
 				return a.first.length() < b.first.length();
 			})->first.length();
 			// print
@@ -833,19 +800,19 @@ namespace aris::server{
 				if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)){
 					// 检查 server 是否处于错误状态 //
 					if (this->errorCode()) {
-						plan->imp_->ret_code = aris::plan::Plan::SERVER_IN_ERROR;
+						plan->setRetCode(aris::plan::Plan::SERVER_IN_ERROR);
 						LOG_AND_THROW({"server in error, use cl to clear"});
 					}
 
 					// 检查 server 是否已经在运行 //
 					if (!imp_->is_running_)	{
-						plan->imp_->ret_code = aris::plan::Plan::SERVER_NOT_STARTED;
+						plan->setRetCode(aris::plan::Plan::SERVER_NOT_STARTED);
 						LOG_AND_THROW({ "server not started, use cs_start to start" });
 					}
 
-					// 查看是否 plan 池已满
+					// 查看是否 plan 池已满 //
 					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE){//原子操作(cmd_now)
-						plan->imp_->ret_code = aris::plan::Plan::COMMAND_POOL_IS_FULL;
+						plan->setRetCode(aris::plan::Plan::COMMAND_POOL_IS_FULL);
 						LOG_AND_THROW({ "command pool is full" });
 					}
 
@@ -855,9 +822,9 @@ namespace aris::server{
 			catch (std::exception &e){
 				for (auto pp = std::next(p); pp < internal_data.end(); ++pp)
 					if (!((*pp)->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
-						(*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
+						(*pp)->plan_->setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
 
-				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
+				std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 				return ret_plan;
 			}
 		}
@@ -872,21 +839,20 @@ namespace aris::server{
 		// step 4a&5a. USE RAII //
 		return ret_plan;
 	}
-	auto ControlServer::executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
-	{
+	auto ControlServer::executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>{
 		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_str, post_callback) };
 		auto ret = executeCmd(cmd_vec);
 		return ret.front();
 	}
-	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>> cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
-	{
+	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>> cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
 
 		const auto &cur_thread_id = std::this_thread::get_id();
 		if (cur_thread_id == imp_->main_thread_id_) {
 			return executeCmd(cmd_vec);
-		} else {
+		} 
+		else {
 			imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>>>>();
 			auto ret = imp_->cmdline_execute_promise_->get_future();
 			imp_->cmdline_cmd_vec_ = cmd_vec;
@@ -895,19 +861,36 @@ namespace aris::server{
 			return ret.get();
 		}
 	}
-	auto ControlServer::executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
-	{
+	auto ControlServer::executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>{
 		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_string, post_callback) };
 		auto ret = executeCmdInCmdLine(cmd_vec);
 		return ret.front();
 	}
-	auto ControlServer::init()->void
-	{
+	auto ControlServer::init()->void{
 		model().init();
 		master().init();
 		controller().init();
 		planRoot().init();
 		middleWare().init();
+
+		// 更新每个 plan 的初值 //
+		for (auto &p : planRoot().planPool()) {
+			p.setCmdId(0);
+			p.setCount(0);
+			p.setBeginGlobalCount(0);
+
+			p.setControlServer(this);
+			p.setModelBase(imp_->model_.get());
+			p.setMaster(imp_->master_.get());
+			p.setController(imp_->controller_.get());
+
+			p.option() = 0;
+			p.motorOptions().resize(p.controller()->motorPool().size(), 0);
+
+			p.rtStastic() = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+			p.setRetCode(aris::plan::Plan::SUCCESS);
+			std::fill_n(p.retMsg(), 1024, '\0');
+		}
 
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
@@ -946,6 +929,8 @@ namespace aris::server{
 		imp_->cmd_now_.store(0);
 		imp_->cmd_end_.store(0);
 		imp_->cmd_collect_.store(0);
+
+
 	}
 	auto ControlServer::start()->void{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -1195,7 +1180,7 @@ namespace aris::server{
 
 						try
 						{
-							imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
+							//imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
 							auto &c = imp_->calculator_;
 
 							auto js = nlohmann::json::parse(cmd_str);
@@ -1315,8 +1300,8 @@ namespace aris::server{
 					}
 					else
 					{
-						std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
-						auto &c = aris::server::ControlServer::instance().model().calculator();
+						std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
+						auto &c = dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator();
 						auto &cs = aris::server::ControlServer::instance();
 
 						if (imp_->language_parser_.isEnd())
@@ -1434,7 +1419,7 @@ namespace aris::server{
 
 						}
 
-						std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+						std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
 						return send_code_and_msg(imp_->last_error_code_, imp_->last_error_);
 					}
 				}
@@ -1467,8 +1452,8 @@ namespace aris::server{
 						imp_->auto_thread_ = std::thread([&]()->void
 						{
 							// 交换calculator，保证每个程序开始时的变量都是之前的 //
-							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
-							auto &c = aris::server::ControlServer::instance().model().calculator();
+							std::swap(imp_->calculator_, dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator());
+							auto &c = dynamic_cast<aris::dynamic::Model&>(aris::server::ControlServer::instance().model()).calculator();
 							auto &cs = aris::server::ControlServer::instance();
 							std::unique_lock<std::mutex> lck(imp_->auto_mu_);
 							imp_->current_line_ = imp_->language_parser_.currentLine();
@@ -1624,7 +1609,7 @@ namespace aris::server{
 							imp_->current_line_ = imp_->language_parser_.currentLine();
 							lck.unlock();
 
-							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+							//std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 							ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 							//LOG_INFO << "pro " << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
@@ -1771,7 +1756,7 @@ namespace aris::server{
 		
 		typedef aris::control::Master &(ControlServer::*MasterFunc)();
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
-		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
+		typedef aris::dynamic::ModelBase &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();

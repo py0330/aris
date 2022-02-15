@@ -1,171 +1,8 @@
-﻿/// \example demo_model_scara/main.cpp
+﻿/// \example demo_model_multi/main.cpp
 /// 本例子展示基于双模型的建模:
 ///
 
 #include "aris.hpp"
-
-// 多轴模型，覆盖了ModelBase类的虚方法 //
-// 建议把这个直接放入 kaanh 层//
-// 本质是在将所有子模型的对应方法全部调用了一遍
-class MultiModel :public aris::dynamic::ModelBase {
-public:
-	// kinematics & dynamics //
-	auto virtual inverseKinematics()noexcept->int { 
-		for (auto &model : subModels()) 
-			if(auto ret = model.inverseKinematics())
-				return ret; 
-		return 0; 
-	}
-	auto virtual forwardKinematics()noexcept->int {
-		for (auto &model : subModels())
-			if (auto ret = model.forwardKinematics())
-				return ret;
-		return 0;
-	}
-	auto virtual inverseKinematicsVel()noexcept->int { 
-		for (auto &model : subModels())
-			if (auto ret = model.inverseKinematicsVel())
-				return ret;
-		return 0;
-	}
-	auto virtual forwardKinematicsVel()noexcept->int {
-		for (auto &model : subModels())
-			if (auto ret = model.forwardKinematicsVel())
-				return ret;
-		return 0;
-	}
-	auto virtual inverseDynamics()noexcept->int {
-		for (auto &model : subModels())
-			if (auto ret = model.inverseDynamics())
-				return ret;
-		return 0;
-	}
-	auto virtual forwardDynamics()noexcept->int {
-		for (auto &model : subModels())
-			if (auto ret = model.forwardDynamics())
-				return ret;
-		return 0;
-	}
-
-	// inputs //
-	auto virtual inputPosSize()const noexcept->aris::Size { 
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.inputPosSize();
-		return size;
-	}
-	auto virtual getInputPos(double *mp)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
-			models_[idx].getInputPos(mp + pos);
-	}
-	auto virtual setInputPos(const double *mp)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputPosSize(), ++idx)
-			models_[idx].setInputPos(mp + pos);
-	}
-
-	auto virtual inputVelSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.inputVelSize();
-		return size;
-	}
-	auto virtual getInputVel(double *mv)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
-			models_[idx].getInputVel(mv + pos);
-	}
-	auto virtual setInputVel(const double *mv)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputVelSize(), ++idx)
-			models_[idx].setInputVel(mv + pos);
-	}
-
-	auto virtual inputAccSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.inputAccSize();
-		return size;
-	}
-	auto virtual getInputAcc(double *ma)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
-			models_[idx].getInputAcc(ma + pos);
-	}
-	auto virtual setInputAcc(const double *ma)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputAccSize(), ++idx)
-			models_[idx].setInputAcc(ma + pos);
-	}
-
-	auto virtual inputFceSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.inputFceSize();
-		return size;
-	}
-	auto virtual getInputFce(double *mf)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
-			models_[idx].getInputFce(mf + pos);
-	}
-	auto virtual setInputFce(const double *mf)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].inputFceSize(), ++idx)
-			models_[idx].setInputFce(mf + pos);
-	}
-
-	// outputs //
-	auto virtual outputPosSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.outputPosSize();
-		return size;
-	}
-	auto virtual getOutputPos(double *mp)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
-			models_[idx].getOutputPos(mp + pos);
-	}
-	auto virtual setOutputPos(const double *mp)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputPosSize(), ++idx)
-			models_[idx].setOutputPos(mp + pos);
-	}
-
-	auto virtual outputVelSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.outputVelSize();
-		return size;
-	}
-	auto virtual getOutputVel(double *mv)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
-			models_[idx].getOutputVel(mv + pos);
-	}
-	auto virtual setOutputVel(const double *mv)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputVelSize(), ++idx)
-			models_[idx].setOutputVel(mv + pos);
-	}
-
-	auto virtual outputAccSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.outputAccSize();
-		return size;
-	}
-	auto virtual getOutputAcc(double *ma)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
-			models_[idx].getOutputAcc(ma + pos);
-	}
-	auto virtual setOutputAcc(const double *ma)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputAccSize(), ++idx)
-			models_[idx].setOutputAcc(ma + pos);
-	}
-
-	auto virtual outputFceSize()const noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto &m : subModels())size += m.outputFceSize();
-		return size;
-	}
-	auto virtual getOutputFce(double *mf)const noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
-			models_[idx].getOutputFce(mf + pos);
-	}
-	auto virtual setOutputFce(const double *mf)noexcept->void {
-		for (aris::Size pos = 0, idx = 0; idx < models_.size(); pos += models_[idx].outputFceSize(), ++idx)
-			models_[idx].setOutputFce(mf + pos);
-	}
-
-	auto subModels()->aris::core::PointerArray<ModelBase>& { return models_; }
-	auto subModels()const->const aris::core::PointerArray<ModelBase>& { return models_; }
-private:
-	aris::core::PointerArray<ModelBase> models_;
-};
 
 // 实现一个外部轴模型,这里只实现位置即可 //
 class ExternalAxisModel :public aris::dynamic::ModelBase {
@@ -221,7 +58,7 @@ private:
 int main()
 {
 	// 多模型 //
-	MultiModel model;
+	aris::dynamic::MultiModel model;
 
 	// 添加第一个机器人 //
 	aris::dynamic::PumaParam param;
@@ -235,47 +72,68 @@ int main()
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
 	// 添加外部轴 //
-	// 对第一个model做类型转化，从 ModelBase 转为 Model 
-	auto &m = dynamic_cast<aris::dynamic::Model&>(model.subModels()[0]);
-	model.subModels().push_back(new ExternalAxisModel(m.findPart("ground")->findMarker("wobj1"), m.findPart("ground")->findMarker("wobj0")));
+	double pos[3]{ 1,-0.5,0 }, axis[3]{ 0,0,1 };
+	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false).release());
 
 
-	// 计算反解：方式1，统一计算 //
-	// 前16维是pm，最后1个是外部轴 //
-	double ee[17];
-	aris::dynamic::s_pe2pm(std::array<double, 6>{0.3, 0.5, 0.4, 0.4, 0.1, 0}.data(), ee); // 机器人末端，现在是pm，16维
-	ee[16] = 0.5;                                                                         // 外部轴
+	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
+	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));
+	model.tools().push_back(model.findMarker("PumaModel.EE.tool1"));
 
-	// 设置
-	model.setOutputPos(ee);
+	model.wobjs().push_back(model.findMarker("ExAxisModel.EE.tool1"));
+	model.wobjs().push_back(model.findMarker("ExAxisModel.ground.wobj1"));
 
-	// 反解
-	if (model.inverseKinematics()) std::cout << "inverse failed" <<std::endl;
-
-	// 取出
-	double input[7];
-	model.getInputPos(input);
-	aris::dynamic::dsp(1, 7, input);
-
-
-	// 计算反解：方式2，分开计算 //
-	// 设置6轴机械臂 //
-	double ee1[16];
-	aris::dynamic::s_pe2pm(std::array<double, 6>{0.3, 0.5, 0.4, 0.4, 0.1, 0}.data(), ee1); // 机器人末端，现在是pm，16维
-	model.subModels()[0].setOutputPos(ee1);
+	// 求正解 //
+	// 或者分别设置两个模型的输入
+	//double robot_input_pos[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	//model.subModels()[0].setInputPos(robot_input_pos);
+	//double ex_axis_input_pos[1]{ 0.5 };
+	//model.subModels()[1].setInputPos(ex_axis_input_pos);
 	
-	// 设置外部轴 //
-	double ee2[1]{ 0.3 };
-	model.subModels()[1].setOutputPos(ee2);
+	// 七个数，对应两个模型的所有电机
+	double input_pos[7]{ 0.1,0.2,0.3,0.4,0.5,0.6 ,0.5 };
+	model.setInputPos(input_pos);
 
-	// 反解
-	if (model.inverseKinematics()) std::cout << "inverse failed" << std::endl;
+	// 正解所有子模型
+	model.forwardKinematics();
 
-	// 取出7个电机 //
-	model.getInputPos(input);
-	aris::dynamic::dsp(1, 7, input);
+	// 获得末端位姿 //
+	double tool_pe[6];
+	model.tools()[0]->getPe(*model.wobjs()[0], tool_pe, "321");
 
+	// 打印 //
+	aris::dynamic::dsp(1, 6, tool_pe);
 
+	// 求反解 //
+	// 因为两个模型相互耦合，所以首先设置外部轴并进行反解，否则外部轴转台的位姿不对，也就是wobj的位姿不对
+	double ex_axis_output_pos[1]{0.4};
+	model.subModels()[1].setOutputPos(ex_axis_output_pos);
+	model.subModels()[1].inverseKinematics();
+
+	// 整体求解
+	double tool_wrt_wobj[6]{ 0.2,0.08,0.07,0.0,0.0,0.0 };
+	model.tools()[0]->setPe(*model.wobjs()[0], tool_wrt_wobj, "321");
+
+	model.updP();
+
+	if (model.inverseKinematics())
+		std::cout << "failed" << std::endl;
+
+	// 打印所有电机输入
+	model.getInputPos(input_pos);
+	aris::dynamic::dsp(1, 7, input_pos);
+
+	// 保存 xml
+	try {
+		std::cout << aris::core::toXmlString(model) << std::endl;
+	}
+	catch (std::exception& e){
+		std::cout << e.what() << std::endl;
+	}
+	
+	
+	
+	
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;
 	std::cin.get();

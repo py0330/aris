@@ -6,8 +6,7 @@
 #include <aris_lib_export.h>
 #include <aris/core/object.hpp>
 
-namespace aris::core
-{
+namespace aris::core{
 	/// @defgroup command_group 命令解析模块
 	/// 本模块负责将形如“enable -m=1 --position”类linux命令字符串解析成命令与参数包，用户可以自定义解析规则、简写规则和默认值等。
 	///
@@ -109,6 +108,7 @@ namespace aris::core
 	///	\ref demo_command_parser_cpp/main.cpp "基于纯c++的代码示例"
 	///
 
+	///
 	/// @{
 	///
 
@@ -138,9 +138,8 @@ namespace aris::core
 
 	/// \class aris::core::Param
 	///  命令解析的参数节点
-	/// 
-	/// 
-	/// 
+	///
+
 	class ARIS_API Param final :public ParamBase{
 	public:
 		auto abbreviation()const->char;
@@ -193,6 +192,8 @@ namespace aris::core
 		auto setDefaultValue(const std::string & default_value)->void;
 		auto findParam(const std::string &param_name)const->const Param* { return const_cast<std::decay_t<decltype(*this)> *>(this)->findParam(param_name); }
 		auto findParam(const std::string &param_name)->Param*;
+		auto parse(std::string_view command_string)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>;
+		auto init()->void;
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
@@ -224,8 +225,9 @@ namespace aris::core
 		ImpPtr<Imp> imp_;
 	};
 
+	///
 	/// @}
+	///
 }
-
 
 #endif

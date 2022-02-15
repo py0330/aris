@@ -1,6 +1,6 @@
 ﻿# aris简介
 
-aris的简介请参考 http://106.15.224.250/
+aris的简介请参考 
 
 ## 功能简介
 aris主要包含两个功能：
@@ -16,10 +16,9 @@ aris主要包含两个功能：
 	- 支持用户自己编写命令控制机器人（比如moveC,moveL等）
 
 ## 安装
-aris使用Cmake作为构建工具，可以跨平台使用。源码完全基于标准C++ 14编写，并在以下编译器下进行过测试：
-- Visual Studio 2015
-- gcc&g++ 5.4.1
-- clang&clang++ 3.8
+aris使用Cmake作为构建工具，可以跨平台使用。源码完全基于标准C++ 17编写，并在以下编译器下进行过测试：
+- Visual Studio 2017
+- gcc&g++ 8.0及以上
 
 ### Windows
 在Windows下master时钟不实时，同时无法使用EtherCat模块。Windows平台推荐使用cmake-gui等CMake工具来构建。
@@ -47,7 +46,7 @@ make install -j4
 ~~~~~~~~~~~~~~~~~
 mkdir build
 cd build
-cmake .. -DUSE_XENOMAI=ON -DUSE_ETHERLAB=ON
+cmake .. -DRT_TIMER=XENOMAI3 -DETHERCAT=ETHERLAB
 make install
 ~~~~~~~~~~~~~~~~~
 

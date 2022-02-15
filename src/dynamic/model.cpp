@@ -369,7 +369,79 @@ namespace aris::dynamic{
 	Model::Model(Model&&) = default;
 	Model& Model::operator=(Model&&) = default;
 
+	auto trimLR(std::string_view input)->std::string {
+		std::string ret(input);
+		ret.erase(0, ret.find_first_not_of(" \t\n\r\f\v"));// trim l
+		ret.erase(ret.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
+		return ret;
+	}
+
+	struct MultiModel::Imp {
+		std::unique_ptr<aris::core::PointerArray<ModelBase>> models_;
+		std::vector<aris::dynamic::Marker*> tools_, wobjs_;
+	};
+	auto MultiModel::resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void {
+		imp_->models_.reset(pool);
+	}
+	auto MultiModel::subModels()->aris::core::PointerArray<ModelBase>& {
+		return *imp_->models_;
+	}
+	auto MultiModel::tools()->std::vector<aris::dynamic::Marker*>& { return imp_->tools_; }
+	auto MultiModel::wobjs()->std::vector<aris::dynamic::Marker*>& { return imp_->wobjs_; }
+	auto MultiModel::findTool(std::string_view name)->aris::dynamic::Marker* {
+		auto found_marker = std::find_if(tools().begin(), tools().end(), [name](const auto& variable)->auto{
+			return trimLR(variable->name()) == trimLR(name);
+		});
+
+		return (found_marker == tools().end()) ? nullptr : *found_marker;
+	}
+	auto MultiModel::findWobj(std::string_view name)->aris::dynamic::Marker* {
+		auto found_marker = std::find_if(wobjs().begin(), wobjs().end(), [name](const auto& variable)->auto{
+			return trimLR(variable->name()) == trimLR(name);
+		});
+
+		return (found_marker == wobjs().end()) ? nullptr : *found_marker;
+	}
+	auto MultiModel::findMarker(std::string_view name)->aris::dynamic::Marker* {
+		auto model_name = name.substr(0, name.find_first_of('.'));
+		name = name.substr(name.find_first_of('.') + 1);
+		auto part_name = name.substr(0, name.find_first_of('.'));
+		name = name.substr(name.find_first_of('.') + 1);
+		auto marker_name = name.substr(0, name.find_first_of('.'));
+
+		auto found_model = std::find_if(subModels().begin(), subModels().end(), [model_name](const auto& variable)->auto{
+			return trimLR(variable.name()) == trimLR(model_name);
+		});
+
+		if (found_model == subModels().end() || !dynamic_cast<aris::dynamic::Model*>(&*found_model)) return nullptr;
+		
+		auto model = dynamic_cast<aris::dynamic::Model*>(&*found_model);
+		auto found_part = std::find_if(model->partPool().begin(), model->partPool().end(), [part_name](const auto& variable)->auto{
+			return trimLR(variable.name()) == trimLR(part_name);
+		});
+
+		if (found_part == model->partPool().end()) return nullptr;
+
+		auto found_marker = std::find_if(found_part->markerPool().begin(), found_part->markerPool().end(), [marker_name](const auto& variable)->auto{
+			return trimLR(variable.name()) == trimLR(marker_name);
+		});
+		
+		if (found_marker == found_part->markerPool().end()) return nullptr;
+
+		return &*found_marker;
+	}
+	MultiModel::~MultiModel() = default;
+	MultiModel::MultiModel() {
+		imp_->models_.reset(new aris::core::PointerArray<ModelBase>);
+	}
+	MultiModel::MultiModel(MultiModel&&) = default;
+	MultiModel& MultiModel::operator=(MultiModel&&) = default;
+
 	ARIS_REGISTRATION{
+		aris::core::class_<ModelBase>("ModelBase")
+			.prop("name", &ModelBase::setName, &ModelBase::name)
+			;
+
 		typedef Environment&(Model::*EnvironmentFunc)();
 		typedef aris::core::PointerArray<Variable,          Element> &(Model::*VarablePoolFunc)();
 		typedef aris::core::PointerArray<Part,              Element> &(Model::*PartPoolFunc)();
@@ -414,6 +486,7 @@ namespace aris::dynamic{
 			;
 
 		aris::core::class_<Model>("Model")
+			.inherit<ModelBase>()
 			.prop("time", &Model::setTime, &Model::time)
 			.prop("environment", EnvironmentFunc(&Model::environment))
 			.prop("variable_pool", &Model::resetVariablePool, VarablePoolFunc(&Model::variablePool))
@@ -426,6 +499,65 @@ namespace aris::dynamic{
 			//.prop<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
 			//.prop<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
 			.prop("calibrator_pool", &Model::resetCalibratorPool, CalibratorPoolFunc(&Model::calibratorPool))
+			;
+
+		aris::core::class_<aris::core::PointerArray<ModelBase>>("ModelBasePool")
+			.asRefArray()
+			;
+
+
+		
+
+		struct LocalStringList {
+			std::vector<std::string> strs;
+		};
+
+		aris::core::class_<LocalStringList>("LocalStringList" + std::string(__FILE__) + std::to_string(__LINE__))
+			.textMethod([](LocalStringList*list)->std::string {
+					std::string ret = "{";
+					for (auto i =0;i< list->strs.size();++i)
+						ret += i==(list->strs.size()-1) ? list->strs[i] : (list->strs[i] + ",");
+					ret += "}";
+					return ret;
+				}, [](LocalStringList*list, std::string_view str)->void {
+					str = str.substr(1);
+					
+					while (str.find_first_of(',') != std::string_view::npos) {
+						list->strs.push_back(std::string(str.substr(0, str.find_first_of(','))));
+						str = str.substr(str.find_first_of(',') + 1);
+					}
+					
+					list->strs.push_back(std::string(str.substr(0, str.size() - 1)));
+				})
+			;
+
+		auto getTools = [](MultiModel* m)->LocalStringList {
+			LocalStringList name_list;
+			for(auto s:m->tools())name_list.strs.push_back(s->model()->name() + "." + s->fatherPart().name() + "." + s->name());
+			return name_list; 
+		};
+		auto setTools = [](MultiModel* m, LocalStringList name_list)->void {
+			m->tools().clear();
+			for (auto name : name_list.strs)
+				m->tools().push_back(m->findMarker(name));
+		};
+		auto getWobjs = [](MultiModel* m)->LocalStringList {
+			LocalStringList name_list;
+			for (auto s : m->wobjs())name_list.strs.push_back(s->model()->name() + "." + s->fatherPart().name() + "." + s->name());
+			return name_list;
+		};
+		auto setWobjs = [](MultiModel* m, LocalStringList name_list)->void {
+			m->wobjs().clear();
+			for (auto name : name_list.strs)
+				m->wobjs().push_back(m->findMarker(name));
+		};
+
+		typedef aris::core::PointerArray<ModelBase>& (MultiModel::* ModelBasePoolFunc)();
+		aris::core::class_<MultiModel>("MultiModel")
+			.inherit<ModelBase>()
+			.prop("submodel_pool", &MultiModel::resetSubModelPool, ModelBasePoolFunc(&MultiModel::subModels))
+			.prop("tools", &setTools, &getTools)
+			.prop("wobjs", &setWobjs, &getWobjs)
 			;
 	}
 }
