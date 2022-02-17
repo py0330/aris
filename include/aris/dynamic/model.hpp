@@ -344,6 +344,22 @@ namespace aris::dynamic{
 		friend class Motion;
 	};
 
+	enum class EEType {
+		PE313,
+		PE321,
+		PE123,
+		PQ,
+		PM,
+		XYZT,
+		XYZ,
+		XYT,
+		XY,
+		X,
+		A,
+		UNKNOWN,
+
+	};
+	
 	// 多轴模型，覆盖了ModelBase类的虚方法 //
 	// 本质是在将所有子模型的对应方法全部调用了一遍 //
 	class ARIS_API MultiModel :public aris::dynamic::ModelBase {
@@ -520,12 +536,15 @@ namespace aris::dynamic{
 		}
 
 		auto tools()->std::vector<aris::dynamic::Marker*>&;
-		auto wobjs()->std::vector<aris::dynamic::Marker*>&;
-
 		auto findTool(std::string_view name)->aris::dynamic::Marker*;
+
+		auto wobjs()->std::vector<aris::dynamic::Marker*>&;
 		auto findWobj(std::string_view name)->aris::dynamic::Marker*;
 
 		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
+		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
+
+		auto getEeTypes()->std::vector<EEType>;
 
 		virtual ~MultiModel();
 		explicit MultiModel();
@@ -539,7 +558,6 @@ namespace aris::dynamic{
 
 	// axis 为外部轴的轴，0,1,2,3,4,5 分别代表xyz（平移）abc（旋转）
 	// pm 为外部轴的位置姿态
-
 	auto inline createExternalAxisModel(const double *pos, const double *axis, bool is_revolute)->std::unique_ptr < Model > {
 		auto m = std::make_unique<aris::dynamic::Model>();
 		m->setName("ExAxisModel");
