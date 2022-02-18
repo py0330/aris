@@ -430,6 +430,99 @@ namespace aris::dynamic{
 
 		return &*found_marker;
 	}
+	auto MultiModel::findVariable(std::string_view name)->aris::dynamic::Variable* {
+		auto model_name = name.substr(0, name.find_first_of('.'));
+		name = name.substr(name.find_first_of('.') + 1);
+		auto variable_name = name.substr(0, name.find_first_of('.'));
+
+		auto found_model = std::find_if(subModels().begin(), subModels().end(), [model_name](const auto& variable)->auto{
+			return trimLR(variable.name()) == trimLR(model_name);
+		});
+
+		if (found_model == subModels().end() || !dynamic_cast<aris::dynamic::Model*>(&*found_model)) return nullptr;
+
+		auto model = dynamic_cast<aris::dynamic::Model*>(&*found_model);
+		auto found_variable = std::find_if(model->variablePool().begin(), model->variablePool().end(), [variable_name](const auto& variable)->auto{
+			return trimLR(variable.name()) == trimLR(variable_name);
+		});
+
+		if (found_variable == model->variablePool().end()) return nullptr;
+
+		return &*found_variable;
+	}
+
+	auto MultiModel::getEeTypes()->std::vector<EEType> {
+		std::vector<EEType> ee_types;
+
+		for (auto& m : subModels()) {
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& gm : model->generalMotionPool()) {
+					if (auto gmt = dynamic_cast<aris::dynamic::GeneralMotion*>(&gm)){
+						switch (gmt->poseType()){
+						case aris::dynamic::GeneralMotion::PoseType::EULER123:
+							ee_types.push_back(EEType::PE123);
+							break;
+						case aris::dynamic::GeneralMotion::PoseType::EULER321:
+							ee_types.push_back(EEType::PE321);
+							break;
+						case aris::dynamic::GeneralMotion::PoseType::EULER313:
+							ee_types.push_back(EEType::PE313);
+							break;
+						case aris::dynamic::GeneralMotion::PoseType::QUATERNION:
+							ee_types.push_back(EEType::PQ);
+							break;
+						case aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX:
+							ee_types.push_back(EEType::PM);
+							break;
+						default:
+							ee_types.push_back(EEType::UNKNOWN);
+						}
+					}
+					else if (auto xyzt = dynamic_cast<aris::dynamic::XyztMotion*>(&gm)) {
+						ee_types.push_back(aris::dynamic::EEType::XYZT);
+					}
+					else if (auto point_mot = dynamic_cast<aris::dynamic::PointMotion*>(&gm)) {
+						ee_types.push_back(aris::dynamic::EEType::XYZT);
+					}
+					else if (auto planar_mot = dynamic_cast<aris::dynamic::PlanarMotion*>(&gm)) {
+						ee_types.push_back(aris::dynamic::EEType::XYT);
+					}
+					else if (auto xy_mot = dynamic_cast<aris::dynamic::XyMotion*>(&gm)) {
+						ee_types.push_back(aris::dynamic::EEType::XY);
+					}
+					else if (auto mot = dynamic_cast<aris::dynamic::Motion*>(&gm)) {
+						switch (mot->axis()){
+						case 0:
+						case 1:
+						case 2:
+							ee_types.push_back(aris::dynamic::EEType::X);
+							break;
+						case 3:
+						case 4:
+						case 5:
+							ee_types.push_back(aris::dynamic::EEType::A);
+							break;
+						default:
+							ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
+						}
+					}
+					else {
+						ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
+					}
+				}
+			
+			}
+			else {
+				ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
+			
+			}
+			
+			
+		
+		}
+		return ee_types;
+	
+	}
 	MultiModel::~MultiModel() = default;
 	MultiModel::MultiModel() {
 		imp_->models_.reset(new aris::core::PointerArray<ModelBase>);

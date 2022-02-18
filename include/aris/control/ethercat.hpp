@@ -254,6 +254,7 @@ namespace aris::control
 	class ARIS_API EthercatDigitalIo : public DigitalIo{
 	public:
 		auto slave()->EthercatSlave*;
+		auto slave() const->const EthercatSlave* { return const_cast<std::decay_t<decltype(*this)> *>(this)->slave(); }
 		auto setSlave(EthercatSlave*)->void;
 
 		virtual ~EthercatDigitalIo();
@@ -269,6 +270,7 @@ namespace aris::control
 	class ARIS_API EthercatFtSensor : public FtSensor {
 	public:
 		auto slave()->EthercatSlave* { return slave_; }
+		auto slave() const->const EthercatSlave* { return const_cast<std::decay_t<decltype(*this)> *>(this)->slave(); }
 		auto setSlave(EthercatSlave* slave)->void { slave_ = slave; }
 
 	private:
@@ -278,7 +280,7 @@ namespace aris::control
 
 	class ARIS_API EthercatIoBeckhoff : public EthercatDigitalIo{
 	public:
-		virtual auto getDi(const std::uint16_t index)->bool override {
+		virtual auto getDi(const std::uint16_t index) const->bool override {
 			if (index > 15) return false;
 			std::uint8_t ret;
 			if (index > 7) {
@@ -290,7 +292,7 @@ namespace aris::control
 				return (bool)(ret & (0x01 << index));
 			}
 		}
-		virtual auto getDo(const std::uint16_t index)->bool override {
+		virtual auto getDo(const std::uint16_t index) const->bool override {
 			if (index > 15) return false;
 			std::uint8_t ret;
 			if (index > 7) {

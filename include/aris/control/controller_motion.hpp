@@ -87,8 +87,8 @@ namespace aris::control
 		auto numOfDo() const->std::uint16_t;
 		auto setNumOfDo(std::uint16_t num_of_do)->void;
 
-		virtual auto getDi(const std::uint16_t index)->bool = 0;
-		virtual auto getDo(const std::uint16_t index)->bool = 0;
+		virtual auto getDi(const std::uint16_t index) const->bool = 0;
+		virtual auto getDo(const std::uint16_t index) const->bool = 0;
 		virtual auto setDo(const std::uint16_t index, const bool status)->void = 0;
 
 		virtual ~DigitalIo();
