@@ -4,59 +4,7 @@
 
 #include "aris.hpp"
 
-// 实现一个外部轴模型,这里只实现位置即可 //
-class ExternalAxisModel :public aris::dynamic::ModelBase {
-public:
-	// 反解 //
-	auto virtual inverseKinematics()noexcept->int {
-		double pe[6]{ 0,0,0,0,0,0 };
-		target_->getPe(*reference_, pe, "123");
-		mp_ = pe[5];
-		return 0;
-	}
-	// 正解 //
-	auto virtual forwardKinematics()noexcept->int {
-		double pe[6]{ 0,0,0,0,0,mp_ };
-		double pm[16];
-		aris::dynamic::s_pe2pm(pe, pm, "123");
-
-		double target_pm[16];
-		aris::dynamic::s_pm_dot_pm(*reference_->pm(), pm, target_pm);
-		target_->setPrtPm(target_pm);
-		return 0;
-	}
-
-	// 输入 //
-	auto virtual inputPosSize()const noexcept->aris::Size {	return 1; }
-	auto virtual getInputPos(double *mp)const noexcept->void { *mp = mp_; }
-	auto virtual setInputPos(const double *mp)noexcept->void { mp_ = *mp; }
-	// 输出 //
-	auto virtual outputPosSize()const noexcept->aris::Size { return 1; }
-	auto virtual getOutputPos(double *mp)const noexcept->void {
-		double pe[6]{ 0,0,0,0,0,0 };
-		target_->getPe(*reference_, pe, "321");
-		*mp = pe[0];
-	}
-	auto virtual setOutputPos(const double *mp)noexcept->void {
-		double pe[6]{ 0,0,0,0,0,*mp };
-		double pm[16];
-		aris::dynamic::s_pe2pm(pe, pm, "123");
-		
-		double target_pm[16];
-		aris::dynamic::s_pm_dot_pm(*reference_->pm(), pm, target_pm);
-		target_->setPrtPm(target_pm);
-	}
-
-	ExternalAxisModel(aris::dynamic::Marker *target_marker, aris::dynamic::Marker *reference_marker) :target_(target_marker), reference_(reference_marker) {};
-private:
-	aris::dynamic::Marker *target_, *reference_;
-	double mp_;
-
-};
-
-
-int main()
-{
+int main(){
 	// 多模型 //
 	aris::dynamic::MultiModel model;
 
@@ -75,7 +23,6 @@ int main()
 	double pos[3]{ 1,-0.5,0 }, axis[3]{ 0,0,1 };
 	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false).release());
 
-
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool1"));
@@ -83,6 +30,11 @@ int main()
 	model.wobjs().push_back(model.findMarker("ExAxisModel.EE.tool1"));
 	model.wobjs().push_back(model.findMarker("ExAxisModel.ground.wobj1"));
 
+	aris::core::toXmlString(model);
+
+	auto v = model.findVariable("PumaModel.tool0_axis_home");
+	
+	auto ee_types = model.getEeTypes();
 	// 求正解 //
 	// 或者分别设置两个模型的输入
 	//double robot_input_pos[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
