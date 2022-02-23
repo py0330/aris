@@ -3,7 +3,7 @@
 #include "aris/core/core.hpp"
 #include "aris/server/control_server.hpp"
 
-#include "json.hpp"
+#include "aris/ext/json.hpp"
 
 namespace aris::server {
 

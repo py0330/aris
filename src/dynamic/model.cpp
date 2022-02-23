@@ -523,6 +523,22 @@ namespace aris::dynamic{
 		return ee_types;
 	
 	}
+	auto MultiModel::getEes()->std::vector<MotionBase*> {
+		std::vector<aris::dynamic::MotionBase*> ees;
+		
+		for (auto& m : subModels()) {
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& gm : model->generalMotionPool()) {
+					ees.push_back(&gm);
+				}
+			}
+			else {
+				ees.push_back(nullptr);
+			}
+		}
+
+		return ees;
+	}
 	MultiModel::~MultiModel() = default;
 	MultiModel::MultiModel() {
 		imp_->models_.reset(new aris::core::PointerArray<ModelBase>);

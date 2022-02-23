@@ -291,7 +291,7 @@ namespace aris::core{
 	Instance::~Instance() = default;
 	Instance::Instance() :imp_(new Imp) {}
 	Instance::Instance(const Instance&) = default;
-	Instance::Instance(Instance&&) = default;
+	Instance::Instance(Instance&&) noexcept = default;
 
 	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }
 	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }

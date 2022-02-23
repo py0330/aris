@@ -13,7 +13,6 @@
 #include <map>
 #include <functional>
 
-#include "sqlite3.h"
 #include "aris/core/data_structure.hpp"
 
 #include <aris_lib_export.h>

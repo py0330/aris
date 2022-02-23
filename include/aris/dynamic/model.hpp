@@ -545,6 +545,7 @@ namespace aris::dynamic{
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
 		auto getEeTypes()->std::vector<EEType>;
+		auto getEes()->std::vector<MotionBase*>;
 
 		virtual ~MultiModel();
 		explicit MultiModel();

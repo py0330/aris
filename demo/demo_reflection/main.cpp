@@ -105,24 +105,6 @@ ARIS_REGISTRATION{
 
 class func_ {
 public:
-	//template <typename R, typename... Param>
-	//func_(std::string name, std::function<R(Param...)> f) {
-	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-	//	inside_func = [=]()->void* {
-	//		std::apply(f, *(Arguments*)inside_tuple.get());
-	//		return nullptr;
-	//	};
-	//}
-
-	//template <typename... Param>
-	//auto invoke(Param&&... params)->void{
-	//	using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-	//	inside_tuple.reset(new Arguments(params... ));
-	//	inside_func();
-	//}
-
-	
-
 	template <typename R, typename... Param>
 	func_(std::string name, std::function<R(Param...)> f) {
 		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
@@ -142,6 +124,10 @@ public:
 		inside_func(ins_vec);
 	}
 
+	auto invoke(std::vector<aris::core::Instance> params)->void {
+		inside_func(params);
+	}
+
 private:
 	std::function<void*(std::vector<aris::core::Instance> &)> inside_func;
 
@@ -155,7 +141,7 @@ private:
 //auto select_overload(std::function<R(Param...)> f)->std::function<R(Param...)> { return f; }
 
 template<typename Signature >
-Signature* select_overload(Signature * 	func) { return func; }
+Signature* select_overload(Signature *func) { return func; }
 
 
 
@@ -352,6 +338,8 @@ int main(){
 	func_ f1_("f1", fffff);
 	//func_ f1_("f1", select_overload<void(int)>(f1));
 
+	auto func = select_overload<void(int)>(f1);
+
 	int bc = 1;
 	int &bd = bc;
 	double ccc(145.67);
@@ -360,8 +348,20 @@ int main(){
 	std::cout << &bd << std::endl;
 	aaa.invoke(bd, ccc);
 
+	std::cout << bc << std::endl;
+	std::cout << ccc << std::endl;
+	bc = 100;
+	std::vector<aris::core::Instance> ins_vec;
+	ins_vec.push_back(bc);
+	ins_vec.push_back(ccc);
+
+	aaa.invoke(ins_vec);
+
+	std::cout << bc << std::endl;
+	std::cout << ccc << std::endl;
+
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();
-	return 0; 
+	//return 0; 
 }
 
