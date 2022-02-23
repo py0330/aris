@@ -17,7 +17,7 @@
 #include "aris/control/ethercat_kernel.hpp"
 #include "aris/control/ethercat.hpp"
 
-#include "aris/core/tinyxml2.h"
+#include "aris/ext/tinyxml2.h"
 
 #include "aris/server/control_server.hpp"
 

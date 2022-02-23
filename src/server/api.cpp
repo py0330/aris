@@ -8,8 +8,8 @@
 #include "aris.hpp"
 
 #include "aris/server/api.hpp"
-#include "json.hpp"
-#include "fifo_map.hpp"
+#include "aris/ext/json.hpp"
+#include "aris/ext/fifo_map.hpp"
 
 namespace aris::server
 {

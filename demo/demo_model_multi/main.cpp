@@ -4,9 +4,269 @@
 
 #include "aris.hpp"
 
+struct MoveLParam{
+	// 根据前端得到的参数，以下vec的size应该一样
+	std::vector<aris::dynamic::MotionBase*> ees;
+	std::vector<aris::dynamic::EEType> ee_types;
+	std::vector<aris::dynamic::Marker*> ee_tools;
+	std::vector<aris::dynamic::Marker*> ee_wobjs;
+	std::vector<aris::dynamic::ModelBase*> submodels;
+
+	// 根据指令和机器人状态得到的目标位置，size是末端的总和
+	std::vector<double> begin_output_pos;
+	std::vector<double> end_output_pos;
+	std::vector<double> vels;
+	std::vector<double> accs;
+
+	// 根据规划器算出来的
+	aris::Size total_count;
+	std::vector<double> time_ratio;
+};
+
+class MoveL : public aris::core::CloneObject<MoveL, aris::plan::Plan>
+{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+	auto virtual collectNrt()->void override;
+
+	virtual ~MoveL();
+	explicit MoveL(const std::string& name = "MoveL");
+	MoveL(const MoveL& other);
+};
+
+auto MoveL::prepareNrt()->void{
+	
+	MoveLParam param;
+
+	auto model = dynamic_cast<aris::dynamic::MultiModel*>(modelBase());
+	// 根据解析获得以下参数：
+	param.ees = model->getEes();
+	param.ee_types = model->getEeTypes();
+	param.submodels = { &model->subModels()[0], &model->subModels()[1] };
+	param.ee_tools = { nullptr, model->tools()[0] }; // 外部轴没有tool，所以是nullptr
+	param.ee_wobjs = { nullptr, model->wobjs()[1] }; // 外部轴没有wobj，所以是nullptr
+	param.vels = { 0.1, 0.5 * aris::PI, 0.3 }; // 外部轴速度只有一个，机器人有角速度和线速度，两维
+	param.accs = { 0.1, 0.8 * aris::PI, 0.6 }; // 同上
+
+
+	aris::Size pos_idx{0}, vel_idx{ 0 }, acc_idx{ 0 };
+	std::vector<double> ee_periods; // 临时变量，param里面只需要存总的时间和time_ratio 即可
+	for (int i = 0; i < param.ees.size(); ++i) {
+		if (param.ee_types[i] == aris::dynamic::EEType::A || param.ee_types[i] == aris::dynamic::EEType::X) {
+			// 起始位置
+			param.begin_output_pos.push_back(0.1);
+
+			// 结束位置
+			param.end_output_pos.push_back(0.6);
+
+			// 速度
+			double vel = param.vels[vel_idx];
+			
+			// 加速度
+			double acc = param.accs[acc_idx];
+			
+			// 处理id
+			pos_idx++;
+			vel_idx++;
+			acc_idx++;
+
+			//！！！！！！ 这里调用规划器 ！！！！！//
+			// 对单轴做规划，得到period，例如调用sCurve函数
+			ee_periods.push_back(5.0124);
+		}
+		else if (param.ee_types[i] == aris::dynamic::EEType::PE123
+			|| param.ee_types[i] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
+			
+			// 起始位置
+			double begin_pe[6]{ 0,1,2,3,4,5 };
+			param.begin_output_pos.insert(param.begin_output_pos.end(), begin_pe, begin_pe + 6);
+
+			// 结束位置
+			double end_pe[6]{ 0,1,2,3,4,5 };
+			param.end_output_pos.insert(param.end_output_pos.end(), begin_pe, begin_pe + 6);
+
+			// 速度
+			double angular_vel = param.vels[vel_idx];
+			double linear_vel = param.vels[vel_idx];
+
+			// 加速度
+			double angular_acc = param.accs[acc_idx];
+			double linear_acc = param.accs[acc_idx];
+
+			// 处理id
+			pos_idx+=6;
+			vel_idx+=2;
+			acc_idx+=2;
+
+			//！！！！！！ 这里调用规划器 ！！！！！//
+			// 对六维坐标系做规划，得到period，例如调用sCurve函数
+			ee_periods.push_back(5.0124);
+		}
+		else {
+			// 对四轴等其他类型的做规划
+		
+		}
+		
+		
+	}
+
+
+	//  统一处理所有的period等，得到time ratios和真实的total_count
+	param.total_count = 1000;
+	param.time_ratio = { 0.1,1 };
+
+	this->param() = param;
+}
+auto MoveL::executeRT()->int
+{
+	auto& param = std::any_cast<MoveLParam&>(this->param());
+	
+	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 };
+	for (int i = 0; i < param.ees.size(); ++i) {
+		if (param.ee_types[i] == aris::dynamic::EEType::A || param.ee_types[i] == aris::dynamic::EEType::X) {
+			// 起始位置
+			double begin_pos = param.begin_output_pos[pos_idx];
+
+			// 结束位置
+			double end_pos = param.end_output_pos[pos_idx];
+
+			// 速度
+			double vel = param.vels[vel_idx];
+
+			// 加速度
+			double acc = param.accs[acc_idx];
+			
+			// 时间缩放比例
+			double time_ratio = param.time_ratio[i];
+
+			//！！！！！！ 这里调用规划器 ！！！！！//
+			// 对单轴做规划，例如调用sCurve函数
+			double current_pos = 0.5;
+			//！！！！！！ 规划器调用完毕 ！！！！！//
+
+			// 做反解，需判断是否用tool 和 wobj设置
+			if (param.ee_tools[i] && param.ee_wobjs[i]) {
+				double pe[6]{ current_pos,0,0,0,0,0 };
+				param.ee_tools[i]->setPe(*param.ee_wobjs[i], pe);
+				param.ees[i]->updP();
+				param.submodels[i]->inverseKinematics();
+			}
+			else {
+				param.submodels[i]->setOutputPos(&current_pos);
+				param.submodels[i]->inverseKinematics();
+			}
+
+
+
+			// 处理id
+			pos_idx++;
+			vel_idx++;
+			acc_idx++;
+		}
+		else if (param.ee_types[i] == aris::dynamic::EEType::PE123
+			|| param.ee_types[i] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
+
+			// 起始位置
+			double begin_pe[6]{ 0,1,2,3,4,5 };
+			param.begin_output_pos.insert(param.begin_output_pos.end(), begin_pe, begin_pe + 6);
+
+			// 结束位置
+			double end_pe[6]{ 0,1,2,3,4,5 };
+			param.end_output_pos.insert(param.end_output_pos.end(), begin_pe, begin_pe + 6);
+
+			// 速度
+			double angular_vel = param.vels[vel_idx];
+			double linear_vel = param.vels[vel_idx];
+
+			// 加速度
+			double angular_acc = param.accs[acc_idx];
+			double linear_acc = param.accs[acc_idx];
+
+			// 时间缩放比例
+			double time_ratio = param.time_ratio[i];
+
+			//！！！！！！ 这里调用规划器 ！！！！！//
+			// 对机器人做规划，例如调用sCurve函数
+			double current_pe[6]{0,1,2,3,5,6};
+			//！！！！！！ 规划器调用完毕 ！！！！！//
+
+			// 做反解，需判断是否用tool 和 wobj设置
+			if (param.ee_tools[i] && param.ee_wobjs[i]) {
+				param.ee_tools[i]->setPe(*param.ee_wobjs[i], current_pe);
+				param.ees[i]->updP();
+				param.submodels[i]->inverseKinematics();
+			}
+			else {
+				param.submodels[i]->setOutputPos(current_pe);
+				param.submodels[i]->inverseKinematics();
+			}
+
+			// 处理id
+			pos_idx += 6;
+			vel_idx += 2;
+			acc_idx += 2;
+		}
+		else {
+			// 对四轴等其他类型的做规划
+
+		}
+	
+	}
+	
+	
+	return param.total_count - count();
+}
+
+
+auto MoveL::collectNrt()->void
+{
+}
+MoveL::~MoveL() = default;
+MoveL::MoveL(const MoveL & other) = default;
+MoveL::MoveL(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"mvl\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos_unit\" default=\"mm\"/>"
+		"		<Param name=\"pos_offset\" default=\"Offset{0,0,0,0,0,0}\"/>"
+		"		<UniqueParam default=\"pq\">"
+		"			<Param name=\"pq\" default=\"{0,0,0,0,0,0,1}\"/>"
+		"			<Param name=\"pm\" default=\"{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}\"/>"
+		"			<GroupParam>"
+		"				<Param name=\"pe\" default=\"RobotTarget{0,0,0,0,0,0}\"/>"
+		"               <Param name=\"epos\" default=\"ExAxisTarget{0.0,0.0,0.0,0.0,0.0,0.0}\"/>"
+		"               <Param name=\"evel\" default=\"ExAxisVel{0.0,0.0,0.0,0.0,0.0,0.0}\"/>"
+		"				<Param name=\"ori_unit\" default=\"degree\"/>"
+		"				<Param name=\"eul_type\" default=\"321\"/>"
+		"			</GroupParam>"
+		"		</UniqueParam>"
+		"		<Param name=\"acc\" default=\"3.0\"/>"
+		"		<Param name=\"vel\" default=\"Speed{2.5,25,180}\"/>"
+		"		<Param name=\"dec\" default=\"3.0\"/>"
+		"		<Param name=\"jerk\" default=\"5.0\"/>"
+		"		<Param name=\"angular_acc\" default=\"3\"/>"
+		"		<Param name=\"angular_vel\" default=\"3\"/>"
+		"		<Param name=\"angular_dec\" default=\"3\"/>"
+		"		<Param name=\"angular_jerk\" default=\"5.0\"/>"
+		"		<Param name=\"zone\" default=\"Zone{0.0,0.0}\"/>"
+		"		<Param name=\"fc\" default=\"0\"/>"
+		"		<Param name=\"wobj_is_binding\" default=\"0\"/>"
+		"		<Param name=\"wobj_motor_id\" default=\"6\"/>"
+		"		<Param name=\"wobj\" default=\"0\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
+
+
 int main(){
 	// 多模型 //
 	aris::dynamic::MultiModel model;
+
+	// 添加外部轴 //
+	double pos[3]{ 1,-0.5,0 }, axis[3]{ 0,0,1 };
+	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false).release());
 
 	// 添加第一个机器人 //
 	aris::dynamic::PumaParam param;
@@ -19,9 +279,7 @@ int main(){
 	param.tool0_pe[2] = 0.078;
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
-	// 添加外部轴 //
-	double pos[3]{ 1,-0.5,0 }, axis[3]{ 0,0,1 };
-	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false).release());
+
 
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));
@@ -29,63 +287,19 @@ int main(){
 
 	model.wobjs().push_back(model.findMarker("ExAxisModel.EE.tool1"));
 	model.wobjs().push_back(model.findMarker("ExAxisModel.ground.wobj1"));
-
-	aris::core::toXmlString(model);
-
-	auto v = model.findVariable("PumaModel.tool0_axis_home");
 	
-	auto ee_types = model.getEeTypes();
-	// 求正解 //
-	// 或者分别设置两个模型的输入
-	//double robot_input_pos[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-	//model.subModels()[0].setInputPos(robot_input_pos);
-	//double ex_axis_input_pos[1]{ 0.5 };
-	//model.subModels()[1].setInputPos(ex_axis_input_pos);
+
+	// 构造mvl ，调试一下
+	MoveL mvl;
+	mvl.setModelBase(&model);
+
+
+	mvl.prepareNrt();
+	mvl.setCount(1);
+	while (mvl.executeRT()) {
+		mvl.setCount(mvl.count() + 1);
 	
-	// 七个数，对应两个模型的所有电机
-	double input_pos[7]{ 0.1,0.2,0.3,0.4,0.5,0.6 ,0.5 };
-	model.setInputPos(input_pos);
-
-	// 正解所有子模型
-	model.forwardKinematics();
-
-	// 获得末端位姿 //
-	double tool_pe[6];
-	model.tools()[0]->getPe(*model.wobjs()[0], tool_pe, "321");
-
-	// 打印 //
-	aris::dynamic::dsp(1, 6, tool_pe);
-
-	// 求反解 //
-	// 因为两个模型相互耦合，所以首先设置外部轴并进行反解，否则外部轴转台的位姿不对，也就是wobj的位姿不对
-	double ex_axis_output_pos[1]{0.4};
-	model.subModels()[1].setOutputPos(ex_axis_output_pos);
-	model.subModels()[1].inverseKinematics();
-
-	// 整体求解
-	double tool_wrt_wobj[6]{ 0.2,0.08,0.07,0.0,0.0,0.0 };
-	model.tools()[0]->setPe(*model.wobjs()[0], tool_wrt_wobj, "321");
-
-	model.updP();
-
-	if (model.inverseKinematics())
-		std::cout << "failed" << std::endl;
-
-	// 打印所有电机输入
-	model.getInputPos(input_pos);
-	aris::dynamic::dsp(1, 7, input_pos);
-
-	// 保存 xml
-	try {
-		std::cout << aris::core::toXmlString(model) << std::endl;
 	}
-	catch (std::exception& e){
-		std::cout << e.what() << std::endl;
-	}
-	
-	
-	
-	
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;
 	std::cin.get();

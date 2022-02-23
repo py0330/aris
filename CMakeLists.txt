@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 2.0.0.220217 DESCRIPTION "")
+project(aris VERSION 2.0.0.220223 DESCRIPTION "")
 
 # version
 configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)
@@ -91,9 +91,10 @@ endif()
 message("ETHERCAT : ${ETHERCAT}")
 
 link_directories(${RELY_LINK_DIR})
+
 ## build targets ##
 include (GenerateExportHeader) 
-foreach(target robot server plan dynamic control sensor core)
+foreach(target robot server plan dynamic control sensor core ext)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
 	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.h ${HEADERS})
 	add_library(aris_${target} OBJECT ${HEADERS} ${SOURCES})
