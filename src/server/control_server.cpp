@@ -8,8 +8,8 @@
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
 
-#include "json.hpp"
-#include "fifo_map.hpp"
+#include "aris/ext/json.hpp"
+#include "aris/ext/fifo_map.hpp"
 #include "aris/server/control_server.hpp"
 #include "aris/server/api.hpp"
 

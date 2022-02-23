@@ -6,8 +6,8 @@
 #include <functional>
 
 #include <aris_lib_export.h>
+#include <aris/ext/tinyxml2.h>
 #include <aris/core/basic_type.hpp>
-#include <aris/core/tinyxml2.h>
 #include <aris/core/log.hpp>
 
 namespace aris::core

@@ -23,9 +23,9 @@ int main()
 	
 
 	auto &m = cs.model();
-	auto &inv = m.solverPool()[0];
-	auto &fwd = m.solverPool()[1];
-	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool()[0]);
+	//auto &inv = m.solverPool()[0];
+	//auto &fwd = m.solverPool()[1];
+	//auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m.generalMotionPool()[0]);
 
 	// new with yaw //
 	double mid_pe[6]{ 0, -0.0103, 0.513, 0, 0, 0 };
@@ -50,19 +50,16 @@ int main()
 		
 		double max_max_margin= 1.0;
 		
-		for (auto pnt : points)
-		{
+		for (auto pnt : points){
 			s_va(6, mid_pe, pnt.data());
-			ee.setMpe(pnt.data(), "123");
+			m.setOutputPos(pnt.data());
 
-			bool ret = inv.kinPos();
-
+			m.inverseKinematics();
 			double max_margin{ 1 };
-			for (auto &mot : m.motionPool())
-			{
-				max_margin = std::min(0.76 - mot.mp(), max_margin);
-				max_margin = std::min(mot.mp() - 0.54, max_margin);
-			}
+
+
+
+			
 
 
 			max_max_margin = std::min(max_max_margin, max_margin);
@@ -109,32 +106,28 @@ int main()
 		int aaa = 0;
 		for (auto pnt : points)
 		{
-			s_va(6, mid_pe, pnt.data());
-			ee.setMpe(pnt.data(), "123");
+			//s_va(6, mid_pe, pnt.data());
+			//ee.setMpe(pnt.data(), "123");
 
-			bool ret = inv.kinPos();
-			if (ret) throw std::runtime_error("failed");
-			double max_margin{ 1 };
-			for (auto &mot : m.motionPool())
-			{
-				max_margin = std::min(0.76 - mot.mp(), max_margin);
-				max_margin = std::min(mot.mp() - 0.54, max_margin);
-			}
+			//bool ret = inv.kinPos();
+			//if (ret) throw std::runtime_error("failed");
+			//double max_margin{ 1 };
+			//for (auto &mot : m.motionPool())
+			//{
+			//	max_margin = std::min(0.76 - mot.mp(), max_margin);
+			//	max_margin = std::min(mot.mp() - 0.54, max_margin);
+			//}
 
-			max_max_margin = std::min(max_max_margin, max_margin);
+			//max_max_margin = std::min(max_max_margin, max_margin);
 			//if (max_max_margin < 0) return max_max_margin;
 
 
 			for (auto &vel : vels)
 			{
-				ee.setMve(vel.data(), "123");
-				inv.kinVel();
+				//ee.setMve(vel.data(), "123");
+				//inv.kinVel();
 				double max_v_margin{ 1 };
-				for (auto &mot : m.motionPool())
-				{
-					max_v_margin = std::min(0.2778 - mot.mv(), max_v_margin);
-					max_v_margin = std::min(mot.mv() + 0.2778, max_v_margin);
-				}
+
 				max_max_v_margin = std::min(max_max_v_margin, max_v_margin);
 			}
 
@@ -162,13 +155,6 @@ int main()
 	std::cout << "work space margin result:" << p_margin << "  " << v_margin << std::endl;
 
 
-	ee.setMpe(std::array<double, 6>{0.0, -0.0103, 0.513, 0.0, 0.0, 0.0}.data(), "123");
-	bool ret = inv.kinPos();
-
-	for (auto &m : cs.model().motionPool())
-	{
-		std::cout << std::setprecision(16) << (m.mp() - 0.535) / (0.765 - 0.535) << std::endl;
-	}
 
 	std::cout << "demo_stewart finished, press any key to continue" << std::endl;
 	std::cin.get();

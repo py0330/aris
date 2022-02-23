@@ -1,12 +1,6 @@
 ﻿#ifndef ARIS_CORE_REFLECTION_H_
 #define ARIS_CORE_REFLECTION_H_
 
-#ifdef aris_lib_EXPORTS
-	#define ARIS_EXTERN
-#else
-	#define ARIS_EXTERN extern
-#endif
-
 #include <any>
 #include <map>
 #include <vector>
@@ -17,9 +11,9 @@
 
 
 #include <aris_lib_export.h>
+#include <aris/ext/tinyxml2.h>
 #include <aris/core/object.hpp>
 #include <aris/core/basic_type.hpp>
-#include <aris/core/tinyxml2.h>
 #include <aris/core/log.hpp>
 
 #define ARIS_REFLECT_CAT(a, b) a##b
@@ -188,7 +182,7 @@ namespace aris::core{
 		~Instance();
 		Instance();
 		Instance(const Instance&);
-		Instance(Instance&&);
+		Instance(Instance&&)noexcept;
 
 	private:
 		auto castToType(const Type* t)const->void*;
@@ -228,9 +222,10 @@ namespace aris::core{
 		auto alias(std::string_view name) { Type::alias_impl(type_, name); }
 
 		// 继承 //
+		// 允许虚继承
+		//
 		template<typename FatherType>
 		auto inherit()->class_<Class_Type>&{
-			if (!std::is_base_of_v<FatherType, Class_Type>)std::cout << (std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"") << std::endl;
 			if (!std::is_base_of_v<FatherType, Class_Type>)THROW_FILE_LINE(std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"");
 
 			type_->inherit(&typeid(FatherType),[](void* input)->void*{return dynamic_cast<FatherType*>(reinterpret_cast<Class_Type*>(input));});// 多继承可能改变指针所指向的位置，坑爹！！//
@@ -248,6 +243,7 @@ namespace aris::core{
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
+		//         Class_Type::clear()->void
 		template<typename C = Class_Type>
 		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
 			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<C>()->size();	};
@@ -260,7 +256,8 @@ namespace aris::core{
 
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T)->void
-		//         Class_Type::size()->size_t    
+		//         Class_Type::size()->size_t
+		//         Class_Type::clear()->void
 		template<typename C = Class_Type>
 		auto asArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
 			auto size_func = [](Instance* ins)->std::size_t	{	return ins->castTo<C>()->size();};

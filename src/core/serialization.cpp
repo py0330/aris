@@ -9,13 +9,13 @@
 #include <regex>
 #include <fstream>
 
-#include "aris/core/tinyxml2.h"
+#include "aris/ext/tinyxml2.h"
 #include "aris/core/object.hpp"
 #include "aris/core/serialization.hpp"
 #include "aris/core/expression_calculator.hpp"
 
-#include "../src/server/json.hpp"
-#include "../src/server/fifo_map.hpp"
+#include "aris/ext/json.hpp"
+#include "aris/ext/fifo_map.hpp"
 
 namespace aris::core
 {
@@ -199,43 +199,35 @@ namespace aris::core
 	auto typename_json2c(const std::string &key)->std::string{	return std::regex_replace(key, std::regex("\\."), "::");}
 	auto typename_c2json(const aris::core::Type *c_type)->std::string{	return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");}
 
-	auto to_json(aris::core::Instance ins)->my_json
-	{
+	auto to_json(aris::core::Instance ins)->my_json{
 		my_json js;
 
 		// set text //
 		if (!ins.toString().empty()) js["#text"] = ins.toString();
 
-		if (ins.isArray())
-		{
-			for (auto prop : ins.type()->properties())
-			{
+		if (ins.isArray()){
+			for (auto prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 				if (!v.isBasic())THROW_FILE_LINE("failed to serilize");
 				if (v.toString() != "")js["@" + prop->name()] = v.toString();
 			}
-			for (auto i = 0; i < ins.size(); ++i)
-			{
+			for (auto i = 0; i < ins.size(); ++i){
 				my_json insert;
 				insert[typename_c2json(ins.at(i).type())] = to_json(ins.at(i));
 				js["#array"].push_back(insert);
 			}
 		}
-		else
-		{
+		else{
 			my_json::iterator basic_insert_pos = js.end();
 			
-			for (auto &prop : ins.type()->properties())
-			{
+			for (auto &prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 
-				if (v.isBasic())
-				{
+				if (v.isBasic()){
 					if (!v.toString().empty())	js["@" + prop->name()] = v.toString();
 					//js.insert(
 				}
-				else
-				{
+				else{
 					auto ist = to_json(v);
 					ist["#name"] = prop->name().data();
 					js[typename_c2json(v.type()).data()] = ist;
@@ -245,15 +237,13 @@ namespace aris::core
 
 		return js;
 	}
-	auto toJsonString(aris::core::Instance ins)->std::string
-	{
+	auto toJsonString(aris::core::Instance ins)->std::string{
 		my_json js;
 		js[ins.type()->name().data()] = to_json(ins);
 		return js.dump(2);
 	}
 
-	auto from_json(aris::core::Instance &ins, my_json &js)->void
-	{
+	auto from_json(aris::core::Instance &ins, my_json &js)->void{
 		// from text //
 		if (js.find("#text") != js.end()) ins.fromString(js["#text"].get<std::string>());
 
@@ -280,17 +270,14 @@ namespace aris::core
 			// non basic type, accept ptr //
 			else if (prop->acceptPtr())	{
 				my_json::iterator found = js.end();
-				for (auto it = js.begin(); it != js.end(); ++it)
-				{
-					if (it.value().is_object() && Type::isBaseOf(prop->type(), Type::getType(typename_json2c(it.key()))))
-					{
+				for (auto it = js.begin(); it != js.end(); ++it){
+					if (it.value().is_object() && Type::isBaseOf(prop->type(), Type::getType(typename_json2c(it.key())))){
 						found = it;
 						break;
 					};
 				}
 				
-				if (found == js.end())
-				{
+				if (found == js.end()){
 					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
 					continue;
 				}
@@ -322,8 +309,7 @@ namespace aris::core
 			}
 		}
 	}
-	auto fromJsonString(aris::core::Instance ins, std::string_view xml_str)->void
-	{
+	auto fromJsonString(aris::core::Instance ins, std::string_view xml_str)->void{
 		my_json js = nlohmann::json::parse(xml_str);
 
 		if (typename_json2c(js.begin().key()) != ins.type()->name())
@@ -332,16 +318,14 @@ namespace aris::core
 		from_json(ins, js.front());
 	}
 
-	auto toJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void
-	{
+	auto toJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void{
 		std::ofstream fs(file, std::ios::trunc);
 
 		fs << toJsonString(ins);
 
 		fs.close();
 	}
-	auto fromJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void
-	{
+	auto fromJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void{
 		std::ifstream fs(file);
 
 		std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
