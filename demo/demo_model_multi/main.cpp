@@ -11,6 +11,7 @@ struct MoveLParam{
 	std::vector<aris::dynamic::Marker*> ee_tools;
 	std::vector<aris::dynamic::Marker*> ee_wobjs;
 	std::vector<aris::dynamic::ModelBase*> submodels;
+	std::vector<aris::Size> sub_ee_num; // 每个 submodel 的 ee 个数
 
 	// 根据指令和机器人状态得到的目标位置，size是末端的总和
 	std::vector<double> begin_output_pos;
@@ -43,74 +44,82 @@ auto MoveL::prepareNrt()->void{
 	// 根据解析获得以下参数：
 	param.ees = model->getEes();
 	param.ee_types = model->getEeTypes();
+	param.sub_ee_num = { 1,1 };// 子模型里末端的个数，其实就是 submodel().generalMotionPool().size()
 	param.submodels = { &model->subModels()[0], &model->subModels()[1] };
 	param.ee_tools = { nullptr, model->tools()[0] }; // 外部轴没有tool，所以是nullptr
 	param.ee_wobjs = { nullptr, model->wobjs()[1] }; // 外部轴没有wobj，所以是nullptr
 	param.vels = { 0.1, 0.5 * aris::PI, 0.3 }; // 外部轴速度只有一个，机器人有角速度和线速度，两维
 	param.accs = { 0.1, 0.8 * aris::PI, 0.6 }; // 同上
 
-
-	aris::Size pos_idx{0}, vel_idx{ 0 }, acc_idx{ 0 };
+	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 }, ee_idx{0};
 	std::vector<double> ee_periods; // 临时变量，param里面只需要存总的时间和time_ratio 即可
-	for (int i = 0; i < param.ees.size(); ++i) {
-		if (param.ee_types[i] == aris::dynamic::EEType::A || param.ee_types[i] == aris::dynamic::EEType::X) {
-			// 起始位置
-			param.begin_output_pos.push_back(0.1);
+	for (int i = 0; i < param.submodels.size(); ++i) {
+		// 提取子模型的数据
+		auto sub_ee_types = param.ee_types.data() + ee_idx;
 
-			// 结束位置
-			param.end_output_pos.push_back(0.6);
+		// 对子模型做规划
+		for (int j = 0; j < param.sub_ee_num[i]; ++j) {
+			if (sub_ee_types[j] == aris::dynamic::EEType::A || sub_ee_types[j] == aris::dynamic::EEType::X) {
+				// 起始位置
+				param.begin_output_pos.push_back(0.1);
 
-			// 速度
-			double vel = param.vels[vel_idx];
-			
-			// 加速度
-			double acc = param.accs[acc_idx];
-			
-			// 处理id
-			pos_idx++;
-			vel_idx++;
-			acc_idx++;
+				// 结束位置
+				param.end_output_pos.push_back(0.6);
 
-			//！！！！！！ 这里调用规划器 ！！！！！//
-			// 对单轴做规划，得到period，例如调用sCurve函数
-			ee_periods.push_back(5.0124);
-		}
-		else if (param.ee_types[i] == aris::dynamic::EEType::PE123
-			|| param.ee_types[i] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
-			
-			// 起始位置
-			double begin_pe[6]{ 0,1,2,3,4,5 };
-			param.begin_output_pos.insert(param.begin_output_pos.end(), begin_pe, begin_pe + 6);
+				// 速度
+				double vel = param.vels[vel_idx];
 
-			// 结束位置
-			double end_pe[6]{ 0,1,2,3,4,5 };
-			param.end_output_pos.insert(param.end_output_pos.end(), begin_pe, begin_pe + 6);
+				// 加速度
+				double acc = param.accs[acc_idx];
 
-			// 速度
-			double angular_vel = param.vels[vel_idx];
-			double linear_vel = param.vels[vel_idx];
+				// 处理id
+				pos_idx++;
+				vel_idx++;
+				acc_idx++;
 
-			// 加速度
-			double angular_acc = param.accs[acc_idx];
-			double linear_acc = param.accs[acc_idx];
+				//！！！！！！ 这里调用规划器 ！！！！！//
+				// 对单轴做规划，得到period，例如调用sCurve函数
+				ee_periods.push_back(5.0124);
+			}
+			else if (sub_ee_types[j] == aris::dynamic::EEType::PE123
+				|| sub_ee_types[j] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
 
-			// 处理id
-			pos_idx+=6;
-			vel_idx+=2;
-			acc_idx+=2;
+				// 起始位置
+				double begin_pe[6]{ 0,1,2,3,4,5 };
+				param.begin_output_pos.insert(param.begin_output_pos.end(), begin_pe, begin_pe + 6);
 
-			//！！！！！！ 这里调用规划器 ！！！！！//
-			// 对六维坐标系做规划，得到period，例如调用sCurve函数
-			ee_periods.push_back(5.0124);
-		}
-		else {
-			// 对四轴等其他类型的做规划
+				// 结束位置
+				double end_pe[6]{ 0,1,2,3,4,5 };
+				param.end_output_pos.insert(param.end_output_pos.end(), begin_pe, begin_pe + 6);
+
+				// 速度
+				double angular_vel = param.vels[vel_idx];
+				double linear_vel = param.vels[vel_idx];
+
+				// 加速度
+				double angular_acc = param.accs[acc_idx];
+				double linear_acc = param.accs[acc_idx];
+
+				// 处理id
+				pos_idx += 6;
+				vel_idx += 2;
+				acc_idx += 2;
+
+				//！！！！！！ 这里调用规划器 ！！！！！//
+				// 对六维坐标系做规划，得到period，例如调用sCurve函数
+				ee_periods.push_back(5.0124);
+			}
+			else {
+				// 对四轴等其他类型的做规划
+
+			}
 		
 		}
+
+
 		
 		
 	}
-
 
 	//  统一处理所有的period等，得到time ratios和真实的total_count
 	param.total_count = 1000;
@@ -122,99 +131,83 @@ auto MoveL::executeRT()->int
 {
 	auto& param = std::any_cast<MoveLParam&>(this->param());
 	
-	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 };
-	for (int i = 0; i < param.ees.size(); ++i) {
-		if (param.ee_types[i] == aris::dynamic::EEType::A || param.ee_types[i] == aris::dynamic::EEType::X) {
-			// 起始位置
-			double begin_pos = param.begin_output_pos[pos_idx];
+	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 }, ee_idx{ 0 }, time_ratio_idx{0};
+	for (int i = 0; i < param.submodels.size(); ++i) {
+		// 提取子模型的数据
+		auto sub_ee_types = param.ee_types.data() + ee_idx;
 
-			// 结束位置
-			double end_pos = param.end_output_pos[pos_idx];
+		// 对子模型做规划
+		for (int j = 0; j < param.sub_ee_num[i]; ++j) {
+			auto sub_begin_pos = param.begin_output_pos.data() + pos_idx;
+			auto sub_end_pos = param.begin_output_pos.data() + pos_idx;
+			auto sub_vel = param.vels.data() + vel_idx;
+			auto sub_acc = param.accs.data() + acc_idx;
+			auto time_ratio = param.time_ratio[i]; // 时间缩放比例
 
-			// 速度
-			double vel = param.vels[vel_idx];
+			if (sub_ee_types[j] == aris::dynamic::EEType::A || sub_ee_types[j] == aris::dynamic::EEType::X) {
+				// 处理id
+				pos_idx++;
+				vel_idx++;
+				acc_idx++;
+				ee_idx++;
+				time_ratio_idx++;
 
-			// 加速度
-			double acc = param.accs[acc_idx];
-			
-			// 时间缩放比例
-			double time_ratio = param.time_ratio[i];
+				//！！！！！！ 这里调用规划器 ！！！！！//
+				// 基于sub_begin_pos sub_end_pos sub_vel sub_acc
+				// 对单轴做规划，得到period，例如调用sCurve函数
+				double current_pos[1]{0,0,0,0,0,0};
 
-			//！！！！！！ 这里调用规划器 ！！！！！//
-			// 对单轴做规划，例如调用sCurve函数
-			double current_pos = 0.5;
-			//！！！！！！ 规划器调用完毕 ！！！！！//
+				// 做反解，需判断是否用tool 和 wobj设置
+				if (param.ee_tools[i] && param.ee_wobjs[i]) {
+					double pe[6]{ current_pos[0],0,0,0,0,0};
+					param.ee_tools[i]->setPe(*param.ee_wobjs[i], pe);
+					param.ees[i]->updP();
+					param.submodels[i]->inverseKinematics();
+				}
+				else {
+					param.submodels[i]->setOutputPos(&current_pos);
+					param.submodels[i]->inverseKinematics();
+				}
+			}
+			else if (sub_ee_types[j] == aris::dynamic::EEType::PE123
+				|| sub_ee_types[j] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
 
-			// 做反解，需判断是否用tool 和 wobj设置
-			if (param.ee_tools[i] && param.ee_wobjs[i]) {
-				double pe[6]{ current_pos,0,0,0,0,0 };
-				param.ee_tools[i]->setPe(*param.ee_wobjs[i], pe);
-				param.ees[i]->updP();
-				param.submodels[i]->inverseKinematics();
+				// 处理id
+				pos_idx += 6;
+				vel_idx += 2;
+				acc_idx += 2;
+				ee_idx++;
+				time_ratio_idx++;
+				
+
+				//！！！！！！ 这里调用规划器 ！！！！！//
+				// 对机器人做规划，例如调用sCurve函数
+				double current_pe[6]{ 0,1,2,3,5,6 };
+				//！！！！！！ 规划器调用完毕 ！！！！！//
+
+				// 做反解，需判断是否用tool 和 wobj设置
+				if (param.ee_tools[i] && param.ee_wobjs[i]) {
+					param.ee_tools[i]->setPe(*param.ee_wobjs[i], current_pe);
+					param.ees[i]->updP();
+					param.submodels[i]->inverseKinematics();
+				}
+				else {
+					param.submodels[i]->setOutputPos(current_pe);
+					param.submodels[i]->inverseKinematics();
+				}
 			}
 			else {
-				param.submodels[i]->setOutputPos(&current_pos);
-				param.submodels[i]->inverseKinematics();
+				// 对四轴等其他类型的做规划
+
 			}
 
-
-
-			// 处理id
-			pos_idx++;
-			vel_idx++;
-			acc_idx++;
 		}
-		else if (param.ee_types[i] == aris::dynamic::EEType::PE123
-			|| param.ee_types[i] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
 
-			// 起始位置
-			double begin_pe[6]{ 0,1,2,3,4,5 };
-			param.begin_output_pos.insert(param.begin_output_pos.end(), begin_pe, begin_pe + 6);
 
-			// 结束位置
-			double end_pe[6]{ 0,1,2,3,4,5 };
-			param.end_output_pos.insert(param.end_output_pos.end(), begin_pe, begin_pe + 6);
 
-			// 速度
-			double angular_vel = param.vels[vel_idx];
-			double linear_vel = param.vels[vel_idx];
 
-			// 加速度
-			double angular_acc = param.accs[acc_idx];
-			double linear_acc = param.accs[acc_idx];
-
-			// 时间缩放比例
-			double time_ratio = param.time_ratio[i];
-
-			//！！！！！！ 这里调用规划器 ！！！！！//
-			// 对机器人做规划，例如调用sCurve函数
-			double current_pe[6]{0,1,2,3,5,6};
-			//！！！！！！ 规划器调用完毕 ！！！！！//
-
-			// 做反解，需判断是否用tool 和 wobj设置
-			if (param.ee_tools[i] && param.ee_wobjs[i]) {
-				param.ee_tools[i]->setPe(*param.ee_wobjs[i], current_pe);
-				param.ees[i]->updP();
-				param.submodels[i]->inverseKinematics();
-			}
-			else {
-				param.submodels[i]->setOutputPos(current_pe);
-				param.submodels[i]->inverseKinematics();
-			}
-
-			// 处理id
-			pos_idx += 6;
-			vel_idx += 2;
-			acc_idx += 2;
-		}
-		else {
-			// 对四轴等其他类型的做规划
-
-		}
-	
 	}
-	
-	
+
 	return param.total_count - count();
 }
 
