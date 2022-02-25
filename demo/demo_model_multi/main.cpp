@@ -154,7 +154,7 @@ auto MoveL::executeRT()->int{
 				//！！！！！！ 这里调用规划器 ！！！！！//
 				// 基于sub_begin_pos sub_end_pos sub_vel sub_acc
 				// 对单轴做规划，得到period，例如调用sCurve函数
-				double current_pos[1]{0,0,0,0,0,0};
+				double current_pos[1]{0};
 
 				// 做反解，需判断是否用tool 和 wobj设置
 				if (param.ee_tools[i] && param.ee_wobjs[i]) {
@@ -164,7 +164,7 @@ auto MoveL::executeRT()->int{
 					param.submodels[i]->inverseKinematics();
 				}
 				else {
-					param.submodels[i]->setOutputPos(&current_pos);
+					param.submodels[i]->setOutputPos(current_pos);
 					param.submodels[i]->inverseKinematics();
 				}
 			}
