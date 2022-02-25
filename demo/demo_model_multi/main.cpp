@@ -127,8 +127,7 @@ auto MoveL::prepareNrt()->void{
 
 	this->param() = param;
 }
-auto MoveL::executeRT()->int
-{
+auto MoveL::executeRT()->int{
 	auto& param = std::any_cast<MoveLParam&>(this->param());
 	
 	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 }, ee_idx{ 0 }, time_ratio_idx{0};
@@ -210,11 +209,7 @@ auto MoveL::executeRT()->int
 
 	return param.total_count - count();
 }
-
-
-auto MoveL::collectNrt()->void
-{
-}
+auto MoveL::collectNrt()->void{}
 MoveL::~MoveL() = default;
 MoveL::MoveL(const MoveL & other) = default;
 MoveL::MoveL(const std::string & name) {

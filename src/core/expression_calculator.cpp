@@ -718,10 +718,10 @@ namespace aris::core
 
 		// get values, but values dimensions must be 1 x n //
 		auto value_mat = GetValues(b_par + 1, e_par);
-		if (value_mat.size() != 1)THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has invalid param type");
+		if (value_mat.size() > 1)THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has valid param type");
 
 		// transfer values to param types and param values //
-		auto params = value_mat.front();
+		auto params = value_mat.size() == 0 ? std::vector<Value>() : value_mat.front();
 		std::vector<std::string> p_types(params.size());
 		std::vector<std::any> p_values(params.size());
 		for (int i = 0; i < params.size(); ++i)
