@@ -548,6 +548,7 @@ namespace aris::dynamic{
 		auto getEes()->std::vector<MotionBase*>;
 		auto getMotionIds()->std::vector<Size>;
 
+		auto getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
 		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
 		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
