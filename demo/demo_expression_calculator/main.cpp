@@ -57,6 +57,15 @@ int main()
 		return aris::core::Matrix(std::any_cast<double&>(matrices.at(0)) + 2.0);
 	});
 
+	c.addFunction("getPi", std::vector<std::string>(), "Number", [](std::vector<std::any>& matrices)
+	{
+		return double(3.1415926);
+	});
+
+	auto ret__ = c.calculateExpression("getPi()");
+	auto pi = std::any_cast<double>(ret__.second);
+
+
 	std::vector<double> t = { 1, 2, 3 };
 
 	double x = 0.1;
