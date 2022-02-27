@@ -36,6 +36,8 @@ public:
 	MoveL(const MoveL& other);
 };
 
+auto getSubmodels()->std::vector<aris::Size>;
+
 auto MoveL::prepareNrt()->void{
 	
 	MoveLParam param;
@@ -50,6 +52,27 @@ auto MoveL::prepareNrt()->void{
 	param.ee_wobjs = { nullptr, model->wobjs()[1] }; // 外部轴没有wobj，所以是nullptr
 	param.vels = { 0.1, 0.5 * aris::PI, 0.3 }; // 外部轴速度只有一个，机器人有角速度和线速度，两维
 	param.accs = { 0.1, 0.8 * aris::PI, 0.6 }; // 同上
+
+
+
+	/// <summary>
+	/// /////////////////////////////////////////////////////////////////////////
+	/// </summary>
+	/// <returns></returns>
+
+	auto motion_ids = model->getMotionIds({2,0});
+	auto ees = model->getEes({2,0});
+	auto ee_types = model->getEeTypes({ 2,0 });
+	auto ee_nums = model->getEeNumOfSubModels({ 2,0 });
+
+	double input_pos[7];
+	aris::Size pos_id = 0;
+	for (auto id : { 2,0 }) {
+		auto& sub = model->subModels()[id];
+		
+		sub.getInputPos(input_pos + pos_id);
+		pos_id += sub.inputPosSize();
+	}
 
 	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 }, ee_idx{0};
 	std::vector<double> ee_periods; // 临时变量，param里面只需要存总的时间和time_ratio 即可
@@ -127,8 +150,7 @@ auto MoveL::prepareNrt()->void{
 
 	this->param() = param;
 }
-auto MoveL::executeRT()->int
-{
+auto MoveL::executeRT()->int{
 	auto& param = std::any_cast<MoveLParam&>(this->param());
 	
 	aris::Size pos_idx{ 0 }, vel_idx{ 0 }, acc_idx{ 0 }, ee_idx{ 0 }, time_ratio_idx{0};
@@ -155,7 +177,7 @@ auto MoveL::executeRT()->int
 				//！！！！！！ 这里调用规划器 ！！！！！//
 				// 基于sub_begin_pos sub_end_pos sub_vel sub_acc
 				// 对单轴做规划，得到period，例如调用sCurve函数
-				double current_pos[1]{0,0,0,0,0,0};
+				double current_pos[1]{0};
 
 				// 做反解，需判断是否用tool 和 wobj设置
 				if (param.ee_tools[i] && param.ee_wobjs[i]) {
@@ -165,7 +187,7 @@ auto MoveL::executeRT()->int
 					param.submodels[i]->inverseKinematics();
 				}
 				else {
-					param.submodels[i]->setOutputPos(&current_pos);
+					param.submodels[i]->setOutputPos(current_pos);
 					param.submodels[i]->inverseKinematics();
 				}
 			}
@@ -210,11 +232,7 @@ auto MoveL::executeRT()->int
 
 	return param.total_count - count();
 }
-
-
-auto MoveL::collectNrt()->void
-{
-}
+auto MoveL::collectNrt()->void{}
 MoveL::~MoveL() = default;
 MoveL::MoveL(const MoveL & other) = default;
 MoveL::MoveL(const std::string & name) {
@@ -272,7 +290,7 @@ int main(){
 	param.tool0_pe[2] = 0.078;
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
-
+	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));
