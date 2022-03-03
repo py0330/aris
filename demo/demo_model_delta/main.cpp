@@ -241,6 +241,29 @@ int main(){
 		aris::dynamic::dsp(1, 4, output);
 	}
 
+	////////////////////////////////////////// prpr ////////////////////////////////////
+	{
+		aris::dynamic::PrprParam param2;
+		param2.a = 1;
+		param2.b = 1;
+		auto m2 = createModelPrpr(param2);
+
+		//////////////////// 反解 ////////////////////
+		double xyz_theta2[4]{ 0.61, 0.85, 0.3, 0.1 };
+		m2->setOutputPos(xyz_theta2);
+		if (m2->inverseKinematics())
+			std::cout << "failed" << std::endl;
+		m2->getInputPos(input);
+		aris::dynamic::dsp(1, 4, input);
+
+		//////////////////// 正解 ////////////////////
+		m2->setInputPos(input);
+		if (m2->forwardKinematics())
+			std::cout << "failed" << std::endl;
+		m2->getOutputPos(output);
+		aris::dynamic::dsp(1, 4, output);
+	}
+
 	std::cout << "demo_model_delta finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0;

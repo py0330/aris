@@ -16,8 +16,7 @@
 #include "aris/dynamic/screw.hpp"
 #include "aris/dynamic/model.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	auto Coordinate::getPp(double *pp)const noexcept->void { if (pp)s_pm2pp(*pm(), pp); }
 	auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const noexcept->void{
 		if (pp){
@@ -497,8 +496,7 @@ namespace aris::dynamic
 	}
 	Coordinate::Coordinate(const std::string &name, bool active) :DynEle(name, active) {}
 
-	struct Marker::Imp
-	{
+	struct Marker::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		double pm_[4][4]{ { 0 } };
 		Part *part_;
@@ -563,8 +561,7 @@ namespace aris::dynamic
 		s_vc(16, prt_pm, *imp_->prt_pm_);
 	}
 
-	struct Part::Imp
-	{
+	struct Part::Imp{
 		std::unique_ptr<aris::core::PointerArray<Marker, Element>> marker_pool_;
 		std::unique_ptr<aris::core::PointerArray<Geometry, Element>> geometry_pool_;
 
@@ -1177,8 +1174,7 @@ namespace aris::dynamic
 		s_vs(6, fg, pf);
 	}
 	Part::~Part() = default;
-	Part::Part(const std::string &name, const double *iv, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
-	{
+	Part::Part(const std::string &name, const double *iv, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active){
 		imp_->marker_pool_.reset(new aris::core::PointerArray<Marker, Element>);
 		imp_->geometry_pool_.reset(new aris::core::PointerArray<Geometry, Element>);
 		
@@ -1201,8 +1197,7 @@ namespace aris::dynamic
 	Part& Part::operator=(Part &&other) = default;
 
 
-	struct ParasolidGeometry::Imp
-	{
+	struct ParasolidGeometry::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		std::string graphic_file_path;
 	};
@@ -1222,8 +1217,7 @@ namespace aris::dynamic
 	ParasolidGeometry& ParasolidGeometry::operator=(const ParasolidGeometry &other) = default;
 	ParasolidGeometry& ParasolidGeometry::operator=(ParasolidGeometry &&other) = default;
 
-	struct FileGeometry::Imp
-	{
+	struct FileGeometry::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		std::string graphic_file_path;
 	};
@@ -1244,8 +1238,7 @@ namespace aris::dynamic
 	FileGeometry& FileGeometry::operator=(const FileGeometry &other) = default;
 	FileGeometry& FileGeometry::operator=(FileGeometry &&other) = default;
 
-	struct ShellGeometry::Imp
-	{
+	struct ShellGeometry::Imp{
 		Marker *relative_to_;
 		std::string graphic_file_path;
 	};
@@ -1275,8 +1268,7 @@ namespace aris::dynamic
 			.prop("pe", &setPe, &getPe)
 			;
 
-		auto getPrtPe = [](Part *prt)->aris::core::Matrix
-		{
+		auto getPrtPe = [](Part *prt)->aris::core::Matrix{
 			double pe[6];
 			s_pm2pe(*prt->pm(), pe);
 			return aris::core::Matrix(1, 6, pe);
@@ -1315,6 +1307,5 @@ namespace aris::dynamic
 			.inherit<Geometry>()
 			.prop("graphic_file_path", &FileGeometry::setFilePath, &FileGeometry::filePath)
 			;
-
 	}
 }
