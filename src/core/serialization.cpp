@@ -17,8 +17,7 @@
 #include "aris/ext/json.hpp"
 #include "aris/ext/fifo_map.hpp"
 
-namespace aris::core
-{
+namespace aris::core{
 	auto typename_xml2c(const tinyxml2::XMLElement *ele)->std::string{
 		return std::regex_replace(ele->Name(), std::regex("\\."), "::");
 	}
@@ -47,8 +46,7 @@ namespace aris::core
 				to_xml_ele(ins.at(i), insert_ele);
 			}
 		}
-		else
-		{
+		else{
 			for (auto &prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 
@@ -59,7 +57,7 @@ namespace aris::core
 				else{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
-					//insert_ele->SetAttribute(":name", prop->name().data());
+					insert_ele->SetAttribute("__name__", prop->name().data());
 					to_xml_ele(v, insert_ele);
 				}
 			}
@@ -92,66 +90,81 @@ namespace aris::core
 		for (auto attr = ele->FirstAttribute(); attr; attr = attr->Next()){
 			attrs.push_back(attr);
 		}
+
+		// 获取全部props //
+		std::list<aris::core::Property*> props;
+		props.assign(ins.type()->properties().begin(), ins.type()->properties().end());
 		
-		// 读写 //
-		for (auto &prop : ins.type()->properties()){
+		// 根据名字设置所有的props //
+		for (auto iter = props.begin(); iter != props.end();) {
+			auto prop = *iter;
+			
 			// basic type //
 			if (prop->type()->isBasic()){
 				auto found = std::find_if(attrs.begin(), attrs.end(), [&prop](const auto attr)->bool {
-					return std::regex_replace(attr->Name(), std::regex("\\."), "::") == prop->name();
+					return attr->Name() == prop->name();
 				});
 
+				// 如果无法找到对应的attr，什么也不做
 				if (found == attrs.end()) {
 					//std::cout << "WARNING:basic prop not found : " << prop->name() << std::endl;
+					iter = props.erase(iter);
 					continue;
 				}
 
+				// 找到对应的attr，并赋值
 				auto [ptr, prop_ins] = prop->type()->create();
 				prop_ins.fromString((*found)->Value());
 				prop->set(&ins, prop_ins);
 				attrs.erase(found);
+				iter = props.erase(iter);
 				continue;
 			}
 
-			// non basic type, non ptr prop //
-			if (!prop->acceptPtr()){
-				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
-					return typename_xml2c(ele) == prop->type()->name();
+			// non-basic type //
+			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
+				return ele->Attribute("__name__") && std::string_view(prop->name()) == ele->Attribute("__name__");
 				});
 
-				if (found == child_eles.end()){
-					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
-					continue;
-				}
-
-				auto[ptr, prop_ins] = prop->type()->create();
-				from_xml_ele(prop_ins, *found);
-				prop->set(&ins, prop_ins);
-				child_eles.erase(found);
-				continue;
-			}
-
-			// non basic type, accept ptr //
-			if (prop->acceptPtr()){
-				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
-					return Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele)));
-				});
-
-				if (found == child_eles.end()){
-					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
-					continue;
-				}
+			if (found != child_eles.end()) {
+				// 判断是否类型匹配 //
+				if (!Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele))))
+					THROW_FILE_LINE(std::string("XML type:") + ele->Name() + "  instance type:" + std::string(prop->type()->name()));
 
 				auto c_type = typename_xml2c(*found);
-				auto[ptr, prop_ins] = Type::getType(c_type)->create();
+				auto [ptr, prop_ins] = Type::getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
 				prop->set(&ins, prop_ins);
-				ptr.release();
 				child_eles.erase(found);
-				continue;
+				iter = props.erase(iter);
+				if (prop->acceptPtr()) ptr.release();
 			}
+			else
+				++iter;
 		}
 
+		// 如果没有根据名字找到对应的prop，那么根据类型来确定 //
+		for (auto iter = props.begin(); iter != props.end(); ++iter) {
+			auto prop = *iter;
+
+			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
+				return Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele)));
+				});
+
+			if (found == child_eles.end()) {
+				//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
+				continue;
+			}
+
+			auto c_type = typename_xml2c(*found);
+			auto [ptr, prop_ins] = Type::getType(c_type)->create();
+			from_xml_ele(prop_ins, *found);
+			prop->set(&ins, prop_ins);
+			if(prop->acceptPtr())ptr.release();
+			child_eles.erase(found);
+		}
+
+		// 获取数组的元素 //
 		if (ins.isArray()){
 			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement()){
 				auto type = Type::getType(typename_xml2c(child_ele));
@@ -247,48 +260,81 @@ namespace aris::core
 		// from text //
 		if (js.find("#text") != js.end()) ins.fromString(js["#text"].get<std::string>());
 
-		// 读写 //
-		for (auto &prop : ins.type()->properties())	{
+		// 获取全部子节点 //
+		std::list<my_json::iterator> child_eles;
+		for (auto iter = js.begin(); iter != js.end(); ++iter)child_eles.push_back(iter);
+
+		// 获取全部props //
+		std::list<aris::core::Property*> props;
+		props.assign(ins.type()->properties().begin(), ins.type()->properties().end());
+
+		// 根据名字设置所有的props //
+		for (auto iter = props.begin(); iter != props.end();) {
+			auto prop = *iter;
+
 			// basic type //
-			if (prop->type()->isBasic() && js.find("@" + prop->name()) != js.end())	{
-				auto[ptr, prop_ins] = prop->type()->create();
-				prop_ins.fromString(js["@" + prop->name()].get<std::string>());
-				prop->set(&ins, prop_ins);
-				js.erase(prop->name());
-				//continue;
-			}
+			if (prop->type()->isBasic()) {
+				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
+					return ele.key() == ("@" + prop->name());
+					});
 
-			// non basic type, non ptr prop //
-			else if (!prop->acceptPtr() && js.find("@" + prop->name()) != js.end())	{
-				auto[ptr, prop_ins] = prop->type()->create();
-				from_json(prop_ins, js["@" + prop->name()]);
-				prop->set(&ins, prop_ins);
-				js.erase(prop->name());
-				//continue;
-			}
-
-			// non basic type, accept ptr //
-			else if (prop->acceptPtr())	{
-				my_json::iterator found = js.end();
-				for (auto it = js.begin(); it != js.end(); ++it){
-					if (it.value().is_object() && Type::isBaseOf(prop->type(), Type::getType(typename_json2c(it.key())))){
-						found = it;
-						break;
-					};
-				}
-				
-				if (found == js.end()){
-					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
+				// 如果无法找到对应的attr，什么也不做
+				if (found == child_eles.end()) {
+					//std::cout << "WARNING:basic prop not found : " << prop->name() << std::endl;
+					iter = props.erase(iter);
 					continue;
 				}
 
-				auto[ptr, prop_ins] = Type::getType(found.key())->create();
-				from_json(prop_ins, *found);
+				// 找到对应的attr，并赋值
+				auto [ptr, prop_ins] = prop->type()->create();
+				prop_ins.fromString(found->value().get<std::string>());
 				prop->set(&ins, prop_ins);
-				ptr.release();
-				js.erase(found);
-				//continue;
+				child_eles.erase(found);
+				iter = props.erase(iter);
+				continue;
 			}
+
+			// non-basic type //
+			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
+				return ele.value().find("#name")!=ele.value().end() && std::string_view(prop->name()) == ele.value().find("#name")->get<std::string>();
+				});
+
+			if (found != child_eles.end()) {
+				// 判断是否类型匹配 //
+				if (!Type::isBaseOf(prop->type(), Type::getType(typename_json2c((*found).key()))))
+					THROW_FILE_LINE(std::string("Json type:") + (*found).key() + "  instance type:" + std::string(prop->type()->name()));
+
+				auto c_type = typename_json2c((*found).key());
+				auto [ptr, prop_ins] = Type::getType(c_type)->create();
+				from_json(prop_ins, (*found).value());
+				prop->set(&ins, prop_ins);
+				child_eles.erase(found);
+				iter = props.erase(iter);
+				if (prop->acceptPtr()) ptr.release();
+			}
+			else
+				++iter;
+		}
+
+		// 如果没有根据名字找到对应的prop，那么根据类型来确定 //
+		for (auto iter = props.begin(); iter != props.end(); ++iter) {
+			auto prop = *iter;
+
+			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto &ele)->bool {
+				return Type::isBaseOf(prop->type(), Type::getType(typename_json2c(ele.key())));
+				});
+
+			if (found == child_eles.end()) {
+				//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
+				continue;
+			}
+
+			auto c_type = typename_json2c((*found).key());
+			auto [ptr, prop_ins] = Type::getType(c_type)->create();
+			from_json(prop_ins, (*found).value());
+			prop->set(&ins, prop_ins);
+			if (prop->acceptPtr())ptr.release();
+			child_eles.erase(found);
 		}
 
 		if (ins.isArray() && js.find("#array") != js.end())	{

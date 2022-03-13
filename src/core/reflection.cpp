@@ -127,9 +127,10 @@ namespace aris::core{
 	}
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return imp_->default_ctor_();}
 	auto Type::name()const->std::string_view { return imp_->type_name_; };
-	auto Type::isRefArray()const->bool { return imp_->array_data_.get() && imp_->array_data_->is_ref_array_; }
+	auto Type::isBasic()const->bool { return imp_->to_string_ || imp_->from_string_; }
+	auto Type::isClass()const->bool { return (!isBasic()); }
 	auto Type::isArray()const->bool { return imp_->array_data_.get(); }
-	auto Type::isBasic()const->bool { return (!imp_->is_polymophic_) && (!isArray()) && imp_->properties_ptr_.empty(); }
+	auto Type::isRefArray()const->bool { return imp_->array_data_.get() && imp_->array_data_->is_ref_array_; }
 	auto Type::inheritTypes()const->std::vector<const Type*>{ return imp_->inherit_types_; }
 	auto Type::properties()const->const std::vector<Property*>&{return imp_->properties_ptr_;};
 	auto Type::propertyAt(std::string_view name)const->Property*{
@@ -247,14 +248,13 @@ namespace aris::core{
 	auto Instance::get(std::string_view prop_name)->Instance {
 		return type()->propertyAt(prop_name)->get(this);
 	}
-	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
-	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
-	auto Instance::type()const->const Type* { 
+	auto Instance::type()const->const Type* {
 		if (isEmpty()) return nullptr;
 		return Type::reflect_types().find(imp_->type_info_->hash_code()) == Type::reflect_types().end() ? nullptr : &Type::reflect_types().at(imp_->type_info_->hash_code());
 	}
-	auto Instance::isBasic()const->bool { return type()->isBasic(); }
-	auto Instance::isArray()const->bool { return type()->isArray(); }
+	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
+	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
+	auto Instance::isSharedReference()const->bool { return imp_->data_.index() == 2; }
 	auto Instance::toString()->std::string { 
 		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(toVoidPtr());
 		if (type()->imp_->to_string_)return type()->imp_->to_string_(this);

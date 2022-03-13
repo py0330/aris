@@ -89,15 +89,32 @@ namespace aris::core{
 		static auto isBaseOf(const Type* base, const Type* derived)->bool;
 		static auto getType(std::string_view name)->Type*;
 
-		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
+		// 类型名 //
 		auto name()const->std::string_view;
-		
-		auto properties()const->const std::vector<Property*>&;
-		auto propertyAt(std::string_view name)const->Property*;
-		auto inheritTypes()const->std::vector<const Type*>;
-		auto isRefArray()const->bool;
-		auto isArray()const->bool;
+
+		// # 类型的具体分类 # //
+		// 类型包括：【Basic】，【Array】，【Class】
+		// 【Basic】   可以直接和字符串进行交互，类型不能有任何property。 例如：int、string 等
+		// 【Class】   无法直接和字符串进行交互，可以使用set&get函数设置property，只要不是【Basic】的，就一定是【Class】
+		// 【Array】   Class的特殊一种，可以通过子节点来访问数组元素，但所有 【property】都必须是 【Basic】类型
+		// 【RefArray】同上，但数组元素可以多态
 		auto isBasic()const->bool;
+		auto isClass()const->bool;
+		auto isArray()const->bool;
+		auto isRefArray()const->bool;
+
+		// # 继承 # //
+		auto inheritTypes()const->std::vector<const Type*>;
+
+		// # 属性 # //
+		// 所有属性，包括继承而来的 //
+		auto properties()const->const std::vector<Property*>&;
+		// 根据名称访问属性
+		auto propertyAt(std::string_view name)const->Property*;
+
+		// # 实例化 # //
+		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
+		
 		~Type();
 
 	private:
@@ -126,27 +143,36 @@ namespace aris::core{
 	};
 	class ARIS_API Instance{
 	public:
+		// 对应的类型
+		auto type()const->const Type*;
+		
+		// 资源所有权，可能为【空】，【引用（不管理生命周期）】，【使用sharedPtr存储】，三种情况
 		auto isEmpty()const->bool;
 		auto isReference()const->bool;
-		auto isBasic()const->bool;
-		auto isArray()const->bool;
-		auto type()const->const Type*;
+		auto isSharedReference()const->bool;
 
+		// 资源类型 
+		auto isBasic()const->bool { return type()->isBasic(); }
+		auto isClass()const->bool { return type()->isClass(); }
+		auto isArray()const->bool { return type()->isArray(); }
+		auto isRefArray()const->bool { return type()->isRefArray(); }
+
+		// 强制转换类型
 		template<typename T>
 		constexpr auto castTo()const->std::add_pointer_t<T>{
 			auto type = &Type::reflect_types().at(typeid(T).hash_code());
 			return reinterpret_cast<std::add_pointer_t<T>>(castToType(type));
 		}
 		
-		// only work for non-basic and non-array //
-		auto set(std::string_view prop_name, Instance arg)->void;
-		auto get(std::string_view prop_name)->Instance;
-		
-		// only work for basic //
+		// only work for 【Basic】 //
 		auto toString()->std::string;
 		auto fromString(std::string_view str)->void;
 
-		// only work for array //
+		// only work for 【Class】 //
+		auto set(std::string_view prop_name, Instance arg)->void;
+		auto get(std::string_view prop_name)->Instance;
+
+		// only work for 【Array】 //
 		auto size()->std::size_t;
 		auto at(std::size_t id)->Instance;
 		auto push_back(Instance element)->void;

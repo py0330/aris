@@ -288,9 +288,19 @@ int main(){
 	param.a3 = 0.025;
 	param.d4 = 0.28;
 	param.tool0_pe[2] = 0.078;
-	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
+
+	param.axis_range[0] = 0.0;
+	param.axis_range[1] = 0.0;
+	param.axis_range[2] = 0.0;
+	param.axis_range[3] = 0.0;
+	param.axis_range[4] = 0.0;
+	param.axis_range[5] = 0.0;
 
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
+	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
+
+	
+
 
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));
@@ -299,6 +309,18 @@ int main(){
 	model.wobjs().push_back(model.findMarker("ExAxisModel.EE.tool1"));
 	model.wobjs().push_back(model.findMarker("ExAxisModel.ground.wobj1"));
 	
+
+	double input[7];
+	model.getInputPos(input);
+	aris::dynamic::dsp(1, 7, input);
+
+	double output[7]{0.0,0.28,0,0.63,0,aris::PI/2,0};
+	model.setOutputPos(output);
+	model.inverseKinematics();
+	//double input[6];
+	model.getInputPos(input);
+	aris::dynamic::dsp(1, 7, input);
+
 
 	// 构造mvl ，调试一下
 	MoveL mvl;
@@ -309,7 +331,11 @@ int main(){
 	mvl.setCount(1);
 	while (mvl.executeRT()) {
 		mvl.setCount(mvl.count() + 1);
-	
+
+
+
+
+
 	}
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;

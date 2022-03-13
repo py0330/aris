@@ -118,6 +118,21 @@ public:
 		};
 	}
 
+	template< class R, class... Param >
+	func_(std::string name, R(*f)(Param...))
+	{
+		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+		inside_func = [=](std::vector<aris::core::Instance>& param_ins_vec)->void* {
+			auto t = make_param_tuple<Arguments>(
+				param_ins_vec,
+				std::make_index_sequence<std::tuple_size_v<Arguments>>{}
+			);
+			std::apply(f, t);
+			return nullptr;
+		};
+	};
+
+
 	template <typename... Param>
 	auto invoke(Param&&... params)->void{
 		auto ins_vec = std::vector<aris::core::Instance>({params...});
@@ -318,6 +333,31 @@ int main(){
 		delete base_ptr;
 	}
 	
+	ChildClass c;
+	aris::core::fromXmlString(c,
+		"<ChildClass member=\"1234\" referenceMember=\"cccc\" value3=\"6.25\" value5=\"12.283300000000001\">"
+    "<BaseClass member=\"567\" referenceMember=\"refer2\"/>"
+"</ChildClass>"
+	);
+	std::cout << aris::core::toXmlString(c) << std::endl;
+
+	ChildClass c2;
+	aris::core::fromJsonString(c2,
+		"{"
+		"\"ChildClass\": {"
+		"\"@member\": \"1234\","
+		"\"@referenceMember\": \"cccc\","
+		"\"@value3\": \"6.25\","
+		"\"BaseClass\": {"
+		"\"@member\": \"567\","
+		"\"@referenceMember\": \"refer2\","
+		"\"#name\": \"value4\""
+		"},"
+		"\"@value5\": \"12.283300000000001\""
+		" }"
+		"}");
+
+	std::cout << aris::core::toJsonString(c2) << std::endl;
 
 	auto f = [](int &a, double b)->double {
 		std::cout << "a:" << a << std::endl;
@@ -336,7 +376,7 @@ int main(){
 
 	std::function<void(int)> fffff = select_overload<void(int)>(f1);
 	func_ f1_("f1", fffff);
-	//func_ f1_("f1", select_overload<void(int)>(f1));
+	func_ f2_("f2", select_overload<void(int)>(f1));
 
 	auto func = select_overload<void(int)>(f1);
 
