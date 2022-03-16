@@ -238,9 +238,12 @@ namespace aris::control{
 	auto EthercatMaster::send()->void { 
 		for (auto& slave : slavePool())
 			for(auto &sm:slave.smPool())
-				for (auto& pdo : sm) 
-					for(auto &entry:pdo)
-						aris_ecrt_pdo_write(&entry, entry.imp_->value_);
+				if (sm.rx()) {
+					for (auto& pdo : sm)
+						for (auto& entry : pdo)
+							aris_ecrt_pdo_write(&entry, entry.imp_->value_);
+				}
+				
 				
 
 
