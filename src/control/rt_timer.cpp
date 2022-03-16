@@ -41,7 +41,7 @@ namespace aris::control
 		};
 		
 
-		auto ret = rt_task_start(&std::any_cast<RT_TASK&>(rt_task), linux_task_func, package)
+		auto ret = rt_task_start(&std::any_cast<RT_TASK&>(rt_task), linux_task_func, package);
 		if (ret) {
 			THROW_FILE_LINE("create rt_thread failed");
 			return -1;
@@ -67,6 +67,10 @@ namespace aris::control
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 
 	auto aris_rt_time_since_last_time()->std::int64_t { return aris_rt_timer_read() - last_time_; }
+	// in nano seconds
+	auto aris_rt_last_wakeup_time()->std::int64_t {
+		return last_time_;
+	}
 }
 
 #elif defined(ARIS_USE_RT_PREEMT)
@@ -175,6 +179,7 @@ namespace aris::control
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		return (now.tv_sec - last_time_.tv_sec)*NSEC_PER_SEC + now.tv_nsec - last_time_.tv_nsec;
 	}
+
 }
 #else
 #include <chrono>
@@ -221,9 +226,12 @@ namespace aris::control
 	}
 
 	// in nano seconds
-	auto aris_rt_time_since_last_time()->std::int64_t
-	{
+	auto aris_rt_time_since_last_time()->std::int64_t{
 		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_).count();
+	}
+
+	auto aris_rt_last_wakeup_time()->std::int64_t {
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(last_time_ - begin_time_).count();
 	}
 }
 #endif
