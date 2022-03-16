@@ -2,8 +2,7 @@
 #include "aris/core/log.hpp"
 
 #if defined(ARIS_USE_XENOMAI3)
-extern "C"
-{
+extern "C"{
 #include <alchemy/task.h>
 #include <alchemy/timer.h>
 #include <sys/mman.h>
@@ -14,8 +13,7 @@ namespace aris::control
 	thread_local std::int64_t nanoseconds_;
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
-	auto aris_rt_task_create()->std::any
-	{
+	auto aris_rt_task_create()->std::any{
 		std::any rt_task = RT_TASK();
 
 		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
@@ -25,14 +23,12 @@ namespace aris::control
 	}
 	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
-	auto aris_rt_task_set_periodic(int nanoseconds)->int
-	{
+	auto aris_rt_task_set_periodic(int nanoseconds)->int{
 		last_time_ = aris_rt_timer_read();
 		nanoseconds_ = nanoseconds;
 		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 	}
-	auto aris_rt_task_wait_period()->int
-	{
+	auto aris_rt_task_wait_period()->int{
 		unsigned long overruns_r = 0;
 		auto ret = rt_task_wait_period(&overruns_r);// -ETIMEDOUT is error
 		last_time_ += nanoseconds_ * (overruns_r + 1);
@@ -75,15 +71,13 @@ namespace aris::control
 	thread_local struct timespec last_time_, begin_time_;
 	//
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
-	auto aris_rt_task_create()->std::any
-	{
+	auto aris_rt_task_create()->std::any{
 		auto task = std::make_shared<RT_TASK>();
 		pthread_attr_init(&task->thattr);
 		pthread_attr_setdetachstate(&task->thattr, PTHREAD_CREATE_JOINABLE);
 		return task;
 	}
-	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
-	{
+	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int{
 		// map from void(void*) to void*(void*)
 		std::atomic_bool is = false;
 		void* package[3]{ reinterpret_cast<void*>(task_func), param, &is };
