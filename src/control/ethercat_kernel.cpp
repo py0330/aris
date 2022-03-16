@@ -473,16 +473,13 @@ namespace aris::control
 		ecrt_release_master(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 	}
 	auto aris_ecrt_master_recv(EthercatMaster *mst)->void{
-		
-		
-		
 		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 
 		ec_master_state_t ms;
 		ecrt_master_state(m_handle.ec_master_, &ms);
 
 		if (ms.link_up){
-			ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
+			ecrt_master_application_time(m_handle.ec_master_, aris_rt_last_wakeup_time());
 
 			ecrt_master_receive(m_handle.ec_master_);
 			ecrt_domain_process(m_handle.domain_);

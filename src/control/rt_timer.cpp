@@ -180,6 +180,10 @@ namespace aris::control
 		return (now.tv_sec - last_time_.tv_sec)*NSEC_PER_SEC + now.tv_nsec - last_time_.tv_nsec;
 	}
 
+	// in nano seconds
+	auto aris_rt_last_wakeup_time()->std::int64_t{
+		return (last_time_.tv_sec - begin_time_.tv_sec) * NSEC_PER_SEC + last_time_.tv_nsec - begin_time_.tv_nsec;
+	}
 }
 #else
 #include <chrono>

@@ -53,11 +53,13 @@ namespace aris::control
 				// receive //
 				mst.recv();
 
+				// send
+				mst.send();
+
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
-				// send
-				mst.send();
+				
 
 				// flush lout
 				mst.lout() << std::flush;
