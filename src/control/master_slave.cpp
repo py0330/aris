@@ -45,7 +45,7 @@ namespace aris::control
 			};
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
-
+			
 			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();

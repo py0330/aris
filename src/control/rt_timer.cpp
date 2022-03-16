@@ -24,7 +24,7 @@ namespace aris::control
 		return rt_task;
 	}
 	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { 
-		
+		std::atomic_bool is = false;
 		void* package[3]{ reinterpret_cast<void*>(task_func), param, &is };
 		auto linux_task_func = [](void* package)->void{
 			aris_mlockall();
