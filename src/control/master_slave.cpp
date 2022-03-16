@@ -59,8 +59,6 @@ namespace aris::control
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
-				
-
 				// flush lout
 				mst.lout() << std::flush;
 				if (!mst.imp_->lout_msg_.empty()){

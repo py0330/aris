@@ -52,6 +52,7 @@ namespace aris::control{
 		std::uint16_t index_;
 		std::uint8_t subindex_;
 		aris::Size bit_size_;
+		char value_[8];
 	};
 	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto PdoEntry::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
@@ -152,7 +153,8 @@ namespace aris::control{
 		if (isVirtual())return 0;
 
 		if (auto entry = findPdoEntry(index, subindex)) {
-			aris_ecrt_pdo_write(entry, value);
+			std::copy_n((const char*)value, entry->imp_->bit_size_/8 + (entry->imp_->bit_size_ % 8 ? 1 : 0), entry->imp_->value_);
+			//aris_ecrt_pdo_write(entry, value);
 			return 0;
 		}
 		return -1;
@@ -233,7 +235,18 @@ namespace aris::control{
 	}
 	auto EthercatMaster::start()->void { aris_ecrt_master_request(this); Master::start(); }
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
-	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
+	auto EthercatMaster::send()->void { 
+		for (auto& slave : slavePool())
+			for(auto &sm:slave.smPool())
+				for (auto& pdo : sm) 
+					for(auto &entry:pdo)
+						aris_ecrt_pdo_write(&entry, entry.imp_->value_);
+				
+
+
+		
+		aris_ecrt_master_send(this);
+	}
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
 	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&{
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>(&Master::slavePool());
