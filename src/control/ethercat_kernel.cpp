@@ -472,14 +472,15 @@ namespace aris::control
 		ecrt_master_deactivate(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 		ecrt_release_master(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 	}
-	auto aris_ecrt_master_recv(EthercatMaster *mst)->void
-	{
+	auto aris_ecrt_master_recv(EthercatMaster *mst)->void{
 		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
-		
+
 		ec_master_state_t ms;
 		ecrt_master_state(m_handle.ec_master_, &ms);
 
 		if (ms.link_up){
+			
+
 			ecrt_master_receive(m_handle.ec_master_);
 			ecrt_domain_process(m_handle.domain_);
 		}

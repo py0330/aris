@@ -17,6 +17,7 @@ namespace aris::control
 
 	// in nano seconds
 	auto aris_rt_time_since_last_time()->std::int64_t;
+	auto aris_rt_last_wakeup_time()->std::int64_t;
 }
 
 #endif
