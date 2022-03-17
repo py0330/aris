@@ -144,7 +144,7 @@ namespace aris::control{
 		if (isVirtual())return 0;
 
 		if (auto entry = findPdoEntry(index, subindex)) {
-			std::copy_n(entry->imp_->value_, entry->imp_->bit_size_ / 8 + (entry->imp_->bit_size_ % 8 ? 1 : 0), value);
+			std::copy_n(entry->imp_->value_, entry->imp_->bit_size_ / 8 + (entry->imp_->bit_size_ % 8 ? 1 : 0), (char*)value);
 			//aris_ecrt_pdo_read(entry, value);
 			return 0;
 		}
@@ -244,7 +244,6 @@ namespace aris::control{
 						for (auto& entry : pdo)
 							aris_ecrt_pdo_write(&entry, entry.imp_->value_);
 				}
-				
 		aris_ecrt_master_send(this);
 	}
 	auto EthercatMaster::recv()->void { 
