@@ -479,7 +479,7 @@ namespace aris::control
 		ecrt_master_state(m_handle.ec_master_, &ms);
 
 		if (ms.link_up){
-			ecrt_master_application_time(m_handle.ec_master_, aris_rt_last_wakeup_time());
+			
 
 			ecrt_master_receive(m_handle.ec_master_);
 			ecrt_domain_process(m_handle.domain_);
@@ -496,7 +496,8 @@ namespace aris::control
 		{
 			ecrt_domain_queue(m_handle.domain_);
 
-			ecrt_master_sync_reference_clock_to(m_handle.ec_master_, aris_rt_timer_read());
+			ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
+			ecrt_master_sync_reference_clock(m_handle.ec_master_);
 			ecrt_master_sync_slave_clocks(m_handle.ec_master_);
 
 			ecrt_master_send(m_handle.ec_master_);
