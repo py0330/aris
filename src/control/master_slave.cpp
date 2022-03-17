@@ -50,14 +50,27 @@ namespace aris::control
 				// rt timer //
 				aris_rt_task_wait_period();
 				
+				static std::int64_t ns_wakeup, ns_recv, ns_send, ns_strategy, ns_total;
+
+				ns_wakeup = aris::control::aris_rt_time_since_last_time();
+
 				// receive //
 				mst.recv();
+
+				ns_recv = aris::control::aris_rt_time_since_last_time();
 
 				// send
 				mst.send();
 
+				ns_send = aris::control::aris_rt_time_since_last_time();
+
+
+
+
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
+
+				ns_strategy = aris::control::aris_rt_time_since_last_time();
 
 				// flush lout
 				mst.lout() << std::flush;
@@ -78,6 +91,13 @@ namespace aris::control
 				add_time_to_stastics(time, &mst.imp_->global_stastics_);
 				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
 				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
+				
+				ns_total = aris::control::aris_rt_time_since_last_time();
+
+				if (ns_send > 300000 || ns_total > 500000)
+					mst.mout() << "********************************************\n"
+					<< "too large latency: " << ns_wakeup << "   " << ns_recv << "   " << ns_send << "   " << ns_strategy << "   " << ns_total
+					<< "********************************************" << std::endl;
 			}
 		}
 
