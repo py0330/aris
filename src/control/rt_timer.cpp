@@ -52,7 +52,7 @@ namespace aris::control
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
 	auto aris_rt_task_set_periodic(int nanoseconds)->int{
 		nanoseconds_ = nanoseconds;
-		auto ret = rt_task_set_periodic(NULL, TM_NOW, nanoseconds)
+		auto ret = rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 		last_time_ = aris_rt_timer_read();
 		return ret;
 	}
