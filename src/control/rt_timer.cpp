@@ -14,8 +14,7 @@ namespace aris::control
 	thread_local std::int64_t nanoseconds_;
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
-	auto aris_rt_task_create()->std::any
-	{
+	auto aris_rt_task_create()->std::any{
 		std::any rt_task = RT_TASK();
 
 		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
@@ -51,11 +50,11 @@ namespace aris::control
 		return 0;
 	}
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
-	auto aris_rt_task_set_periodic(int nanoseconds)->int
-	{
+	auto aris_rt_task_set_periodic(int nanoseconds)->int{
 		nanoseconds_ = nanoseconds;
+		auto ret = rt_task_set_periodic(NULL, TM_NOW, nanoseconds)
 		last_time_ = aris_rt_timer_read();
-		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
+		return ret;
 	}
 	auto aris_rt_task_wait_period()->int
 	{

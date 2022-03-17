@@ -239,22 +239,20 @@ namespace aris::control{
 	auto EthercatMaster::send()->void { 
 		for (auto& slave : slavePool())
 			for(auto &sm:slave.smPool())
-				if (sm.rx()) {
+				if (sm.rx())
 					for (auto& pdo : sm)
 						for (auto& entry : pdo)
 							aris_ecrt_pdo_write(&entry, entry.imp_->value_);
-				}
 		aris_ecrt_master_send(this);
 	}
 	auto EthercatMaster::recv()->void { 
 		aris_ecrt_master_recv(this);
 		for (auto& slave : slavePool())
 			for (auto& sm : slave.smPool())
-				if (sm.tx()) {
+				if (sm.tx())
 					for (auto& pdo : sm)
 						for (auto& entry : pdo)
 							aris_ecrt_pdo_read(&entry, entry.imp_->value_);
-				}
 	}
 	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&{
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>(&Master::slavePool());
