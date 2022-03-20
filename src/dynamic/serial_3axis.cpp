@@ -183,19 +183,19 @@ namespace aris::dynamic
 		union
 		{
 			struct { Part* GR, *L1, *L2, *L3; };
-			Part* parts[4];
+			Part* parts[4]{ nullptr };
 		};
 		union
 		{
 			struct { RevoluteJoint *R1, *R2, *R3; };
-			RevoluteJoint* joints[3];
+			RevoluteJoint* joints[3]{ nullptr };
 		};
 		union
 		{
 			struct { Motion *M1, *M2, *M3; };
-			Motion* motions[3];
+			Motion* motions[3]{ nullptr };
 		};
-		GeneralMotion *ee;
+		GeneralMotion* ee{ nullptr };
 
 		bool use_angle_ = true;
 	};

@@ -9,14 +9,12 @@
 
 namespace aris::core
 {
-	struct Pipe::Imp
-	{
-		std::size_t pool_size_;
+	struct Pipe::Imp{
+		std::size_t pool_size_{ 1024 };
 		std::unique_ptr<char[]> pool_;
 		std::atomic_size_t send_pos_{ 0 }, recv_pos_{ 0 };
 	};
-	auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool
-	{
+	auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool{
 		auto send_pos = imp_->send_pos_.load();// 原子操作
 		auto recv_pos = imp_->recv_pos_.load();// 原子操作
 
@@ -29,8 +27,7 @@ namespace aris::core
 		imp_->send_pos_.store((send_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_); // 原子操作
 		return true;
 	}
-	auto Pipe::recvMsg(aris::core::MsgBase &msg)->bool
-	{
+	auto Pipe::recvMsg(aris::core::MsgBase &msg)->bool{
 		auto send_pos = imp_->send_pos_.load();// 原子操作
 		auto recv_pos = imp_->recv_pos_.load();// 原子操作
 
@@ -48,15 +45,13 @@ namespace aris::core
 		imp_->recv_pos_.store((recv_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);// 原子操作
 		return true;
 	}
-	auto Pipe::resize(Size mem_pool_size)
-	{
+	auto Pipe::resize(Size mem_pool_size){
 		imp_->pool_size_ = mem_pool_size;
 		imp_->pool_.reset(new char[imp_->pool_size_]());
 	}
 	auto Pipe::size()->Size { return imp_->pool_size_; }
 	Pipe::~Pipe() = default;
-	Pipe::Pipe(const std::string &name, std::size_t pool_size) :imp_(new Imp)
-	{
+	Pipe::Pipe(const std::string &name, std::size_t pool_size) :imp_(new Imp){
 		imp_->pool_size_ = pool_size;
 		imp_->pool_.reset(new char[imp_->pool_size_]());
 	}

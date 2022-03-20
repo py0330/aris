@@ -231,30 +231,25 @@ namespace aris::dynamic
 
 		return true;
 	}
-	struct SevenAxisInverseKinematicSolver::Imp
-	{
+	struct SevenAxisInverseKinematicSolver::Imp{
 		int which_root_{ 0 };
 		double axis_angle{ 0.0 };
 		SevenAxisParam seven_axis_param;
-		union
-		{
+		union{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6, *L7; };
-			Part* parts[8];
+			Part* parts[8]{ nullptr };
 		};
-		union
-		{
+		union{
 			struct { RevoluteJoint *R1, *R2, *R3, *R4, *R5, *R6, *R7; };
-			RevoluteJoint* joints[7];
+			RevoluteJoint* joints[7]{ nullptr };
 		};
-		union
-		{
+		union{
 			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6, *M7; };
-			Motion* motions[7];
+			Motion* motions[7]{ nullptr };
 		};
-		GeneralMotion *ee;
+		GeneralMotion *ee{ nullptr };
 	};
-	auto SevenAxisInverseKinematicSolver::allocateMemory()->void
-	{
+	auto SevenAxisInverseKinematicSolver::allocateMemory()->void{
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;

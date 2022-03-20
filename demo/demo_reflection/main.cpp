@@ -10,14 +10,14 @@ struct Basic {
 	int age_;
 };
 // Basic 类型的转化函数
-auto basicToStr(void* value)->std::string {
+auto basicToStr(Basic* value)->std::string {
 	// 转化得到 Basic 变量 //
 	auto basic = reinterpret_cast<Basic*>(value);
 	
 	// 返回值 //
 	return basic->name_ + "_" + std::to_string(basic->age_);
 }
-auto strToBasic(void* value, std::string_view str)->void {
+auto strToBasic(Basic* value, std::string_view str)->void {
 	// 转化得到 Basic 变量 //
 	auto basic = reinterpret_cast<Basic*>(value);
 
@@ -25,7 +25,6 @@ auto strToBasic(void* value, std::string_view str)->void {
 	basic->name_ = str.substr(0, str.find_last_of('_'));
 	basic->age_ = std::stoi(std::string(str.substr(str.find_last_of('_') + 1, std::string_view::npos)));
 }
-
 
 // 组合类型可以包含属性
 class BaseClass {
@@ -132,14 +131,13 @@ public:
 		};
 	};
 
-
 	template <typename... Param>
 	auto invoke(Param&&... params)->void{
 		auto ins_vec = std::vector<aris::core::Instance>({params...});
 		inside_func(ins_vec);
 	}
 
-	auto invoke(std::vector<aris::core::Instance> params)->void {
+	auto invoke(std::vector<aris::core::Instance> &params)->void {
 		inside_func(params);
 	}
 

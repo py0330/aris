@@ -100,8 +100,7 @@ inline void MD5::II(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4
 //////////////////////////////////////////////
 
 // default ctor, just initailize
-MD5::MD5()
-{
+MD5::MD5(){
 	init();
 }
 
@@ -158,8 +157,7 @@ void MD5::encode(uint1 output[], const uint4 input[], size_type len)
 //////////////////////////////
 
 // apply MD5 algo on a block
-void MD5::transform(const uint1 block[blocksize])
-{
+void MD5::transform(const uint1 block[blocksize]){
 	uint4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 	decode(x, block, blocksize);
 
@@ -295,8 +293,7 @@ void MD5::update(const char input[], size_type length)
 
 // MD5 finalization. Ends an MD5 message-digest operation, writing the
 // the message digest and zeroizing the context.
-MD5& MD5::finalize()
-{
+MD5& MD5::finalize(){
 	static unsigned char padding[64] = {
 		0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -332,13 +329,12 @@ MD5& MD5::finalize()
 //////////////////////////////
 
 // return hex representation of digest as string
-std::string MD5::hexdigest() const
-{
+std::string MD5::hexdigest() const{
 	if (!finalized)
 		return "";
 
 	char buf[33];
-	for (int i = 0; i<16; i++)
+	for (std::size_t i = 0; i < 16; i++)
 		sprintf(buf + i * 2, "%02x", digest[i]);
 	buf[32] = 0;
 

@@ -259,19 +259,19 @@ namespace aris::dynamic
 		union
 		{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6, *L7; };
-			Part* parts[8];
+			Part* parts[8]{ nullptr };
 		};
 		union
 		{
 			struct { RevoluteJoint *R1, *R2, *R3, *R4, *R5, *R6, *R7; };
-			RevoluteJoint* joints[7];
+			RevoluteJoint* joints[7]{ nullptr };
 		};
 		union
 		{
 			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6, *M7; };
-			Motion* motions[7];
+			Motion* motions[7]{ nullptr };
 		};
-		GeneralMotion *ee;
+		GeneralMotion *ee{ nullptr };
 	};
 	auto SevenAxisInverseKinematicSolver2::allocateMemory()->void
 	{

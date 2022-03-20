@@ -11,11 +11,9 @@
 
 namespace aris::server
 {
-	class ARIS_API MakeBlockly
-	{
+	class ARIS_API MakeBlockly{
 	public:
-		auto trim_left(std::string_view input)->std::string_view
-		{
+		auto trim_left(std::string_view input)->std::string_view{
 			auto point = input.find_first_not_of(' ');
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 		};
@@ -33,11 +31,9 @@ namespace aris::server
 			auto get_param_value = [&](std::string_view &cmd_str)->std::string_view
 			{
 				int brace_num = 0;
-				int i = 1;
-				for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i)
-				{
-					switch (cmd_str[i])
-					{
+				Size i = 1;
+				for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i){
+					switch (cmd_str[i]){
 					case '{':
 						++brace_num;
 						break;

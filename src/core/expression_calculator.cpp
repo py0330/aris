@@ -85,10 +85,9 @@ namespace aris::core
 	}
 
 
-	struct Matrix::Imp
-	{
-		Size m_, n_;
-		bool is_row_major_;
+	struct Matrix::Imp{
+		Size m_{ 0 }, n_{ 0 };
+		bool is_row_major_{ true };
 		std::vector<double> data_vec_;
 	};
 	auto Matrix::empty() const->bool { return imp_->data_vec_.empty(); }
@@ -106,8 +105,7 @@ namespace aris::core
 	auto Matrix::dsp() const ->void { std::cout << this->toString(); }
 	auto Matrix::operator()(Size i, Size j)->double & { return imp_->is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
 	auto Matrix::operator()(Size i, Size j) const->const double & { return imp_->is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
-	auto Matrix::swap(Matrix &other)->Matrix&
-	{
+	auto Matrix::swap(Matrix &other)noexcept->Matrix&{
 		std::swap(this->imp_->m_, other.imp_->m_);
 		std::swap(this->imp_->n_, other.imp_->n_);
 		std::swap(this->imp_->is_row_major_, other.imp_->is_row_major_);
@@ -115,15 +113,13 @@ namespace aris::core
 
 		return *this;
 	}
-	auto Matrix::resize(Size m, Size n)->Matrix &
-	{
+	auto Matrix::resize(Size m, Size n)->Matrix &{
 		imp_->m_ = m;
 		imp_->n_ = n;
 		imp_->data_vec_.resize(m*n);
 		return *this;
 	}
-	auto Matrix::transpose()->Matrix &
-	{
+	auto Matrix::transpose()->Matrix &{
 		imp_->is_row_major_ = !imp_->is_row_major_;
 		std::swap(imp_->m_, imp_->n_);
 		return *this;
@@ -174,21 +170,16 @@ namespace aris::core
 	}
 	Matrix::Matrix(Size m, Size n, const double *data) : Matrix(m, n) { std::copy(data, data + m * n, this->data()); }
 	Matrix::Matrix(double value) : Matrix(1, 1, value) {}
-	Matrix::Matrix(const std::initializer_list<Matrix> &data) : Matrix()
-	{
+	Matrix::Matrix(const std::initializer_list<Matrix> &data) : Matrix(){
 		std::list<std::list<Matrix> > mat_list_list;
 
 		bool need_new_row = true;
-		for (auto &i : data)
-		{
-			if (i.empty())
-			{
+		for (auto &i : data){
+			if (i.empty()){
 				need_new_row = true;
 			}
-			else
-			{
-				if (need_new_row)
-				{
+			else{
+				if (need_new_row){
 					mat_list_list.push_back(std::list<Matrix>());
 					need_new_row = false;
 				}
@@ -202,205 +193,145 @@ namespace aris::core
 	}
 	Matrix::Matrix() :Matrix(0, 0) {};
 	Matrix::Matrix(const Matrix &other) = default;
-	Matrix::Matrix(Matrix &&other) { this->swap(other); }
+	Matrix::Matrix(Matrix &&other)noexcept { this->swap(other); }
 	Matrix& Matrix::operator=(Matrix other) { this->swap(other); return *this; }
 
-	Matrix operator + (const Matrix &m1, const Matrix &m2)
-	{
+	Matrix operator + (const Matrix &m1, const Matrix &m2){
 		Matrix ret;
 
-		if (m1.size() == 1)
-		{
+		if (m1.size() == 1){
 			ret = Matrix(m2);
 
 			for (auto &d : ret)
-			{
 				d += *m1.data();
-			}
 		}
-		else if (m2.size() == 1)
-		{
+		else if (m2.size() == 1){
 			ret = Matrix(m1);
 
 			for (auto &d : ret)
-			{
 				d += *m2.data();
-			}
 		}
-		else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))
-		{
+		else if ((m1.m() == m2.m()) && (m1.n() == m2.n())){
 			ret.resize(m1.m(), m1.n());
 
 			for (Size i = 0; i < ret.m(); ++i)
-			{
 				for (Size j = 0; j < ret.n(); ++j)
-				{
 					ret(i, j) = m1(i, j) + m2(i, j);
-				}
-			}
 		}
-		else
-		{
+		else{
 			THROW_FILE_LINE("Can't plus matrices, the dimensions are not equal");
 		}
 		return ret;
 	}
-	Matrix operator - (const Matrix &m1, const Matrix &m2)
-	{
+	Matrix operator - (const Matrix &m1, const Matrix &m2){
 		Matrix ret;
 
-		if ((m1.m() == 1) && (m1.n() == 1))
-		{
+		if ((m1.m() == 1) && (m1.n() == 1)){
 			ret = Matrix(m2);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] = m1(0, 0) - ret.data()[i];
-			}
 		}
-		else if ((m2.m() == 1) && (m2.n() == 1))
-		{
+		else if ((m2.m() == 1) && (m2.n() == 1)){
 			ret = Matrix(m1);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] -= m2(0, 0);
-			}
 		}
-		else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))
-		{
+		else if ((m1.m() == m2.m()) && (m1.n() == m2.n())){
 			ret.resize(m1.m(), m1.n());
 
 			for (Size i = 0; i < ret.m(); i++)
-			{
 				for (Size j = 0; j < ret.n(); j++)
-				{
 					ret(i, j) = m1(i, j) - m2(i, j);
-				}
-			}
 		}
-		else
-		{
+		else{
 			THROW_FILE_LINE("Can't minus matrices, the dimensions are not equal");
 		}
 
 		return ret;
 	}
-	Matrix operator * (const Matrix &m1, const Matrix &m2)
-	{
+	Matrix operator * (const Matrix &m1, const Matrix &m2){
 		Matrix ret;
 
-		if ((m1.m() == 1) && (m1.n() == 1))
-		{
+		if ((m1.m() == 1) && (m1.n() == 1)){
 			ret = Matrix(m2);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] *= m1(0, 0);
-			}
 		}
-		else if ((m2.m() == 1) && (m2.n() == 1))
-		{
+		else if ((m2.m() == 1) && (m2.n() == 1)){
 			ret = Matrix(m1);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] *= m2(0, 0);
-			}
+			
 		}
-		else if (m1.n() == m2.m())
-		{
+		else if (m1.n() == m2.m()){
 			ret.resize(m1.m(), m2.n());
 
-			if (m1.imp_->is_row_major_)
-			{
+			if (m1.imp_->is_row_major_){
 				if (m2.imp_->is_row_major_)
-				{
 					aris::core::s_mm(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
-				}
 				else
-				{
 					aris::core::s_mmNT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
-				}
 			}
-			else
-			{
+			else{
 				if (m2.imp_->is_row_major_)
-				{
 					aris::core::s_mmTN(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
-				}
 				else
-				{
 					aris::core::s_mmTT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
-				}
 			}
-
-
 		}
-		else
-		{
+		else{
 			THROW_FILE_LINE("Can't multiply matrices, the dimensions are not equal");
 		}
 
 		return ret;
 	}
-	Matrix operator / (const Matrix &m1, const Matrix &m2)
-	{
+	Matrix operator / (const Matrix &m1, const Matrix &m2){
 		Matrix ret;
 
-		if ((m1.m() == 1) && (m1.n() == 1))
-		{
+		if ((m1.m() == 1) && (m1.n() == 1)){
 			ret = Matrix(m2);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] = m1(0, 0) / ret.data()[i];
-			}
 		}
-		else if ((m2.m() == 1) && (m2.n() == 1))
-		{
+		else if ((m2.m() == 1) && (m2.n() == 1)){
 			ret = Matrix(m1);
 
 			for (Size i = 0; i < ret.size(); ++i)
-			{
 				ret.data()[i] /= m2(0, 0);
-			}
 		}
-		else
-		{
+		else{
 			THROW_FILE_LINE("Right now, divide operator of matrices is not added");
 		}
 
 		return ret;
 	}
-	Matrix operator - (const Matrix &m1)
-	{
+	Matrix operator - (const Matrix &m1){
 		Matrix m(m1.m(), m1.n());
 		for (Size i = 0; i < m1.size(); ++i)m.data()[i] = -m1.data()[i];
 		return m;
 	}
-	Matrix operator + (const Matrix &m1)
-	{
+	Matrix operator + (const Matrix &m1){
 		return m1;
 	}
 
-	struct Calculator::Imp
-	{
-		struct Value
-		{
+	struct Calculator::Imp{
+		struct Value{
 			std::string type_;
 			std::any value_;
 
 			auto val()->std::any& { return std::any_cast<void*>(&value_) ? *reinterpret_cast<std::any*>(std::any_cast<void*>(value_)) : value_; }
 		};
 		struct Typename { };
-		struct Variable
-		{
+		struct Variable{
 			std::string type_, name_;
 			std::any value_, init_value_;
 		};
-		struct Operator
-		{
+		struct Operator{
 			std::string name;
 
 			Size priority_ul{ 0 };    //unary left
@@ -411,15 +342,13 @@ namespace aris::core
 			std::map<std::string, std::pair<std::string, UnaryOperatorFunction>, std::less<>> ul_funs_;
 			std::map<std::string, std::pair<std::string, UnaryOperatorFunction>, std::less<>> ur_funs_;
 		};
-		struct Function
-		{
+		struct Function{
 			std::string name;
 			std::vector<std::tuple<std::vector<std::string>, std::string, Calculator::BuiltInFunction>> funs_;
 		};
 		class Token{
 		public:
-			enum Type
-			{
+			enum class Type{
 				NO,               // invalid
 				COMMA,            // ,
 				SEMICOLON,        // ;
@@ -436,20 +365,19 @@ namespace aris::core
 				FUNCTION          // function
 			};
 
-			Type type;
+			Type type{ Type::NO };
 			std::string_view word;
 
-			double num;
-			const Typename *tpn_;
-			const Variable *var;
-			const Function *fun;
-			const Operator *opr;
+			double num{0.0};
+			const Typename *tpn_{ nullptr };
+			const Variable *var{ nullptr };
+			const Function *fun{ nullptr };
+			const Operator *opr{ nullptr };
 		};
 
 		using TokenVec = std::vector<Token>;
 		using Iterator = TokenVec::iterator;
-		static auto getWord(std::string_view &input)->std::string_view
-		{
+		static auto getWord(std::string_view &input)->std::string_view{
 			static const std::string seperateStr("()[]{},;");
 			static const std::string operatorStr("*+-/\\^|<>=&!");
 			static const std::string spaceStr(" \t\n\r\f\v");
@@ -465,12 +393,11 @@ namespace aris::core
 			if (input[0] <= '9' && input[0] >= '0'){
 				bool has_scientific = false;
 				int i;
-				for (i = 1; i < input.size(); ++i)
-				{
+				for (i = 1; i < input.size(); ++i){
 					// 可能是科学计数法 //
 					if (i < input.size() - 1
 						&& (input[i] == 'e' || input[i] == 'E')
-						&& ((input[i + 1] <= '9' && input[i + 1] >= '0') || input[i + 1] == '+' || input[i + 1] == '-'))
+						&& ((input[Size(i) + 1] <= '9' && input[Size(i) + 1] >= '0') || input[Size(i) + 1] == '+' || input[Size(i) + 1] == '-'))
 					{
 						++i;
 						continue;
@@ -501,10 +428,10 @@ namespace aris::core
 			// get string //
 			else if (input[0] == '\"'){
 				int i;
-				for (i = 1; i < input.size() && !(input[i] == '\"' && input[i - 1] != '\\'); ++i);
+				for (i = 1; i < input.size() && !(input[i] == '\"' && input[Size(i) - 1] != '\\'); ++i);
 
-				auto ret = input.substr(0, i + 1);
-				input = i + 1 == input.size() ? std::string_view() : input.substr(i + 1);
+				auto ret = input.substr(0, Size(i) + 1);
+				input = Size(i) + 1 == input.size() ? std::string_view() : input.substr(Size(i) + 1);
 				return ret;
 			}
 			// get word //
@@ -540,51 +467,47 @@ namespace aris::core
 		std::function<std::any(double)> num_construct_{ [](double num)->std::any {return num; } };
 		std::function<std::any(std::string)> str_construct_{ [](std::string str)->std::any {return str; } };
 	};
-	auto Calculator::Imp::Expression2Tokens(std::string_view expression)const -> TokenVec
-	{
+	auto Calculator::Imp::Expression2Tokens(std::string_view expression)const -> TokenVec{
 		TokenVec tokens;
 		Token token;
 
-		for (token.word = getWord(expression); !token.word.empty(); token.word = getWord(expression))
-		{
-			switch (*token.word.data())
-			{
-			case ',':token.type = Token::COMMA; break;
-			case ';':token.type = Token::SEMICOLON; break;
-			case '(':token.type = Token::PARENTHESIS_L; break;
-			case ')':token.type = Token::PARENTHESIS_R; break;
-			case '[':token.type = Token::BRACKET_L; break;
-			case ']':token.type = Token::BRACKET_R; break;
-			case '{':token.type = Token::BRACE_L; break;
-			case '}':token.type = Token::BRACE_R; break;
-			
+		for (token.word = getWord(expression); !token.word.empty(); token.word = getWord(expression)){
+			switch (*token.word.data()){
+			case ',':token.type = Token::Type::COMMA; break;
+			case ';':token.type = Token::Type::SEMICOLON; break;
+			case '(':token.type = Token::Type::PARENTHESIS_L; break;
+			case ')':token.type = Token::Type::PARENTHESIS_R; break;
+			case '[':token.type = Token::Type::BRACKET_L; break;
+			case ']':token.type = Token::Type::BRACKET_R; break;
+			case '{':token.type = Token::Type::BRACE_L; break;
+			case '}':token.type = Token::Type::BRACE_R; break;
 			default:
 				// 字符串
 				if (token.word.data()[0] == '\"'){
 					if (token.word.back() != '\"')THROW_FILE_LINE("invalid string:" + std::string(token.word));
-					token.type = Token::STRING;
+					token.type = Token::Type::STRING;
 					break;
 				}
 				// 数字
 				if (std::stringstream(std::string(token.word)) >> token.num){
-					token.type = Token::NUMBER;
+					token.type = Token::Type::NUMBER;
 					break;
 				}
 				// 操作符
 				if (operator_map_.find(token.word) != operator_map_.end()){
-					token.type = Token::OPERATOR;
+					token.type = Token::Type::OPERATOR;
 					token.opr = &operator_map_.find(token.word)->second;
 					break;
 				}
 				// 变量
 				if (variable_map_.find(token.word) != variable_map_.end()){
-					token.type = Token::VARIABLE;
+					token.type = Token::Type::VARIABLE;
 					token.var = &variable_map_.find(token.word)->second;
 					break;
 				}
 				// 函数
 				if (function_map_.find(token.word) != function_map_.end()){
-					token.type = Token::FUNCTION;
+					token.type = Token::Type::FUNCTION;
 					token.fun = &function_map_.find(token.word)->second;
 					break;
 				}
@@ -596,71 +519,61 @@ namespace aris::core
 
 		return tokens;
 	}
-	auto Calculator::Imp::CaculateTokens(Iterator b_tok, Iterator e_tok) const ->Value
-	{
+	auto Calculator::Imp::CaculateTokens(Iterator b_tok, Iterator e_tok) const ->Value{
 		if (b_tok >= e_tok)THROW_FILE_LINE("invalid expression");
 
 		Value value;
-		for (auto i = b_tok; i < e_tok; )
-		{
+		for (auto i = b_tok; i < e_tok; ){
 			// 是否刚开始 //
-			if (i == b_tok)
-			{
-				switch (i->type)
-				{
-				case Token::PARENTHESIS_L:
+			if (i == b_tok){
+				switch (i->type){
+				case Token::Type::PARENTHESIS_L:
 					value = CaculateValueInParentheses(i, e_tok);
 					break;
-				case Token::BRACE_L:
+				case Token::Type::BRACE_L:
 					value = CaculateValueInBraces(i, e_tok);
 					break;
-				case Token::NUMBER:
+				case Token::Type::NUMBER:
 					value = Value{ num_tpn_, num_construct_(i->num) };
 					i++;
 					break;
-				case Token::STRING:
+				case Token::Type::STRING:
 					value = Value{ str_tpn_, str_construct_(std::string(i->word.substr(1, i->word.size() - 2))) };
 					i++;
 					break;
-				case Token::OPERATOR:
+				case Token::Type::OPERATOR:
 					value = CaculateValueInOperator(i, e_tok);
 					break;
-				case Token::VARIABLE:
+				case Token::Type::VARIABLE:
 					value = Value{ i->var->type_, (void*)&i->var->value_ };
 					i++;
 					break;
-				case Token::FUNCTION:
+				case Token::Type::FUNCTION:
 					value = CaculateValueInFunction(i, e_tok);
 					break;
 				default:
 					THROW_FILE_LINE("expression not valid");
 				}
 			}
-			else//如果有当前值,但没有操作符
-			{
-				if (i->type == Token::OPERATOR)
-				{
-					if (i->opr->priority_ur)
-					{
+			else {//如果有当前值,但没有操作符
+				if (i->type == Token::Type::OPERATOR){
+					if (i->opr->priority_ur){
 						auto func = i->opr->ur_funs_.at(value.type_);
 						value = Value{ func.first, func.second(value.val()) };
 						i++;
 					}
-					else if (i->opr->priority_b > 0)
-					{
+					else if (i->opr->priority_b > 0){
 						auto e = FindNextEqualLessPrecedenceBinaryOpr(i + 1, e_tok, i->opr->priority_b);
 						auto right_value = CaculateTokens(i + 1, e);
 						auto func = i->opr->b_funs_.at(value.type_).at(right_value.type_);
 						value = Value{ func.first, func.second(value.val(), right_value.val()) };
 						i = e;
 					}
-					else
-					{
+					else{
 						THROW_FILE_LINE("expression not valid");
 					}
 				}
-				else
-				{
+				else{
 					THROW_FILE_LINE("expression not valid: lack operator");
 				}
 			}
@@ -668,39 +581,32 @@ namespace aris::core
 
 		return value;
 	}
-	auto Calculator::Imp::CaculateValueInParentheses(Iterator &i, Iterator max_end_token)const->Value
-	{
+	auto Calculator::Imp::CaculateValueInParentheses(Iterator &i, Iterator max_end_token)const->Value{
 		auto b_par = i + 1;
-		auto e_par = FindNextOutsideToken(i + 1, max_end_token, Token::PARENTHESIS_R);
+		auto e_par = FindNextOutsideToken(i + 1, max_end_token, Token::Type::PARENTHESIS_R);
 		i = e_par + 1;
 
 		return CaculateTokens(b_par, e_par);
 	}
-	auto Calculator::Imp::CaculateValueInBraces(Iterator &i, Iterator max_end_token)const->Value
-	{
+	auto Calculator::Imp::CaculateValueInBraces(Iterator &i, Iterator max_end_token)const->Value{
 		auto b_bra = i + 1;
-		auto e_bra = FindNextOutsideToken(i + 1, max_end_token, Token::BRACE_R);
+		auto e_bra = FindNextOutsideToken(i + 1, max_end_token, Token::Type::BRACE_R);
 		i = e_bra + 1;
 
 		auto values = GetValues(b_bra, e_bra);
 		std::vector<std::vector<Matrix>> mtx;
 		mtx.reserve(values.size());
 
-		for (auto &r_vec : values)
-		{
+		for (auto &r_vec : values){
 			mtx.push_back(std::vector<Matrix>(r_vec.size()));
-			for (auto &value : r_vec)
-			{
-				if (value.type_ == "Number")
-				{
+			for (auto &value : r_vec){
+				if (value.type_ == "Number"){
 					mtx.back().push_back(Matrix(std::any_cast<double>(value.val())));
 				}
-				else if (value.type_ == "Matrix")
-				{
+				else if (value.type_ == "Matrix"){
 					mtx.back().push_back(std::any_cast<Matrix&>(value.val()));
 				}
-				else
-				{
+				else{
 					THROW_FILE_LINE("invalid type when build Matrix");
 				}
 			}
@@ -708,13 +614,12 @@ namespace aris::core
 		auto m = combineMatrices(mtx);
 		return Value{ "Matrix", m };
 	}
-	auto Calculator::Imp::CaculateValueInFunction(Iterator &i, Iterator max_end_token)const->Value
-	{
+	auto Calculator::Imp::CaculateValueInFunction(Iterator &i, Iterator max_end_token)const->Value{
 		auto b_par = i + 1;
 		if (i + 1 >= max_end_token) THROW_FILE_LINE("invalid expression");
-		if (b_par->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
+		if (b_par->type != Token::Type::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
 
-		auto e_par = FindNextOutsideToken(b_par + 1, max_end_token, Token::PARENTHESIS_R);
+		auto e_par = FindNextOutsideToken(b_par + 1, max_end_token, Token::Type::PARENTHESIS_R);
 
 		// get values, but values dimensions must be 1 x n //
 		auto value_mat = GetValues(b_par + 1, e_par);
@@ -724,80 +629,69 @@ namespace aris::core
 		auto params = value_mat.size() == 0 ? std::vector<Value>() : value_mat.front();
 		std::vector<std::string> p_types(params.size());
 		std::vector<std::any> p_values(params.size());
-		for (int i = 0; i < params.size(); ++i)
-		{
+		for (int i = 0; i < params.size(); ++i){
 			p_types[i] = params[i].type_;
 			p_values[i] = params[i].val();
 		}
 
 		// search functions //
 		auto &funs = function_map_.find(i->word)->second.funs_;
-		if (auto f = std::find_if(funs.begin(), funs.end(), [&](const auto &v)->bool {return p_types.size() == std::get<0>(v).size() && std::equal(p_types.begin(), p_types.end(), std::get<0>(v).begin()); }); f == funs.end())
-		{
+		if (auto f = std::find_if(funs.begin(), funs.end(), [&](const auto &v)->bool {return p_types.size() == std::get<0>(v).size() && std::equal(p_types.begin(), p_types.end(), std::get<0>(v).begin()); }); f == funs.end()){
 			THROW_FILE_LINE("function \"" + std::string(i->word) + "\" not found");
 		}
-		else
-		{
+		else{
 			i = e_par + 1;
 			return Value{ std::get<1>(*f), std::get<2>(*f)(p_values) };
 		}
 	}
-	auto Calculator::Imp::CaculateValueInOperator(Iterator &i, Iterator max_end_token)const->Value
-	{
+	auto Calculator::Imp::CaculateValueInOperator(Iterator &i, Iterator max_end_token)const->Value{
 		auto opr = i;
 		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, max_end_token, opr->opr->priority_ul);
 		auto value = CaculateTokens(opr + 1, i);
 		auto func = opr->opr->ul_funs_.at(value.type_);
 		return Value{func.first, func.second(value.val())};
 	}
-	auto Calculator::Imp::FindNextOutsideToken(Iterator begin_token, Iterator end_token, Token::Type type)const->Iterator
-	{
+	auto Calculator::Imp::FindNextOutsideToken(Iterator begin_token, Iterator end_token, Token::Type type)const->Iterator{
 		Size par_num = 0, bra_num = 0, bce_num = 0;
 		auto next_token = begin_token;
 
-		for (;next_token < end_token; ++next_token)
-		{
+		for (;next_token < end_token; ++next_token){
 			if ((par_num == 0) && (bra_num == 0) && (bce_num == 0) && (next_token->type == type))return next_token;
-			switch (next_token->type)
-			{
-			case Token::PARENTHESIS_L:par_num++; break;
-			case Token::PARENTHESIS_R:par_num--; break;
-			case Token::BRACKET_L:bra_num++; break;
-			case Token::BRACKET_R:bra_num--; break;
-			case Token::BRACE_L:bce_num++; break;
-			case Token::BRACE_R:bce_num--; break;
+			switch (next_token->type){
+			case Token::Type::PARENTHESIS_L:par_num++; break;
+			case Token::Type::PARENTHESIS_R:par_num--; break;
+			case Token::Type::BRACKET_L:bra_num++; break;
+			case Token::Type::BRACKET_R:bra_num--; break;
+			case Token::Type::BRACE_L:bce_num++; break;
+			case Token::Type::BRACE_R:bce_num--; break;
 			default:break;
 			}
 		}
 
 		return end_token;
 	}
-	auto Calculator::Imp::FindNextEqualLessPrecedenceBinaryOpr(Iterator begin_token, Iterator end_token, Size precedence)const->Iterator
-	{
+	auto Calculator::Imp::FindNextEqualLessPrecedenceBinaryOpr(Iterator begin_token, Iterator end_token, Size precedence)const->Iterator{
 		auto next_opr = begin_token;
-		for (; next_opr < end_token; ++next_opr)
-		{
-			next_opr = FindNextOutsideToken(next_opr, end_token, Token::OPERATOR);
-			if ((next_opr == end_token) || (next_opr->opr->priority_b <= precedence))break;
+		for (; next_opr < end_token; ++next_opr){
+			next_opr = FindNextOutsideToken(next_opr, end_token, Token::Type::OPERATOR);
+			if ((next_opr == end_token) || (next_opr->opr->priority_b <= precedence))
+				break;
 		}
 
 		return next_opr;
 	}
-	auto Calculator::Imp::GetValues(Iterator b_tok, Iterator e_tok)const->std::vector<std::vector<Value> >
-	{
+	auto Calculator::Imp::GetValues(Iterator b_tok, Iterator e_tok)const->std::vector<std::vector<Value> >{
 		std::vector<std::vector<Value> > ret;
 
 		auto b_row = b_tok;
-		while (b_row < e_tok)
-		{
-			auto e_row = FindNextOutsideToken(b_row, e_tok, Token::SEMICOLON);
+		while (b_row < e_tok){
+			auto e_row = FindNextOutsideToken(b_row, e_tok, Token::Type::SEMICOLON);
 			auto b_col = b_row;
 
 			ret.push_back(std::vector<Value>());
 
-			while (b_col < e_row)
-			{
-				auto e_col = FindNextOutsideToken(b_col, e_row, Token::COMMA);
+			while (b_col < e_row){
+				auto e_col = FindNextOutsideToken(b_col, e_row, Token::Type::COMMA);
 				ret.back().push_back(CaculateTokens(b_col, e_col));
 				b_col = e_col == e_tok ? e_col : e_col + 1;
 			}
@@ -807,28 +701,24 @@ namespace aris::core
 
 		return ret;
 	}
-	auto Calculator::calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>
-	{
+	auto Calculator::calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>{
 		auto tokens = imp_->Expression2Tokens(expression);
 		auto ret_val = imp_->CaculateTokens(tokens.begin(), tokens.end());
 		return std::make_pair(std::move(ret_val.type_), std::move(ret_val.val()));
 	}
-	auto Calculator::setNumberType(std::string_view tpn, std::function<std::any(double)> construct)->void
-	{
+	auto Calculator::setNumberType(std::string_view tpn, std::function<std::any(double)> construct)->void{
 		if (imp_->typename_map_.find(tpn) == imp_->typename_map_.end()) THROW_FILE_LINE("\"" + std::string(tpn) + "not exists, can't set number with this type");
 		
 		imp_->num_tpn_ = tpn;
 		imp_->num_construct_ = construct;
 	}
-	auto Calculator::setStringType(std::string_view tpn, std::function<std::any(std::string)> construct)->void
-	{
+	auto Calculator::setStringType(std::string_view tpn, std::function<std::any(std::string)> construct)->void{
 		if (imp_->typename_map_.find(tpn) == imp_->typename_map_.end()) THROW_FILE_LINE("\"" + std::string(tpn) + "not exists, can't set string with this type");
 
 		imp_->str_tpn_ = tpn;
 		imp_->str_construct_ = construct;
 	}
-	auto Calculator::addTypename(std::string_view tpn)->void
-	{
+	auto Calculator::addTypename(std::string_view tpn)->void{
 		if (imp_->typename_map_.find(tpn) != imp_->typename_map_.end() ||
 			imp_->variable_map_.find(tpn) != imp_->variable_map_.end() ||
 			imp_->function_map_.find(tpn) != imp_->function_map_.end())
@@ -841,8 +731,7 @@ namespace aris::core
 		addFunction(tpn, std::vector<std::string>{ std::string(tpn) }, tpn, [](std::vector<std::any>& v)->std::any {return v[0]; });
 		addBinaryOperatorFunction("=", tpn, tpn, tpn, [](std::any& p1, std::any&p2)->std::any {	return p1 = p2;	});
 	}
-	auto Calculator::addVariable(std::string_view var, std::string_view type, const std::any &value)->void
-	{
+	auto Calculator::addVariable(std::string_view var, std::string_view type, const std::any &value)->void{
 		if (imp_->typename_map_.find(var) != imp_->typename_map_.end() ||
 			imp_->variable_map_.find(var) != imp_->variable_map_.end() ||
 			imp_->function_map_.find(var) != imp_->function_map_.end())
@@ -852,12 +741,9 @@ namespace aris::core
 
 		imp_->variable_map_.insert(std::pair(std::string(var), Imp::Variable{std::string(type), std::string(var), value, value}));
 	}
-	auto Calculator::addFunction(std::string_view fun, const std::vector<std::string> &params, std::string_view ret_type, BuiltInFunction f)->void
-	{
+	auto Calculator::addFunction(std::string_view fun, const std::vector<std::string> &params, std::string_view ret_type, BuiltInFunction f)->void{
 		if (imp_->variable_map_.find(fun) != imp_->variable_map_.end())
-		{
 			THROW_FILE_LINE("\"" + std::string(fun) + "already exists, can't add this function");
-		}
 		
 		auto &funs = imp_->function_map_[std::string(fun)].funs_;
 		if (std::find_if(funs.begin(), funs.end(), [&](const auto &val)->bool {	return std::equal(params.begin(), params.end(), std::get<0>(val).begin()); }) != funs.end())
@@ -865,43 +751,44 @@ namespace aris::core
 
 		funs.push_back(std::make_tuple(params, std::string(ret_type), f));
 	}
-	auto Calculator::addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void
-	{
-		if (imp_->operator_map_.find(opr) != imp_->operator_map_.end())THROW_FILE_LINE("Already has operator:" + std::string(opr));
+	auto Calculator::addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void{
+		if (imp_->operator_map_.find(opr) != imp_->operator_map_.end())
+			THROW_FILE_LINE("Already has operator:" + std::string(opr));
 
 		imp_->operator_map_[std::string(opr)].priority_ul = ul_priority;
 		imp_->operator_map_[std::string(opr)].priority_ur = ur_priority;
 		imp_->operator_map_[std::string(opr)].priority_b = b_priority;
 	}
-	auto Calculator::addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void
-	{
-		if (auto found_opr = imp_->operator_map_.find(opr);found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
-		else if(auto found_type = imp_->typename_map_.find(p_type); found_type == imp_->typename_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
-		else if (auto found_func = found_opr->second.ul_funs_.find(p_type); found_func != found_opr->second.ul_funs_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
-		else
-		{
-			found_opr->second.ul_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
-		}
-	}
-	auto Calculator::addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void
-	{
-		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
-		else if (auto found_type = imp_->typename_map_.find(p_type); found_type == imp_->typename_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
-		else if (auto found_func = found_opr->second.ur_funs_.find(p_type); found_func != found_opr->second.ur_funs_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
-		else
-		{
-			found_opr->second.ur_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
-		}
-	}
-	auto Calculator::addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void
-	{
-		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
-		else if (auto found_type1 = imp_->typename_map_.find(p1_type); found_type1 == imp_->typename_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p1_type));
-		else if (auto found_type2 = imp_->typename_map_.find(p2_type); found_type2 == imp_->typename_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p2_type));
-		else if (auto found = found_opr->second.b_funs_.find(p1_type); found != found_opr->second.b_funs_.end() && found->second.find(p2_type) != found->second.end())
+	auto Calculator::addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void{
+		if (auto found_opr = imp_->operator_map_.find(opr);found_opr == imp_->operator_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if(auto found_type = imp_->typename_map_.find(p_type); found_type == imp_->typename_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
+		else if (auto found_func = found_opr->second.ul_funs_.find(p_type); found_func != found_opr->second.ul_funs_.end())
 			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
 		else
-		{
+			found_opr->second.ul_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
+	}
+	auto Calculator::addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void{
+		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if (auto found_type = imp_->typename_map_.find(p_type); found_type == imp_->typename_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
+		else if (auto found_func = found_opr->second.ur_funs_.find(p_type); found_func != found_opr->second.ur_funs_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else
+			found_opr->second.ur_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
+	}
+	auto Calculator::addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void	{
+		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if (auto found_type1 = imp_->typename_map_.find(p1_type); found_type1 == imp_->typename_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(p1_type));
+		else if (auto found_type2 = imp_->typename_map_.find(p2_type); found_type2 == imp_->typename_map_.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(p2_type));
+		else if (auto found = found_opr->second.b_funs_.find(p1_type); found != found_opr->second.b_funs_.end() && found->second.find(p2_type) != found->second.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else{
 			if (found == found_opr->second.b_funs_.end())
 				found_opr->second.b_funs_.insert(std::make_pair(std::string(p1_type), std::map<std::string, std::pair<std::string, BinaryOperatorFunction>, std::less<>>()));
 
@@ -909,8 +796,7 @@ namespace aris::core
 		}
 	}
 	auto Calculator::clearVariables()->void { imp_->variable_map_.clear(); }
-	auto Calculator::clearAllRules()->void 
-	{
+	auto Calculator::clearAllRules()->void {
 		imp_->function_map_.clear();
 		imp_->operator_map_.clear();
 		imp_->typename_map_.clear();
@@ -920,8 +806,7 @@ namespace aris::core
 		for (auto &v : imp_->variable_map_)v.second.value_ = v.second.init_value_;
 	}
 	Calculator::~Calculator() = default;
-	Calculator::Calculator(const std::string &name)
-	{
+	Calculator::Calculator(const std::string &name){
 		addOperator("=", 0, 0, 1);
 		
 		addTypename("String");
@@ -930,70 +815,56 @@ namespace aris::core
 
 		addOperator("+", 10, 0, 10);
 		addUnaryLeftOperatorFunction("+", "Number", "Number", [](std::any& p1)->std::any {return std::any_cast<double>(p1); });
-		addBinaryOperatorFunction("+", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("+", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) + std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("+", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("+", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) + std::any_cast<aris::core::Matrix&>(p2);
 		});
-		addBinaryOperatorFunction("+", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("+", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) + std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("+", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("+", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) + std::any_cast<aris::core::Matrix>(p2);
 		});
 
 		addOperator("-", 10, 0, 10);
 		addUnaryLeftOperatorFunction("-", "Number", "Number", [](std::any& p1)->std::any {return -std::any_cast<double>(p1); });
-		addBinaryOperatorFunction("-", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("-", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) - std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("-", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("-", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) - std::any_cast<aris::core::Matrix&>(p2);
 		});
-		addBinaryOperatorFunction("-", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("-", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) - std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("-", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("-", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) - std::any_cast<aris::core::Matrix>(p2);
 		});
 
 		addOperator("*", 0, 0, 20);
-		addBinaryOperatorFunction("*", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("*", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) * std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("*", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("*", "Number", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) * std::any_cast<aris::core::Matrix&>(p2);
 		});
-		addBinaryOperatorFunction("*", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("*", "Matrix", "Number", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) * std::any_cast<double>(p2);
 		});
-		addBinaryOperatorFunction("*", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("*", "Matrix", "Matrix", "Matrix", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<aris::core::Matrix&>(p1) * std::any_cast<aris::core::Matrix>(p2);
 		});
 
 		addOperator("/", 0, 0, 20);
-		addBinaryOperatorFunction("/", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
-		{
+		addBinaryOperatorFunction("/", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any{
 			return std::any_cast<double>(p1) / std::any_cast<double>(p2);
 		});
 
 		addOperator("++", 100, 100, 0);
 		addUnaryLeftOperatorFunction("++", "Number", "Number", [](std::any& p1)->std::any {	return std::any_cast<double&>(p1) += 1.0; });
-		addUnaryRightOperatorFunction("++", "Number", "Number", [](std::any& p1)->std::any
-		{
+		addUnaryRightOperatorFunction("++", "Number", "Number", [](std::any& p1)->std::any{
 			auto ret = std::any_cast<double>(p1);
 			std::any_cast<double&>(p1) += 1.0;
 			return ret;
@@ -1001,74 +872,58 @@ namespace aris::core
 
 		addOperator("--", 100, 100, 0);
 		addUnaryLeftOperatorFunction("--", "Number", "Number", [](std::any& p1)->std::any {	return std::any_cast<double&>(p1) -= 1.0; });
-		addUnaryRightOperatorFunction("--", "Number", "Number", [](std::any& p1)->std::any
-		{
+		addUnaryRightOperatorFunction("--", "Number", "Number", [](std::any& p1)->std::any{
 			auto ret = std::any_cast<double>(p1);
 			std::any_cast<double&>(p1) -= 1.0;
 			return ret;
 		});
 
 #define ADD_MATRIX_OPR(OPR) \
-		[](std::any& p1, std::any&p2)->std::any \
-		{\
+		[](std::any& p1, std::any&p2)->std::any {\
 			auto &m1 = std::any_cast<aris::core::Matrix&>(p1);\
 			auto &m2 = std::any_cast<aris::core::Matrix&>(p2);\
 			Matrix ret;\
-			if (m1.size() == 1)\
-			{					\
+			if (m1.size() == 1){\
 				ret = Matrix(m2);\
 				for (auto &d : ret)d = m1(0, 0) OPR d;\
 			}\
-			else if (m2.size() == 1)\
-			{\
+			else if (m2.size() == 1){\
 				ret = Matrix(m1);\
 				for (auto &d : ret) d = d OPR m2(0, 0);\
 			}\
-			else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))\
-			{\
+			else if ((m1.m() == m2.m()) && (m1.n() == m2.n())){\
 				ret = Matrix(m1);\
-									\
 				for (Size i = 0; i < ret.size(); ++i)\
-				{\
 					ret.data()[i] = m1.data()[i] OPR m2.data()[i];\
-				}\
 			}\
-			else\
-			{\
+			else{\
 				THROW_FILE_LINE("dimensions are not equal");\
 			}\
 			return ret;\
 		}
 
 #define ADD_NUM_MATRIX_OPR(OPR) \
-		[](std::any& p1, std::any&p2)->std::any \
-		{\
+		[](std::any& p1, std::any&p2)->std::any {\
 			auto &m1 = std::any_cast<double&>(p1);\
 			auto &m2 = std::any_cast<aris::core::Matrix&>(p2);\
 			Matrix ret = m2;\
 			for (Size i = 0; i < ret.size(); ++i)\
-			{\
 				ret.data()[i] = m1 OPR m2.data()[i];\
-			}\
 			return ret;\
 		}
 
 #define ADD_MATRIX_NUM_OPR(OPR) \
-		[](std::any& p1, std::any&p2)->std::any \
-		{\
+		[](std::any& p1, std::any&p2)->std::any {\
 			auto &m1 = std::any_cast<aris::core::Matrix&>(p1);\
 			auto &m2 = std::any_cast<double&>(p2);\
 			Matrix ret = m1;\
 			for (Size i = 0; i < ret.size(); ++i)\
-			{\
 				ret.data()[i] = m1.data()[i] OPR m2;\
-			}\
 			return ret;\
 		}
 
 #define ADD_NUMBER_OPR(OPR) \
-		[](std::any& p1, std::any&p2)->std::any \
-		{\
+		[](std::any& p1, std::any&p2)->std::any {\
 			return double(std::any_cast<double&>(p1) OPR std::any_cast<double&>(p2)); \
 		}
 
@@ -1112,19 +967,19 @@ namespace aris::core
 	struct LanguageParser::Imp{
 		struct CmdInfo{
 			std::string cmd;
-			int next_cmd_true_, next_cmd_false_;
+			int next_cmd_true_{ 0 }, next_cmd_false_{ 0 };
 		};
 
 		struct FuncParamData { std::string type_, name_, value_; };
 
 		struct FuncData {
 			std::string file_;
-			int line_;
+			int line_{ 0 };
 			std::vector<FuncParamData> params_;
 		};
 		struct FuncStackData {
 			std::string file_;
-			int line_;
+			int line_{ 0 };
 			std::vector<FuncParamData> params_;
 		};
 		
@@ -1404,16 +1259,15 @@ namespace aris::core
 		std::map<std::string, FuncData> functions_;                      //  名字    所在文件  行号
 		std::vector<std::string> variables_;                             //  所在文件  变量定义(定义的时候才取名)
 		std::string main_file_;
-		int main_line_, end_main_line_;
+		int main_line_{ 0 }, end_main_line_{ 0 };
 
 		// 运行时 //
 		std::list<FuncStackData> func_ret_stack_;
 		
 		std::string current_file_;
-		int current_line_;
+		int current_line_{0};
 	};
-	auto LanguageParser::parseLanguage()->void 
-	{ 
+	auto LanguageParser::parseLanguage()->void { 
 		for (auto &file : imp_->files_){
 			imp_->parseEnvironment(file.first, imp_->cmds_[file.first].begin(), imp_->cmds_[file.first].end());
 		}

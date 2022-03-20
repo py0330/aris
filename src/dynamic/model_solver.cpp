@@ -16,8 +16,8 @@
 
 namespace aris::dynamic{
 	struct Solver::Imp{
-		Size max_iter_count_, iter_count_;
-		double max_error_, error_;
+		Size max_iter_count_, iter_count_{ 0 };
+		double max_error_, error_{ 0.0 };
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 	};
 	auto Solver::error()const->double { return imp_->error_; }
@@ -747,7 +747,7 @@ namespace aris::dynamic{
 		//        最终可得xcf
 		//
 		
-		PublicData *pd_;
+		PublicData* pd_{ nullptr };
 		std::vector<char> mem_pool_;
 
 		static auto one_constraint_upd_d_and_cp(Diag *d, bool cpt_cp)noexcept->void{
@@ -888,11 +888,11 @@ namespace aris::dynamic{
 				if (ret == relation_pool.end()){
 					relation_pool.push_back(LocalRelation{ &c->makI()->fatherPart(), &c->makJ()->fatherPart(), c->dim(), c->dim() });
 					relation_pool.back().cst_pool_.push_back({ c, true, dynamic_cast<const MotionBase*>(c) ? nJg_ : -1 });
-					nJg_ += dynamic_cast<const MotionBase*>(c) ? dynamic_cast<const MotionBase*>(c)->dim() : 0;
+					nJg_ += dynamic_cast<const MotionBase*>(c) ? (int)dynamic_cast<const MotionBase*>(c)->dim() : 0;
 				}
 				else{
 					ret->cst_pool_.push_back({ c, &c->makI()->fatherPart() == ret->prtI_, dynamic_cast<const MotionBase*>(c) ? nJg_ : -1 });
-					nJg_ += dynamic_cast<const MotionBase*>(c) ? dynamic_cast<const MotionBase*>(c)->dim() : 0;
+					nJg_ += dynamic_cast<const MotionBase*>(c) ? (int)dynamic_cast<const MotionBase*>(c)->dim() : 0;
 					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](auto& a, auto& b){return a.cst_->dim() > b.cst_->dim();});//这里把大的约束往前放
 					ret->size_ += c->dim();
 					ret->dim_ = ret->cst_pool_[0].cst_->dim();// relation 的 dim 以大的为准，最大的在第一个
@@ -1214,7 +1214,7 @@ namespace aris::dynamic{
 					rel.blk_data_ = core::getMem(imp_->mem_pool_.data(), rel.blk_data_);
 					rel.blk_size_ = rel.cst_pool_.size();
 					std::copy(rel.cst_pool_.data(), rel.cst_pool_.data() + rel.cst_pool_.size(), rel.blk_data_);
-					diag.rel_ = rel;
+					diag.rel_ = static_cast<aris::dynamic::Relation>(rel);
 				}
 				
 				// 获取 p_vec 内存 //
@@ -1231,9 +1231,8 @@ namespace aris::dynamic{
 
 			sys.r_data_ = reinterpret_cast<Remainder*>(imp_->mem_pool_.data() + *reinterpret_cast<Size*>(&sys.r_data_));
 			sys.r_size_ = r_vec.size();
-			for(int i = 0; i < sys.r_size_; ++i)sys.r_data_[i] = r_vec[i];
-			for (Size i = 0; i < sys.r_size_; ++i)
-			{
+			for(int i = 0; i < sys.r_size_; ++i)sys.r_data_[i] = static_cast<aris::dynamic::Remainder>(r_vec[i]);
+			for (Size i = 0; i < sys.r_size_; ++i){
 				auto &r = sys.r_data_[i];
 				auto &rel = rel_vec[i + sys.d_size_ - 1];
 
@@ -1242,7 +1241,7 @@ namespace aris::dynamic{
 					rel.blk_data_ = core::getMem(imp_->mem_pool_.data(), rel.blk_data_);
 					rel.blk_size_ = rel.cst_pool_.size();
 					std::copy(rel.cst_pool_.data(), rel.cst_pool_.data() + rel.cst_pool_.size(), rel.blk_data_);
-					r.rel_ = rel;
+					r.rel_ = static_cast<aris::dynamic::Relation>(rel);
 				}
 
 				// 分配 Remainder 中 cmI_, cmJ_, bc_, xc_ 的尺寸

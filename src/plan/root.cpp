@@ -15,11 +15,11 @@ namespace aris::plan{
 		std::string name_;
 		std::weak_ptr<Plan> shared_for_this_;
 
-		aris::dynamic::ModelBase *model_base_;
-		aris::control::Master *master_;
-		aris::control::Controller *controller_;
-		aris::control::EthercatMaster *ec_master_;
-		aris::server::ControlServer *cs_;
+		aris::dynamic::ModelBase* model_base_{ nullptr };
+		aris::control::Master *master_{ nullptr };
+		aris::control::Controller *controller_{ nullptr };
+		aris::control::EthercatMaster *ec_master_{ nullptr };
+		aris::server::ControlServer *cs_{ nullptr };
 
 		aris::core::Command cmd_struct_;
 		std::vector<char> cmd_str_;
@@ -27,16 +27,16 @@ namespace aris::plan{
 		std::map<std::string_view, std::string_view> cmd_params_;
 
 		std::uint64_t command_id_{ 0 };
-		std::int64_t count_;
-		std::int64_t begin_global_count_;
-		aris::control::Master::RtStasticsData rt_stastic_;
+		std::int64_t count_{ 0 };
+		std::int64_t begin_global_count_{ 0 };
+		aris::control::Master::RtStasticsData rt_stastic_{0,0,0,0,0,0,0};
 
-		std::uint64_t option_;
+		std::uint64_t option_{ 0 };
 		std::vector<std::uint64_t> mot_options_;
 
 		std::any param;
 		std::any ret;
-		std::int32_t ret_code;
+		std::int32_t ret_code{ 0 };
 		char ret_msg[1024]{};
 	};
 	auto Plan::name() const->const std::string& { return imp_->name_; }
@@ -72,9 +72,7 @@ namespace aris::plan{
 	auto Plan::cmdName()noexcept->std::string_view { return imp_->cmd_name_; }
 	auto Plan::cmdParams()noexcept->const std::map<std::string_view, std::string_view>& { return imp_->cmd_params_; }
 
-	auto Plan::setControlServer(aris::server::ControlServer* cs)noexcept->void {
-		imp_->cs_ = cs;
-	}
+	auto Plan::setControlServer(aris::server::ControlServer* cs)noexcept->void { imp_->cs_ = cs; }
 	auto Plan::controlServer()noexcept->aris::server::ControlServer * { return imp_->cs_; }
 	auto Plan::setModelBase(aris::dynamic::ModelBase* m)noexcept->void { imp_->model_base_ = m; }
 	auto Plan::modelBase()noexcept->aris::dynamic::ModelBase* { return imp_->model_base_; }
@@ -186,7 +184,7 @@ namespace aris::plan{
 		"			</GroupParam>"\
 		"		</UniqueParam>"
 	auto set_check_option(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan)->void{
-		for (auto cmd_param : cmd_params){
+		for (const auto &cmd_param : cmd_params){
 			if (cmd_param.first == "check_all"){
 				for (auto &option : plan.motorOptions())	option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
@@ -316,7 +314,7 @@ namespace aris::plan{
 		param.active_motor.clear();
 		param.active_motor.resize(plan.controller()->motorPool().size(), 0);
 		
-		for (auto cmd_param : cmd_params){
+		for (const auto &cmd_param : cmd_params){
 			if (cmd_param.first == "all"){
 				std::fill(param.active_motor.begin(), param.active_motor.end(), 1);
 			}
@@ -340,7 +338,7 @@ namespace aris::plan{
 		"		<Param name=\"dec\" default=\"0.1\"/>"
 	auto set_input_movement(const std::map<std::string_view, std::string_view> &cmd_params, Plan &plan, SetInputMovement &param)->void{
 		param.axis_begin_pos_vec.resize(plan.controller()->motorPool().size(), 0.0);
-		for (auto cmd_param : cmd_params){
+		for (const auto &cmd_param : cmd_params){
 			if (cmd_param.first == "pos"){
 				auto p = plan.matrixParam(cmd_param.first);
 				if (p.size() == 1){
@@ -414,7 +412,7 @@ namespace aris::plan{
 		}
 	}
 
-	struct Enable::Imp :public SetActiveMotor { std::int32_t limit_time; };
+	struct Enable::Imp :public SetActiveMotor { std::int32_t limit_time{ 5000 }; };
 	auto Enable::prepareNrt()->void{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -460,7 +458,7 @@ namespace aris::plan{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Enable);
 
-	struct Disable::Imp :public SetActiveMotor { std::int32_t limit_time; };
+	struct Disable::Imp :public SetActiveMotor { std::int32_t limit_time{ 5000 }; };
 	auto Disable::prepareNrt()->void{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -502,7 +500,7 @@ namespace aris::plan{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Disable);
 
-	struct Home::Imp :public SetActiveMotor { std::int32_t limit_time; double offset;};
+	struct Home::Imp :public SetActiveMotor { std::int32_t limit_time{ 5000 }; double offset{0.0}; };
 	auto Home::prepareNrt()->void{
 		set_active_motor(cmdParams(), *this, *imp_);
 		imp_->limit_time = std::stoi(std::string(cmdParams().at("limit_time")));
@@ -586,7 +584,7 @@ namespace aris::plan{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Home);
 
-	struct Mode::Imp :public SetActiveMotor { std::int32_t limit_time, mode; };
+	struct Mode::Imp :public SetActiveMotor { std::int32_t limit_time{ 5000 }, mode{ 8 }; };
 	auto Mode::prepareNrt()->void{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -718,7 +716,7 @@ namespace aris::plan{
 		std::atomic_bool is_kinematic_ready_;
 		std::atomic_bool is_rt_waiting_ready_;
 		std::future<void> fut;
-		int kin_ret;
+		int kin_ret{ 0 };
 	};
 	auto Recover::prepareNrt()->void{
 		auto p = std::make_shared<RecoverParam>();
@@ -877,7 +875,7 @@ namespace aris::plan{
 		else if (pos_unit_found->second == "cm")pos_unit = 0.01;
 		else THROW_FILE_LINE("");
 
-		for (auto cmd_param : params){
+		for (const auto &cmd_param : params){
 			if (cmd_param.first == "pq"){
 				auto pq_mat = plan.matrixParam(cmd_param.first);
 				if (pq_mat.size() != 7)THROW_FILE_LINE("");
@@ -936,7 +934,7 @@ namespace aris::plan{
 		mvj_param.total_count.resize(model()->motionPool().size(), 0);
 
 		// find joint acc/vel/dec/
-		for (auto cmd_param : cmdParams()){
+		for (const auto &cmd_param : cmdParams()){
 			auto c = controller();
 			if (cmd_param.first == "joint_acc"){
 				mvj_param.joint_acc.clear();
@@ -1057,10 +1055,9 @@ namespace aris::plan{
 
 	struct MoveLParam{
 		std::vector<double> joint_vel, joint_acc, joint_dec, ee_pq, joint_pos_begin, joint_pos_end;
-		Size total_count[6];
+		Size total_count[6]{ 0 };
 
-		double acc, vel, dec;
-		double angular_acc, angular_vel, angular_dec;
+		double acc{ 1.0 }, vel{ 1.0 }, dec{1.0}, angular_acc{ 0.1 }, angular_vel{ 0.1 }, angular_dec{ 0.1 };
 	};
 	struct MoveL::Imp {};
 	auto MoveL::prepareNrt()->void{
@@ -1070,7 +1067,7 @@ namespace aris::plan{
 		mvl_param.ee_pq.resize(7);
 		if (!find_pq(cmdParams(), *this, mvl_param.ee_pq.data()))THROW_FILE_LINE("");
 
-		for (auto cmd_param : cmdParams()){
+		for (const auto &cmd_param : cmdParams()){
 			if (cmd_param.first == "acc"){
 				mvl_param.acc = doubleParam(cmd_param.first);
 			}
@@ -1193,7 +1190,7 @@ namespace aris::plan{
 		static std::atomic_bool is_running_;
 		static std::atomic<std::array<double, 24>> pvade_;
 
-		double max_pe_[6], min_pe_[6];
+		double max_pe_[6]{ 0 }, min_pe_[6]{ 0 };
 		std::string eul_type;
 	};
 	std::atomic_bool AutoMove::Imp::is_running_ = false;
@@ -1204,7 +1201,7 @@ namespace aris::plan{
 		option() = 0;
 
 		AutoMoveParam param{ false };
-		for (auto cmd_param : cmdParams()){
+		for (const auto &cmd_param : cmdParams()){
 			if (cmd_param.first == "start"){
 				if (Imp::is_running_.load())THROW_FILE_LINE("auto mode already started");
 
@@ -1372,9 +1369,9 @@ namespace aris::plan{
 	struct ManualMove::Imp{
 		static std::atomic_bool is_running_;
 		static std::atomic<std::array<int, 6>> is_increase_;
-		double ve_[6], ae_[6], de_[6];
+		double ve_[6]{ 1.0 }, ae_[6]{ 1.0 }, de_[6]{ 1.0 };
 		std::string eul_type;
-		int increase_count;
+		int increase_count{ 0 };
 	};
 	std::atomic_bool ManualMove::Imp::is_running_ = false;
 	std::atomic<std::array<int, 6>> ManualMove::Imp::is_increase_ = std::array<int, 6>{0, 0, 0, 0, 0, 0};
@@ -1384,7 +1381,7 @@ namespace aris::plan{
 		option() = 0;
 
 		ManualMoveParam param{ false };
-		for (auto cmd_param : cmdParams()){
+		for (const auto &cmd_param : cmdParams()){
 			if (cmd_param.first == "start"){
 				if (Imp::is_running_.load())THROW_FILE_LINE("auto mode already started");
 

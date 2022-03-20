@@ -7,8 +7,8 @@
 int main()
 {
 	aris::core::Socket server, client;
-	server.setConnectType(aris::core::Socket::TCP_RAW);
-	client.setConnectType(aris::core::Socket::TCP_RAW);
+	server.setConnectType(aris::core::Socket::Type::TCP_RAW);
+	client.setConnectType(aris::core::Socket::Type::TCP_RAW);
 
 
 	server.setOnReceivedRawData([](aris::core::Socket *s, const char *data, int size)->int {

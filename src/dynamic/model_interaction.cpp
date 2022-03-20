@@ -63,11 +63,11 @@ namespace aris::dynamic{
 
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
-		Size component_axis_;
+		Size component_axis_{ 5 };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 }, mf_{ 0 };
-		double loc_cm_I[6];
+		double loc_cm_I[6]{ 0,0,0,0,0,1 };
 		int motor_id_{ -1 };
 	};
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
@@ -76,8 +76,7 @@ namespace aris::dynamic{
 		//Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
 		//cp[0] += mp();  
 
-		if (axis() > 2)//角度
-		{
+		if (axis() > 2) {//角度
 			double re[3]{ 0.0 }, rm[9], pm_j_should_be[16];
 			re[axis() - 3] = mpInternal();
 			s_re2rm(re, rm, "123");
@@ -91,8 +90,7 @@ namespace aris::dynamic{
 
 			cp[0] = ps_j2i[axis()];
 		}
-		else
-		{
+		else{
 			double pm_j_should_be[16];
 			s_vc(16, makJ_pm, pm_j_should_be);
 			s_va(3, mpInternal(), pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
@@ -668,7 +666,7 @@ namespace aris::dynamic{
 		double pm_it[16];
 		s_pm_dot_pm(makJ_pm, mpm, pm_it);
 
-		double pm_c[16], ps_c[6];
+		double pm_c[16];
 		s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
 
 		cp[0] = pm_c[3];

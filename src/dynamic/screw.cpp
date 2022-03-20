@@ -59,8 +59,7 @@ namespace aris::dynamic
 	auto inline P()noexcept->const double3x3& { static const double p[3][3]{ { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } }; return p; }
 	auto inline Q()noexcept->const double3x3& { static const double q[3][3]{ { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }
 
-	auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void
-	{
+	auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void{
 		//转置
 		pm_out[0] = pm_in[0];
 		pm_out[1] = pm_in[4];
@@ -83,8 +82,7 @@ namespace aris::dynamic
 		pm_out[14] = 0;
 		pm_out[15] = 1;
 	}
-	auto s_pm_dot_pm(const double *pm1, const double *pm2, double *pm_out) noexcept->double *
-	{
+	auto s_pm_dot_pm(const double *pm1, const double *pm2, double *pm_out) noexcept->double *{
 		pm_out = pm_out ? pm_out : default_out();
 
 		pm_out[0] = pm1[0] * pm2[0] + pm1[1] * pm2[4] + pm1[2] * pm2[8];
@@ -109,8 +107,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_inv_pm_dot_pm(const double *inv_pm, const double *pm, double *pm_out) noexcept->double *
-	{
+	auto s_inv_pm_dot_pm(const double *inv_pm, const double *pm, double *pm_out) noexcept->double *{
 		pm_out = pm_out ? pm_out : default_out();
 
 		pm_out[0] = inv_pm[0] * pm[0] + inv_pm[4] * pm[4] + inv_pm[8] * pm[8];
@@ -135,8 +132,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm_dot_inv_pm(const double *pm, const double *inv_pm, double *pm_out) noexcept->double *
-	{
+	auto s_pm_dot_inv_pm(const double *pm, const double *inv_pm, double *pm_out) noexcept->double *{
 		pm_out = pm_out ? pm_out : default_out();
 
 		pm_out[0] = pm[0] * inv_pm[0] + pm[1] * inv_pm[1] + pm[2] * inv_pm[2];
@@ -161,8 +157,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm_dot_v3(const double *pm, const double *v3, double *v3_out) noexcept->double *
-	{
+	auto s_pm_dot_v3(const double *pm, const double *v3, double *v3_out) noexcept->double *{
 		v3_out = v3_out ? v3_out : default_out();
 
 		v3_out[0] = pm[0] * v3[0] + pm[1] * v3[1] + pm[2] * v3[2];
@@ -171,8 +166,7 @@ namespace aris::dynamic
 
 		return v3_out;
 	}
-	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->double *
-	{
+	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->double *{	
 		v3_out = v3_out ? v3_out : default_out();
 
 		v3_out[0] = inv_pm[0] * v3[0] + inv_pm[4] * v3[1] + inv_pm[8] * v3[2];
@@ -182,8 +176,7 @@ namespace aris::dynamic
 		return v3_out;
 	}
 
-	auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->double *
-	{
+	auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->double *{
 		fs = fs ? fs : default_out();
 
 		const double c[3]{ im[11], im[15], im[4] };
@@ -196,8 +189,7 @@ namespace aris::dynamic
 
 		return fs;
 	}
-	auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->double *
-	{
+	auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->double *{
 		fs = fs ? fs : default_out();
 
 		s_vc(3, iv[0], as, fs);
@@ -211,9 +203,7 @@ namespace aris::dynamic
 
 		return fs;
 	}
-
-	auto s_cm3(const double *a, double *cm_out) noexcept->void
-	{
+	auto s_cm3(const double *a, double *cm_out) noexcept->void{
 		cm_out[0] = 0;
 		cm_out[1] = -a[2];
 		cm_out[2] = a[1];
@@ -224,44 +214,37 @@ namespace aris::dynamic
 		cm_out[7] = a[0];
 		cm_out[8] = 0;
 	}
-	auto s_c3(const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3(const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] = -a[2] * b[1] + a[1] * b[2];
 		c_out[1] = a[2] * b[0] - a[0] * b[2];
 		c_out[2] = -a[1] * b[0] + a[0] * b[1];
 	}
-	auto s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] = alpha * (-a[2] * b[1] + a[1] * b[2]);
 		c_out[1] = alpha * (a[2] * b[0] - a[0] * b[2]);
 		c_out[2] = alpha * (-a[1] * b[0] + a[0] * b[1]);
 	}
-	auto s_c3i(const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3i(const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] = a[2] * b[1] - a[1] * b[2];
 		c_out[1] = -a[2] * b[0] + a[0] * b[2];
 		c_out[2] = a[1] * b[0] - a[0] * b[1];
 	}
-	auto s_c3a(const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3a(const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] += -a[2] * b[1] + a[1] * b[2];
 		c_out[1] += a[2] * b[0] - a[0] * b[2];
 		c_out[2] += -a[1] * b[0] + a[0] * b[1];
 	}
-	auto s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] += alpha * (-a[2] * b[1] + a[1] * b[2]);
 		c_out[1] += alpha * (a[2] * b[0] - a[0] * b[2]);
 		c_out[2] += alpha * (-a[1] * b[0] + a[0] * b[1]);
 	}
-	auto s_c3s(const double *a, const double *b, double *c_out) noexcept->void
-	{
+	auto s_c3s(const double *a, const double *b, double *c_out) noexcept->void{
 		c_out[0] -= -a[2] * b[1] + a[1] * b[2];
 		c_out[1] -= a[2] * b[0] - a[0] * b[2];
 		c_out[2] -= -a[1] * b[0] + a[0] * b[1];
 	}
-	auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void
-	{
+	auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void{
 		std::fill_n(cmf_out, 36, 0);
 
 		cmf_out[6] = vs_in[5];
@@ -285,44 +268,36 @@ namespace aris::dynamic
 		cmf_out[20] = vs_in[1];
 		cmf_out[26] = -vs_in[0];
 	}
-	auto s_cf(const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cf(const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_c3(vs + 3, fs, vfs_out);
 		s_c3(vs + 3, fs + 3, vfs_out + 3);
 		s_c3a(vs, fs, vfs_out + 3);
 	}
-	auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_cf(vs, fs, vfs_out);
 		s_nv(6, alpha, vfs_out);
 	}
-	auto s_cfi(const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cfi(const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_c3i(vs + 3, fs, vfs_out);
 		s_c3i(vs + 3, fs + 3, vfs_out + 3);
 		s_c3s(vs, fs, vfs_out + 3);
 	}
-
-	auto s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_c3a(vs + 3, fs, vfs_out);
 		s_c3a(vs + 3, fs + 3, vfs_out + 3);
 		s_c3a(vs, fs, vfs_out + 3);
 	}
-	auto s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_c3a(alpha, vs + 3, fs, vfs_out);
 		s_c3a(alpha, vs + 3, fs + 3, vfs_out + 3);
 		s_c3a(alpha, vs, fs, vfs_out + 3);
 	}
-	auto s_cfs(const double *vs, const double *fs, double* vfs_out) noexcept->void
-	{
+	auto s_cfs(const double *vs, const double *fs, double* vfs_out) noexcept->void{
 		s_c3s(vs + 3, fs, vfs_out);
 		s_c3s(vs + 3, fs + 3, vfs_out + 3);
 		s_c3s(vs, fs, vfs_out + 3);
 	}
-	auto s_cmv(const double *vs_in, double *cmv_out) noexcept->void
-	{
+	auto s_cmv(const double *vs_in, double *cmv_out) noexcept->void{
 		std::fill_n(cmv_out, 36, 0);
 
 		cmv_out[6] = vs_in[5];
@@ -346,44 +321,37 @@ namespace aris::dynamic
 		cmv_out[5] = vs_in[1];
 		cmv_out[11] = -vs_in[0];
 	}
-	auto s_cv(const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cv(const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_c3(vs + 3, vs2, vvs_out);
 		s_c3(vs + 3, vs2 + 3, vvs_out + 3);
 		s_c3a(vs, vs2 + 3, vvs_out);
 	}
-	auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_cv(vs, vs2, vvs_out);
 		s_nv(6, alpha, vvs_out);
 	}
-	auto s_cvi(const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cvi(const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_c3i(vs + 3, vs2, vvs_out);
 		s_c3i(vs + 3, vs2 + 3, vvs_out + 3);
 		s_c3s(vs, vs2 + 3, vvs_out);
 	}
-	auto s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_c3a(vs + 3, vs2, vvs_out);
 		s_c3a(vs + 3, vs2 + 3, vvs_out + 3);
 		s_c3a(vs, vs2 + 3, vvs_out);
 	}
-	auto s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_c3a(alpha, vs + 3, vs2, vvs_out);
 		s_c3a(alpha, vs + 3, vs2 + 3, vvs_out + 3);
 		s_c3a(alpha, vs, vs2 + 3, vvs_out);
 	}
-	auto s_cvs(const double *vs, const double *vs2, double* vvs_out) noexcept->void
-	{
+	auto s_cvs(const double *vs, const double *vs2, double* vvs_out) noexcept->void{
 		s_c3s(vs + 3, vs2, vvs_out);
 		s_c3s(vs + 3, vs2 + 3, vvs_out + 3);
 		s_c3s(vs, vs2 + 3, vvs_out);
 	}
 
-	auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void
-	{
+	auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void{
 		std::fill_n(tmf_out + 3, 3, 0);
 		std::fill_n(tmf_out + 9, 3, 0);
 		std::fill_n(tmf_out + 15, 3, 0);
@@ -405,56 +373,47 @@ namespace aris::dynamic
 		tmf_out[26] = pm_in[11] * pm_in[2] - pm_in[3] * pm_in[10];
 		tmf_out[32] = -pm_in[7] * pm_in[2] + pm_in[3] * pm_in[6];
 	}
-	auto s_tf(const double *pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_tf(const double *pm, const double *fs, double *fs_out) noexcept->void{
 		s_pm_dot_v3(pm, fs, fs_out);
 		s_pm_dot_v3(pm, fs + 3, fs_out + 3);
 		s_c3a(pm + 3, 4, fs_out, 1, fs_out + 3, 1);
 	}
-	auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void{
 		s_tf(pm, fs, fs_out);
 		s_nv(6, alpha, fs_out);
 	}
-	auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void{
 		double tem[6];
 		s_tf(pm, fs, tem);
 		s_va(6, tem, fs_out);
 	}
-	auto s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void{
 		double tem[6];
 		s_tf(pm, fs, tem);
 		s_va(6, alpha, tem, fs_out);
 	}
-	auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void{
 		s_c3i(inv_pm + 3, 4, fs, 1, fs_out, 1);
 		s_va(3, fs + 3, fs_out);
 
 		s_inv_pm_dot_v3(inv_pm, fs_out, fs_out + 3);
 		s_inv_pm_dot_v3(inv_pm, fs, fs_out);
 	}
-	auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void{
 		s_inv_tf(inv_pm, fs, fs_out);
 		s_nv(6, alpha, fs_out);
 	}
-	auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void{
 		double tem[6];
 		s_inv_tf(inv_pm, fs, tem);
 		s_va(6, tem, fs_out);
 	}
-	auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
-	{
+	auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void{
 		double tem[6];
 		s_inv_tf(inv_pm, fs, tem);
 		s_va(6, alpha, tem, fs_out);
 	}
-	auto s_tmv(const double *pm, double *tmv_out) noexcept->void
-	{
+	auto s_tmv(const double *pm, double *tmv_out) noexcept->void{
 		std::fill_n(tmv_out + 18, 3, 0);
 		std::fill_n(tmv_out + 24, 3, 0);
 		std::fill_n(tmv_out + 30, 3, 0);
@@ -476,69 +435,58 @@ namespace aris::dynamic
 		tmv_out[11] = pm[11] * pm[2] - pm[3] * pm[10];
 		tmv_out[17] = -pm[7] * pm[2] + pm[3] * pm[6];
 	}
-	auto s_tv(const double *pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_tv(const double *pm, const double *vs, double *vs_out) noexcept->void{
 		s_pm_dot_v3(pm, vs, vs_out);
 		s_pm_dot_v3(pm, vs + 3, vs_out + 3);
 		s_c3a(pm + 3, 4, vs_out + 3, 1, vs_out, 1);
 	}
-	auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void{
 		s_tv(pm, vs, vs_out);
 		s_nv(6, alpha, vs_out);
 	}
-	auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void{
 		double tem[6];
 		s_tv(pm, vs, tem);
 		s_va(6, tem, vs_out);
 	}
-	auto s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void{
 		double tem[6];
 		s_tv(pm, vs, tem);
 		s_va(6, alpha, tem, vs_out);
 	}
-	auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void{
 		s_c3i(inv_pm + 3, 4, vs + 3, 1, vs_out + 3, 1);
 		s_va(3, vs, vs_out + 3);
 
 		s_inv_pm_dot_v3(inv_pm, vs_out + 3, vs_out);
 		s_inv_pm_dot_v3(inv_pm, vs + 3, vs_out + 3);
 	}
-	auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void{
 		s_inv_tv(inv_pm, vs, vs_out);
 		s_nv(6, alpha, vs_out);
 	}
-	auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, tem);
 		s_va(6, tem, vs_out);
 	}
-	auto s_inv_tva(const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-	{
+	auto s_inv_tva(const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, vs_ld, tem, 1);
 		s_va(6, tem, 1, vs_out, vs_out_ld);
 	}
-	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void
-	{
+	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, tem);
 		s_va(6, alpha, tem, vs_out);
 	}
-	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-	{
+	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void{
 		double tem[6];
 		s_inv_tv(inv_pm, vs, vs_ld, tem, 1);
 		s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
 	}
 
-	auto s_ra2rm(const double *ra_in, double *rm_out, Size rm_ld)noexcept->double *
-	{
+	auto s_ra2rm(const double *ra_in, double *rm_out, Size rm_ld)noexcept->double *{
 		// 补充默认参数 //
 		ra_in = ra_in ? ra_in : default_ra();
 		rm_out = rm_out ? rm_out : default_out();
@@ -566,8 +514,7 @@ namespace aris::dynamic
 
 		return rm_out;
 	}
-	auto s_rm2ra(const double *rm_in, double *ra_out, Size rm_ld)noexcept->double *
-	{
+	auto s_rm2ra(const double *rm_in, double *ra_out, Size rm_ld)noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		ra_out = ra_out ? ra_out : default_out();
@@ -585,8 +532,7 @@ namespace aris::dynamic
 
 		return ra_out;
 	}
-	auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, Size rm_ld) noexcept->double *
-	{
+	auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		rm_out = rm_out ? rm_out : default_out();
@@ -597,9 +543,9 @@ namespace aris::dynamic
 		double Cbb, Cee, Cbe, Ceb;
 		double s_, c_;
 
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -636,8 +582,7 @@ namespace aris::dynamic
 
 		return rm_out;
 	}
-	auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in, Size rm_ld) noexcept->double *
-	{
+	auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		re_out = re_out ? re_out : default_out();
@@ -650,9 +595,9 @@ namespace aris::dynamic
 		// 其另外一个解为：a+PI, PI-b, c+PI
 
 		// 正式开始计算 //
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -677,8 +622,7 @@ namespace aris::dynamic
 		sig[2] = (P()[d][c] + Q()[d][c])*P()[b][d] * rm_in[b * rm_ld + c] * std::sin(re_out[0]);
 		sig[3] = (P()[d][c] + Q()[d][c])*rm_in[rm_ld * d + c] * std::cos(re_out[0]);
 
-		if (*std::max_element(sig, sig + rm_ld, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
-		{
+		if (*std::max_element(sig, sig + rm_ld, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0){
 			re_out[0] += PI;
 			re_out[2] += PI;
 		}
@@ -688,8 +632,7 @@ namespace aris::dynamic
 
 		return re_out;
 	}
-	auto s_rq2rm(const double *rq_in, double *rm_out, Size rm_ld) noexcept->double *
-	{
+	auto s_rq2rm(const double *rq_in, double *rm_out, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rq_in = rq_in ? rq_in : default_rq();
 		rm_out = rm_out ? rm_out : default_out();
@@ -709,8 +652,7 @@ namespace aris::dynamic
 
 		return rm_out;
 	}
-	auto s_rm2rq(const double *rm_in, double *rq_out, Size rm_ld) noexcept->double *
-	{
+	auto s_rm2rq(const double *rm_in, double *rq_out, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		rq_out = rq_out ? rq_out : default_out();
@@ -738,8 +680,7 @@ namespace aris::dynamic
 
 		return rq_out;
 	}
-	auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->double *
-	{
+	auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->double *{
 		// 补充默认参数 //
 		pp_in = pp_in ? pp_in : default_pp();
 		pm_out = pm_out ? pm_out : default_out();
@@ -751,8 +692,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2pp(const double *pm_in, double *pp_out) noexcept->double *
-	{
+	auto s_pm2pp(const double *pm_in, double *pp_out) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		pp_out = pp_out ? pp_out : default_out();
@@ -764,8 +704,7 @@ namespace aris::dynamic
 
 		return pp_out;
 	}
-	auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		pm_out = pm_out ? pm_out : default_out();
@@ -775,8 +714,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	};
-	auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		re_out = re_out ? re_out : default_out();
@@ -790,8 +728,7 @@ namespace aris::dynamic
 	auto s_pm2ra(const double *pm_in, double *ra_out) noexcept->double * { return s_rm2ra(pm_in, ra_out, 4); };
 	auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->double * { return s_rq2rm(rq_in, pm_out, 4); };
 	auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->double * { return s_rm2rq(pm_in, rq_out, 4); }
-	auto s_rm2pm(const double *rm_in, double *pm_out, Size rm_ld) noexcept->double *
-	{
+	auto s_rm2pm(const double *rm_in, double *pm_out, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		pm_out = pm_out ? pm_out : default_out();
@@ -803,8 +740,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2rm(const double *pm_in, double *rm_out, Size rm_ld) noexcept->double *
-	{
+	auto s_pm2rm(const double *pm_in, double *rm_out, Size rm_ld) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		rm_out = rm_out ? rm_out : default_out();
@@ -816,8 +752,7 @@ namespace aris::dynamic
 
 		return rm_out;
 	}
-	auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		pe_in = pe_in ? pe_in : default_pe();
 		pm_out = pm_out ? pm_out : default_out();
@@ -833,8 +768,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		pe_out = pe_out ? pe_out : default_out();
@@ -845,8 +779,7 @@ namespace aris::dynamic
 
 		return pe_out;
 	}
-	auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->double *
-	{
+	auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->double *{
 		// 补充默认参数 //
 		pq_in = pq_in ? pq_in : default_pq();
 		pm_out = pm_out ? pm_out : default_out();
@@ -862,8 +795,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2pq(const double *pm_in, double *pq_out) noexcept->double *
-	{
+	auto s_pm2pq(const double *pm_in, double *pq_out) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		pq_out = pq_out ? pq_out : default_out();
@@ -874,8 +806,7 @@ namespace aris::dynamic
 
 		return pq_out;
 	}
-	auto s_pa2pm(const double *pa_in, double *pm_out) noexcept->double *
-	{
+	auto s_pa2pm(const double *pa_in, double *pm_out) noexcept->double *{
 		// 补充默认参数 //
 		pa_in = pa_in ? pa_in : default_pa();
 		pm_out = pm_out ? pm_out : default_out();
@@ -891,8 +822,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2pa(const double *pm_in, double *pa_out) noexcept->double *
-	{
+	auto s_pm2pa(const double *pm_in, double *pa_out) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		pa_out = pa_out ? pa_out : default_out();
@@ -903,8 +833,7 @@ namespace aris::dynamic
 
 		return pa_out;
 	}
-	auto s_ps2pm(const double *ps_in, double *pm_out) noexcept->double *
-	{
+	auto s_ps2pm(const double *ps_in, double *pm_out) noexcept->double *{
 		// 补充默认参数 //
 		ps_in = ps_in ? ps_in : default_ps();
 		pm_out = pm_out ? pm_out : default_out();
@@ -945,8 +874,7 @@ namespace aris::dynamic
 
 		return pm_out;
 	}
-	auto s_pm2ps(const double *pm_in, double *ps_out) noexcept->double *
-	{
+	auto s_pm2ps(const double *pm_in, double *ps_out) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		ps_out = ps_out ? ps_out : default_out();
@@ -990,8 +918,7 @@ namespace aris::dynamic
 		const double b = s_one_minus_cosx_over_square_x(n);
 		const double c = s_sinx_over_x(n);
 
-		const double T[9]
-		{
+		const double T[9]{
 			a * ps_out[3] * ps_out[3] + c, a * ps_out[3] * ps_out[4] - b * ps_out[5], a * ps_out[3] * ps_out[5] + b * ps_out[4],
 			a * ps_out[4] * ps_out[3] + b * ps_out[5], a * ps_out[4] * ps_out[4] + c, a * ps_out[4] * ps_out[5] - b * ps_out[3],
 			a * ps_out[5] * ps_out[3] - b * ps_out[4], a * ps_out[5] * ps_out[4] + b * ps_out[3], a * ps_out[5] * ps_out[5] + c,
@@ -1005,17 +932,16 @@ namespace aris::dynamic
 		return ps_out;
 	}
 
-	auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		we_in = we_in ? we_in : default_we();
 		wa_out = wa_out ? wa_out : default_out();
 
 		// 正式开始计算 //
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -1037,17 +963,16 @@ namespace aris::dynamic
 
 		return wa_out;
 	}
-	auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		re_in = re_in ? re_in : default_re();
 		we_out = we_out ? we_out : default_out();
 
 		// 正式开始计算 //
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -1071,8 +996,7 @@ namespace aris::dynamic
 
 		return we_out;
 	}
-	auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out) noexcept->double *
-	{
+	auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out) noexcept->double *{
 		// 补充默认参数 //
 		rq_in = rq_in ? rq_in : default_rq();
 		wq_in = wq_in ? wq_in : default_wq();
@@ -1098,8 +1022,7 @@ namespace aris::dynamic
 
 		return wa_out;
 	}
-	auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->double *
-	{
+	auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		rq_in = rq_in ? rq_in : default_rq();
@@ -1108,8 +1031,8 @@ namespace aris::dynamic
 		// 正式开始计算 //
 		static const double S[4][3]{ { 1,-1,-1 },{ -1,1,-1 },{ -1,-1,1 },{ 1,1,1 } };
 		static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
-		static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
-		static const int Q[4][4]{ { -1,1,2,1 },{ 0,-1,2,2 },{ 0,1,-1,0 },{ 1,2,0,-1 } };
+		static const int P[4][4]{ { 0,0,0,2 },{ 1,0,1,0 },{ 2,2,0,1 },{ 2,0,1,0 } };// 对角线都为0，不会取到
+		static const int Q[4][4]{ { 0,1,2,1 },{ 0,0,2,2 },{ 0,1,0,0 },{ 1,2,0,0 } };// 对角线都为0，不会取到
 
 		double rm[3][3], wm[3][3];
 
@@ -1125,8 +1048,7 @@ namespace aris::dynamic
 
 		return wq_out;
 	}
-	auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, Size rm_ld, Size wm_ld) noexcept->double *
-	{
+	auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, Size rm_ld, Size wm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		wm_in = wm_in ? wm_in : default_wm();
@@ -1143,8 +1065,7 @@ namespace aris::dynamic
 
 		return wa_out;
 	}
-	auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, Size rm_ld, Size wm_ld) noexcept->double *
-	{
+	auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, Size rm_ld, Size wm_ld) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		rm_in = rm_in ? rm_in : default_rm();
@@ -1155,8 +1076,7 @@ namespace aris::dynamic
 
 		return wm_out;
 	}
-	auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->double *
-	{
+	auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		vp_in = vp_in ? vp_in : default_vp();
 		pp_in = pp_in ? pp_in : default_pp();
@@ -1168,8 +1088,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->double *
-	{
+	auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		pp_in = pp_in ? pp_in : default_pp();
@@ -1181,8 +1100,7 @@ namespace aris::dynamic
 
 		return vp_out;
 	}
-	auto s_we2vs(const double *re_in, const double *we_in, double *vs_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_we2vs(const double *re_in, const double *we_in, double *vs_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		we_in = we_in ? we_in : default_we();
@@ -1193,8 +1111,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2we(const double *vs_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_vs2we(const double *vs_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		re_in = re_in ? re_in : default_re();
@@ -1205,8 +1122,7 @@ namespace aris::dynamic
 
 		return we_out;
 	}
-	auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->double *
-	{
+	auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		rq_in = rq_in ? rq_in : default_rq();
 		wq_in = wq_in ? wq_in : default_wq();
@@ -1217,8 +1133,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->double *
-	{
+	auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		rq_in = rq_in ? rq_in : default_rq();
@@ -1229,8 +1144,7 @@ namespace aris::dynamic
 
 		return wq_out;
 	}
-	auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, Size rm_ld, Size wm_ld) noexcept->double *
-	{
+	auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, Size rm_ld, Size wm_ld) noexcept->double *{
 		// 补充默认参数 //
 		rm_in = rm_in ? rm_in : default_rm();
 		wm_in = wm_in ? wm_in : default_wm();
@@ -1241,8 +1155,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, Size rm_ld, Size wm_ld) noexcept->double *
-	{
+	auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, Size rm_ld, Size wm_ld) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		rm_in = rm_in ? rm_in : default_rm();
@@ -1253,8 +1166,7 @@ namespace aris::dynamic
 
 		return wm_out;
 	}
-	auto s_wa2vs(const double *wa_in, double *vs_out) noexcept->double *
-	{
+	auto s_wa2vs(const double *wa_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		vs_out = vs_out ? vs_out : default_out();
@@ -1264,8 +1176,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2wa(const double *vs_in, double *wa_out) noexcept->double *
-	{
+	auto s_vs2wa(const double *vs_in, double *wa_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		wa_out = wa_out ? wa_out : default_out();
@@ -1275,8 +1186,7 @@ namespace aris::dynamic
 
 		return wa_out;
 	}
-	auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		pe_in = pe_in ? pe_in : default_pe();
 		ve_in = ve_in ? ve_in : default_ve();
@@ -1288,8 +1198,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		pe_in = pe_in ? pe_in : default_pe();
@@ -1301,8 +1210,7 @@ namespace aris::dynamic
 
 		return ve_out;
 	}
-	auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out) noexcept->double *
-	{
+	auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		pq_in = pq_in ? pq_in : default_pq();
 		vq_in = vq_in ? vq_in : default_vq();
@@ -1314,8 +1222,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out) noexcept->double *
-	{
+	auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		pq_in = pq_in ? pq_in : default_pq();
@@ -1327,8 +1234,7 @@ namespace aris::dynamic
 
 		return vq_out;
 	}
-	auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->double *
-	{
+	auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		pm_in = pm_in ? pm_in : default_pm();
 		vm_in = vm_in ? vm_in : default_vm();
@@ -1342,8 +1248,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out) noexcept->double *
-	{
+	auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		pm_in = pm_in ? pm_in : default_pm();
@@ -1363,8 +1268,7 @@ namespace aris::dynamic
 
 		return vm_out;
 	}
-	auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->double *
-	{
+	auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->double *{
 		// 补充默认参数 //
 		pp_in = pp_in ? pp_in : default_pp();
 		va_in = va_in ? va_in : default_va();
@@ -1376,8 +1280,7 @@ namespace aris::dynamic
 
 		return vs_out;
 	}
-	auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->double *
-	{
+	auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->double *{
 		// 补充默认参数 //
 		vs_in = vs_in ? vs_in : default_vs();
 		pp_in = pp_in ? pp_in : default_pp();
@@ -1390,8 +1293,7 @@ namespace aris::dynamic
 		return va_out;
 	}
 
-	auto s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out, double *wa_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out, double *wa_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		we_in = we_in ? we_in : default_we();
@@ -1402,9 +1304,9 @@ namespace aris::dynamic
 
 
 		// 正式开始计算 //
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -1440,8 +1342,7 @@ namespace aris::dynamic
 
 		return xa_out;
 	}
-	auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out, double *we_out, const char *eu_type_in) noexcept->double *
-	{
+	auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out, double *we_out, const char *eu_type_in) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		xa_in = xa_in ? xa_in : default_xa();
@@ -1450,11 +1351,10 @@ namespace aris::dynamic
 		double we_out_default[3];
 		we_out = we_out ? we_out : we_out_default;
 
-
 		// 正式开始计算 //
-		const Size a = eu_type_in[0] - '1';
-		const Size b = eu_type_in[1] - '1';
-		const Size c = eu_type_in[2] - '1';
+		const Size a = Size(eu_type_in[0]) - '1';
+		const Size b = Size(eu_type_in[1]) - '1';
+		const Size c = Size(eu_type_in[2]) - '1';
 		const Size d = 3 - a - b;
 		const Size e = 3 - b - c;
 
@@ -1497,8 +1397,7 @@ namespace aris::dynamic
 
 		return xe_out;
 	}
-	auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out, double *wa_out) noexcept->double *
-	{
+	auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out, double *wa_out) noexcept->double *{
 		// 补充默认参数 //
 		rq_in = rq_in ? rq_in : default_rq();
 		wq_in = wq_in ? wq_in : default_wq();
@@ -1543,8 +1442,7 @@ namespace aris::dynamic
 
 		return xa_out;
 	}
-	auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out, double *wq_out) noexcept->double *
-	{
+	auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out, double *wq_out) noexcept->double *{
 		// 补充默认参数 //
 		wa_in = wa_in ? wa_in : default_wa();
 		xa_in = xa_in ? xa_in : default_xa();
@@ -1556,8 +1454,8 @@ namespace aris::dynamic
 		// 正式开始计算 //
 		static const double S[4][3]{ { 1,-1,-1 },{ -1,1,-1 },{ -1,-1,1 },{ 1,1,1 } };
 		static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
-		static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
-		static const int Q[4][4]{ { -1,1,2,1 },{ 0,-1,2,2 },{ 0,1,-1,0 },{ 1,2,0,-1 } };
+		static const int P[4][4]{ { 0,0,0,2 },{ 1,0,1,0 },{ 2,2,0,1 },{ 2,0,1,0 } };//对角线为0，不会取到
+		static const int Q[4][4]{ { 0,1,2,1 },{ 0,0,2,2 },{ 0,1,0,0 },{ 1,2,0,0 } };//对角线为0，不会取到
 
 		double rm[3][3], wm[3][3], xm[3][3];
 
@@ -1570,8 +1468,7 @@ namespace aris::dynamic
 		wq_out[i] = (S[i][0] * wm[0][0] + S[i][1] * wm[1][1] + S[i][2] * wm[2][2]) / 8 / rq_in[i];
 		xq_out[i] = (S[i][0] * xm[0][0] + S[i][1] * xm[1][1] + S[i][2] * xm[2][2] - 8 * wq_out[i] * wq_out[i]) / 8 / rq_in[i];
 
-		for (auto m : jkl)
-		{
+		for (auto m : jkl){
 			wq_out[m] = (wm[P[i][m]][Q[i][m]] + T[i][m] * wm[Q[i][m]][P[i][m]] - 4 * rq_in[m] * wq_out[i]) / 4 / rq_in[i];
 			xq_out[m] = (xm[P[i][m]][Q[i][m]] + T[i][m] * xm[Q[i][m]][P[i][m]] - 8 * wq_out[m] * wq_out[i] - 4 * rq_in[m] * xq_out[i]) / 4 / rq_in[i];
 		}
@@ -3521,8 +3418,8 @@ namespace aris::dynamic
 		ab = ab ? ab : default_ab;
 
 		// 正式开始计算 //
-		const Size a = order[0] - '1';
-		const Size b = order[1] - '1';
+		const Size a = Size(order[0]) - '1';
+		const Size b = Size(order[1]) - '1';
 		const Size c = 3 - a - b;
 		const double pa = pp[a];
 		const double pb = pp[b];
@@ -3546,8 +3443,8 @@ namespace aris::dynamic
 		ab = ab ? ab : default_ab;
 
 		// 正式开始计算 //
-		const Size a = Size(order[0] - '1');
-		const Size b = Size(order[1] - '1');
+		const Size a = Size(order[0]) - '1';
+		const Size b = Size(order[1]) - '1';
 		const Size c = 3 - a - b;
 		const double pa = pp[a];
 		const double pb = pp[b];
@@ -3585,8 +3482,8 @@ namespace aris::dynamic
 		ab = ab ? ab : default_ab;
 
 		// 正式开始计算 //
-		const Size a = Size(order[0] - '1');
-		const Size b = Size(order[1] - '1');
+		const Size a = Size(order[0]) - '1';
+		const Size b = Size(order[1]) - '1';
 		const Size c = 3 - a - b;
 		const double pa = pp[a];
 		const double pb = pp[b];
@@ -3629,8 +3526,8 @@ namespace aris::dynamic
 		pp = pp ? pp : default_pp;
 
 		// 正式开始计算 //
-		const Size a = Size(order[0] - '1');
-		const Size b = Size(order[1] - '1');
+		const Size a = Size(order[0]) - '1';
+		const Size b = Size(order[1]) - '1';
 		const Size c = 3 - a - b;
 		const double xa = pp0[a];
 		const double xb = pp0[b];
@@ -3644,8 +3541,7 @@ namespace aris::dynamic
 		const double Pca = P()[c][a];
 
 		if(s_sov_theta(Pac*xc, xa, ya, beta))return -1;
-		for (int i = 0; i < 2; ++i)
-		{
+		for (int i = 0; i < 2; ++i){
 			const auto s2 = std::sin(beta[i]);
 			const auto c2 = std::cos(beta[i]);
 
@@ -3654,15 +3550,10 @@ namespace aris::dynamic
 			const auto k3 = Pcb * xb;
 			const auto k4 = Pca * s2 * xa + c2 * xc;
 
-
-
 			// 符号会影响 atan2 的计算 //
 			const auto sig = s_sgn2(k1 * k4 - k2 * k3);
 			alpha[i] = std::atan2((k4 * yb - k2 * yc)*sig, (k1 * yc - k3 * yb)*sig);
 		}
-
-
-
 
 		return 0;
 	}

@@ -143,7 +143,7 @@ namespace aris::control{
 			sla.imp_->mst_ = this;
 
 			if (!sla.isVirtual()){
-				imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
+				imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId()) + 1, imp_->sla_vec_phy2abs_.size()), -1);
 				if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 				imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
 			}

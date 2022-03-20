@@ -293,31 +293,57 @@ namespace aris::core{
 	Instance::Instance(const Instance&) = default;
 	Instance::Instance(Instance&&) noexcept = default;
 
-	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }
+	auto bool_to_str(bool* v)->std::string { return *v ? "true" : "false"; }
+	auto bool_from_str(bool* v, std::string_view str)->void {
+		std::string str_(str);
+		str_.erase(0, str_.find_first_not_of(" \t\n\r\f\v"));// trim l
+		str_.erase(str_.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
+		*v = str_ == "false" || str_ == "0" ? true : false;
+	}
+
+	auto char_to_str(char* v)->std::string { return std::string(1, *v);	}
+	auto char_from_str(char* v, std::string_view str)->void { *v = str[0]; }
+
+	auto string_to_str(std::string* v)->std::string { return *v; }
+	auto string_from_str(std::string* v, std::string_view str)->void { *v = str; }
+
+	auto uint64_to_str(std::uint64_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(v)); }
 	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }
-	auto uint32_to_str(std::uint32_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint32_t*>(value)); }
+	auto uint32_to_str(std::uint32_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint32_t*>(v)); }
 	auto uint32_from_str(std::uint32_t *v, std::string_view str)->void { *reinterpret_cast<std::uint32_t*>(v) = (std::uint32_t)std::strtoull(str.data(), nullptr, 0); }
-	auto uint16_to_str(std::uint16_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint16_t*>(value)); }
+	auto uint16_to_str(std::uint16_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint16_t*>(v)); }
 	auto uint16_from_str(std::uint16_t *v, std::string_view str)->void { *reinterpret_cast<std::uint16_t*>(v) = (std::uint16_t)std::strtoull(str.data(), nullptr, 0); }
-	auto uint8_to_str(std::uint8_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint8_t*>(value)); }
+	auto uint8_to_str(std::uint8_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint8_t*>(v)); }
 	auto uint8_from_str(std::uint8_t *v, std::string_view str)->void { *reinterpret_cast<std::uint8_t*>(v) = (std::uint8_t)std::strtoull(str.data(), nullptr, 0); }
-	auto int64_to_str(std::int64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int64_t*>(value)); }
+	auto int64_to_str(std::int64_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int64_t*>(v)); }
 	auto int64_from_str(std::int64_t *v, std::string_view str)->void { *reinterpret_cast<std::int64_t*>(v) = std::strtoll(str.data(), nullptr, 0); }
-	auto int32_to_str(std::int32_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int32_t*>(value)); }
+	auto int32_to_str(std::int32_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int32_t*>(v)); }
 	auto int32_from_str(std::int32_t *v, std::string_view str)->void { *reinterpret_cast<std::int32_t*>(v) = (std::int32_t)std::strtoll(str.data(), nullptr, 0); }
-	auto int16_to_str(std::int16_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int16_t*>(value)); }
+	auto int16_to_str(std::int16_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int16_t*>(v)); }
 	auto int16_from_str(std::int16_t *v, std::string_view str)->void { *reinterpret_cast<std::int16_t*>(v) = (std::int16_t)std::strtoll(str.data(), nullptr, 0); }
-	auto int8_to_str(std::int8_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int8_t*>(value)); }
+	auto int8_to_str(std::int8_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int8_t*>(v)); }
 	auto int8_from_str(std::int8_t *v, std::string_view str)->void { *reinterpret_cast<std::int8_t*>(v) = (std::int8_t)std::strtoll(str.data(), nullptr, 0); }
+	
+	auto float_to_str(float* v)->std::string { return std::to_string(*v); }
+	auto float_from_str(float* v, std::string_view str)->void { *v = (float)std::stod(std::string(str)); }
+	auto double_to_str(double* v)->std::string { 
+		char buf[100]{ 0 };
+		std::sprintf(buf, "%.17g", *v);
+		return buf;
+	}
+	auto double_from_str(double* v, std::string_view str)->void { *v = std::stod(std::string(str)); }
 
 	ARIS_REGISTRATION{
+		aris::core::class_<bool>("bool")
+			.textMethod(bool_to_str, bool_from_str)
+			;
+
 		aris::core::class_<char>("char")
-			.textMethod(
-				[](char *v)->std::string{
-					return std::string(1, *v);
-				}, [](char *v, std::string_view str)->void{
-					*v = str[0];
-				})
+			.textMethod(char_to_str, char_from_str)
+			;
+
+		aris::core::class_<std::string>("string")
+			.textMethod(string_to_str, string_from_str)
 			;
 		
 		aris::core::class_<std::int8_t>("int8")
@@ -347,17 +373,12 @@ namespace aris::core{
 			.alias("uint");
 
 		aris::core::class_<std::uint64_t>("uint64")
-			.textMethod(uint64_to_str, uint64_from_str);
+			.textMethod(uint64_to_str, uint64_from_str)
+			;
 
 		aris::core::class_<float>("float")
-			.textMethod([](float *v)->std::string
-			{
-				return std::to_string(*reinterpret_cast<float*>(v));
-			}, [](float *v, std::string_view str)->void
-			{
-				float result = (float)std::stod(std::string(str));
-				*reinterpret_cast<float*>(v) = result;
-			});
+			.textMethod(float_to_str, float_from_str)
+			;
 
 		aris::core::class_<double>("double")
 			.textMethod([](void *v)->std::string
@@ -371,30 +392,6 @@ namespace aris::core{
 				*reinterpret_cast<double*>(v) = result;
 			});
 
-		aris::core::class_<bool>("bool")
-			.textMethod([](void *v)->std::string
-			{
-				return *reinterpret_cast<bool*>(v) ? "true" : "false";
-			}, [](void *v, std::string_view str)->void
-			{
-				bool result;
-				if (str == "true")
-					result = true;
-				else if (str == "false")
-					result = false;
-				else
-					THROW_FILE_LINE("invalid string for bool");
-				
-				*reinterpret_cast<bool*>(v) = result;
-			});
 
-		aris::core::class_<std::string>("string")
-			.textMethod([](void *v)->std::string
-			{
-				return *reinterpret_cast<std::string*>(v);
-			}, [](void *v, std::string_view str)->void
-			{
-				*reinterpret_cast<std::string*>(v) = str;
-			});
 	}
 }

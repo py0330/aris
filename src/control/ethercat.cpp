@@ -48,10 +48,10 @@ namespace aris::control{
 	}
 
 	struct PdoEntry::Imp{
-		std::any ec_handle_;
-		std::uint16_t index_;
-		std::uint8_t subindex_;
-		aris::Size bit_size_;
+		std::any ec_handle_{ 0 };
+		std::uint16_t index_{ 0 };
+		std::uint8_t subindex_{ 0 };
+		aris::Size bit_size_{ 0 };
 		char value_[8]{0,0,0,0,0,0,0,0};
 	};
 	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
@@ -71,7 +71,7 @@ namespace aris::control{
 
 	struct Pdo::Imp{
 		std::any handle_;
-		std::uint16_t index_;
+		std::uint16_t index_{ 0 };
 	};
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
@@ -80,7 +80,7 @@ namespace aris::control{
 	Pdo::Pdo(const std::string &name, std::uint16_t index) :imp_(new Imp) { imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(Pdo);
 
-	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
+	struct SyncManager::Imp { std::any handle_; bool is_tx_{ true }; };
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	auto SyncManager::setTx(bool is_tx)->void { imp_->is_tx_ = is_tx; }
@@ -92,8 +92,8 @@ namespace aris::control{
 	public:
 		std::any ec_handle_;
 
-		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
-		std::int32_t sync0_shift_ns_;
+		std::uint32_t vendor_id_{ 0 }, product_code_{ 0 }, revision_num_{ 0 }, dc_assign_activate_{ 0x00 };
+		std::int32_t sync0_shift_ns_{ 300'000 };
 		std::unique_ptr<std::vector<SyncManager> > sm_pool_ptr_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 	};
@@ -417,7 +417,7 @@ namespace aris::control{
 		int home_count{ 0 };
 		bool need_clear{ true };
 
-		EthercatSlave *slave_;
+		EthercatSlave* slave_{ nullptr };
 	};
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }

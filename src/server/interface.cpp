@@ -200,7 +200,7 @@ namespace aris::server{
 	auto WebInterface::close()->void { socket().stop(); }
 	auto WebInterface::isConnected() const->bool { return imp_->sock_->isConnected(); }
 	WebInterface::~WebInterface() = default;
-	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name), imp_(new Imp)
+	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::Type type):Interface(name), imp_(new Imp)
 	{
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int {
 			auto send_ret = [socket, msg](std::string str)->void {
@@ -341,7 +341,7 @@ namespace aris::server{
 		else
 			return std::make_tuple<std::string, int>("", 0);
 	}
-	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
+	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::Type type) :Interface(name), imp_(new Imp)
 	{
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int{
 			auto send_ret = [socket, msg](std::string str)->void {
@@ -450,8 +450,7 @@ namespace aris::server
 				struct http_message *hm = (struct http_message *) ev_data;
 
 				switch (ev) {
-				case MG_EV_HTTP_REQUEST:
-				{
+				case MG_EV_HTTP_REQUEST:{
 					auto method = std::string(hm->method.p, hm->method.len);
 					auto uri = std::string(hm->uri.p, hm->uri.len);
 
@@ -674,28 +673,26 @@ namespace aris::server
 					{
 						mg_serve_http(nc, hm, reinterpret_cast<Imp*>(nc->user_data)->s_http_server_opts);
 					}
+
+					break;
 				}
 				default:
 					break;
 				}
 			}
-			catch (std::exception &e)
-			{
+			catch (std::exception &e){
 				std::cout << "http error:" << e.what() << std::endl;
 			}
-			catch (...)
-			{
+			catch (...){
 				std::cout << "http error: unknown" << std::endl;
 			}
 			
 		}
-		static void event_handle_for_old(struct mg_connection *nc, int ev, void *ev_data)
-		{
+		static void event_handle_for_old(struct mg_connection *nc, int ev, void *ev_data){
 			struct http_message *hm = (struct http_message *) ev_data;
 
 			switch (ev) {
-			case MG_EV_HTTP_REQUEST:
-			{
+			case MG_EV_HTTP_REQUEST:{
 				std::cout << std::string(hm->message.p, hm->message.len) << std::endl;
 
 				auto http_method = std::string(hm->method.p, hm->method.len);
@@ -709,24 +706,21 @@ namespace aris::server
 				opts.dav_document_root = imp->dav_root_.c_str();
 				opts.enable_directory_listing = "yes";
 
-				if (http_method == "GET" && http_uri == "/api/login/fetch")
-				{
+				if (http_method == "GET" && http_uri == "/api/login/fetch"){
 				}
-				else if (http_method == "POST" && http_uri == "/api/login")
-				{
+				else if (http_method == "POST" && http_uri == "/api/login"){
 
 				}
-				else if (http_method == "GET")
-				{
+				else if (http_method == "GET"){
 				}
-				else if (http_method == "POST")
-				{
+				else if (http_method == "POST"){
 
 				}
-				else
-				{
+				else{
 					std::cout << "unknown cmd" << std::endl;
 				}
+
+				break;
 			}
 			default:
 				break;

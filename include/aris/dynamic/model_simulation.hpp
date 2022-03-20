@@ -19,15 +19,14 @@ namespace aris::dynamic
 
 	class ARIS_API SimResult : public Element{
 	public:
-		class TimeResult : public Element
-		{
+		class TimeResult : public Element{
 		public:
 			auto record()->void;
 			auto restore(Size pos)->void;
 
 			virtual ~TimeResult();
 			explicit TimeResult(const std::string &name = "time_result");
-			ARIS_DECLARE_BIG_FOUR(TimeResult);
+			ARIS_DECLARE_BIG_FOUR_NOEXCEPT(TimeResult);
 
 		private:
 			struct Imp;
@@ -45,7 +44,7 @@ namespace aris::dynamic
 
 			virtual ~PartResult();
 			explicit PartResult(const std::string &name = "part_result", Part *part = nullptr);
-			ARIS_DECLARE_BIG_FOUR(PartResult);
+			ARIS_DECLARE_BIG_FOUR_NOEXCEPT(PartResult);
 
 		private:
 			struct Imp;
@@ -63,7 +62,7 @@ namespace aris::dynamic
 
 			virtual ~ConstraintResult();
 			explicit ConstraintResult(const std::string &name = "constraint_result", Constraint *constraint = nullptr);
-			ARIS_DECLARE_BIG_FOUR(ConstraintResult);
+			ARIS_DECLARE_BIG_FOUR_NOEXCEPT(ConstraintResult);
 
 		private:
 			struct Imp;
@@ -87,7 +86,7 @@ namespace aris::dynamic
 
 		virtual ~SimResult();
 		explicit SimResult(const std::string &name = "sim_result");
-		ARIS_DECLARE_BIG_FOUR(SimResult);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(SimResult);
 
 	private:
 		struct Imp;
@@ -99,7 +98,7 @@ namespace aris::dynamic
 
 		virtual ~Simulator();
 		explicit Simulator(const std::string &name = "simulator");
-		ARIS_DECLARE_BIG_FOUR(Simulator);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(Simulator);
 
 	private:
 		struct Imp;
@@ -114,7 +113,7 @@ namespace aris::dynamic
 
 		virtual ~SolverSimulator();
 		explicit SolverSimulator(const std::string &name = "solver_simulator", Solver *solver = nullptr);
-		ARIS_DECLARE_BIG_FOUR(SolverSimulator);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(SolverSimulator);
 
 	private:
 		struct Imp;
@@ -132,7 +131,7 @@ namespace aris::dynamic
 
 		virtual ~AdamsSimulator();
 		explicit AdamsSimulator(const std::string &name = "adams_solver");
-		ARIS_DECLARE_BIG_FOUR(AdamsSimulator);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(AdamsSimulator);
 
 	private:
 		struct Imp;
@@ -218,7 +217,7 @@ namespace aris::dynamic
 
 		virtual ~Calibrator();
 		explicit Calibrator(const std::string &name = "calibrator");
-		ARIS_DECLARE_BIG_FOUR(Calibrator);
+		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(Calibrator);
 
 	private:
 		struct Imp;

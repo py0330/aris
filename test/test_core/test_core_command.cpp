@@ -4,10 +4,8 @@
 
 using namespace aris::core;
 
-void test_command_xml()
-{
-	try
-	{
+void test_command_xml(){
+	try{
 		const char xml_data[] =
 			"<CommandParser>"
 			"	<CommandPoolObject>"
@@ -200,15 +198,12 @@ void test_command_xml()
 		try { std::tie(cmd_result, param_result) = parser.parse(cmd_string); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
 		catch (std::exception &) {};
 	}
-	catch (std::exception &e)
-	{
+	catch (std::exception &e){
 		std::cout << e.what() << std::endl;
 	}
 }
-void test_command_code()
-{
-	try
-	{
+void test_command_code(){
+	try	{
 		aris::core::CommandParser parser("parser");
 		auto &tt = parser.commandPool().emplace_back(aris::core::Command("tt", "ap0"));
 		auto &ap0 = tt.add<aris::core::Param>("ap0", "", 'a');
@@ -305,45 +300,38 @@ void test_command_code()
 }
 void test_language_parser() {
 	try {
-	
-	
-	LanguageParser parser;
+		LanguageParser parser;
 
-	std::string file1 = "1:\n"
-"2:main\n"
-"3:if (1+2)\n"
-"4:mvl --tool=tool0 --wobj=wobj1\n"
-"5:endif\n"
-"6:aaaa(1,2)\n"
-"7:endmain\n"
-"8:\n"
-"9:function aaaa(Number a, Matrix b)\n"
-"10:mvl --tool=a --wobj=wobj1\n"
-"11:a++\n"
-"12:endfunction\n";
+		std::string file1 = 
+			"1:\n"
+			"2:main\n"
+			"3:if (1+2)\n"
+			"4:mvl --tool=tool0 --wobj=wobj1\n"
+			"5:endif\n"
+			"6:aaaa(1,2)\n"
+			"7:endmain\n"
+			"8:\n"
+			"9:function aaaa(Number a, Matrix b)\n"
+			"10:mvl --tool=a --wobj=wobj1\n"
+			"11:a++\n"
+			"12:endfunction\n";
 
+		std::map<std::string, std::string> program;
+		program["main"] = file1;
 
-	std::map<std::string,std::string> program;
-	program["main"] = file1;
+		parser.setProgram(program);
+		parser.parseLanguage();
+		parser.gotoMain();
 
-	parser.setProgram(program);
-	parser.parseLanguage();
-	parser.gotoMain();
-
-	while (!parser.isEnd()){
-		parser.forward();
-		std::cout << parser.currentCmd() << std::endl;
-	}
-
+		while (!parser.isEnd()) {
+			parser.forward();
+			std::cout << parser.currentCmd() << std::endl;
+		}
 	}
 	catch (std::exception&e){
 		std::cout << e.what() << std::endl;
 	}
-
-
 }
-
-
 void test_command()
 {
 	std::cout << std::endl << "-----------------test command---------------------" << std::endl;
