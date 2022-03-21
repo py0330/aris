@@ -14,8 +14,7 @@ namespace aris::control
 	thread_local std::int64_t nanoseconds_;
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
-	auto aris_rt_task_create()->std::any
-	{
+	auto aris_rt_task_create()->std::any{
 		std::any rt_task = RT_TASK();
 
 		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
@@ -23,13 +22,39 @@ namespace aris::control
 
 		return rt_task;
 	}
-	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
+	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { 
+		std::atomic_bool is = false;
+		void* package[3]{ reinterpret_cast<void*>(task_func), param, &is };
+		auto linux_task_func = [](void* package)->void{
+			aris_mlockall();
+			
+			auto real = reinterpret_cast<void**>(package);
+			auto func = reinterpret_cast<void(*)(void*)>(real[0]);
+			auto param = reinterpret_cast<void*>(real[1]);
+			auto is = reinterpret_cast<std::atomic_bool*>(real[2]);
+
+			is->store(true);
+
+			func(param);
+			return;
+		};
+		
+
+		auto ret = rt_task_start(&std::any_cast<RT_TASK&>(rt_task), linux_task_func, package);
+		if (ret) {
+			THROW_FILE_LINE("create rt_thread failed");
+			return -1;
+		}
+		while (!is); // protect memory "package"
+
+		return 0;
+	}
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
-	auto aris_rt_task_set_periodic(int nanoseconds)->int
-	{
-		last_time_ = aris_rt_timer_read();
+	auto aris_rt_task_set_periodic(int nanoseconds)->int{
 		nanoseconds_ = nanoseconds;
-		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
+		auto ret = rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
+		last_time_ = aris_rt_timer_read();
+		return ret;
 	}
 	auto aris_rt_task_wait_period()->int
 	{
@@ -41,6 +66,10 @@ namespace aris::control
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 
 	auto aris_rt_time_since_last_time()->std::int64_t { return aris_rt_timer_read() - last_time_; }
+	// in nano seconds
+	auto aris_rt_last_wakeup_time()->std::int64_t {
+		return last_time_;
+	}
 }
 
 #elif defined(ARIS_USE_RT_PREEMT)
@@ -149,6 +178,11 @@ namespace aris::control
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		return (now.tv_sec - last_time_.tv_sec)*NSEC_PER_SEC + now.tv_nsec - last_time_.tv_nsec;
 	}
+
+	// in nano seconds
+	auto aris_rt_last_wakeup_time()->std::int64_t{
+		return (last_time_.tv_sec - begin_time_.tv_sec) * NSEC_PER_SEC + last_time_.tv_nsec - begin_time_.tv_nsec;
+	}
 }
 #else
 #include <chrono>
@@ -195,9 +229,12 @@ namespace aris::control
 	}
 
 	// in nano seconds
-	auto aris_rt_time_since_last_time()->std::int64_t
-	{
+	auto aris_rt_time_since_last_time()->std::int64_t{
 		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_).count();
+	}
+
+	auto aris_rt_last_wakeup_time()->std::int64_t {
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(last_time_ - begin_time_).count();
 	}
 }
 #endif
