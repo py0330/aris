@@ -51,6 +51,8 @@ int main(int argc, char *argv[]){
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
+	std::cout << aris::core::toXmlString(cs) << std::endl;
+
 	try
 	{
 		cs.interfacePool().add<aris::server::HttpInterface>("http", "8001", "C:/Users/py033/WebstormProjects/RobotControllerHMI/client/build");

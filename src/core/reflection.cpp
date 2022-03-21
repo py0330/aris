@@ -45,6 +45,9 @@ namespace aris::core{
 		// init properties, for inheritance //
 		bool inited{ false };
 
+		// typeinfo //
+		std::size_t hash_code_;//equal to type_info.hash_code()
+
 		// properties //
 		std::string type_name_;
 		std::vector<Property> this_properties_;// 不包含父类properties
@@ -73,8 +76,6 @@ namespace aris::core{
 			std::function<void(Instance*)> clear_func_;
 		};
 		std::unique_ptr<ArrayData> array_data_;
-
-		bool is_polymophic_{ false };
 	};
 
 	auto Property::name()const->std::string { return imp_->name_; };
@@ -106,14 +107,14 @@ namespace aris::core{
 		static std::map<std::string, std::size_t> reflection_names_;
 		return reflection_names_;
 	}
-	auto Type::registerType(bool is_polymophic, std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*{
+	auto Type::registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*{
 		auto[ins, ok] = reflect_types_raw().emplace(std::make_pair(hash_code, Type(name)));
 		if (!ok) THROW_FILE_LINE("class already exist");
 		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
 		if (!ok2) THROW_FILE_LINE("class name already exist");
 
 		ins->second.imp_->default_ctor_ = ctor;
-		ins->second.imp_->is_polymophic_ = is_polymophic;
+		ins->second.imp_->hash_code_ = hash_code;
 		return &ins->second;
 	}
 	auto Type::alias_impl(Type*type, std::string_view alias_name)->void{
@@ -125,8 +126,31 @@ namespace aris::core{
 		auto found = reflect_names().find(std::string(name));
 		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
 	}
+	auto Type::getType(std::size_t hashcode)->Type* {
+		auto found = reflect_types().find(hashcode);
+		return found == reflect_types().end() ? nullptr : &found->second;
+	}
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return imp_->default_ctor_();}
 	auto Type::name()const->std::string_view { return imp_->type_name_; };
+	auto Type::isBuiltIn()const->bool {
+		static const std::set<std::size_t> built_in_types = {
+			typeid(bool).hash_code(),
+			typeid(char).hash_code(),
+			typeid(std::string).hash_code(),
+			typeid(std::int8_t).hash_code(),
+			typeid(std::int16_t).hash_code(),
+			typeid(std::int32_t).hash_code(),
+			typeid(std::int64_t).hash_code(),
+			typeid(std::uint8_t).hash_code(),
+			typeid(std::uint16_t).hash_code(),
+			typeid(std::uint32_t).hash_code(),
+			typeid(std::uint64_t).hash_code(),
+			typeid(float).hash_code(),
+			typeid(double).hash_code(),
+		};
+		
+		return built_in_types.find(imp_->hash_code_) == built_in_types.end();
+	}
 	auto Type::isBasic()const->bool { return imp_->to_string_ || imp_->from_string_; }
 	auto Type::isClass()const->bool { return (!isBasic()); }
 	auto Type::isArray()const->bool { return imp_->array_data_.get(); }
@@ -222,8 +246,57 @@ namespace aris::core{
 	Type::~Type() = default;
 	Type::Type(std::string_view name) :imp_(new Imp) { imp_->type_name_ = name; }
 
-	auto Instance::castToType(const Type*t)const->void* {
-		if (type() == t) return toVoidPtr();
+	auto b2s(bool* v)->std::string { return *v ? "true" : "false"; }
+	auto bfs(bool* v, std::string_view str)->void {
+		std::string str_(str);
+		str_.erase(0, str_.find_first_not_of(" \t\n\r\f\v"));// trim l
+		str_.erase(str_.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
+		*v = str_ == "false" || str_ == "0" ? true : false;
+	}
+
+	auto c2s(char* v)->std::string { return std::string(1, *v); }
+	auto cfs(char* v, std::string_view str)->void { *v = str[0]; }
+
+	auto s2s(std::string* v)->std::string { return *v; }
+	auto sfs(std::string* v, std::string_view str)->void { *v = str; }
+	auto i82s(std::int8_t* v)->std::string { return std::to_string(*v); }
+	auto i8fs(std::int8_t* v, std::string_view str)->void { *v = (std::int8_t)std::strtoll(str.data(), nullptr, 0); }
+	auto i12s(std::int16_t* v)->std::string { return std::to_string(*v); }
+	auto i1fs(std::int16_t* v, std::string_view str)->void { *v = (std::int16_t)std::strtoll(str.data(), nullptr, 0); }
+	auto i32s(std::int32_t* v)->std::string { return std::to_string(*v); }
+	auto i3fs(std::int32_t* v, std::string_view str)->void { *v = (std::int32_t)std::strtoll(str.data(), nullptr, 0); }
+	auto i62s(std::int64_t* v)->std::string { return std::to_string(*v); }
+	auto i6fs(std::int64_t* v, std::string_view str)->void { *v = std::strtoll(str.data(), nullptr, 0); }
+	auto u82s(std::uint8_t* v)->std::string { return std::to_string(*v); }
+	auto u8fs(std::uint8_t* v, std::string_view str)->void { *v = (std::uint8_t)std::strtoull(str.data(), nullptr, 0); }
+	auto u12s(std::uint16_t* v)->std::string { return std::to_string(*v); }
+	auto u1fs(std::uint16_t* v, std::string_view str)->void { *v = (std::uint16_t)std::strtoull(str.data(), nullptr, 0); }
+	auto u32s(std::uint32_t* v)->std::string { return std::to_string(*v); }
+	auto u3fs(std::uint32_t* v, std::string_view str)->void { *v = (std::uint32_t)std::strtoull(str.data(), nullptr, 0); }
+	auto u62s(std::uint64_t* v)->std::string { return std::to_string(*v); }
+	auto u6fs(std::uint64_t* v, std::string_view str)->void { *v = std::strtoull(str.data(), nullptr, 0); }
+
+	auto f2s(float* v)->std::string { return std::to_string(*v); }
+	auto ffs(float* v, std::string_view str)->void { *v = (float)std::stod(std::string(str)); }
+	auto d2s(double* v)->std::string {
+		char buf[100]{ 0 };
+		std::sprintf(buf, "%.17g", *v);
+		return buf;
+	}
+	auto dfs(double* v, std::string_view str)->void { *v = std::stod(std::string(str)); }
+
+
+	// static cast //
+	template<typename t1, typename t2>
+	auto sc(Instance value)->Instance {
+		return Instance(static_cast<t2>(*value.castToPointer<t1>()));
+	}
+
+	auto Instance::castToVoidPointer(const Type*t)const->void* {
+		auto raw_pointer = isReference() ? std::get<Imp::InstanceRef>(imp_->data_).data_ : std::get<Imp::InstancePtr>(imp_->data_).data_.get();
+		
+		if (type() == t) 
+			return raw_pointer;
 
 		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void* {
 			auto inherit_types = type->inheritTypes();
@@ -239,9 +312,93 @@ namespace aris::core{
 			return nullptr;
 		};
 
-		return iterative_cast(type(), toVoidPtr());
+		return iterative_cast(type(), raw_pointer);
 	}
-	auto Instance::toVoidPtr()const->void* {return isReference() ? std::get<Imp::InstanceRef>(imp_->data_).data_ : std::get<Imp::InstancePtr>(imp_->data_).data_.get();}
+	auto Instance::castToVoidValue(const Type* t)const->Instance {
+		// 基础类型转换方式 //
+		// bool char string int8 int16 int32 int64 uint8 uint16 uint32 uint64 float double 
+		//
+		//
+		//
+
+		using b = bool;
+		using c = char;
+		using s = std::string;
+		using i8 = std::int8_t;
+		using i1 = std::int16_t;
+		using i3 = std::int32_t;
+		using i6 = std::int64_t;
+		using u8 = std::uint8_t;
+		using u1 = std::uint16_t;
+		using u3 = std::uint32_t;
+		using u6 = std::uint64_t;
+		using f = float;
+		using d = double;
+
+#define t2s(type) [](Instance v)->Instance{ return ARIS_REFLECT_CAT(type,2s)(v.castToPointer<type>()); }
+#define s2t(type) [](Instance str)->Instance{ \
+			type ret;\
+			ARIS_REFLECT_CAT(type,fs)(&ret, *str.castToPointer<s>()); \
+			return std::move(ret);\
+		}
+
+		static const std::map<const Type*, int> basic_type_pos = { 
+			{Type::getType(typeid(bool)         .hash_code()),  0},
+			{Type::getType(typeid(char)         .hash_code()),  1},
+			{Type::getType(typeid(std::string)  .hash_code()),  2},
+			{Type::getType(typeid(std::int8_t)  .hash_code()),  3},
+			{Type::getType(typeid(std::int16_t) .hash_code()),  4},
+			{Type::getType(typeid(std::int32_t) .hash_code()),  5},
+			{Type::getType(typeid(std::int64_t) .hash_code()),  6},
+			{Type::getType(typeid(std::uint8_t) .hash_code()),  7},
+			{Type::getType(typeid(std::uint16_t).hash_code()),  8},
+			{Type::getType(typeid(std::uint32_t).hash_code()),  9},
+			{Type::getType(typeid(std::uint64_t).hash_code()), 10},
+			{Type::getType(typeid(float)        .hash_code()), 11},
+			{Type::getType(typeid(double)       .hash_code()), 12},
+		};
+
+		//static const std::map<Type*, int> basic_type_pos = { 
+		//	{Type::getType(bool).hash_code(),  0},
+		//	{typeid(char)         .hash_code(),  1},
+		//	{typeid(std::string)  .hash_code(),  2},
+		//	{typeid(std::int8_t)  .hash_code(),  3},
+		//	{typeid(std::int16_t) .hash_code(),  4},
+		//	{typeid(std::int32_t) .hash_code(),  5},
+		//	{typeid(std::int64_t) .hash_code(),  6},
+		//	{typeid(std::uint8_t) .hash_code(),  7},
+		//	{typeid(std::uint16_t).hash_code(),  8},
+		//	{typeid(std::uint32_t).hash_code(),  9},
+		//	{typeid(std::uint64_t).hash_code(), 10},
+		//	{typeid(float)        .hash_code(), 11},
+		//	{typeid(double)       .hash_code(), 12},
+		//};
+		//
+		using CastFunc = std::function<Instance(Instance)>;
+
+		static const CastFunc cast_func[13][13]{ 
+			//   bool      char     string       int8      int16      int32      int64      uint8     uint16     uint32     uint64     float    double
+			{sc<b ,b>, sc<b ,c>, t2s(b   ), sc<b ,i8>, sc<b ,i1>, sc<b ,i3>, sc<b ,i6>, sc<b ,u8>, sc<b ,u1>, sc<b ,u3>, sc<b ,u6>, sc<b ,f>, sc<b ,d>},  // bool
+			{sc<c ,b>, sc<c ,c>, t2s(c   ), sc<c ,i8>, sc<c ,i1>, sc<c ,i3>, sc<c ,i6>, sc<c ,u8>, sc<c ,u1>, sc<c ,u3>, sc<c ,u6>, sc<c ,f>, sc<c ,d>},  // char
+			{s2t(  b), s2t(  c), sc< s, s>, s2t(  i8), s2t(  i1), s2t(  i3), s2t(  i6), s2t(  u8), s2t(  u1), s2t(  u3), s2t(  u6), s2t(  f), s2t(  d)},  // string
+			{sc<i8,b>, sc<i8,c>, t2s(i8  ), sc<i8,i8>, sc<i8,i1>, sc<i8,i3>, sc<i8,i6>, sc<i8,u8>, sc<i8,u1>, sc<i8,u3>, sc<i8,u6>, sc<i8,f>, sc<i8,d>},  // int8
+			{sc<i1,b>, sc<i1,c>, t2s(i1  ), sc<i1,i8>, sc<i1,i1>, sc<i1,i3>, sc<i1,i6>, sc<i1,u8>, sc<i1,u1>, sc<i1,u3>, sc<i1,u6>, sc<i1,f>, sc<i1,d>},  // int16
+			{sc<i3,b>, sc<i3,c>, t2s(i3  ), sc<i3,i8>, sc<i3,i1>, sc<i3,i3>, sc<i3,i6>, sc<i3,u8>, sc<i3,u1>, sc<i3,u3>, sc<i3,u6>, sc<i3,f>, sc<i3,d>},  // int32
+			{sc<i6,b>, sc<i6,c>, t2s(i6  ), sc<i6,i8>, sc<i6,i1>, sc<i6,i3>, sc<i6,i6>, sc<i6,u8>, sc<i6,u1>, sc<i6,u3>, sc<i6,u6>, sc<i6,f>, sc<i6,d>},  // int64
+			{sc<u8,b>, sc<u8,c>, t2s(u8  ), sc<u8,i8>, sc<u8,i1>, sc<u8,i3>, sc<u8,i6>, sc<u8,u8>, sc<u8,u1>, sc<u8,u3>, sc<u8,u6>, sc<u8,f>, sc<u8,d>},  // uint8
+			{sc<u1,b>, sc<u1,c>, t2s(u1  ), sc<u1,i8>, sc<u1,i1>, sc<u1,i3>, sc<u1,i6>, sc<u1,u8>, sc<u1,u1>, sc<u1,u3>, sc<u1,u6>, sc<u1,f>, sc<u1,d>},  // uint16
+			{sc<u3,b>, sc<u3,c>, t2s(u3  ), sc<u3,i8>, sc<u3,i1>, sc<u3,i3>, sc<u3,i6>, sc<u3,u8>, sc<u3,u1>, sc<u3,u3>, sc<u3,u6>, sc<u3,f>, sc<u3,d>},  // uint32
+			{sc<u6,b>, sc<u6,c>, t2s(u6  ), sc<u6,i8>, sc<u6,i1>, sc<u6,i3>, sc<u6,i6>, sc<u6,u8>, sc<u6,u1>, sc<u6,u3>, sc<u6,u6>, sc<u6,f>, sc<u6,d>},  // uint64
+			{sc<f ,b>, sc<f ,c>, t2s(f   ), sc<f ,i8>, sc<f ,i1>, sc<f ,i3>, sc<f ,i6>, sc<f ,u8>, sc<f ,u1>, sc<f ,u3>, sc<f ,u6>, sc<f ,f>, sc<f ,d>},  // float
+			{sc<d ,b>, sc<d ,c>, t2s(d   ), sc<d ,i8>, sc<d ,i1>, sc<d ,i3>, sc<d ,i6>, sc<d ,u8>, sc<d ,u1>, sc<d ,u3>, sc<d ,u6>, sc<d ,f>, sc<d ,d>},  // double
+		};
+#undef t2s
+#undef s2t
+		
+		return cast_func[basic_type_pos.at(this->type())]
+						[basic_type_pos.at(t)]
+						(*this);
+	}
 	auto Instance::set(std::string_view prop_name, Instance arg)->void {
 		type()->propertyAt(prop_name)->set(this, arg);
 	}
@@ -256,12 +413,12 @@ namespace aris::core{
 	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
 	auto Instance::isSharedReference()const->bool { return imp_->data_.index() == 2; }
 	auto Instance::toString()->std::string { 
-		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(toVoidPtr());
+		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(castToVoidPointer(this->type()));
 		if (type()->imp_->to_string_)return type()->imp_->to_string_(this);
 		return "";
 	}
 	auto Instance::fromString(std::string_view str)->void { 
-		if (imp_->belong_to_ && imp_->belong_to_->imp_->from_str_func_)return imp_->belong_to_->imp_->from_str_func_(toVoidPtr(), str);
+		if (imp_->belong_to_ && imp_->belong_to_->imp_->from_str_func_)return imp_->belong_to_->imp_->from_str_func_(castToVoidPointer(this->type()), str);
 		if (type()->imp_->from_string_)type()->imp_->from_string_(this, str);
 	}
 	auto Instance::size()->std::size_t{
@@ -293,105 +450,48 @@ namespace aris::core{
 	Instance::Instance(const Instance&) = default;
 	Instance::Instance(Instance&&) noexcept = default;
 
-	auto bool_to_str(bool* v)->std::string { return *v ? "true" : "false"; }
-	auto bool_from_str(bool* v, std::string_view str)->void {
-		std::string str_(str);
-		str_.erase(0, str_.find_first_not_of(" \t\n\r\f\v"));// trim l
-		str_.erase(str_.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
-		*v = str_ == "false" || str_ == "0" ? true : false;
-	}
 
-	auto char_to_str(char* v)->std::string { return std::string(1, *v);	}
-	auto char_from_str(char* v, std::string_view str)->void { *v = str[0]; }
-
-	auto string_to_str(std::string* v)->std::string { return *v; }
-	auto string_from_str(std::string* v, std::string_view str)->void { *v = str; }
-
-	auto uint64_to_str(std::uint64_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(v)); }
-	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }
-	auto uint32_to_str(std::uint32_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint32_t*>(v)); }
-	auto uint32_from_str(std::uint32_t *v, std::string_view str)->void { *reinterpret_cast<std::uint32_t*>(v) = (std::uint32_t)std::strtoull(str.data(), nullptr, 0); }
-	auto uint16_to_str(std::uint16_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint16_t*>(v)); }
-	auto uint16_from_str(std::uint16_t *v, std::string_view str)->void { *reinterpret_cast<std::uint16_t*>(v) = (std::uint16_t)std::strtoull(str.data(), nullptr, 0); }
-	auto uint8_to_str(std::uint8_t* v)->std::string { return std::to_string(*reinterpret_cast<std::uint8_t*>(v)); }
-	auto uint8_from_str(std::uint8_t *v, std::string_view str)->void { *reinterpret_cast<std::uint8_t*>(v) = (std::uint8_t)std::strtoull(str.data(), nullptr, 0); }
-	auto int64_to_str(std::int64_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int64_t*>(v)); }
-	auto int64_from_str(std::int64_t *v, std::string_view str)->void { *reinterpret_cast<std::int64_t*>(v) = std::strtoll(str.data(), nullptr, 0); }
-	auto int32_to_str(std::int32_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int32_t*>(v)); }
-	auto int32_from_str(std::int32_t *v, std::string_view str)->void { *reinterpret_cast<std::int32_t*>(v) = (std::int32_t)std::strtoll(str.data(), nullptr, 0); }
-	auto int16_to_str(std::int16_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int16_t*>(v)); }
-	auto int16_from_str(std::int16_t *v, std::string_view str)->void { *reinterpret_cast<std::int16_t*>(v) = (std::int16_t)std::strtoll(str.data(), nullptr, 0); }
-	auto int8_to_str(std::int8_t* v)->std::string { return std::to_string(*reinterpret_cast<std::int8_t*>(v)); }
-	auto int8_from_str(std::int8_t *v, std::string_view str)->void { *reinterpret_cast<std::int8_t*>(v) = (std::int8_t)std::strtoll(str.data(), nullptr, 0); }
-	
-	auto float_to_str(float* v)->std::string { return std::to_string(*v); }
-	auto float_from_str(float* v, std::string_view str)->void { *v = (float)std::stod(std::string(str)); }
-	auto double_to_str(double* v)->std::string { 
-		char buf[100]{ 0 };
-		std::sprintf(buf, "%.17g", *v);
-		return buf;
-	}
-	auto double_from_str(double* v, std::string_view str)->void { *v = std::stod(std::string(str)); }
 
 	ARIS_REGISTRATION{
 		aris::core::class_<bool>("bool")
-			.textMethod(bool_to_str, bool_from_str)
-			;
+			.textMethod(b2s, bfs);
 
 		aris::core::class_<char>("char")
-			.textMethod(char_to_str, char_from_str)
-			;
+			.textMethod(c2s, cfs);
 
 		aris::core::class_<std::string>("string")
-			.textMethod(string_to_str, string_from_str)
-			;
+			.textMethod(s2s, sfs);
 		
 		aris::core::class_<std::int8_t>("int8")
-			.textMethod(int8_to_str, int8_from_str)
-			;
+			.textMethod(i82s, i8fs);
 
 		aris::core::class_<std::int16_t>("int16")
-			.textMethod(int16_to_str, int16_from_str)
-			;
+			.textMethod(i12s, i1fs);
 
 		aris::core::class_<std::int32_t>("int32")
-			.textMethod(int32_to_str, int32_from_str)
-			.alias("int")
-			;
+			.textMethod(i32s, i3fs)
+			.alias("int");
 
 		aris::core::class_<std::int64_t>("int64")
-			.textMethod(int64_to_str, int64_from_str);
+			.textMethod(i62s, i6fs);
 
 		aris::core::class_<std::uint8_t>("uint8")
-			.textMethod(uint8_to_str, uint8_from_str);
+			.textMethod(u82s, u8fs);
 
 		aris::core::class_<std::uint16_t>("uint16")
-			.textMethod(uint16_to_str, uint16_from_str);
+			.textMethod(u12s, u1fs);
 
 		aris::core::class_<std::uint32_t>("uint32")
-			.textMethod(uint32_to_str, uint32_from_str)
+			.textMethod(u32s, u3fs)
 			.alias("uint");
 
 		aris::core::class_<std::uint64_t>("uint64")
-			.textMethod(uint64_to_str, uint64_from_str)
-			;
+			.textMethod(u62s, u6fs);
 
 		aris::core::class_<float>("float")
-			.textMethod(float_to_str, float_from_str)
-			;
+			.textMethod(f2s, ffs);
 
 		aris::core::class_<double>("double")
-			.textMethod([](void *v)->std::string
-			{
-				char buf[100]{0};
-				std::sprintf(buf, "%.17g", *reinterpret_cast<double*>(v));
-				return buf;
-			}, [](void *v, std::string_view str)->void
-			{
-				double result = std::stod(std::string(str));
-				*reinterpret_cast<double*>(v) = result;
-			});
-
-
+			.textMethod(d2s, dfs);
 	}
 }
