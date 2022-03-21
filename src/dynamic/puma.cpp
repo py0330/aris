@@ -23,6 +23,8 @@ namespace aris::dynamic{
 
 		model->setName("PumaModel");
 
+		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a1, param.a2, param.d3, param.a3, param.d4 }));
+
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
