@@ -12,8 +12,9 @@
 
 #include "aris/core/core.hpp"
 
-namespace aris::control
-{
+//#define DEBUG_MASTER_TIME
+
+namespace aris::control{
 	struct Slave::Imp { 
 		std::uint16_t phy_id_{ 0 }, sla_id_{ 0 }; 
 		Master* mst_{nullptr}; 
@@ -45,20 +46,33 @@ namespace aris::control
 			};
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
-
+			
 			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();
 				
+#ifdef DEBUG_MASTER_TIME
+				static std::int64_t ns_wakeup, ns_recv, ns_send, ns_strategy, ns_total;
+				ns_wakeup = aris::control::aris_rt_time_since_last_time();
+#endif
 				// receive //
 				mst.recv();
+#ifdef DEBUG_MASTER_TIME
+				ns_recv = aris::control::aris_rt_time_since_last_time();
+#endif
+				// send
+				mst.send();
+#ifdef DEBUG_MASTER_TIME
+				ns_send = aris::control::aris_rt_time_since_last_time();
+#endif
+
+
 
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
-
-				// send
-				mst.send();
-
+#ifdef DEBUG_MASTER_TIME
+				ns_strategy = aris::control::aris_rt_time_since_last_time();
+#endif
 				// flush lout
 				mst.lout() << std::flush;
 				if (!mst.imp_->lout_msg_.empty()){
@@ -78,6 +92,14 @@ namespace aris::control
 				add_time_to_stastics(time, &mst.imp_->global_stastics_);
 				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
 				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
+#ifdef DEBUG_MASTER_TIME				
+				ns_total = aris::control::aris_rt_time_since_last_time();
+
+				if (ns_send > 300000 || ns_total > 500000)
+					mst.mout() << "********************************************\n"
+					<< "too large latency: " << ns_wakeup << "   " << ns_recv << "   " << ns_send << "   " << ns_strategy << "   " << ns_total
+					<< "********************************************" << std::endl;
+#endif
 			}
 		}
 

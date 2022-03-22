@@ -688,8 +688,8 @@ namespace aris::dynamic{
 						list->strs.push_back(std::string(str.substr(0, str.find_first_of(','))));
 						str = str.substr(str.find_first_of(',') + 1);
 					}
-					
-					list->strs.push_back(std::string(str.substr(0, str.size() - 1)));
+					if (auto last_name = std::string(str.substr(0, str.size() - 1)); last_name.size() > 1)
+						list->strs.push_back(last_name);
 				})
 			;
 

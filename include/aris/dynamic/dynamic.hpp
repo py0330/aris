@@ -20,3 +20,4 @@
 #include <aris/dynamic/serial_3axis.hpp>
 #include <aris/dynamic/puma_5axis.hpp>
 #include <aris/dynamic/mechanism_rppr.hpp>
+#include <aris/dynamic/mechanism_prpr.hpp>
