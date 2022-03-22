@@ -32,13 +32,11 @@ namespace aris::core{
 		// set children or props //
 		if (ins.isArray()){
 			for (auto prop : ins.type()->properties()){
-				auto v = prop->get(&ins);
-
-				if (!v.isBasic())
+				if (!prop->type()->isBasic())
 					THROW_FILE_LINE("failed to serilize");
-
-				if (v.toString() != "")
-					ele->SetAttribute(prop->name().data(), v.toString().c_str());
+				
+				if (auto str = prop->toString(&ins); str != "")
+					ele->SetAttribute(prop->name().data(), str.c_str());
 			}
 			for (auto i = 0; i < ins.size(); ++i){
 				auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(ins.at(i).type()).data());
@@ -50,9 +48,9 @@ namespace aris::core{
 			for (auto &prop : ins.type()->properties()){
 				auto v = prop->get(&ins);
 
-				if (v.isBasic()){
-					if(!v.toString().empty())
-						ele->SetAttribute(prop->name().data(), v.toString().c_str());
+				if (prop->type()->isBasic()){
+					if (auto str = prop->toString(&ins); str != "")
+						ele->SetAttribute(prop->name().data(), str.c_str());
 				}
 				else{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
@@ -112,10 +110,7 @@ namespace aris::core{
 					continue;
 				}
 
-				// 找到对应的attr，并赋值
-				auto [ptr, prop_ins] = prop->type()->create();
-				prop_ins.fromString((*found)->Value());
-				prop->set(&ins, prop_ins);
+				prop->fromString(&ins, (*found)->Value());
 				attrs.erase(found);
 				iter = props.erase(iter);
 				continue;
@@ -128,7 +123,7 @@ namespace aris::core{
 
 			if (found != child_eles.end()) {
 				// 判断是否类型匹配 //
-				if (!Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele))))
+				if (!Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(*found))))
 					THROW_FILE_LINE(std::string("XML type:") + ele->Name() + "  instance type:" + std::string(prop->type()->name()));
 
 				auto c_type = typename_xml2c(*found);

@@ -699,7 +699,7 @@ namespace aris::dynamic{
 		auto setTools = [](MultiModel* m, LocalStringList name_list)->void {
 			m->tools().clear();
 			for (auto name : name_list.strs)
-				m->tools().push_back(m->findMarker(name));
+				if(m->findMarker(name))m->tools().push_back(m->findMarker(name));
 		};
 		auto getWobjs = [](MultiModel* m)->LocalStringList {
 			LocalStringList name_list;

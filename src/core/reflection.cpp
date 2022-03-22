@@ -14,7 +14,7 @@
 #include "aris/core/reflection.hpp"
 
 namespace aris::core{
-	auto reflect_types_raw()->std::map<std::size_t, Type>&{
+	auto reflect_types_raw()->std::map<std::size_t, Type>& {
 		static std::map<std::size_t, Type> reflection_types_;
 		return reflection_types_;
 	}
@@ -34,7 +34,6 @@ namespace aris::core{
 		std::function<void(void* value, std::string_view str)> from_str_func_;
 	};
 	struct Instance::Imp{
-		const Property *belong_to_{ nullptr };
 		const std::type_info* type_info_{ nullptr };
 
 		struct InstanceRef { void* data_; };
@@ -46,7 +45,7 @@ namespace aris::core{
 		bool inited{ false };
 
 		// typeinfo //
-		std::size_t hash_code_;//equal to type_info.hash_code()
+		std::size_t hash_code_{ 0 };//equal to type_info.hash_code()
 
 		// properties //
 		std::string type_name_;
@@ -76,17 +75,96 @@ namespace aris::core{
 			std::function<void(Instance*)> clear_func_;
 		};
 		std::unique_ptr<ArrayData> array_data_;
+
+		auto init()->void {
+			if (!this->inited) {
+				this->inited = true;
+
+				// init inherit types //
+				for (auto& t : this->inherit_type_infos_) {
+					if (reflect_types().find(t->hash_code()) == reflect_types().end()) std::cout << "Unregistered inherited type:" << t->name() << std::endl;
+					if (reflect_types().find(t->hash_code()) == reflect_types().end())	THROW_FILE_LINE("Unregistered inherited type:" + t->name());
+					this->inherit_types_.push_back(&reflect_types().at(t->hash_code()));
+					this->inherit_types_.back()->imp_->init();
+				}
+
+				// init inherit properties //
+				auto insert_prop = [this](Property* ist) {
+					// 防止重名的数据
+					auto& vec = this->properties_ptr_;
+					auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool {
+						return prop->name() == ist->name();
+						});
+
+					if (found == vec.end())	vec.push_back(ist);
+					else *found = ist;
+				};
+				for (auto t : this->inherit_types_) {
+					for (auto ist : t->properties()) {
+						insert_prop(ist);
+					}
+				}
+				for (auto& ist : this->this_properties_)insert_prop(const_cast<Property*>(&ist));
+
+				// copy inherited, text methods & array_infos //
+				for (auto& t : this->inherit_types_) {
+					// copy array_infos //
+					if (!array_data_ && t->imp_->array_data_) {
+						this->array_data_.reset(new Type::Imp::ArrayData(*t->imp_->array_data_));
+					}
+
+					// copy text methods //
+					if (!this->to_string_)this->to_string_ = t->imp_->to_string_;
+					if (!this->from_string_)this->from_string_ = t->imp_->from_string_;
+				}
+			}
+		}
+		static auto initAllTypes()->void {
+			static bool init_all_ = false;
+
+			if (init_all_)return;
+			init_all_ = true;
+
+			for (auto& t : reflect_types_raw()) {
+				t.second.imp_->init();
+			}
+			// init props //
+			for (auto& t : reflect_types_raw()) {
+				for (auto& prop : t.second.imp_->this_properties_) {
+					prop.imp_->type_ = Type::getType(prop.imp_->type_info_->hash_code());
+				}
+			}
+
+		}
+		static auto reflect_types()->std::map<std::size_t, Type>& {
+			initAllTypes();
+			return reflect_types_raw();
+		}
+		static auto reflect_names()->std::map<std::string, std::size_t>& {
+			static std::map<std::string, std::size_t> reflection_names_;
+			return reflection_names_;
+		}
 	};
 
 	auto Property::name()const->std::string { return imp_->name_; };
+	auto Property::type()->const Type* { return Type::getType(imp_->type_info_->hash_code()); }
+	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
 	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
 	auto Property::get(Instance *ins)const->Instance { 
 		auto ret = imp_->get_(ins);
-		ret.imp_->belong_to_ = this;
 		return ret;
 	}
-	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
-	auto Property::type()->const Type* { return &Type::reflect_types().at(imp_->type_info_->hash_code()); }
+	auto Property::toString(Instance* obj)->std::string {
+		if ((!type()->isBasic()) || (!obj->castToVoidPointer(imp_->type_belong_to_)))return "";
+		auto prop_value = get(obj);
+		return imp_->to_str_func_ ? imp_->to_str_func_(prop_value.castToVoidPointer(type())) : type()->imp_->to_string_(&prop_value);
+	}
+	auto Property::fromString(Instance* obj, std::string_view str)->void {
+		if ((!type()->isBasic()) || (!obj->castToVoidPointer(imp_->type_belong_to_)))return;
+		auto [ptr, ins] = type()->create();
+		imp_->from_str_func_ ? imp_->from_str_func_(ins.castToVoidPointer(type()), str) : type()->imp_->from_string_(&ins, str);
+		set(obj, ins);
+	}
 	auto Property::setToText(std::function<std::string(void*)> to_text)->void { imp_->to_str_func_ = to_text; }
 	auto Property::setFromText(std::function<void(void*, std::string_view)> from_text)->void { imp_->from_str_func_ = from_text; }
 	Property::~Property() = default;
@@ -99,18 +177,10 @@ namespace aris::core{
 		imp_->get_ = get;
 	}
 
-	auto Type::reflect_types()->std::map<std::size_t, Type>&{
-		initAllTypes();
-		return reflect_types_raw();
-	}
-	auto Type::reflect_names()->std::map<std::string, std::size_t>&{
-		static std::map<std::string, std::size_t> reflection_names_;
-		return reflection_names_;
-	}
 	auto Type::registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*{
 		auto[ins, ok] = reflect_types_raw().emplace(std::make_pair(hash_code, Type(name)));
 		if (!ok) THROW_FILE_LINE("class already exist");
-		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
+		auto[ins2, ok2] = Imp::reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
 		if (!ok2) THROW_FILE_LINE("class name already exist");
 
 		ins->second.imp_->default_ctor_ = ctor;
@@ -118,17 +188,17 @@ namespace aris::core{
 		return &ins->second;
 	}
 	auto Type::alias_impl(Type*type, std::string_view alias_name)->void{
-		auto code = reflect_names().at(std::string(type->name()));
-		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(std::string(alias_name), code));
+		auto code = Imp::reflect_names().at(std::string(type->name()));
+		auto[ins2, ok2] = Imp::reflect_names().emplace(std::make_pair(std::string(alias_name), code));
 		if (!ok2) THROW_FILE_LINE("class name already exist");
 	}
 	auto Type::getType(std::string_view name)->Type*{
-		auto found = reflect_names().find(std::string(name));
-		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
+		auto found = Imp::reflect_names().find(std::string(name));
+		return found == Imp::reflect_names().end() ? nullptr : &Imp::reflect_types().at(found->second);
 	}
 	auto Type::getType(std::size_t hashcode)->Type* {
-		auto found = reflect_types().find(hashcode);
-		return found == reflect_types().end() ? nullptr : &found->second;
+		auto found = Imp::reflect_types().find(hashcode);
+		return found == Imp::reflect_types().end() ? nullptr : &found->second;
 	}
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return imp_->default_ctor_();}
 	auto Type::name()const->std::string_view { return imp_->type_name_; };
@@ -166,60 +236,6 @@ namespace aris::core{
 	auto Type::inherit(const std::type_info *inherit_type_info, CastFunc func)->void{
 		imp_->inherit_type_infos_.push_back(inherit_type_info);
 		imp_->inherit_cast_vec_.push_back(func);// 多继承可能改变指针所指向的位置，坑爹！！//
-	}
-	auto Type::init()const->void{
-		if (!imp_->inited){
-			auto this_type = const_cast<Type*>(this);
-			this_type->imp_->inited = true;
-			
-			// init inherit types //
-			for (auto &t : imp_->inherit_type_infos_){
-				if (reflect_types().find(t->hash_code()) == reflect_types().end()) std::cout << "Unregistered inherited type:" << t->name() << std::endl;
-				if (reflect_types().find(t->hash_code()) == reflect_types().end())	THROW_FILE_LINE("Unregistered inherited type:" + t->name());
-				this_type->imp_->inherit_types_.push_back(&reflect_types().at(t->hash_code()));
-				imp_->inherit_types_.back()->init();
-			}
-			
-			// init inherit properties //
-			auto insert_prop = [this_type](Property* ist){
-				// 防止重名的数据
-				auto &vec = this_type->imp_->properties_ptr_;
-				auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool{
-					return prop->name() == ist->name();
-				});
-
-				if (found == vec.end())	vec.push_back(ist);
-				else *found = ist;
-			};
-			for (auto t : inheritTypes()){
-				for (auto ist : t->properties()){
-					insert_prop(ist);
-				}
-			}
-			for (auto &ist : this_type->this_properties())insert_prop(const_cast<Property*>(&ist));
-
-			// copy inherited, text methods & array_infos //
-			for (auto &t : imp_->inherit_types_){
-				// copy array_infos //
-				if (!isArray() && t->isArray()){
-					this_type->imp_->array_data_.reset(new Type::Imp::ArrayData(*t->imp_->array_data_));
-				}
-
-				// copy text methods //
-				if (!imp_->to_string_)this_type->imp_->to_string_ = t->imp_->to_string_;
-				if (!imp_->from_string_)this_type->imp_->from_string_ = t->imp_->from_string_;
-			}
-		}
-	}
-	auto Type::initAllTypes()->void{
-		static bool init_all_ = false;
-
-		if (init_all_)return;
-		init_all_ = true;
-
-		for (auto &t : reflect_types_raw()){
-			t.second.init();
-		}
 	}
 	auto Type::isBaseOf(const Type* base, const Type* derived)->bool{
 		if (base == nullptr) return true;
@@ -315,12 +331,6 @@ namespace aris::core{
 		return iterative_cast(type(), raw_pointer);
 	}
 	auto Instance::castToVoidValue(const Type* t)const->Instance {
-		// 基础类型转换方式 //
-		// bool char string int8 int16 int32 int64 uint8 uint16 uint32 uint64 float double 
-		//
-		//
-		//
-
 		using b = bool;
 		using c = char;
 		using s = std::string;
@@ -358,22 +368,6 @@ namespace aris::core{
 			{Type::getType(typeid(double)       .hash_code()), 12},
 		};
 
-		//static const std::map<Type*, int> basic_type_pos = { 
-		//	{Type::getType(bool).hash_code(),  0},
-		//	{typeid(char)         .hash_code(),  1},
-		//	{typeid(std::string)  .hash_code(),  2},
-		//	{typeid(std::int8_t)  .hash_code(),  3},
-		//	{typeid(std::int16_t) .hash_code(),  4},
-		//	{typeid(std::int32_t) .hash_code(),  5},
-		//	{typeid(std::int64_t) .hash_code(),  6},
-		//	{typeid(std::uint8_t) .hash_code(),  7},
-		//	{typeid(std::uint16_t).hash_code(),  8},
-		//	{typeid(std::uint32_t).hash_code(),  9},
-		//	{typeid(std::uint64_t).hash_code(), 10},
-		//	{typeid(float)        .hash_code(), 11},
-		//	{typeid(double)       .hash_code(), 12},
-		//};
-		//
 		using CastFunc = std::function<Instance(Instance)>;
 
 		static const CastFunc cast_func[13][13]{ 
@@ -407,20 +401,13 @@ namespace aris::core{
 	}
 	auto Instance::type()const->const Type* {
 		if (isEmpty()) return nullptr;
-		return Type::reflect_types().find(imp_->type_info_->hash_code()) == Type::reflect_types().end() ? nullptr : &Type::reflect_types().at(imp_->type_info_->hash_code());
+		return Type::getType(imp_->type_info_->hash_code());
 	}
 	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
 	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
 	auto Instance::isSharedReference()const->bool { return imp_->data_.index() == 2; }
-	auto Instance::toString()->std::string { 
-		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(castToVoidPointer(this->type()));
-		if (type()->imp_->to_string_)return type()->imp_->to_string_(this);
-		return "";
-	}
-	auto Instance::fromString(std::string_view str)->void { 
-		if (imp_->belong_to_ && imp_->belong_to_->imp_->from_str_func_)return imp_->belong_to_->imp_->from_str_func_(castToVoidPointer(this->type()), str);
-		if (type()->imp_->from_string_)type()->imp_->from_string_(this, str);
-	}
+	auto Instance::toString()->std::string { return isBasic() ? type()->imp_->to_string_(this) : ""; }
+	auto Instance::fromString(std::string_view str)->void { if(isBasic())type()->imp_->from_string_(this, str); }
 	auto Instance::size()->std::size_t{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		return type()->imp_->array_data_->size_func_(this);

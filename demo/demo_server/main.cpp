@@ -53,6 +53,17 @@ int main(int argc, char *argv[]){
 
 	std::cout << aris::core::toXmlString(cs) << std::endl;
 
+	
+
+	cs.resetModel(new aris::dynamic::Model);
+	cs.resetPlanRoot(new aris::plan::PlanRoot);
+	//cs.resetModel(new aris::dynamic::Model);
+
+	auto str = aris::core::toXmlString(cs);
+
+	aris::core::fromXmlString(cs,str);
+	std::cout << aris::core::toXmlString(cs) << std::endl;
+
 	try
 	{
 		cs.interfacePool().add<aris::server::HttpInterface>("http", "8001", "C:/Users/py033/WebstormProjects/RobotControllerHMI/client/build");

@@ -38,10 +38,16 @@ namespace aris::core{
 	class ARIS_API Property{
 	public:
 		auto name()const->std::string;
-		auto set(Instance *obj, Instance value)const->void;
-		auto get(Instance *obj)const->Instance;
 		auto type()->const Type*;
 		auto acceptPtr()const->bool;
+
+		auto set(Instance *obj, Instance value)const->void;
+		auto get(Instance *obj)const->Instance;
+		
+		// only work for basic //
+		auto toString(Instance* obj)->std::string;
+		auto fromString(Instance* obj, std::string_view str)->void;
+
 		~Property();
 		Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
 
@@ -127,17 +133,13 @@ namespace aris::core{
 
 		Type(std::string_view name);
 		auto this_properties()->std::vector<Property>&;
-		auto init()const->void;
 		auto inherit(const std::type_info *inherit_type_info, CastFunc cast_to_inherit)->void;
 		auto text(std::function<std::string(Instance*)> to_string, std::function<void(Instance*, std::string_view)> from_string)->void;
 		auto as_array(bool,std::function<std::size_t(Instance*)>,std::function<Instance(Instance*, std::size_t)>, std::function<void(Instance*, const Instance&)>,std::function<void(Instance*)> )->void;
 
 		static auto registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*;
-		static auto reflect_types()->std::map<std::size_t, Type>&;
-		static auto reflect_names()->std::map<std::string, std::size_t>&;
 		static auto alias_impl(Type*, std::string_view alias_name)->void;
-		static auto initAllTypes()->void;
-		
+
 		template<typename T> friend class class_;
 		friend class Instance;
 		friend class Property;
@@ -165,15 +167,15 @@ namespace aris::core{
 		// 强制转换类型，将其转为本类或父类指针，若失败返回nullptr //
 		template<typename T>
 		constexpr auto castToPointer()const->std::add_pointer_t<T>{
-			if (auto found = Type::reflect_types().find(typeid(T).hash_code()); found != Type::reflect_types().end()) 
-				return reinterpret_cast<std::add_pointer_t<T>>(castToVoidPointer(&found->second));
+			if (auto type = Type::getType(typeid(T).hash_code())) 
+				return reinterpret_cast<std::add_pointer_t<T>>(castToVoidPointer(type));
 			return nullptr;
 		}
 		
 		// 仅仅可对 【Built-in】 类型做转换 //
 		template<typename T>
 		constexpr auto castToValue()const->T {
-			if (auto found = Type::reflect_types().find(typeid(T).hash_code()); found == Type::reflect_types().end())
+			if (!Type::getType(typeid(T).hash_code()))
 				THROW_FILE_LINE("invalid cast in aris::core::reflection");
 
 			auto ins = this->castToVoidValue(Type::getType(typeid(T).hash_code()));
