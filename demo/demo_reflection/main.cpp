@@ -494,6 +494,12 @@ int main(){
 
 
 	aris::core::Instance ins = 0.5;
+
+	auto ins2 = ins;
+	*ins2.castToPointer<double>() = 0.1;
+
+	std::cout << ins.castToValue<double>() << std::endl;
+
 	while (1) {
 		auto v1 = ins.castToValue<std::string>();
 		auto v2 = ins.castToValue<int>();
@@ -501,6 +507,17 @@ int main(){
 		auto v4 = ins.castToValue<char>();
 		auto v5 = ins.castToValue<std::uint8_t>();
 		auto v6 = ins.castToValue<double>();
+
+		auto ins2 = ins;
+		auto ins3 = 123;
+
+		double b = 0.546;
+		auto ins4 = b;
+
+
+		static int a = 1;
+		if(a++%1000000 == 0) std::cout << a << std::endl;
+
 	}
 	std::cout << ins.castToValue<std::string>() << std::endl;
 

@@ -21,24 +21,26 @@ namespace aris::core{
 
 	struct Property::Imp {
 		std::string name_;
-
-		std::function<Instance(Instance *obj)> get_;
-		std::function<void(Instance *obj, Instance prop)> set_;
 		bool accept_ptr_{ false };// which means prop is a ptr, to support polymorphim
 		Type* type_belong_to_{ nullptr };// obj type, which prop belong to
-		Type* type_{ nullptr };// type of this prop
-		const std::type_info* type_info_{ nullptr };// type info of this prop
+		std::size_t type_hash_code_{0};// hash_code of this prop
+
+		// set & get //
+		std::function<Instance(Instance* obj)> get_;
+		std::function<void(Instance* obj, Instance prop)> set_;
 
 		// only for basic type //
 		std::function<std::string(void* value)> to_str_func_;
 		std::function<void(void* value, std::string_view str)> from_str_func_;
 	};
 	struct Instance::Imp{
-		const std::type_info* type_info_{ nullptr };
-
-		struct InstanceRef { void* data_; };
-		struct InstancePtr { std::shared_ptr<void> data_; };
-		std::variant<std::monostate, InstanceRef, InstancePtr> data_;
+		struct Reference { void* data_; std::size_t type_hash_code_; };
+		struct Shared { std::shared_ptr<void> data_; std::size_t type_hash_code_;};
+		struct Unique { 
+			typedef void(*DeleteFunc)(void*);
+			std::unique_ptr<void, DeleteFunc> data_; std::size_t type_hash_code_;
+		};
+		std::variant<std::monostate, Reference, Shared, Unique> data_;
 	};
 	struct Type::Imp{
 		// init properties, for inheritance //
@@ -128,13 +130,6 @@ namespace aris::core{
 			for (auto& t : reflect_types_raw()) {
 				t.second.imp_->init();
 			}
-			// init props //
-			for (auto& t : reflect_types_raw()) {
-				for (auto& prop : t.second.imp_->this_properties_) {
-					prop.imp_->type_ = Type::getType(prop.imp_->type_info_->hash_code());
-				}
-			}
-
 		}
 		static auto reflect_types()->std::map<std::size_t, Type>& {
 			initAllTypes();
@@ -147,13 +142,10 @@ namespace aris::core{
 	};
 
 	auto Property::name()const->std::string { return imp_->name_; };
-	auto Property::type()->const Type* { return Type::getType(imp_->type_info_->hash_code()); }
+	auto Property::type()->const Type* { return Type::getType(imp_->type_hash_code_); }
 	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
 	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
-	auto Property::get(Instance *ins)const->Instance { 
-		auto ret = imp_->get_(ins);
-		return ret;
-	}
+	auto Property::get(Instance *ins)const->Instance { return imp_->get_(ins); }
 	auto Property::toString(Instance* obj)->std::string {
 		if ((!type()->isBasic()) || (!obj->castToVoidPointer(imp_->type_belong_to_)))return "";
 		auto prop_value = get(obj);
@@ -168,10 +160,10 @@ namespace aris::core{
 	auto Property::setToText(std::function<std::string(void*)> to_text)->void { imp_->to_str_func_ = to_text; }
 	auto Property::setFromText(std::function<void(void*, std::string_view)> from_text)->void { imp_->from_str_func_ = from_text; }
 	Property::~Property() = default;
-	Property::Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp){
+	Property::Property(std::string_view name, Type *type_belong_to, std::size_t type_hash_code, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp){
 		imp_->name_ = name;
 		imp_->type_belong_to_ = type_belong_to;
-		imp_->type_info_ = type_self;
+		imp_->type_hash_code_ = type_hash_code;
 		imp_->accept_ptr_ = accept_ptr;
 		imp_->set_ = set;
 		imp_->get_ = get;
@@ -201,6 +193,7 @@ namespace aris::core{
 		return found == Imp::reflect_types().end() ? nullptr : &found->second;
 	}
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return imp_->default_ctor_();}
+	auto Type::make()const->Instance { return imp_->default_ctor_(); }
 	auto Type::name()const->std::string_view { return imp_->type_name_; };
 	auto Type::isBuiltIn()const->bool {
 		static const std::set<std::size_t> built_in_types = {
@@ -262,6 +255,7 @@ namespace aris::core{
 	Type::~Type() = default;
 	Type::Type(std::string_view name) :imp_(new Imp) { imp_->type_name_ = name; }
 
+	// built in types transfer method //
 	auto b2s(bool* v)->std::string { return *v ? "true" : "false"; }
 	auto bfs(bool* v, std::string_view str)->void {
 		std::string str_(str);
@@ -308,14 +302,33 @@ namespace aris::core{
 		return Instance(static_cast<t2>(*value.castToPointer<t1>()));
 	}
 
+	auto Instance::type()const->const Type* {
+		switch (imp_->data_.index()) {
+		case 0:return nullptr;
+		case 1:return Type::getType(std::get<Imp::Reference>(imp_->data_).type_hash_code_);
+		case 2:return Type::getType(std::get<Imp::Shared>(imp_->data_).type_hash_code_);
+		case 3:return Type::getType(std::get<Imp::Unique>(imp_->data_).type_hash_code_);
+		default:return nullptr;
+		}
+	}
+	auto Instance::ownership()const noexcept->Ownership {
+		static const Ownership owner_table[] = { Ownership::EMPTY,Ownership::REFERENCE,Ownership::SHARED,Ownership::UNIQUE };
+		return owner_table[imp_->data_.index()];
+	}
 	auto Instance::castToVoidPointer(const Type*t)const->void* {
-		auto raw_pointer = isReference() ? std::get<Imp::InstanceRef>(imp_->data_).data_ : std::get<Imp::InstancePtr>(imp_->data_).data_.get();
-		
-		if (type() == t) 
-			return raw_pointer;
+		void* raw_pointer{nullptr};
+
+		switch (imp_->data_.index()) {
+		case 0:raw_pointer = nullptr; return nullptr;
+		case 1:raw_pointer = std::get<Imp::Reference>(imp_->data_).data_; break;
+		case 2:raw_pointer = std::get<Imp::Shared>(imp_->data_).data_.get(); break;
+		case 3:raw_pointer = std::get<Imp::Unique>(imp_->data_).data_.get(); break;
+		}
+
+		if (type() == t) return raw_pointer;
 
 		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void* {
-			auto inherit_types = type->inheritTypes();
+			auto &inherit_types = type->inheritTypes();
 
 			for (Size i = 0; i < inherit_types.size(); ++i)	{
 				if (inherit_types[i] == t)
@@ -399,13 +412,6 @@ namespace aris::core{
 	auto Instance::get(std::string_view prop_name)->Instance {
 		return type()->propertyAt(prop_name)->get(this);
 	}
-	auto Instance::type()const->const Type* {
-		if (isEmpty()) return nullptr;
-		return Type::getType(imp_->type_info_->hash_code());
-	}
-	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
-	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
-	auto Instance::isSharedReference()const->bool { return imp_->data_.index() == 2; }
 	auto Instance::toString()->std::string { return isBasic() ? type()->imp_->to_string_(this) : ""; }
 	auto Instance::fromString(std::string_view str)->void { if(isBasic())type()->imp_->from_string_(this, str); }
 	auto Instance::size()->std::size_t{
@@ -425,19 +431,62 @@ namespace aris::core{
 		type()->imp_->array_data_->clear_func_(this);
 	}
 	Instance::Instance(const std::type_info *info, void* data):imp_(new Imp) {
-		imp_->type_info_ = info;
-		imp_->data_ = Imp::InstanceRef{ data };
+		imp_->data_ = Imp::Reference{ data, info->hash_code()};
 	}
-	Instance::Instance(const std::type_info *info, std::shared_ptr<void> data) : imp_(new Imp) {
-		imp_->type_info_ = info;
-		imp_->data_ = Imp::InstancePtr{ data };
+	Instance::Instance(const std::type_info* info, std::unique_ptr<void, void (*)(void*)> data) {
+		imp_->data_ = Imp::Unique{ std::move(data), info->hash_code() };
 	}
 	Instance::~Instance() = default;
 	Instance::Instance() :imp_(new Imp) {}
-	Instance::Instance(const Instance&) = default;
+	Instance::Instance(const Instance&other){
+		switch (other.ownership()) {
+		case Ownership::EMPTY:
+			break;
+		case Ownership::REFERENCE:
+			imp_->data_ = std::get<Imp::Reference>(other.imp_->data_);
+			break;
+		case Ownership::SHARED:
+			imp_->data_ = std::get<Imp::Shared>(other.imp_->data_);
+			break;
+		case Ownership::UNIQUE: {
+			auto type_hash_code = std::get<Imp::Unique>(other.imp_->data_).type_hash_code_;
+			auto shared = std::shared_ptr<void>(
+				std::get<Imp::Unique>(
+					const_cast<Instance&>(other).imp_->data_
+					)
+				.data_.release()
+			);
+
+			imp_->data_ = Imp::Shared{
+				shared,
+				type_hash_code
+			};
+			const_cast<Instance&>(other).imp_->data_ = std::get<Imp::Shared>(imp_->data_);
+			break; 
+		}
+		default:
+			return;
+		}
+		
+	}
 	Instance::Instance(Instance&&) noexcept = default;
+	Instance& Instance::operator=(const Instance&other) {
+		auto type_hash_code = std::get<Imp::Unique>(other.imp_->data_).type_hash_code_;
+		auto shared = std::shared_ptr<void>(
+			std::get<Imp::Unique>(
+				const_cast<Instance&>(other).imp_->data_
+				)
+			.data_.release()
+			);
 
-
+		imp_->data_ = Imp::Shared{
+			shared,
+			type_hash_code
+		};
+		const_cast<Instance&>(other).imp_->data_ = std::get<Imp::Shared>(imp_->data_);
+		return *this;
+	}
+	Instance& Instance::operator=(Instance&&)noexcept = default;
 
 	ARIS_REGISTRATION{
 		aris::core::class_<bool>("bool")

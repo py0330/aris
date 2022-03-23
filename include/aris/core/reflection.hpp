@@ -9,7 +9,6 @@
 #include <string_view>
 #include <variant>
 
-
 #include <aris_lib_export.h>
 #include <aris/ext/tinyxml2.h>
 #include <aris/core/object.hpp>
@@ -49,7 +48,7 @@ namespace aris::core{
 		auto fromString(Instance* obj, std::string_view str)->void;
 
 		~Property();
-		Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
+		Property(std::string_view name, Type *type_belong_to, std::size_t type_hash_code, bool accept_ptr, std::function<void(Instance *, Instance)>, std::function<Instance(Instance *)>);
 
 	private:
 		auto setToText(std::function<std::string(void*)>)->void;
@@ -124,7 +123,9 @@ namespace aris::core{
 
 		// # 实例化 # //
 		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
-		
+		auto make()const->Instance;
+
+
 		~Type();
 
 	private:
@@ -149,15 +150,19 @@ namespace aris::core{
 	};
 	class ARIS_API Instance{
 	public:
+		// 资源所有权，可能为【空】，【引用（不管理生命周期）】，【使用sharedPtr存储】，三种情况
+		enum class Ownership {
+			EMPTY,
+			REFERENCE,
+			SHARED,
+			UNIQUE
+		};
+		auto ownership()const noexcept->Ownership;
+
 		// 对应的类型
 		auto type()const->const Type*;
-		
-		// 资源所有权，可能为【空】，【引用（不管理生命周期）】，【使用sharedPtr存储】，三种情况
-		auto isEmpty()const->bool;
-		auto isReference()const->bool;
-		auto isSharedReference()const->bool;
 
-		// 资源类型 
+		// 资源类型
 		auto isBuiltIn()const->bool { return type()->isBuiltIn(); }
 		auto isBasic()const->bool { return type()->isBasic(); }
 		auto isClass()const->bool { return type()->isClass(); }
@@ -200,7 +205,8 @@ namespace aris::core{
 		// 绑定到左值引用, 多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t))){
+			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
+		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
@@ -208,15 +214,17 @@ namespace aris::core{
 		// 绑定到左值引用，非多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && !std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t))){
+			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
+		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
-		
+
 		// 根据右值来构造 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
-			:Instance(&typeid(t), std::make_shared<std::decay_t<T>>(std::move(t))){
+			:Instance(&typeid(t), std::unique_ptr<void, void (*)(void*)> (new T(std::move(t)), [](void* d)->void {delete static_cast<T*>(d); })) 
+		{
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
 			if (type() == nullptr) {
 				std::cout << std::string("Unrecognized type : ") + typeid(t).name() << std::endl;
@@ -228,14 +236,17 @@ namespace aris::core{
 		Instance();
 		Instance(const Instance&);
 		Instance(Instance&&)noexcept;
-
+		Instance& operator=(const Instance&);
+		Instance& operator=(Instance&&)noexcept;
 	private:
 		// 会考虑多继承的情况 //
 		auto castToVoidPointer(const Type* t)const->void*;
 		// 会考虑基础类型转换的情况 //
 		auto castToVoidValue(const Type* t)const->Instance;
 
-		Instance(const std::type_info *info, std::shared_ptr<void> data);
+		//typedef void(*DeleteFunc)(void*);
+		//Instance(const std::type_info *info, std::shared_ptr<void> data);
+		Instance(const std::type_info* info, std::unique_ptr<void, void (*)(void*)> data);
 		Instance(const std::type_info *info, void* data);
 
 		struct Imp;
@@ -327,7 +338,7 @@ namespace aris::core{
 			auto set = [v](Instance *obj, Instance value) { 
 				obj->castToPointer<Class_Type>()->*v = *value.castToPointer<T>(); 
 			};
-			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), false, set, get);
+			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
 
 			return *this;
 		}
@@ -344,7 +355,7 @@ namespace aris::core{
 
 			auto get = [v](Instance *obj)->Instance { return (obj->castToPointer<Class_Type>()->*v)(); };
 			auto set = [v](Instance *obj, Instance value) { (obj->castToPointer<Class_Type>()->*v)() = *value.castToPointer<T>(); };
-			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), false, set, get);
+			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
 
 			return *this;
 		}
@@ -363,7 +374,7 @@ namespace aris::core{
 
 			auto get = [g](Instance *obj)->Instance {	return (obj->castToPointer<Class_Type>()->*g)(); };
 			auto set = [s](Instance *obj, Instance value) { (obj->castToPointer<Class_Type>()->*s)(*value.castToPointer<T>()); };
-			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), false, set, get);
+			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
 
 			return *this;
 		}
@@ -384,7 +395,7 @@ namespace aris::core{
 
 			auto get = [g](Instance *obj)->Instance {	return (obj->castToPointer<Class_Type>()->*g)();	};
 			auto set = [s](Instance *obj, Instance value) {	(obj->castToPointer<Class_Type>()->*s)(value.castToPointer<T>()); };
-			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), true, set, get);
+			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), true, set, get);
 
 			return *this;
 		}
@@ -403,7 +414,7 @@ namespace aris::core{
 
 			auto get = [g](Instance *obj)->Instance {	return (*g)(obj->castToPointer<C>());	};
 			auto set = [s](Instance *obj, Instance value) {(*s)(obj->castToPointer<C>(), *value.castToPointer<T>()); };
-			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), false, set, get);
+			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
 
 			return *this;
 		}
