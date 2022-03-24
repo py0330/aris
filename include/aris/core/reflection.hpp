@@ -122,14 +122,14 @@ namespace aris::core{
 		auto propertyAt(std::string_view name)const->Property*;
 
 		// # 实例化 # //
-		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
-		auto make()const->Instance;
-
+		//auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
+		auto create()const->Instance;
 
 		~Type();
 
 	private:
-		using DefaultCtor = std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()>;
+		using DefaultCtor = void*(*)();
+		using DeleteFunc = void(*)(void*);
 		using CastFunc = std::function<void*(void*)>;
 
 		Type(std::string_view name);
@@ -138,7 +138,7 @@ namespace aris::core{
 		auto text(std::function<std::string(Instance*)> to_string, std::function<void(Instance*, std::string_view)> from_string)->void;
 		auto as_array(bool,std::function<std::size_t(Instance*)>,std::function<Instance(Instance*, std::size_t)>, std::function<void(Instance*, const Instance&)>,std::function<void(Instance*)> )->void;
 
-		static auto registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*;
+		static auto registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor, DeleteFunc dtor)->Type*;
 		static auto alias_impl(Type*, std::string_view alias_name)->void;
 
 		template<typename T> friend class class_;
@@ -150,7 +150,7 @@ namespace aris::core{
 	};
 	class ARIS_API Instance{
 	public:
-		// 资源所有权，可能为【空】，【引用（不管理生命周期）】，【使用sharedPtr存储】，三种情况
+		// 资源所有权，可能为【空】，【引用（不管理生命周期）】，【使用sharedPtr存储】，【使用uniquePtr存储】四种情况
 		enum class Ownership {
 			EMPTY,
 			REFERENCE,
@@ -158,6 +158,7 @@ namespace aris::core{
 			UNIQUE
 		};
 		auto ownership()const noexcept->Ownership;
+		auto release()->void*;
 
 		// 对应的类型
 		auto type()const->const Type*;
@@ -205,7 +206,7 @@ namespace aris::core{
 		// 绑定到左值引用, 多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
+			:Instance(typeid(t).hash_code(), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
@@ -214,7 +215,7 @@ namespace aris::core{
 		// 绑定到左值引用，非多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && !std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
-			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
+			:Instance(typeid(t).hash_code(), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
@@ -223,7 +224,7 @@ namespace aris::core{
 		// 根据右值来构造 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
-			:Instance(&typeid(t), std::unique_ptr<void, void (*)(void*)> (new T(std::move(t)), [](void* d)->void {delete static_cast<T*>(d); })) 
+			:Instance(typeid(t).hash_code(), std::unique_ptr<void, void (*)(void*)>(new T(std::move(t)), [](void* d)->void {delete static_cast<T*>(d); }))
 		{
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
 			if (type() == nullptr) {
@@ -246,12 +247,13 @@ namespace aris::core{
 
 		//typedef void(*DeleteFunc)(void*);
 		//Instance(const std::type_info *info, std::shared_ptr<void> data);
-		Instance(const std::type_info* info, std::unique_ptr<void, void (*)(void*)> data);
-		Instance(const std::type_info *info, void* data);
+		Instance(std::size_t type_hash_code, std::unique_ptr<void, void (*)(void*)> data);
+		Instance(std::size_t type_hash_code, void* data);
 
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 
+		friend class Type;
 		friend class Property;
 		template<typename Class_Type> friend class class_;
 	};
@@ -262,18 +264,15 @@ namespace aris::core{
 		// 注册普通类型：要求1）不为纯虚类型；2）有默认构造函数；3）可析构 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr){
-			type_ = Type::registerType(typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{
-				auto f = [](void const * data)->void{	delete static_cast<Class_Type const*>(data); };
-				auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
-				Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
-				return std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>(std::move(ptr), ins);
-			});
+			auto ctor = []()->void* { return new Class_Type; };
+			auto dtor = [](void* data)->void { delete static_cast<Class_Type*>(data);	};
+			type_ = Type::registerType(typeid(Class_Type).hash_code(), name, ctor, dtor);
 		}
 
 		// 注册其他类型：当不满足上述三条时使用 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr){
-			type_ = Type::registerType(typeid(Class_Type).hash_code(), name, nullptr);
+			type_ = Type::registerType(typeid(Class_Type).hash_code(), name, nullptr, nullptr);
 		}
 
 		// 别名 //
@@ -305,7 +304,7 @@ namespace aris::core{
 		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
 			auto size_func = [](Instance* ins)->std::size_t	{return ins->castToPointer<C>()->size();	};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castToPointer<C>()->at(id);};
-			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castToPointer<C>()->push_back(value.castToPointer<typename C::value_type>());	};
+			auto push_back_func = [](Instance* ins, const Instance& value)->void {ins->castToPointer<C>()->push_back(value.castToPointer<typename C::value_type>()); const_cast<Instance&>(value).release(); };
 			auto clear_func = [](Instance* ins)->void{	ins->castToPointer<C>()->clear();	};
 			type_->as_array(true, size_func, at_func, push_back_func, clear_func);
 			return *this;
@@ -393,8 +392,8 @@ namespace aris::core{
 		{
 			using T = std::decay_t<decltype((((C*)(nullptr))->*g)())>;
 
-			auto get = [g](Instance *obj)->Instance {	return (obj->castToPointer<Class_Type>()->*g)();	};
-			auto set = [s](Instance *obj, Instance value) {	(obj->castToPointer<Class_Type>()->*s)(value.castToPointer<T>()); };
+			auto get = [g](Instance *obj)->Instance { return (obj->castToPointer<Class_Type>()->*g)(); };
+			auto set = [s](Instance* obj, Instance value) {	(obj->castToPointer<Class_Type>()->*s)(value.castToPointer<T>()); };
 			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), true, set, get);
 
 			return *this;

@@ -218,7 +218,7 @@ int main(){
 		std::cout << std::setw(25) << "data after reflection:" << basic1.name_ << "--" << basic1.age_ << std::endl;
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
-		auto[ptr, ins2] = aris::core::Type::getType("Basic")->create();
+		auto ins2 = aris::core::Type::getType("Basic")->create();
 		ins2.fromString("bob_44");
 		Basic* basic2_ptr = ins2.castToPointer<Basic>();
 		std::cout << std::setw(25) << "data created:" << basic2_ptr->name_ << "--" << basic2_ptr->age_ << std::endl;
@@ -258,7 +258,7 @@ int main(){
 		std::unique_ptr<BaseClass> value4_insert(new BaseClass);
 		value4_insert->member = 1234567;
 		value4_insert->referenceMember() = "refer";
-		ins.set("value4", *value4_insert.release());  // ins 负责插入对象的生命周期
+		ins.set("value4", value4_insert.release());  // ins 负责插入对象的生命周期
 		ins.set("value5", 12.28);
 		std::cout << std::setw(25) << "write result:" << std::endl
 			<< std::setw(25) << "member:" << value1.member << std::endl
@@ -270,7 +270,7 @@ int main(){
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
 		std::cout << "-------------------" << std::endl;
-		auto[ptr, ins2] = aris::core::Type::getType("ChildClass")->create();
+		auto ins2 = aris::core::Type::getType("ChildClass")->create();
 		ins2.set("member", 1234);
 		ins2.set("referenceMember", std::string("cccc")); // set的类型必须和注册的类型一样
 		ins2.set("value3", 6.25);
@@ -299,8 +299,8 @@ int main(){
 		aris::core::fromXmlString(value3, str);
 
 		// 如果想手动管理所创建实例的生命周期，需release ptr //
-		auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
-		delete base_ptr;
+		//auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
+		//delete base_ptr;
 	}
 
 	//## 数组类型 ##//
@@ -348,7 +348,7 @@ int main(){
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
 		std::cout << "-------------------" << std::endl;
-		auto[ptr, ins2] = aris::core::Type::getType("VecBase")->create();
+		auto ins2 = aris::core::Type::getType("VecBase")->create();
 		ins2.push_back(value_insert);
 		ins2.push_back(value_insert);
 		std::vector<BaseClass>* basic2_ptr = ins2.castToPointer<std::vector<BaseClass>>();
@@ -367,8 +367,8 @@ int main(){
 
 
 		// 如果想手动管理所创建实例的生命周期，需release ptr //
-		auto base_ptr = reinterpret_cast<std::vector<BaseClass>*>(ptr.release());
-		delete base_ptr;
+		//auto base_ptr = reinterpret_cast<std::vector<BaseClass>*>(ptr.release());
+		//delete base_ptr;
 	}
 
 	//## 多继承 ##//
@@ -403,7 +403,7 @@ int main(){
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
 		std::cout << "-------------------" << std::endl;
-		auto [ptr, ins2] = aris::core::Type::getType("MultiInherit")->create();
+		auto ins2 = aris::core::Type::getType("MultiInherit")->create();
 		ins2.set("member", 1234);
 		ins2.set("referenceMember", std::string("cccc")); // set的类型必须和注册的类型一样
 		ins2.set("member2", (float)6.25);
@@ -424,8 +424,8 @@ int main(){
 		aris::core::fromXmlString(value3, str);
 
 		// 如果想手动管理所创建实例的生命周期，需release ptr //
-		auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
-		delete base_ptr;
+		//auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
+		//delete base_ptr;
 	}
 	
 	ChildClass c;

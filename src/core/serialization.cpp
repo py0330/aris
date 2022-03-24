@@ -127,12 +127,12 @@ namespace aris::core{
 					THROW_FILE_LINE(std::string("XML type:") + ele->Name() + "  instance type:" + std::string(prop->type()->name()));
 
 				auto c_type = typename_xml2c(*found);
-				auto [ptr, prop_ins] = Type::getType(c_type)->create();
+				auto prop_ins = Type::getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
 				prop->set(&ins, prop_ins);
 				child_eles.erase(found);
 				iter = props.erase(iter);
-				if (prop->acceptPtr()) ptr.release();
+				//if (prop->acceptPtr()) ptr.release();
 			}
 			else
 				++iter;
@@ -152,10 +152,10 @@ namespace aris::core{
 			}
 
 			auto c_type = typename_xml2c(*found);
-			auto [ptr, prop_ins] = Type::getType(c_type)->create();
+			auto prop_ins = Type::getType(c_type)->create();
 			from_xml_ele(prop_ins, *found);
 			prop->set(&ins, prop_ins);
-			if(prop->acceptPtr())ptr.release();
+			//if(prop->acceptPtr())ptr.release();
 			child_eles.erase(found);
 		}
 
@@ -165,10 +165,10 @@ namespace aris::core{
 				auto type = Type::getType(typename_xml2c(child_ele));
 				if (!type) THROW_FILE_LINE("unrecognized type in xml : " + std::string(child_ele->Name()));
 
-				auto[ptr, attr_ins] = type->create();
+				auto attr_ins = type->create();
 				from_xml_ele(attr_ins, child_ele);
 				ins.push_back(attr_ins);
-				if (ins.type()->isRefArray())ptr.release();
+				//if (ins.type()->isRefArray())ptr.release();
 			}
 		}
 	}
@@ -281,7 +281,7 @@ namespace aris::core{
 				}
 
 				// 找到对应的attr，并赋值
-				auto [ptr, prop_ins] = prop->type()->create();
+				auto prop_ins = prop->type()->create();
 				prop_ins.fromString(found->value().get<std::string>());
 				prop->set(&ins, prop_ins);
 				child_eles.erase(found);
@@ -300,12 +300,12 @@ namespace aris::core{
 					THROW_FILE_LINE(std::string("Json type:") + (*found).key() + "  instance type:" + std::string(prop->type()->name()));
 
 				auto c_type = typename_json2c((*found).key());
-				auto [ptr, prop_ins] = Type::getType(c_type)->create();
+				auto prop_ins = Type::getType(c_type)->create();
 				from_json(prop_ins, (*found).value());
 				prop->set(&ins, prop_ins);
 				child_eles.erase(found);
 				iter = props.erase(iter);
-				if (prop->acceptPtr()) ptr.release();
+				//if (prop->acceptPtr()) ptr.release();
 			}
 			else
 				++iter;
@@ -325,10 +325,10 @@ namespace aris::core{
 			}
 
 			auto c_type = typename_json2c((*found).key());
-			auto [ptr, prop_ins] = Type::getType(c_type)->create();
+			auto prop_ins = Type::getType(c_type)->create();
 			from_json(prop_ins, (*found).value());
 			prop->set(&ins, prop_ins);
-			if (prop->acceptPtr())ptr.release();
+			//if (prop->acceptPtr())ptr.release();
 			child_eles.erase(found);
 		}
 
@@ -343,10 +343,10 @@ namespace aris::core{
 				auto type = Type::getType(typename_json2c(ele.key()));
 				if (!type) THROW_FILE_LINE("unrecognized type in json : " + ele.key());
 
-				auto[ptr, attr_ins] = type->create();
+				auto attr_ins = type->create();
 				from_json(attr_ins, *ele);
 				ins.push_back(attr_ins);
-				if (ins.type()->isRefArray())ptr.release();
+				//if (ins.type()->isRefArray())ptr.release();
 			}
 		}
 	}

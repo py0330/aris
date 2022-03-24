@@ -59,8 +59,9 @@ namespace aris::core{
 		std::vector<const Type *> inherit_types_;
 		std::vector<std::function<void*(void*)>> inherit_cast_vec_; // 将自己cast成基类的函数
 
-		// ctor //
-		DefaultCtor default_ctor_;
+		// ctor & dtor //
+		DefaultCtor default_ctor_{ nullptr };
+		DeleteFunc dtor_{ nullptr };
 
 		// to text // 
 		std::function<std::string(Instance*)> to_string_;
@@ -153,7 +154,7 @@ namespace aris::core{
 	}
 	auto Property::fromString(Instance* obj, std::string_view str)->void {
 		if ((!type()->isBasic()) || (!obj->castToVoidPointer(imp_->type_belong_to_)))return;
-		auto [ptr, ins] = type()->create();
+		auto ins = type()->create();
 		imp_->from_str_func_ ? imp_->from_str_func_(ins.castToVoidPointer(type()), str) : type()->imp_->from_string_(&ins, str);
 		set(obj, ins);
 	}
@@ -169,13 +170,14 @@ namespace aris::core{
 		imp_->get_ = get;
 	}
 
-	auto Type::registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*{
+	auto Type::registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor, DeleteFunc dtor)->Type*{
 		auto[ins, ok] = reflect_types_raw().emplace(std::make_pair(hash_code, Type(name)));
 		if (!ok) THROW_FILE_LINE("class already exist");
 		auto[ins2, ok2] = Imp::reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
 		if (!ok2) THROW_FILE_LINE("class name already exist");
 
 		ins->second.imp_->default_ctor_ = ctor;
+		ins->second.imp_->dtor_ = dtor;
 		ins->second.imp_->hash_code_ = hash_code;
 		return &ins->second;
 	}
@@ -192,8 +194,9 @@ namespace aris::core{
 		auto found = Imp::reflect_types().find(hashcode);
 		return found == Imp::reflect_types().end() ? nullptr : &found->second;
 	}
-	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return imp_->default_ctor_();}
-	auto Type::make()const->Instance { return imp_->default_ctor_(); }
+	auto Type::create()const->Instance {
+		return Instance(imp_->hash_code_, std::unique_ptr<void, void(*)(void*)>(imp_->default_ctor_(), imp_->dtor_));
+	}
 	auto Type::name()const->std::string_view { return imp_->type_name_; };
 	auto Type::isBuiltIn()const->bool {
 		static const std::set<std::size_t> built_in_types = {
@@ -315,6 +318,10 @@ namespace aris::core{
 		static const Ownership owner_table[] = { Ownership::EMPTY,Ownership::REFERENCE,Ownership::SHARED,Ownership::UNIQUE };
 		return owner_table[imp_->data_.index()];
 	}
+	auto Instance::release()->void* {
+		if (ownership() == Ownership::UNIQUE) return std::get<Imp::Unique>(imp_->data_).data_.release();
+		else THROW_FILE_LINE("Unable to release");
+	}
 	auto Instance::castToVoidPointer(const Type*t)const->void* {
 		void* raw_pointer{nullptr};
 
@@ -430,11 +437,11 @@ namespace aris::core{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->imp_->array_data_->clear_func_(this);
 	}
-	Instance::Instance(const std::type_info *info, void* data):imp_(new Imp) {
-		imp_->data_ = Imp::Reference{ data, info->hash_code()};
+	Instance::Instance(std::size_t type_hash_code, void* data):imp_(new Imp) {
+		imp_->data_ = Imp::Reference{ data, type_hash_code };
 	}
-	Instance::Instance(const std::type_info* info, std::unique_ptr<void, void (*)(void*)> data) {
-		imp_->data_ = Imp::Unique{ std::move(data), info->hash_code() };
+	Instance::Instance(std::size_t type_hash_code, std::unique_ptr<void, void (*)(void*)> data) {
+		imp_->data_ = Imp::Unique{ std::move(data), type_hash_code };
 	}
 	Instance::~Instance() = default;
 	Instance::Instance() :imp_(new Imp) {}
