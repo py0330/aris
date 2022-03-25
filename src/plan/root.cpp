@@ -51,8 +51,9 @@ namespace aris::plan{
 	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint64Param(std::string_view param_name)->std::uint64_t { return std::stoull(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::matrixParam(std::string_view param_name)->aris::core::Matrix {
+		static aris::core::Calculator cal_;
 		auto &value = cmdParams().at(param_name);
-		auto mat = model()->calculator().calculateExpression(std::string(value));
+		auto mat = cal_.calculateExpression(std::string(value));
 		return std::any_cast<double>(&mat.second) ? aris::core::Matrix(std::any_cast<double>(mat.second)) : std::any_cast<aris::core::Matrix&>(mat.second);
 	}
 	auto Plan::matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix {
