@@ -263,7 +263,7 @@ namespace aris::core{
 		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 		cmd_str = trim_left(cmd_str);
 
-		if (cmd != name()) THROW_FILE_LINE("invalid command name: cmd_str and command name not match");
+		if (cmd != name()) THROW_FILE_LINE("invalid command name: cmd_str and command name not match:");
 
 		Command::Imp::reset(this);
 		for (; !cmd_str.empty();) {

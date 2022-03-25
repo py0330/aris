@@ -145,7 +145,7 @@ namespace aris::core{
 	auto Property::name()const->std::string { return imp_->name_; };
 	auto Property::type()->const Type* { return Type::getType(imp_->type_hash_code_); }
 	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
-	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
+	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, std::move(arg)); }
 	auto Property::get(Instance *ins)const->Instance { return imp_->get_(ins); }
 	auto Property::toString(Instance* obj)->std::string {
 		if ((!type()->isBasic()) || (!obj->castToVoidPointer(imp_->type_belong_to_)))return "";
@@ -414,7 +414,7 @@ namespace aris::core{
 						(*this);
 	}
 	auto Instance::set(std::string_view prop_name, Instance arg)->void {
-		type()->propertyAt(prop_name)->set(this, arg);
+		type()->propertyAt(prop_name)->set(this, std::move(arg));
 	}
 	auto Instance::get(std::string_view prop_name)->Instance {
 		return type()->propertyAt(prop_name)->get(this);

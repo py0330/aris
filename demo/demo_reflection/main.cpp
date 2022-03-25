@@ -258,7 +258,7 @@ int main(){
 		std::unique_ptr<BaseClass> value4_insert(new BaseClass);
 		value4_insert->member = 1234567;
 		value4_insert->referenceMember() = "refer";
-		ins.set("value4", value4_insert.release());  // ins 负责插入对象的生命周期
+		ins.set("value4", std::move(*value4_insert.release()));  // ins 负责插入对象的生命周期
 		ins.set("value5", 12.28);
 		std::cout << std::setw(25) << "write result:" << std::endl
 			<< std::setw(25) << "member:" << value1.member << std::endl
@@ -277,7 +277,7 @@ int main(){
 		std::unique_ptr<BaseClass> value4_insert2(new BaseClass);
 		value4_insert2->member = 567;
 		value4_insert2->referenceMember() = "refer2";
-		ins2.set("value4", *value4_insert2.release());  // ins 负责插入对象的生命周期
+		ins2.set("value4", std::move(*value4_insert2.release()));  // ins 负责插入对象的生命周期
 		ins2.set("value5", 12.2833);
 
 		ChildClass* created_ptr = ins2.castToPointer<ChildClass>();

@@ -129,7 +129,7 @@ namespace aris::core{
 				auto c_type = typename_xml2c(*found);
 				auto prop_ins = Type::getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
-				prop->set(&ins, prop_ins);
+				prop->set(&ins, std::move(prop_ins));
 				child_eles.erase(found);
 				iter = props.erase(iter);
 				//if (prop->acceptPtr()) ptr.release();
@@ -154,7 +154,7 @@ namespace aris::core{
 			auto c_type = typename_xml2c(*found);
 			auto prop_ins = Type::getType(c_type)->create();
 			from_xml_ele(prop_ins, *found);
-			prop->set(&ins, prop_ins);
+			prop->set(&ins, std::move(prop_ins));
 			//if(prop->acceptPtr())ptr.release();
 			child_eles.erase(found);
 		}
@@ -167,7 +167,7 @@ namespace aris::core{
 
 				auto attr_ins = type->create();
 				from_xml_ele(attr_ins, child_ele);
-				ins.push_back(attr_ins);
+				ins.push_back(std::move(attr_ins));
 				//if (ins.type()->isRefArray())ptr.release();
 			}
 		}
@@ -302,7 +302,7 @@ namespace aris::core{
 				auto c_type = typename_json2c((*found).key());
 				auto prop_ins = Type::getType(c_type)->create();
 				from_json(prop_ins, (*found).value());
-				prop->set(&ins, prop_ins);
+				prop->set(&ins, std::move(prop_ins));
 				child_eles.erase(found);
 				iter = props.erase(iter);
 				//if (prop->acceptPtr()) ptr.release();
@@ -327,7 +327,7 @@ namespace aris::core{
 			auto c_type = typename_json2c((*found).key());
 			auto prop_ins = Type::getType(c_type)->create();
 			from_json(prop_ins, (*found).value());
-			prop->set(&ins, prop_ins);
+			prop->set(&ins, std::move(prop_ins));
 			//if (prop->acceptPtr())ptr.release();
 			child_eles.erase(found);
 		}
@@ -345,7 +345,7 @@ namespace aris::core{
 
 				auto attr_ins = type->create();
 				from_json(attr_ins, *ele);
-				ins.push_back(attr_ins);
+				ins.push_back(std::move(attr_ins));
 				//if (ins.type()->isRefArray())ptr.release();
 			}
 		}

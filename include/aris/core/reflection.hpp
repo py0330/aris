@@ -393,7 +393,7 @@ namespace aris::core{
 			using T = std::decay_t<decltype((((C*)(nullptr))->*g)())>;
 
 			auto get = [g](Instance *obj)->Instance { return (obj->castToPointer<Class_Type>()->*g)(); };
-			auto set = [s](Instance* obj, Instance value) {	(obj->castToPointer<Class_Type>()->*s)(value.castToPointer<T>()); };
+			auto set = [s](Instance* obj, Instance value) {	(obj->castToPointer<Class_Type>()->*s)(value.castToPointer<T>()); value.release(); };
 			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), true, set, get);
 
 			return *this;

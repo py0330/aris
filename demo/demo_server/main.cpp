@@ -55,8 +55,8 @@ int main(int argc, char *argv[]){
 
 	
 
-	cs.resetModel(new aris::dynamic::Model);
-	cs.resetPlanRoot(new aris::plan::PlanRoot);
+	//cs.resetModel(new aris::dynamic::Model);
+	//cs.resetPlanRoot(new aris::plan::PlanRoot);
 	//cs.resetModel(new aris::dynamic::Model);
 
 	auto str = aris::core::toXmlString(cs);
