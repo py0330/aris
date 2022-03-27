@@ -51,8 +51,9 @@ namespace aris::plan{
 	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::uint64Param(std::string_view param_name)->std::uint64_t { return std::stoull(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::matrixParam(std::string_view param_name)->aris::core::Matrix {
+		static aris::core::Calculator cal_;
 		auto &value = cmdParams().at(param_name);
-		auto mat = model()->calculator().calculateExpression(std::string(value));
+		auto mat = cal_.calculateExpression(std::string(value));
 		return std::any_cast<double>(&mat.second) ? aris::core::Matrix(std::any_cast<double>(mat.second)) : std::any_cast<aris::core::Matrix&>(mat.second);
 	}
 	auto Plan::matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix {
@@ -65,7 +66,7 @@ namespace aris::plan{
 	auto Plan::parse(std::string_view cmd_str)->void {
 		imp_->cmd_str_.resize(cmd_str.size());
 		std::copy(cmd_str.begin(), cmd_str.end(), imp_->cmd_str_.begin());
-		std::tie(imp_->cmd_name_, imp_->cmd_params_) = command().parse(cmd_str);
+		std::tie(imp_->cmd_name_, imp_->cmd_params_) = command().parse(std::string_view(imp_->cmd_str_.data(), imp_->cmd_str_.size()));
 	}
 	
 	auto Plan::cmdString()noexcept->std::string_view { return std::string_view(imp_->cmd_str_.data(), imp_->cmd_str_.size()); }
