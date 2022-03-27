@@ -66,7 +66,7 @@ namespace aris::plan{
 	auto Plan::parse(std::string_view cmd_str)->void {
 		imp_->cmd_str_.resize(cmd_str.size());
 		std::copy(cmd_str.begin(), cmd_str.end(), imp_->cmd_str_.begin());
-		std::tie(imp_->cmd_name_, imp_->cmd_params_) = command().parse(cmd_str);
+		std::tie(imp_->cmd_name_, imp_->cmd_params_) = command().parse(std::string_view(imp_->cmd_str_.data(), imp_->cmd_str_.size()));
 	}
 	
 	auto Plan::cmdString()noexcept->std::string_view { return std::string_view(imp_->cmd_str_.data(), imp_->cmd_str_.size()); }
