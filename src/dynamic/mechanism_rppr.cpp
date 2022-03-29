@@ -23,7 +23,7 @@ namespace aris::dynamic {
 		const double &a = param[0];
 		const double &b = param[1];
 
-		input[0] = std::atan2(ee_xyza[0], ee_xyza[1]);
+		input[0] = std::atan2(ee_xyza[1], ee_xyza[0]);
 		input[1] = ee_xyza[2] - a;
 		input[2] = std::sqrt(ee_xyza[1] * ee_xyza[1] + ee_xyza[0] * ee_xyza[0]) - b;
 		input[3] = ee_xyza[3] - input[0];
