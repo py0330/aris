@@ -55,7 +55,7 @@ namespace aris::core{
 				else{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
-					insert_ele->SetAttribute("__name__", prop->name().data());
+					insert_ele->SetAttribute("__prop_name__", prop->name().data());
 					to_xml_ele(v, insert_ele);
 				}
 			}
@@ -118,7 +118,7 @@ namespace aris::core{
 
 			// non-basic type //
 			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
-				return ele->Attribute("__name__") && std::string_view(prop->name()) == ele->Attribute("__name__");
+				return ele->Attribute("__prop_name__") && std::string_view(prop->name()) == ele->Attribute("__prop_name__");
 				});
 
 			if (found != child_eles.end()) {
