@@ -121,7 +121,6 @@ namespace aris::server
 		auto executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
 		auto executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
 		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;
-		auto currentCollectPlan()->std::shared_ptr<aris::plan::Plan>;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;

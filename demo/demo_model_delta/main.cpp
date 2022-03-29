@@ -249,7 +249,7 @@ int main(){
 		auto m2 = createModelPrpr(param2);
 
 		//////////////////// 反解 ////////////////////
-		double xyz_theta2[4]{ 0.61, 0.85, 0.3, 0.1 };
+		double xyz_theta2[4]{ 1, 0, 1, 0 };
 		m2->setOutputPos(xyz_theta2);
 		if (m2->inverseKinematics())
 			std::cout << "failed" << std::endl;

@@ -56,11 +56,13 @@ namespace aris::server{
 		struct InternalData{
 			std::shared_ptr<aris::plan::Plan> plan_;
 			std::function<void(aris::plan::Plan&)> post_callback_;
-			bool has_prepared_{ false }, has_run_{ false };
+			bool has_prepared_{ false };
 
 			~InternalData()	{
+				std::cout << "internal dctor" << std::endl;
+				
 				// step 4a. 同步收集4a //
-				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))){
+				if (has_prepared_ && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))){
 					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan_->cmdId());
 					plan_->collectNrt();
 				}
@@ -831,7 +833,6 @@ namespace aris::server{
 		// 添加命令 //
 		for (auto &inter : need_run_internal){
 			imp_->internal_data_queue_[cmd_end++ % Imp::CMD_POOL_SIZE] = inter;
-			inter->has_run_ = true;
 			ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server execute cmd %ji" }, inter->plan_->cmdId());
 		}
 		imp_->cmd_end_.store(cmd_end);
@@ -929,8 +930,6 @@ namespace aris::server{
 		imp_->cmd_now_.store(0);
 		imp_->cmd_end_.store(0);
 		imp_->cmd_collect_.store(0);
-
-
 	}
 	auto ControlServer::start()->void{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -980,14 +979,9 @@ namespace aris::server{
 
 					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { ss.str().data() });
 
-					// step 4b&5b, 不能用RAII，因为reset的时候先减智能指针引用计数，此时currentCollectPlan 无法再获取到 internal_data了 //
-					if (!(plan.option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)){
-						ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan.cmdId());
-						plan.collectNrt();
-					}
-					aris::server::ControlServer::instance().imp_->cmd_collect_++;
-					std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
+					// step 4b&5b //
 					internal_data.reset();
+					aris::server::ControlServer::instance().imp_->cmd_collect_++;
 				}
 				else{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -1028,15 +1022,6 @@ namespace aris::server{
 
 		auto execute_internal = imp_->internal_data_queue_[imp_->cmd_now_.load() % Imp::CMD_POOL_SIZE];
 		return execute_internal ? execute_internal->plan_ : std::shared_ptr<aris::plan::Plan>();
-	}
-	auto ControlServer::currentCollectPlan()->std::shared_ptr<aris::plan::Plan>
-	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
-		if (!imp_->is_running_)
-			LOG_AND_THROW({ "failed to get current TARGET, because ControlServer is not running" });
-
-		auto collect_internal = imp_->internal_data_queue_[imp_->cmd_collect_.load() % Imp::CMD_POOL_SIZE];
-		return collect_internal ? collect_internal->plan_ : std::shared_ptr<aris::plan::Plan>();
 	}
 	auto ControlServer::getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *, std::any&)>& get_func, std::any& data)->void
 	{
