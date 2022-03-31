@@ -68,7 +68,6 @@ namespace aris::dynamic{
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 }, mf_{ 0 };
 		double loc_cm_I[6]{ 0,0,0,0,0,1 };
-		int motor_id_{ -1 };
 	};
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
 	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
@@ -235,7 +234,6 @@ namespace aris::dynamic{
 		}
 	}
 	auto GeneralMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
-	
 	auto GeneralMotion::v()const noexcept->const double* { return imp_->mvs_; }
 	auto GeneralMotion::updV() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
 	auto GeneralMotion::a()const noexcept->const double* { return imp_->mas_; }
