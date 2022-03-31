@@ -19,14 +19,31 @@ void test_seven_axis_inverse_solver(){
 	param.tool0_pe[2] = 0.2205;
 
 	auto m = aris::dynamic::createModelSevenAxis(param);
+	
+	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
+	double result[7];
+
+	// 直接调用函数设置末端，之后计算反解 //
+	m->setOutputPos(output);
+	m->inverseKinematics();
+	m->getInputPos(result);
+	aris::dynamic::dsp(1, 7, result);
+
+	// 使用ee设置末端，之后计算反解 //
+	m->generalMotionPool()[0].setP(output);  // 末端
+	m->generalMotionPool()[1].setP(output + 6);  // 臂角
+	m->inverseKinematics();
+	m->getInputPos(result);
+	aris::dynamic::dsp(1, 7, result);
+	
 	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
 	m->init();
-	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
+	
 	m->setOutputPos(output);
 
 	for (int i = 0; i < 9; ++i)	{
 		double result[7], zeros[7]{0,0,0,0,0,0,0}, input[7];
-		
+
 		m->setOutputPos(output);
 		m->inverseKinematics();
 		m->getInputPos(input);
