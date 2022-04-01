@@ -101,8 +101,6 @@ namespace aris::dynamic{
 		auto& arm_mak_j = p3.addMarker("arm_mak_j");
 		auto& arm = model->generalMotionPool().add<ArmAngleMotion>("arm_angle", j7.makI(), &arm_mak_j, false);
 
-		dsp(4, 4, *j3.makI()->pm());
-
 		// change robot pose wrt ground //
 		double robot_pm[16];
 		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
