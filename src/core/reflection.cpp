@@ -480,7 +480,7 @@ namespace aris::core{
 			break;
 		}
 		default:
-			return;
+			return *this;
 		}
 		
 		
