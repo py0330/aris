@@ -41,7 +41,7 @@ namespace aris::dynamic{
 
 		virtual ~ArmAngleMotion();
 		explicit ArmAngleMotion(const std::string& name = "arm_angle_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);
-		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(ArmAngleMotion);
+		ARIS_DECLARE_BIG_FOUR(ArmAngleMotion);
 
 	private:
 		struct Imp;
@@ -65,7 +65,7 @@ namespace aris::dynamic{
 
 		virtual ~SevenAxisInverseKinematicSolver();
 		explicit SevenAxisInverseKinematicSolver();
-		ARIS_DECLARE_BIG_FOUR_NOEXCEPT(SevenAxisInverseKinematicSolver);
+		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver);
 
 	private:
 		struct Imp;

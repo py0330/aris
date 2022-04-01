@@ -244,12 +244,12 @@ int main(){
 	////////////////////////////////////////// prpr ////////////////////////////////////
 	{
 		aris::dynamic::PrprParam param2;
-		param2.a = 1;
-		param2.b = 1;
+		param2.a = 0.923;
+		param2.b = 0.510;
 		auto m2 = createModelPrpr(param2);
 
 		//////////////////// 反解 ////////////////////
-		double xyz_theta2[4]{ 1, 0, 1, 0 };
+		double xyz_theta2[4]{ 0.584, -0.007, 0.985, 267/180*aris::PI };
 		m2->setOutputPos(xyz_theta2);
 		if (m2->inverseKinematics())
 			std::cout << "failed" << std::endl;

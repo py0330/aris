@@ -199,31 +199,30 @@ namespace aris::control
 		auto virtual targetToq()const->double override;
 		auto virtual offsetVel()const->double override;
 		auto virtual offsetCur()const->double override;
-		// require pdo 0x6040 //
+		
 		auto virtual setControlWord(std::uint16_t control_word)->void override;
-		// require pdo 0x6060 //
 		auto virtual setModeOfOperation(std::uint8_t mode)->void override;
-		// require pdo 0x607A //
+		
 		auto virtual setTargetPos(double pos)->void override;
-		// require pdo 0x60FF //
+		
 		auto virtual setTargetVel(double vel)->void override;
-		// require pdo 0x6071 //
+		
 		auto virtual setTargetToq(double toq)->void override;
-		// require pdo 0x60B1 //
+		
 		auto virtual setOffsetVel(double vel)->void override;
-		// require pdo 0x60B2 //
+		
 		auto virtual setOffsetToq(double toq)->void override;
-		// require pdo 0x6041 //
+		
 		auto virtual statusWord()const->std::uint16_t override;
-		// require pdo 0x6061 //
+		
 		auto virtual modeOfDisplay()const->std::uint8_t override;
-		// require pdo 0x6064 //
+		
 		auto virtual actualPos()const->double override;
-		// require pdo 0x606C //
+		
 		auto virtual actualVel()const->double override;
-		// require pdo 0x6077 //
+		
 		auto virtual actualToq()const->double override;
-		// require pdo 0x6078 //
+		
 		auto virtual actualCur()const->double override;
 
 		// require pdo 0x6040 0x6041 // 
@@ -237,6 +236,97 @@ namespace aris::control
 
 		auto slave()->EthercatSlave*;
 		auto setSlave(EthercatSlave*)->void;
+
+		// default: 0x6040 //
+		auto controlWordIndex()const noexcept->std::uint16_t;
+		auto setControlWordIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto controlWordSubindex()const noexcept->std::uint8_t;
+		auto setControlWordSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6060 //
+		auto modeOfOperationIndex()const noexcept->std::uint16_t;
+		auto setModeOfOperationIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto modeOfOperationSubindex()const noexcept->std::uint8_t;
+		auto setModeOfOperationSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x607A //
+		auto targetPosIndex()const noexcept->std::uint16_t;
+		auto setTargetPosIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto targetPosSubindex()const noexcept->std::uint8_t;
+		auto setTargetPosSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x60FF //
+		auto targetVelIndex()const noexcept->std::uint16_t;
+		auto setTargetVelIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto targetVelSubindex()const noexcept->std::uint8_t;
+		auto setTargetVelSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6071 //
+		auto targetToqIndex()const noexcept->std::uint16_t;
+		auto setTargetToqIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto targetToqSubindex()const noexcept->std::uint8_t;
+		auto setTargetToqSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x60B1 //
+		auto offsetVelIndex()const noexcept->std::uint16_t;
+		auto setOffsetVelIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto offsetVelSubindex()const noexcept->std::uint8_t;
+		auto setOffsetVelSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x60B2 //
+		auto offsetToqIndex()const noexcept->std::uint16_t;
+		auto setOffsetToqIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto offsetToqSubindex()const noexcept->std::uint8_t;
+		auto setOffsetToqSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6041 //
+		auto statusWordIndex()const noexcept->std::uint16_t;
+		auto setStatusWordIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto statusWordSubindex()const noexcept->std::uint8_t;
+		auto setStatusWordSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6061 //
+		auto modeOfDisplayIndex()const noexcept->std::uint16_t;
+		auto setModeOfDisplayIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto modeOfDisplaySubindex()const noexcept->std::uint8_t;
+		auto setModeOfDisplaySubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6064 //
+		auto actualPosIndex()const noexcept->std::uint16_t;
+		auto setActualPosIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto actualPosSubindex()const noexcept->std::uint8_t;
+		auto setActualPosSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x606C //
+		auto actualVelIndex()const noexcept->std::uint16_t;
+		auto setActualVelIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto actualVelSubindex()const noexcept->std::uint8_t;
+		auto setActualVelSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6077 //
+		auto actualToqIndex()const noexcept->std::uint16_t;
+		auto setActualToqIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto actualToqSubindex()const noexcept->std::uint8_t;
+		auto setActualToqSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x6078 //
+		auto actualCurIndex()const noexcept->std::uint16_t;
+		auto setActualCurIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto actualCurSubindex()const noexcept->std::uint8_t;
+		auto setActualCurSubindex(std::uint8_t index)noexcept->void;
 
 		virtual ~EthercatMotor();
 		EthercatMotor(EthercatSlave* slave = nullptr

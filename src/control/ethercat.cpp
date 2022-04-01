@@ -409,9 +409,10 @@ namespace aris::control{
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp) {}
 
 	struct EthercatMotor::Imp {
+		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
 		std::uint16_t control_word{ 0 }, status_word_{ 0 };
 		std::uint8_t mode_of_operation{ 0 };
-		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
+		
 
 		int waiting_count_left{ 0 }; // enable 在用
 
@@ -420,6 +421,35 @@ namespace aris::control{
 		bool need_clear{ true };
 
 		EthercatSlave* slave_{ nullptr };
+
+		std::int16_t control_word_idx_        { 0x6040 }, 
+			         mode_of_operation_idx_   { 0x6060 }, 
+			         target_pos_idx_          { 0x607A },
+			         target_vel_idx_          { 0x60FF },
+			         target_toq_idx_          { 0x6071 },
+			         offset_vel_idx_          { 0x60B1 },
+			         offset_toq_idx_          { 0x60B2 },
+			         status_word_idx_         { 0x6041 },
+			         mode_of_display_idx_     { 0x6061 },
+			         actual_pos_idx_          { 0x6064 },
+			         actual_vel_idx_          { 0x606C },
+			         actual_toq_idx_          { 0x6077 },
+			         actual_cur_idx_          { 0x6078 }
+			;
+		std::int8_t  control_word_subidx_     { 0x00 }, 
+			         mode_of_operation_subidx_{ 0x00 }, 
+			         target_pos_subidx_       { 0x00 },
+			         target_vel_subidx_       { 0x00 },
+			         target_toq_subidx_       { 0x00 },
+			         offset_vel_subidx_       { 0x00 },
+			         offset_toq_subidx_       { 0x00 },
+			         status_word_subidx_      { 0x00 },
+			         mode_of_display_subidx_  { 0x00 },
+			         actual_pos_subidx_       { 0x00 },
+			         actual_vel_subidx_       { 0x00 },
+			         actual_toq_subidx_       { 0x00 },
+			         actual_cur_subidx_       { 0x00 }
+			;
 	};
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
@@ -430,55 +460,55 @@ namespace aris::control{
 	auto EthercatMotor::offsetCur()const->double { return imp_->offset_toq_; }
 	auto EthercatMotor::setControlWord(std::uint16_t control_word)->void {
 		imp_->control_word = control_word;
-		imp_->slave_->writePdo(0x6040, 0x00, control_word);
+		imp_->slave_->writePdo(controlWordIndex(), controlWordSubindex(), control_word);
 	}
 	auto EthercatMotor::setModeOfOperation(std::uint8_t mode)->void {
 		imp_->mode_of_operation = mode;
-		imp_->slave_->writePdo(0x6060, 0x00, mode);
+		imp_->slave_->writePdo(modeOfOperationIndex(), modeOfOperationSubindex(), mode);
 	}
 	auto EthercatMotor::setTargetPos(double pos)->void {
 		imp_->target_pos_ = pos;
-		imp_->slave_->writePdo(0x607A, 0x00, static_cast<std::int32_t>((pos + posOffset()) * posFactor()));
+		imp_->slave_->writePdo(targetPosIndex(), targetPosSubindex(), static_cast<std::int32_t>((pos + posOffset()) * posFactor()));
 	}
 	auto EthercatMotor::setTargetVel(double vel)->void {
 		imp_->target_vel_ = vel;
-		imp_->slave_->writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor() * velFactor()));
+		imp_->slave_->writePdo(targetVelIndex(), targetVelSubindex(), static_cast<std::int32_t>(vel * posFactor() * velFactor()));
 	}
 	auto EthercatMotor::setTargetToq(double toq)->void {
 		imp_->target_toq_ = toq;
-		imp_->slave_->writePdo(0x6071, 0x00, static_cast<std::int16_t>(toq));
+		imp_->slave_->writePdo(targetToqIndex(), targetToqSubindex(), static_cast<std::int16_t>(toq));
 	}
 	auto EthercatMotor::setOffsetVel(double vel)->void {
 		imp_->offset_vel_ = vel;
-		imp_->slave_->writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor() * velFactor()));
+		imp_->slave_->writePdo(offsetVelIndex(), offsetVelSubindex(), static_cast<std::int32_t>(vel * posFactor() * velFactor()));
 	}
 	auto EthercatMotor::setOffsetToq(double cur)->void {
 		imp_->offset_toq_ = cur;
-		imp_->slave_->writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
+		imp_->slave_->writePdo(offsetToqIndex(), offsetToqSubindex(), static_cast<std::int16_t>(cur));
 	}
 	auto EthercatMotor::statusWord()const->std::uint16_t {
 		std::uint16_t status_word{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(statusWordIndex(), statusWordSubindex(), status_word) != 0) ? imp_->status_word_ : status_word;
 	}
 	auto EthercatMotor::modeOfDisplay()const->std::uint8_t {
 		std::uint8_t mode{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(modeOfDisplayIndex(), modeOfDisplaySubindex(), mode) != 0) ? imp_->mode_of_operation : mode;
 	}
 	auto EthercatMotor::actualPos()const->double {
 		std::int32_t pos_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(actualPosIndex(), actualPosSubindex(), pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
 	auto EthercatMotor::actualVel()const->double {
 		std::int32_t vel_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor() / velFactor();
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(actualVelIndex(), actualVelSubindex(), vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor() / velFactor();
 	}
 	auto EthercatMotor::actualToq()const->double {
 		std::int16_t fce_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6077, 0x00, fce_count) != 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(actualToqIndex(), actualToqSubindex(), fce_count) != 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
 	}
 	auto EthercatMotor::actualCur()const->double {
 		std::int16_t cur_count{ 0 };
-		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(0x6078, 0x00, cur_count) != 0) ? imp_->target_toq_ : static_cast<double>(cur_count);
+		return (imp_->slave_->isVirtual() || imp_->slave_->readPdo(actualCurIndex(), actualCurSubindex(), cur_count) != 0) ? imp_->target_toq_ : static_cast<double>(cur_count);
 	}
 	auto EthercatMotor::disable()->int {
 		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x40;
@@ -733,6 +763,200 @@ namespace aris::control{
 	}
 	auto EthercatMotor::slave()->EthercatSlave* { return imp_->slave_; }
 	auto EthercatMotor::setSlave(EthercatSlave* slave)->void { imp_->slave_ = slave; }
+	// default: 0x6040 //
+	auto EthercatMotor::controlWordIndex()const noexcept->std::uint16_t {
+		return imp_->control_word_idx_;
+	}
+	auto EthercatMotor::setControlWordIndex(std::uint16_t index)noexcept->void {
+		imp_->control_word_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::controlWordSubindex()const noexcept->std::uint8_t {
+		return imp_->control_word_subidx_;
+	}
+	auto EthercatMotor::setControlWordSubindex(std::uint8_t index)noexcept->void {
+		imp_->control_word_subidx_ = index;
+	}
+
+	// default: 0x6060 //
+	auto EthercatMotor::modeOfOperationIndex()const noexcept->std::uint16_t {
+		return imp_->mode_of_operation_idx_;
+	}
+	auto EthercatMotor::setModeOfOperationIndex(std::uint16_t index)noexcept->void {
+		imp_->mode_of_operation_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::modeOfOperationSubindex()const noexcept->std::uint8_t {
+		return imp_->mode_of_operation_subidx_;
+	}
+	auto EthercatMotor::setModeOfOperationSubindex(std::uint8_t index)noexcept->void {
+		imp_->mode_of_operation_subidx_ = index;
+	}
+
+	// default: 0x607A //
+	auto EthercatMotor::targetPosIndex()const noexcept->std::uint16_t {
+		return imp_->target_pos_idx_;
+	}
+	auto EthercatMotor::setTargetPosIndex(std::uint16_t index)noexcept->void {
+		imp_->target_pos_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::targetPosSubindex()const noexcept->std::uint8_t{
+		return imp_->target_pos_subidx_;
+	}
+	auto EthercatMotor::setTargetPosSubindex(std::uint8_t index)noexcept->void {
+		imp_->target_pos_subidx_ = index;
+	}
+
+	// default: 0x60FF //
+	auto EthercatMotor::targetVelIndex()const noexcept->std::uint16_t {
+		return imp_->target_vel_idx_;
+	}
+	auto EthercatMotor::setTargetVelIndex(std::uint16_t index)noexcept->void {
+		imp_->target_vel_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::targetVelSubindex()const noexcept->std::uint8_t {
+		return imp_->target_vel_subidx_;
+	}
+	auto EthercatMotor::setTargetVelSubindex(std::uint8_t index)noexcept->void {
+		imp_->target_vel_subidx_ = index;
+	}
+
+	// default: 0x6071 //
+	auto EthercatMotor::targetToqIndex()const noexcept->std::uint16_t {
+		return imp_->target_toq_idx_;
+	}
+	auto EthercatMotor::setTargetToqIndex(std::uint16_t index)noexcept->void {
+		imp_->target_toq_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::targetToqSubindex()const noexcept->std::uint8_t {
+		return imp_->target_toq_subidx_;
+	}
+	auto EthercatMotor::setTargetToqSubindex(std::uint8_t index)noexcept->void {
+		imp_->target_toq_subidx_ = index;
+	}
+
+	// default: 0x60B1 //
+	auto EthercatMotor::offsetVelIndex()const noexcept->std::uint16_t {
+		return imp_->offset_vel_idx_;
+	}
+	auto EthercatMotor::setOffsetVelIndex(std::uint16_t index)noexcept->void {
+		imp_->offset_vel_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::offsetVelSubindex()const noexcept->std::uint8_t {
+		return imp_->offset_vel_subidx_;
+	}
+	auto EthercatMotor::setOffsetVelSubindex(std::uint8_t index)noexcept->void {
+		imp_->offset_vel_subidx_ = index;
+	}
+
+	// default: 0x60B2 //
+	auto EthercatMotor::offsetToqIndex()const noexcept->std::uint16_t {
+		return imp_->offset_toq_idx_;
+	}
+	auto EthercatMotor::setOffsetToqIndex(std::uint16_t index)noexcept->void {
+		imp_->offset_toq_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::offsetToqSubindex()const noexcept->std::uint8_t {
+		return imp_->offset_toq_subidx_;
+	}
+	auto EthercatMotor::setOffsetToqSubindex(std::uint8_t index)noexcept->void {
+		imp_->offset_toq_subidx_ = index;
+	}
+
+	// default: 0x6041 //
+	auto EthercatMotor::statusWordIndex()const noexcept->std::uint16_t {
+		return imp_->status_word_idx_;
+	}
+	auto EthercatMotor::setStatusWordIndex(std::uint16_t index)noexcept->void {
+		imp_->status_word_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::statusWordSubindex()const noexcept->std::uint8_t {
+		return imp_->status_word_subidx_;
+	}
+	auto EthercatMotor::setStatusWordSubindex(std::uint8_t index)noexcept->void {
+		imp_->status_word_subidx_ = index;
+	}
+
+	// default: 0x6061 //
+	auto EthercatMotor::modeOfDisplayIndex()const noexcept->std::uint16_t {
+		return imp_->mode_of_display_idx_;
+	}
+	auto EthercatMotor::setModeOfDisplayIndex(std::uint16_t index)noexcept->void {
+		imp_->mode_of_display_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::modeOfDisplaySubindex()const noexcept->std::uint8_t {
+		return imp_->mode_of_display_subidx_;
+	}
+	auto EthercatMotor::setModeOfDisplaySubindex(std::uint8_t index)noexcept->void {
+		imp_->mode_of_display_subidx_ = index;
+	}
+
+	// default: 0x6064 //
+	auto EthercatMotor::actualPosIndex()const noexcept->std::uint16_t {
+		return imp_->actual_pos_idx_;
+	}
+	auto EthercatMotor::setActualPosIndex(std::uint16_t index)noexcept->void {
+		imp_->actual_pos_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::actualPosSubindex()const noexcept->std::uint8_t {
+		return imp_->actual_pos_subidx_;
+	}
+	auto EthercatMotor::setActualPosSubindex(std::uint8_t index)noexcept->void {
+		imp_->actual_pos_subidx_ = index;
+	}
+
+	// default: 0x606C //
+	auto EthercatMotor::actualVelIndex()const noexcept->std::uint16_t {
+		return imp_->actual_vel_idx_;
+	}
+	auto EthercatMotor::setActualVelIndex(std::uint16_t index)noexcept->void {
+		imp_->actual_vel_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::actualVelSubindex()const noexcept->std::uint8_t {
+		return imp_->actual_vel_subidx_;
+	}
+	auto EthercatMotor::setActualVelSubindex(std::uint8_t index)noexcept->void {
+		imp_->actual_vel_subidx_ = index;
+	}
+
+	// default: 0x6077 //
+	auto EthercatMotor::actualToqIndex()const noexcept->std::uint16_t {
+		return imp_->actual_toq_idx_;
+	}
+	auto EthercatMotor::setActualToqIndex(std::uint16_t index)noexcept->void {
+		imp_->actual_toq_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::actualToqSubindex()const noexcept->std::uint8_t {
+		return imp_->actual_toq_subidx_;
+	}
+	auto EthercatMotor::setActualToqSubindex(std::uint8_t index)noexcept->void {
+		imp_->actual_toq_subidx_ = index;
+	}
+
+	// default: 0x6078 //
+	auto EthercatMotor::actualCurIndex()const noexcept->std::uint16_t {
+		return imp_->actual_cur_idx_;
+	}
+	auto EthercatMotor::setActualCurIndex(std::uint16_t index)noexcept->void {
+		imp_->actual_cur_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::actualCurSubindex()const noexcept->std::uint8_t {
+		return imp_->actual_cur_subidx_;
+	}
+	auto EthercatMotor::setActualCurSubindex(std::uint8_t index)noexcept->void {
+		imp_->actual_toq_subidx_ = index;
+	}
 	EthercatMotor::~EthercatMotor() = default;
 	EthercatMotor::EthercatMotor(EthercatSlave* slave
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
@@ -790,8 +1014,11 @@ namespace aris::control{
 			.prop("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
 			;
 
-		// espect: setProp(C *obj, T v)->void  
-		//         getProp(C *obj)->T
+#define PROP_INDEX(name, setName, getName) \
+			.prop(#name + std::string("_index"), &EthercatMotor::## setName ##Index, &EthercatMotor::## getName ## Index) \
+			.propertyToStrMethod(#name + std::string("_index"), Uint16ToHexStr)
+			//.prop("subindex", &PdoEntry::setSubindex, &PdoEntry::subindex)
+			//.propertyToStrMethod("subindex", Uint8ToHexStr)
 		auto setSlave = [](EthercatMotor* ec_mot, int id) {
 			ec_mot->setSlave(&dynamic_cast<EthercatSlave&>(aris::server::ControlServer::instance().master().slavePool().at(id)));
 		};
@@ -801,6 +1028,7 @@ namespace aris::control{
 		aris::core::class_<EthercatMotor>("EthercatMotor")
 			.inherit<Motor>()
 			.prop("slave", &setSlave, &getSlave)
+//			PROP_INDEX(mode_of_operation, setModeOfOperation, modeOfOperation)
 			;
 
 		// espect: setProp(C *obj, T v)->void  

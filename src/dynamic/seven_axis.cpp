@@ -271,7 +271,7 @@ namespace aris::dynamic{
 	{
 		
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(ArmAngleMotion);
+	ARIS_DEFINE_BIG_FOUR_CPP(ArmAngleMotion);
 	
 	
 	struct SevenAxisInverseKinematicSolver::Imp{
@@ -450,7 +450,7 @@ namespace aris::dynamic{
 	auto SevenAxisInverseKinematicSolver::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
 	SevenAxisInverseKinematicSolver::~SevenAxisInverseKinematicSolver() = default;
 	SevenAxisInverseKinematicSolver::SevenAxisInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
-	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(SevenAxisInverseKinematicSolver);
+	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver);
 
 	ARIS_REGISTRATION{
 		aris::core::class_<SevenAxisInverseKinematicSolver>("SevenAxisInverseKinematicSolver")
