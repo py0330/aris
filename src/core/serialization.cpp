@@ -291,7 +291,7 @@ namespace aris::core{
 
 			// non-basic type //
 			auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool {
-				return ele.value().find("#name")!=ele.value().end() && std::string_view(prop->name()) == ele.value().find("#name")->get<std::string>();
+				return (ele.value().find("#name")!=ele.value().end()) && (std::string_view(prop->name()) == ele.value().find("#name")->get<std::string>());
 				});
 
 			if (found != child_eles.end()) {
