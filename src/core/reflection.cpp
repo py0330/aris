@@ -461,7 +461,10 @@ namespace aris::core{
 				std::get<Imp::Unique>(
 					const_cast<Instance&>(other).imp_->data_
 					)
-				.data_.release()
+				.data_.release(),
+				std::get<Imp::Unique>(
+					const_cast<Instance&>(other).imp_->data_
+					).data_.get_deleter()
 			);
 
 			imp_->data_ = Imp::Shared{
