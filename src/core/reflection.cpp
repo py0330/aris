@@ -446,6 +446,11 @@ namespace aris::core{
 	Instance::~Instance() = default;
 	Instance::Instance() :imp_(new Imp) {}
 	Instance::Instance(const Instance&other){
+		*this = other;
+		
+	}
+	Instance::Instance(Instance&&) noexcept = default;
+	Instance& Instance::operator=(const Instance&other) {
 		switch (other.ownership()) {
 		case Ownership::EMPTY:
 			break;
@@ -465,35 +470,34 @@ namespace aris::core{
 				std::get<Imp::Unique>(
 					const_cast<Instance&>(other).imp_->data_
 					).data_.get_deleter()
-			);
+				);
 
 			imp_->data_ = Imp::Shared{
 				shared,
 				type_hash_code
 			};
 			const_cast<Instance&>(other).imp_->data_ = std::get<Imp::Shared>(imp_->data_);
-			break; 
+			break;
 		}
 		default:
 			return;
 		}
 		
-	}
-	Instance::Instance(Instance&&) noexcept = default;
-	Instance& Instance::operator=(const Instance&other) {
-		auto type_hash_code = std::get<Imp::Unique>(other.imp_->data_).type_hash_code_;
-		auto shared = std::shared_ptr<void>(
-			std::get<Imp::Unique>(
-				const_cast<Instance&>(other).imp_->data_
-				)
-			.data_.release()
-			);
+		
+		
+		//auto type_hash_code = std::get<Imp::Unique>(other.imp_->data_).type_hash_code_;
+		//auto shared = std::shared_ptr<void>(
+		//	std::get<Imp::Unique>(
+		//		const_cast<Instance&>(other).imp_->data_
+		//		)
+		//	.data_.release()
+		//	);
 
-		imp_->data_ = Imp::Shared{
-			shared,
-			type_hash_code
-		};
-		const_cast<Instance&>(other).imp_->data_ = std::get<Imp::Shared>(imp_->data_);
+		//imp_->data_ = Imp::Shared{
+		//	shared,
+		//	type_hash_code
+		//};
+		//const_cast<Instance&>(other).imp_->data_ = std::get<Imp::Shared>(imp_->data_);
 		return *this;
 	}
 	Instance& Instance::operator=(Instance&&)noexcept = default;
