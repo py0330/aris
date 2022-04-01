@@ -335,7 +335,7 @@ namespace aris::core{
 		if (type() == t) return raw_pointer;
 
 		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void* {
-			auto &inherit_types = type->inheritTypes();
+			auto &&inherit_types = type->inheritTypes();
 
 			for (Size i = 0; i < inherit_types.size(); ++i)	{
 				if (inherit_types[i] == t)
