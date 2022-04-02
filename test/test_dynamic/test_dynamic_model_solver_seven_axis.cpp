@@ -2,6 +2,7 @@
 #include <iostream>
 #include <array>
 #include <aris/dynamic/dynamic.hpp>
+#include <aris/core/core.hpp>
 
 #include<type_traits>
 
@@ -10,6 +11,26 @@ using namespace aris::dynamic;
 void test_seven_axis_forward_solver(){
 
 }
+
+auto createModelStandardSevenAxis()->std::unique_ptr<aris::dynamic::MultiModel> {
+	std::unique_ptr<aris::dynamic::MultiModel>model(new aris::dynamic::MultiModel);
+
+	aris::dynamic::SevenAxisParam param;
+	param.d1 = 0.3705;
+	param.d3 = 0.330;
+	param.d5 = 0.320;
+	param.tool0_pe[2] = 0.2205;
+	model->subModels().push_back(aris::dynamic::createModelSevenAxis(param).release());
+
+	for (aris::Size i = 0; i < 17; i++)
+		model->tools().push_back(model->findMarker("StandardSevenAxis.EE.tool" + std::to_string(i)));
+
+	for (aris::Size i = 0; i < 33; i++)
+		model->wobjs().push_back(model->findMarker("StandardSevenAxis.ground.wobj" + std::to_string(i)));
+
+	return model;
+}
+
 void test_seven_axis_inverse_solver(){
 	aris::dynamic::SevenAxisParam param;
 
@@ -20,6 +41,8 @@ void test_seven_axis_inverse_solver(){
 
 	auto m = aris::dynamic::createModelSevenAxis(param);
 	
+	std::cout << aris::core::toXmlString(*m) << std::endl;
+
 	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
 	double result[7];
 
@@ -202,6 +225,26 @@ void test_model_solver_seven_axis()
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
 	test_seven_axis_inverse_solver();
 	//test_seven_axis_inverse_solver3();
+
+
+	auto m = createModelStandardSevenAxis();
+	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
+	double result[7];
+
+	// 直接调用函数设置末端，之后计算反解 //
+	m->setOutputPos(output);
+	m->inverseKinematics();
+	m->getInputPos(result);
+	aris::dynamic::dsp(1, 7, result);
+
+	try {
+		std::cout << aris::core::toXmlString(*m) << std::endl;
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	
 
 	std::cout << "-----------------test model solver seven_axis finished------------" << std::endl << std::endl;
 }

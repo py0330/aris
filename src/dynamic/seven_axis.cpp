@@ -20,6 +20,10 @@ namespace aris::dynamic{
 	auto createModelSevenAxis(const SevenAxisParam& param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
+		model->setName("StandardSevenAxis");
+
+		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.d3, param.d5 }));
+
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
@@ -32,7 +36,7 @@ namespace aris::dynamic{
 		auto& p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 7 ? param.iv_vec[3].data() : default_iv);
 		auto& p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 7 ? param.iv_vec[4].data() : default_iv);
 		auto& p6 = model->partPool().add<Part>("L6", param.iv_vec.size() == 7 ? param.iv_vec[5].data() : default_iv);
-		auto& p7 = model->partPool().add<Part>("L7", param.iv_vec.size() == 7 ? param.iv_vec[6].data() : default_iv);
+		auto& p7 = model->partPool().add<Part>("EE", param.iv_vec.size() == 7 ? param.iv_vec[6].data() : default_iv);
 
 		// add joint //
 		const double j1_pos[3]{ 0.0, 0.0, param.d1 };
@@ -88,8 +92,9 @@ namespace aris::dynamic{
 		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_7_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
 		s_pm2pm(axis_7_pm, ee_i_wrt_axis_7_pm, ee_i_pm);
 
-		auto& makI = p7.addMarker("ee_makI", ee_i_pm);
-		auto& makJ = model->ground().addMarker("ee_makJ", ee_j_pm);
+		auto& makI = p7.addMarker("tool0", ee_i_pm);
+		auto& makJ = model->ground().addMarker("wobj0", ee_j_pm);
+		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto& ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		//double zeros[6]{ 0,0,0,0,0,0 };
@@ -114,6 +119,12 @@ namespace aris::dynamic{
 		p7.setPm(s_pm_dot_pm(robot_pm, *p7.pm()));
 		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
 		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
+
+		// add tools and wobj //
+		for (int i = 1; i < 17; ++i) {
+			p7.addMarker("tool" + std::to_string(i));
+		}
+		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver>();
@@ -454,6 +465,10 @@ namespace aris::dynamic{
 		aris::core::class_<SevenAxisInverseKinematicSolver>("SevenAxisInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			.prop("which_root", &SevenAxisInverseKinematicSolver::setWhichRoot, &SevenAxisInverseKinematicSolver::whichRoot)
+			;
+
+		aris::core::class_<ArmAngleMotion>("ArmAngleMotion")
+			.inherit<MotionBase>()
 			;
 	}
 }
