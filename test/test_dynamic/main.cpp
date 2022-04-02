@@ -18,8 +18,8 @@
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
-	//test_screw();
+	//test_matrix();
+	test_screw();
 	//test_spline();
 	//test_plan();
 	//test_model();

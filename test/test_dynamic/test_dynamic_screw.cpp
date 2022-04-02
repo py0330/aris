@@ -1831,6 +1831,17 @@ void test_solve(){
 	const double calib_tool_two_pnts_result[2]{ 0.09553364891256,   0.13964114742507 };
 	s_calib_tool_two_pnts(calib_tool_two_pnts, result);
 	if (!s_is_equal(2, calib_tool_two_pnts_result, result, error))std::cout << "\"s_sov_axis_distance\" failed" << std::endl;
+
+
+
+	const double box1_center[3]{ 0.1,0.2,0.3 };
+	const double box1_eur[3]{ 0.3,0.1,0.2 };
+	const double box1_length[3]{ 0.5,0.2,0.8 };
+	const double box2_center[3]{ 0.1,0.2,0.3 };
+	const double box2_eur[3]{ 0.3,0.1,0.2 };
+	const double box2_length[3]{ 0.5,0.2,0.8 };
+
+	s_collide_check_box2box(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length);
 }
 
 void test_screw()

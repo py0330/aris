@@ -1526,6 +1526,43 @@ namespace aris::dynamic
 	/// mini_angle: 最小允许的输入角度差值
 	auto ARIS_API s_calib_tool_two_pnts(const double* input, double*result, double mini_angle = 0.1)noexcept->int;
 
+	//    检查两个长方体是否碰撞
+	//    ret 0: 两者无干涉
+	//        1: 两者有干涉
+	//        2: box1 包含 box2
+	//        3: box2 包含 box1 
+	//         
+	// 
+	// 
+	//    
+	auto inline s_collide_check_box2box(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
+		                                const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int
+	{
+		double box1_rm[9], box2_rm[9], double box1_vertexes[8][3], double box2_vertexes[8][3];
+		s_re2rm(box1_321_eul, box1_rm, "321");
+		s_re2rm(box2_321_eul, box2_rm, "321");
+
+		for (int i = 0; i < 8; ++i) {
+			s_vc(3, box1_center, box1_vertexes[i]);
+			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box1_length_xyz[0], box1_rm + 0, 3, box1_vertexes[i], 1);
+			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box1_length_xyz[1], box1_rm + 1, 3, box1_vertexes[i], 1);
+			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box1_length_xyz[2], box1_rm + 2, 3, box1_vertexes[i], 1);
+
+			s_vc(3, box2_center, box2_vertexes[i]);
+			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box2_length_xyz[0], box2_rm + 0, 3, box2_vertexes[i], 1);
+			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box2_length_xyz[1], box2_rm + 1, 3, box2_vertexes[i], 1);
+			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box2_length_xyz[2], box2_rm + 2, 3, box2_vertexes[i], 1);
+		}
+			
+		dsp(8, 3, *box1_vertexes);
+
+
+		box1_vertexes[0][3];
+
+
+
+		return true;
+	}
 }
 
 #endif
