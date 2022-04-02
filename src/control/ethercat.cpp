@@ -843,7 +843,7 @@ namespace aris::control{
 		return imp_->offset_vel_idx_;
 	}
 	auto EthercatMotor::setOffsetVelIndex(std::uint16_t index)noexcept->void {
-		imp_->offset_vel_ = index;
+		imp_->offset_vel_idx_ = index;
 	}
 	// default: 0x00 //
 	auto EthercatMotor::offsetVelSubindex()const noexcept->std::uint8_t {
@@ -1014,11 +1014,101 @@ namespace aris::control{
 			.prop("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
 			;
 
-#define PROP_INDEX(name, setName, getName) \
-			.prop(#name + std::string("_index"), &EthercatMotor::## setName ##Index, &EthercatMotor::## getName ## Index) \
-			.propertyToStrMethod(#name + std::string("_index"), Uint16ToHexStr)
-			//.prop("subindex", &PdoEntry::setSubindex, &PdoEntry::subindex)
-			//.propertyToStrMethod("subindex", Uint8ToHexStr)
+
+		struct EthercatMotorIndex_ {
+			std::string name_;
+			std::uint16_t index_;
+			std::uint8_t sub_index_;
+		};
+		struct EthercatMotorIndexVec:std::vector<EthercatMotorIndex_> {};
+
+		aris::core::class_<EthercatMotorIndex_>("EcMotIndex" )
+			.prop("name", &EthercatMotorIndex_::name_)
+			.prop("index", &EthercatMotorIndex_::index_)
+			.propertyToStrMethod("index", Uint16ToHexStr)
+			.prop("sub_index", &EthercatMotorIndex_::sub_index_)
+			.propertyToStrMethod("sub_index", Uint8ToHexStr)
+			;
+
+		aris::core::class_<EthercatMotorIndexVec>("EcMotIndexVec")
+			.asArray()
+			;
+
+		auto getEcMotIndexes = [](EthercatMotor* m)->EthercatMotorIndexVec {
+			EthercatMotorIndexVec idx_vec{{
+				EthercatMotorIndex_{"control_word",m->controlWordIndex(),m->controlWordSubindex()},
+				EthercatMotorIndex_{"mode_of_operation",m->modeOfOperationIndex(),m->modeOfOperationSubindex()},
+				EthercatMotorIndex_{"target_pos",m->targetPosIndex(),m->targetPosSubindex()},
+				EthercatMotorIndex_{"target_vel",m->targetVelIndex(),m->targetVelSubindex()},
+				EthercatMotorIndex_{"target_toq",m->targetToqIndex(),m->targetToqSubindex()},
+				EthercatMotorIndex_{"offset_vel",m->offsetVelIndex(),m->offsetVelSubindex()},
+				EthercatMotorIndex_{"offset_toq",m->offsetToqIndex(),m->offsetToqSubindex()},
+				EthercatMotorIndex_{"status_word",m->statusWordIndex(),m->statusWordSubindex()},
+				EthercatMotorIndex_{"mode_of_display",m->modeOfDisplayIndex(),m->modeOfDisplaySubindex()},
+				EthercatMotorIndex_{"actual_pos",m->actualPosIndex(),m->actualPosSubindex()},
+				EthercatMotorIndex_{"actual_vel",m->actualVelIndex(),m->actualVelSubindex()},
+				EthercatMotorIndex_{"actual_toq",m->actualToqIndex(),m->actualToqSubindex()},
+				EthercatMotorIndex_{"actual_cur",m->actualCurIndex(),m->actualCurSubindex()},
+			}};
+			return idx_vec;
+		};
+		auto setEcMotIndexes = [](EthercatMotor* m, EthercatMotorIndexVec name_list)->void {
+			for (auto& ec_mot_index : name_list) {
+				if (ec_mot_index.name_ == "control_word") {
+					m->setControlWordIndex(ec_mot_index.index_);
+					m->setControlWordSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "mode_of_operation") {
+					m->setModeOfOperationIndex(ec_mot_index.index_);
+					m->setModeOfOperationSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "target_pos") {
+					m->setTargetPosIndex(ec_mot_index.index_);
+					m->setTargetPosSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "target_vel") {
+					m->setTargetVelIndex(ec_mot_index.index_);
+					m->setTargetVelSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "target_toq") {
+					m->setTargetToqIndex(ec_mot_index.index_);
+					m->setTargetToqSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "offset_vel") {
+					m->setOffsetVelIndex(ec_mot_index.index_);
+					m->setOffsetVelSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "offset_toq") {
+					m->setOffsetToqIndex(ec_mot_index.index_);
+					m->setOffsetToqSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "status_word") {
+					m->setStatusWordIndex(ec_mot_index.index_);
+					m->setStatusWordSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "mode_of_display") {
+					m->setModeOfDisplayIndex(ec_mot_index.index_);
+					m->setModeOfDisplaySubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "actual_pos") {
+					m->setActualPosIndex(ec_mot_index.index_);
+					m->setActualPosSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "actual_vel") {
+					m->setActualVelIndex(ec_mot_index.index_);
+					m->setActualVelSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "actual_toq") {
+					m->setActualToqIndex(ec_mot_index.index_);
+					m->setActualToqSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "actual_cur") {
+					m->setActualCurIndex(ec_mot_index.index_);
+					m->setActualCurSubindex(ec_mot_index.sub_index_);
+				}
+			}
+		};
+
 		auto setSlave = [](EthercatMotor* ec_mot, int id) {
 			ec_mot->setSlave(&dynamic_cast<EthercatSlave&>(aris::server::ControlServer::instance().master().slavePool().at(id)));
 		};
@@ -1028,7 +1118,7 @@ namespace aris::control{
 		aris::core::class_<EthercatMotor>("EthercatMotor")
 			.inherit<Motor>()
 			.prop("slave", &setSlave, &getSlave)
-//			PROP_INDEX(mode_of_operation, setModeOfOperation, modeOfOperation)
+			.prop("ec_index", &setEcMotIndexes, &getEcMotIndexes)
 			;
 
 		// espect: setProp(C *obj, T v)->void  

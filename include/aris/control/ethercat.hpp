@@ -202,32 +202,21 @@ namespace aris::control
 		
 		auto virtual setControlWord(std::uint16_t control_word)->void override;
 		auto virtual setModeOfOperation(std::uint8_t mode)->void override;
-		
 		auto virtual setTargetPos(double pos)->void override;
-		
 		auto virtual setTargetVel(double vel)->void override;
-		
 		auto virtual setTargetToq(double toq)->void override;
-		
 		auto virtual setOffsetVel(double vel)->void override;
-		
 		auto virtual setOffsetToq(double toq)->void override;
-		
 		auto virtual statusWord()const->std::uint16_t override;
-		
 		auto virtual modeOfDisplay()const->std::uint8_t override;
-		
 		auto virtual actualPos()const->double override;
-		
 		auto virtual actualVel()const->double override;
-		
 		auto virtual actualToq()const->double override;
-		
 		auto virtual actualCur()const->double override;
 
-		// require pdo 0x6040 0x6041 // 
+		// require pdo: control_word status_word （0x6040 0x6041） // 
 		auto virtual disable()->int override;
-		// require pdo 0x6040 0x6041 //
+		// require pdo: control_word status_word （0x6040 0x6041） //
 		auto virtual enable()->int override;
 		// require pdo 0x6040 0x6041 0x6060 0x6061 //
 		auto virtual home()->int override;

@@ -45,13 +45,20 @@ int main(int argc, char *argv[]){
 	aris::core::setLanguage(1);
 
 	auto &cs = aris::server::ControlServer::instance();
+	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
+	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
+	
+	
+	std::cout << aris::core::toXmlString(cs) << std::endl;
+
+	//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
 
 	cs.resetMaster(aris::robot::rokae::xb4::createMaster().release());
 	cs.resetController(aris::robot::rokae::xb4::createController().release());
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
-	std::cout << aris::core::toXmlString(cs) << std::endl;
+	//std::cout << aris::core::toXmlString(cs) << std::endl;
 
 	
 
@@ -62,7 +69,8 @@ int main(int argc, char *argv[]){
 	auto str = aris::core::toXmlString(cs);
 
 	aris::core::fromXmlString(cs,str);
-	std::cout << aris::core::toXmlString(cs) << std::endl;
+
+
 
 	try
 	{
