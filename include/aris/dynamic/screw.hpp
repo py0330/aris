@@ -1538,11 +1538,37 @@ namespace aris::dynamic
 	auto inline s_collide_check_box2box(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
 		                                const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int
 	{
-		double box1_rm[9], box2_rm[9], double box1_vertexes[8][3], double box2_vertexes[8][3];
+		double box1_rm[9], box2_rm[9], box1_vertexes[8][3], box2_vertexes[8][3];
 		s_re2rm(box1_321_eul, box1_rm, "321");
 		s_re2rm(box2_321_eul, box2_rm, "321");
 
+
+		int box1_vertex_in_box2_num{ 0 }, box2_vertex_in_box1_num{ 0 };
 		for (int i = 0; i < 8; ++i) {
+			double vertex_to_other_center[3];
+			// compute vertex //
+			s_vc(3, box1_center, vertex_to_other_center);
+			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box1_length_xyz[0], box1_rm + 0, 3, vertex_to_other_center, 1);
+			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box1_length_xyz[1], box1_rm + 1, 3, vertex_to_other_center, 1);
+			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box1_length_xyz[2], box1_rm + 2, 3, vertex_to_other_center, 1);
+			
+			// compute vertex to other center //
+			s_vs(3, box2_center, vertex_to_other_center);
+
+			double distance[3];
+			s_mm(3, 1, 3, box2_rm, T(3), vertex_to_other_center,1, distance,1);
+
+
+			if (std::abs(distance[0]) < std::abs(box2_length_xyz[0])
+				&& std::abs(distance[1]) < std::abs(box2_length_xyz[1])
+				&& std::abs(distance[2]) < std::abs(box2_length_xyz[2])) {
+				box1_vertex_in_box2_num++;
+				std::cout << "vertex " << i << "inside" << std::endl;
+			}
+				
+			
+			
+			
 			s_vc(3, box1_center, box1_vertexes[i]);
 			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box1_length_xyz[0], box1_rm + 0, 3, box1_vertexes[i], 1);
 			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box1_length_xyz[1], box1_rm + 1, 3, box1_vertexes[i], 1);
@@ -1555,6 +1581,9 @@ namespace aris::dynamic
 		}
 			
 		dsp(8, 3, *box1_vertexes);
+		dsp(8, 3, *box2_vertexes);
+
+
 
 
 		box1_vertexes[0][3];
