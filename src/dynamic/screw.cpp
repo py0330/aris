@@ -12,8 +12,7 @@
 
 #include "aris/dynamic/screw.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	using double3x3 = double[3][3];
 
 	auto inline default_pp()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
@@ -3572,6 +3571,9 @@ namespace aris::dynamic
 			return std::atan2(Pcb - Pbc, Pbb + Pcc);
 		}
 	}
+
+
+
 
 	auto s_calib_tool_two_pnts(const double* input, double*result, double mini_angle)noexcept->int {
 		// check diff angle
