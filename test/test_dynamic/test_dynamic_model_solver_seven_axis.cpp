@@ -239,6 +239,14 @@ void test_model_solver_seven_axis()
 
 	try {
 		std::cout << aris::core::toXmlString(*m) << std::endl;
+		auto str = aris::core::toXmlString(*m);
+
+
+		aris::dynamic::MultiModel m2;
+		aris::core::fromXmlString(m2, str);
+		m2.init();
+		std::cout << aris::core::toXmlString(m2) << std::endl;
+
 	}
 	catch (std::exception& e)
 	{

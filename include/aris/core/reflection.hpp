@@ -224,7 +224,7 @@ namespace aris::core{
 		// 根据右值来构造 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
-			:Instance(typeid(t).hash_code(), std::unique_ptr<void, void (*)(void*)>(new T(std::move(t)), [](void* d)->void {delete static_cast<T*>(d); }))
+			:Instance(typeid(t).hash_code(), std::unique_ptr<void, void (*)(void*)>(new std::decay_t<T>(std::move(t)), [](void* d)->void {delete static_cast<std::decay_t<T>*>(d); }))
 		{
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
 			if (type() == nullptr) {
