@@ -285,6 +285,8 @@ namespace aris::server{
 			const auto option = mot_options[i];
 			const auto dt = master_->samplePeriodNs() / 1.0e9;
 
+			auto display_id = i + 1;
+
 			// 检查使能 //
 			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))
@@ -294,7 +296,7 @@ namespace aris::server{
 					aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 					u8"电机 %zd 没在使能模式，当前Count: %zd\n":
 					u8"Motor %zd is not in OPERATION_ENABLE mode in count %zd\n",
-					i, count_);
+					display_id, count_);
 				return error_code;
 			}
 
@@ -308,9 +310,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标位置不是有效值，当前Count %zu:\n目标位置: %f\n":
+							u8"电机 %zu 目标位置不是有效值，当前Count %zu:\n目标位置: %f\n":
 							u8"Motor %zu target position is INFINITE in count %zu:\nvalue: %f\n" ,
-							i, count_, cm.targetPos());
+							display_id, count_, cm.targetPos());
 						return error_code;
 					}
 					
@@ -322,9 +324,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标位置超出最大值，当前Count %zu:\n允许最大位置: %f\t目标位置: %f\n":
+							u8"电机 %zu 超出正限位，当前Count %zu:\n允许最大位置: %f\t目标位置: %f\n":
 							u8"Motor %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n" ,
-							i, count_, cm.maxPos(), cm.targetPos());
+							display_id, count_, cm.maxPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -336,9 +338,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标位置超出最小值，当前Count  %zu:\n允许最小值: %f\t目标位置: %f\n":
+							u8"电机 %zu 超出负限位，当前Count  %zu:\n允许最小值: %f\t目标位置: %f\n":
 							u8"Motor %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n" ,
-							i, count_, cm.minPos(), cm.targetPos());
+							display_id, count_, cm.minPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -349,9 +351,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标位置不连续（速度过大），当前Count %zu:\n上次位置: %f\t本次位置: %f\n":
+							u8"电机 %zu 速度过大，当前Count %zu:\n上次位置: %f\t本次位置: %f\n":
 							u8"Motor %zu target position NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n",
-							i, count_, ld.p, cm.targetPos());
+							display_id, count_, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -362,9 +364,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标位置二阶不连续（加速度过大），当前Count %zu:\n上上次位置: %f\t上次位置: %f\t本次位置: %f\n":
+							u8"电机 %zu 加速度过大，当前Count %zu:\n上上次位置: %f\t上次位置: %f\t本次位置: %f\n":
 							u8"Motor %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %f\tlast: %f\tnow: %f\n",
-							i, count_, lld.p, ld.p, cm.targetPos());
+							display_id, count_, lld.p, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -375,9 +377,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_FOLLOWING_ERROR;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的位置跟随误差过大，当前Count %zu:\n实际位置: %f\t目标位置: %f\n":
+							u8"电机 %zu 位置跟随误差过大，当前Count %zu:\n实际位置: %f\t目标位置: %f\n":
 							u8"Motion %zu target position has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n",
-							i, count_, cm.actualPos(), cm.targetPos());
+							display_id, count_, cm.actualPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -389,9 +391,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_INFINITE;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标速度不是有效值，当前Count %zu:\n目标速度: %f\n":
+							u8"电机 %zu 目标速度不是有效值，当前Count %zu:\n目标速度: %f\n":
 							u8"Motion %zu target velocity is INFINITE in count %zu:\nvalue: %f\n", 
-							i, count_, cm.targetVel());
+							display_id, count_, cm.targetVel());
 						return error_code;
 					}
 					
@@ -402,9 +404,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标速度超出最大值，当前Count %zu:\n允许最大速度: %f\t目标速度: %f\n":
+							u8"电机 %zu 速度超限，当前Count %zu:\n允许最大速度: %f\t目标速度: %f\n":
 							u8"Motion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", 
-							i, count_, cm.maxVel(), cm.targetVel());
+							display_id, count_, cm.maxVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -415,9 +417,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标速度超出最小值，当前Count %zu:\n允许最大速度: %f\t目标速度: %f\n":
+							u8"电机 %zu 速度超限，当前Count %zu:\n允许最小速度: %f\t目标速度: %f\n":
 							u8"Motion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", 
-							i, count_, cm.minVel(), cm.targetVel());
+							display_id, count_, cm.minVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -428,8 +430,8 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标速度不连续（加速度过大），当前Count %zu:\n上次速度: %f\t本次速度: %f\n":
-							u8"Motion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", i, count_, ld.v, cm.targetVel());
+							u8"电机 %zu 加速度超限，当前Count %zu:\n上次速度: %f\t本次速度: %f\n":
+							u8"Motion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", display_id, count_, ld.v, cm.targetVel());
 						return error_code;
 					}
 
@@ -440,8 +442,8 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_FOLLOWING_ERROR;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的速度跟随误差过大，当前Count %zu:\n实际速度: %f\t目标速度: %f\n":
-							u8"Motion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n", i, count_, cm.actualVel(), cm.targetVel());
+							u8"电机 %zu 速度跟随误差过大，当前Count %zu:\n实际速度: %f\t目标速度: %f\n":
+							u8"Motion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n", display_id, count_, cm.actualVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -455,8 +457,8 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的实际位置超出最大值，当前Count %zu:\n允许最大位置: %f\t实际位置: %f\n" :
-							u8"Motion %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n", i, count_, cm.maxPos(), cm.targetPos());
+							u8"电机 %zu 实际位置超出最大值，当前Count %zu:\n允许最大位置: %f\t实际位置: %f\n" :
+							u8"Motion %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n", display_id, count_, cm.maxPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -467,9 +469,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的实际位置超出最小值，当前Count %zu:\n允许最小位置: %f\t实际位置: %f\n" :
+							u8"电机 %zu 实际位置超出最小值，当前Count %zu:\n允许最小位置: %f\t实际位置: %f\n" :
 							u8"Motion %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n", 
-							i, count_, cm.minPos(), cm.targetPos());
+							display_id, count_, cm.minPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -480,9 +482,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的实际速度超出最大值，当前Count %zu:\n允许最大速度: %f\t实际速度: %f\n" :
+							u8"电机 %zu 实际速度超出最大值，当前Count %zu:\n允许最大速度: %f\t实际速度: %f\n" :
 							u8"Motion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", 
-							i, count_, cm.maxVel(), cm.actualVel());
+							display_id, count_, cm.maxVel(), cm.actualVel());
 						return error_code;
 					}
 
@@ -493,8 +495,8 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的实际速度超出最小值，当前Count %zu:\n允许最小速度: %f\t实际速度: %f\n" :
-							u8"Motion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", i, count_, cm.minVel(), cm.actualVel());
+							u8"电机 %zu 实际速度超出最小值，当前Count %zu:\n允许最小速度: %f\t实际速度: %f\n" :
+							u8"Motion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", display_id, count_, cm.minVel(), cm.actualVel());
 						return error_code;
 					}
 
@@ -505,9 +507,9 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 的目标速度不连续（加速度过大），当前Count %zu:\n上次速度: %f\t本次速度: %f\n" :
+							u8"电机 %zu 加速度过大，当前Count %zu:\n上次速度: %f\t本次速度: %f\n" :
 							u8"Motion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", 
-							i, count_, ld.v, cm.actualVel());
+							display_id, count_, ld.v, cm.actualVel());
 						return error_code;
 					}
 					break;
@@ -520,7 +522,7 @@ namespace aris::server{
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 							u8"电机 %zu 模式不合法，当前Count %zu:\n模式: %d\n" :
 							u8"Motion %zu MODE INVALID in count %zu:\nmode: %d\n", 
-							i, count_, cm.modeOfOperation());
+							display_id, count_, cm.modeOfOperation());
 						return error_code;
 					}
 				}
