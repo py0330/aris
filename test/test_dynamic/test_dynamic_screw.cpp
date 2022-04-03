@@ -1834,7 +1834,7 @@ void test_solve(){
 	if (!s_is_equal(2, calib_tool_two_pnts_result, result, error))std::cout << "\"s_sov_axis_distance\" failed" << std::endl;
 }
 void test_collide() {
-	//#define DEBUG_COLLIDE_CHECK_BOX2BOX
+	
 	{
 		double reference_pe[6]{ 0.1,0.2,0.3,-aris::PI/2,0,0 };
 		double reference_pm[16];
@@ -1843,22 +1843,15 @@ void test_collide() {
 		double eul[3]{ aris::PI / 2,0,0 };
 		double point1_xyz[3]{1,2,3};
 		double point2_xyz[3]{-0.5,0.6,0.2};
-		
 
 		double box_center[3], box_eul[3], box_length_xyz[3];
 		s_generate_box(reference_pm, eul, point1_xyz, point2_xyz, box_center, box_eul, box_length_xyz);
-
-		if (box_center[0] != 1)
-		{
-			std::cout << "failed" << std::endl;
-		}
-	
 	}
+
+	//#define DEBUG_COLLIDE_CHECK_BOX2BOX
 	
-
-
-
-	auto test_collide = [&](const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
+	// test box & box // 
+	auto test_boxes_collide = [&](const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
 		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz,
 		int result_should_be)
 	{
@@ -1866,7 +1859,7 @@ void test_collide() {
 		if (result != result_should_be) std::cout << "\"s_collide_check_box2box\" failed" << std::endl;
 	};
 
-	auto test_boxes_devide = [](auto test_collide_func)->void {
+	auto test_boxes_devide    = [](auto test_collide_func)->void {
 		// 测试A B完全分离
 		{
 			//// A B 分离，且仅符合叉乘判断
@@ -1903,7 +1896,6 @@ void test_collide() {
 			}
 		}
 	};
-
 	auto test_boxes_interfere = [](auto test_collide_func) {
 		// 测试有干涉无包含
 		{
@@ -1940,10 +1932,8 @@ void test_collide() {
 				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
 			}
 		}
-
 	};
-
-	auto test_boxes_contain = [](auto test_collide_func) {
+	auto test_boxes_contain   = [](auto test_collide_func) {
 		// 测试A包含B、B包含A
 		{
 			// A包含B，B包含A
@@ -1984,13 +1974,198 @@ void test_collide() {
 		}
 	};
 	
-	test_boxes_devide(test_collide);
-	test_boxes_interfere(test_collide);
-	test_boxes_contain(test_collide);
+	test_boxes_devide(test_boxes_collide);
+	test_boxes_interfere(test_boxes_collide);
+	test_boxes_contain(test_boxes_collide);
 
-	std::cout << "benchmark collide box 2 box devided:" << aris::core::benchmark(1e6, test_boxes_devide, test_collide) << std::endl;
-	std::cout << "benchmark collide box 2 box interfere:" << aris::core::benchmark(1e6, test_boxes_interfere, test_collide) << std::endl;
-	std::cout << "benchmark collide box 2 box contain:" << aris::core::benchmark(1e6, test_boxes_contain, test_collide) << std::endl;
+
+	// test sphere & box // 
+	auto test_sphere_box_collide = [](const double* sphere1_center, double radius,
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz,
+		int result_should_be) 
+	{
+		auto result = aris::dynamic::s_collide_check_sphere2box(sphere1_center, radius, box2_center, box2_321_eul, box2_length_xyz);
+		if (result != result_should_be) std::cout << "\"s_collide_check_sphere2box\" failed" << std::endl;
+	};
+	auto test_sphere_box_devide = [](auto test_collide_func) {
+		// 测试A B完全分离
+		{
+			//// A B 分离，且仅符合叉乘判断
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ 0.1,0.2,0.3 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 0);
+			}
+
+			//// A B 分离，且仅符合叉乘判断
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ -0.05,0.3,0.9 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 0);
+			}
+
+			//// A B 分离，且仅符合叉乘判断
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ 0.2, 0.4, 1.13 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 0);
+			}
+
+			//// A B 碰撞，球面仅仅包含一个面
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ 0.2, 0.4, 1.1 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+
+			//// A B 碰撞，球面仅仅包含一条边
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ -0.01,0.3,0.9 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+			
+			//// A B 碰撞，球面仅仅包含一个点
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ -0.05,0.35,0.7 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+
+			//// A B 碰撞，球面仅仅包含一个点
+			{
+				double radius{ 0.2 };
+				const double sphere_center[3]{ -0.05,0.35,0.7 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+
+			//// A B 碰撞，球面仅仅包含一堆点
+			{
+				double radius{ 0.7 };
+				const double sphere_center[3]{ -0.05,0.35,0.7 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+
+			//// A B 碰撞，球面包含长方体
+			{
+				double radius{ 0.75 };
+				const double sphere_center[3]{ -0.05,0.35,0.7 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 2);
+			}
+
+			//// A B 碰撞，长方体包含球面
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ 0.29,0.4,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 3);
+			}
+
+			//// A B 碰撞，长方体包含球面
+			{
+				double radius{ 0.1 };
+				const double sphere_center[3]{ 0.3,0.4,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.4,0.5 };
+				test_collide_func(sphere_center, radius, box2_center, box2_eur, box2_length, 1);
+			}
+		}
+	};
+	test_sphere_box_devide(test_sphere_box_collide);
+
+	// test sphere & sphere // 
+	auto test_spheres_collide = [&](const double* sphere1_center, double sphere1_radius,
+		const double* sphere2_center, double sphere2_radius,
+		int result_should_be)
+	{
+		auto result = aris::dynamic::s_collide_check_sphere2sphere(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius);
+		if (result != result_should_be) std::cout << "\"s_collide_check_sphere2sphere\" failed" << std::endl;
+	};
+	auto test_spheres_devide = [](auto test_collide_func) {
+		// 测试A B完全分离
+		{
+			//// A B 分离
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.1,0.2,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.6,0.1 };
+				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 0);
+			}
+
+			//// A B 分离
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.1,0.2,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.45,0.2 };
+				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 0);
+			}
+
+			//// A B 干涉
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.1,0.2,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.44,0.2 };
+				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 1);
+			}
+
+			//// A B 干涉
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.3,0.297,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.44,0.2 };
+				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 1);
+			}
+
+			//// B 包含 A
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.3,0.3,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.44,0.2 };
+				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 3);
+			}
+		}
+	};
+
+	test_spheres_devide(test_spheres_collide);
+
+	std::cout << "benchmark collide box 2 box devided:" << aris::core::benchmark(1e6, test_boxes_devide, test_boxes_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box interfere:" << aris::core::benchmark(1e6, test_boxes_interfere, test_boxes_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box contain:" << aris::core::benchmark(1e6, test_boxes_contain, test_boxes_collide) << std::endl;
 }
 void test_screw()
 {

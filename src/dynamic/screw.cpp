@@ -3887,4 +3887,81 @@ namespace aris::dynamic{
 		// 干涉但不包含 //
 		return 1;
 	};
+
+	auto s_collide_check_sphere2sphere(const double* sphere1_center_xyz, double sphere1_radius,
+		const double* sphere2_center_xyz, double sphere2_radius)->int 
+	{
+		double xyz_diff[3];
+		s_vc(3, sphere2_center_xyz, xyz_diff);
+		s_vs(3, sphere1_center_xyz, xyz_diff);
+
+		double distance = s_norm(3, xyz_diff);
+
+		if (distance > sphere1_radius + sphere2_radius)
+			return 0;
+		else if (distance < sphere1_radius - sphere2_radius)
+			return 2;
+		else if (distance < sphere2_radius - sphere1_radius)
+			return 3;
+		else
+			return 1;
+	}
+
+	auto ARIS_API s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int 
+	{
+		double box2_rm[9];
+		s_re2rm(box2_321_eul, box2_rm, "321");
+
+#ifdef DEBUG_COLLIDE_CHECK_SPHERE2BOX
+		/////////////////////////
+		double box2_vertexes[8][3];
+		for (int i = 0; i < 8; ++i) {
+			s_vc(3, box2_center, box2_vertexes[i]);
+			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box2_length_xyz[0], box2_rm + 0, 3, box2_vertexes[i], 1);
+			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box2_length_xyz[1], box2_rm + 1, 3, box2_vertexes[i], 1);
+			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box2_length_xyz[2], box2_rm + 2, 3, box2_vertexes[i], 1);
+		}
+		dsp(8, 3, *box2_vertexes);
+		/////////////////////////
+#endif
+
+		double diff[3], diff_local[3];
+		s_vc(3, sphere1_center_xyz, diff);
+		s_vs(3, box2_center, diff);
+
+		s_mm(3, 1, 3, box2_rm, T(3), diff, 1, diff_local, 1);
+
+		double half_length[3]{ 0.5 * box2_length_xyz[0],0.5 * box2_length_xyz[1], 0.5 * box2_length_xyz[2] };
+
+		// 距离小球最近的一个点 //
+		double close_point[3]{
+			std::max(0.0, std::abs(diff_local[0]) - std::abs(half_length[0])),
+			std::max(0.0, std::abs(diff_local[1]) - std::abs(half_length[1])),
+			std::max(0.0, std::abs(diff_local[2]) - std::abs(half_length[2])),
+		};
+
+		// 距离小球最远的一个点 //
+		double far_point[3]{
+			std::abs(diff_local[0]) + std::abs(half_length[0]),
+			std::abs(diff_local[1]) + std::abs(half_length[1]),
+			std::abs(diff_local[2]) + std::abs(half_length[2]),
+		};
+
+		auto close_distance_to_sphere = s_norm(3, close_point);
+		auto far_distance_to_sphere = s_norm(3, far_point);
+
+		// 距离小球最近的点也大于半径，两者分离 //
+		if (close_distance_to_sphere > sphere1_radius)
+			return 0;
+		// 距离小球最远的点也小于半径，小球包含长方体 //
+		else if (far_distance_to_sphere < sphere1_radius)
+			return 2;
+		else if (std::abs(half_length[0]) - std::abs(diff_local[0]) > sphere1_radius &&
+			std::abs(half_length[1]) - std::abs(diff_local[1]) > sphere1_radius &&
+			std::abs(half_length[2]) - std::abs(diff_local[2]) > sphere1_radius)
+			return 3;
+		else
+			return 1;
+	}
 }
