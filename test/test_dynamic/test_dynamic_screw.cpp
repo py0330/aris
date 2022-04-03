@@ -2158,6 +2158,15 @@ void test_collide() {
 				const double sphere2_center[3]{ 0.4,0.44,0.2 };
 				test_collide_func(sphere1_center, sphere1_radius, sphere2_center, sphere2_radius, 3);
 			}
+
+			//// A 包含 B
+			{
+				double sphere1_radius{ 0.1 };
+				const double sphere1_center[3]{ 0.3,0.3,0.3 };
+				double sphere2_radius{ 0.3 };
+				const double sphere2_center[3]{ 0.4,0.44,0.2 };
+				test_collide_func(sphere2_center, sphere2_radius, sphere1_center, sphere1_radius, 2);
+			}
 		}
 	};
 
