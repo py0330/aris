@@ -668,7 +668,7 @@ namespace aris::dynamic{
 		double pm_it[16];
 		s_pm_dot_pm(makJ_pm, mpm, pm_it);
 
-		double pm_c[16], ps_c[6];
+		double pm_c[16];
 		s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
 
 		cp[0] = pm_c[3];

@@ -1,6 +1,7 @@
 ﻿#include "test_dynamic_screw.h"
 #include <iostream>
 #include <aris/dynamic/dynamic.hpp>
+#include <aris/core/core.hpp>
 
 using namespace aris::dynamic;
 
@@ -1831,196 +1832,166 @@ void test_solve(){
 	const double calib_tool_two_pnts_result[2]{ 0.09553364891256,   0.13964114742507 };
 	s_calib_tool_two_pnts(calib_tool_two_pnts, result);
 	if (!s_is_equal(2, calib_tool_two_pnts_result, result, error))std::cout << "\"s_sov_axis_distance\" failed" << std::endl;
-
-
-
-	auto collide = [](const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int
+}
+void test_collide() {
+	//#define DEBUG_COLLIDE_CHECK_BOX2BOX
 	{
+		double reference_pe[6]{ 0.1,0.2,0.3,-aris::PI/2,0,0 };
+		double reference_pm[16];
+		s_pe2pm(reference_pe, reference_pm, "321");
 
+		double eul[3]{ aris::PI / 2,0,0 };
+		double point1_xyz[3]{1,2,3};
+		double point2_xyz[3]{-0.5,0.6,0.2};
 		
-		
-		
-		
-		double box1_rm[9], box2_rm[9], half_length1[3], half_length2[3], box1_to_box2_distance[3];
-		s_vc(3, 0.5, box1_length_xyz, half_length1);
-		s_vc(3, 0.5, box2_length_xyz, half_length2);
-		s_re2rm(box1_321_eul, box1_rm, "321");
-		s_re2rm(box2_321_eul, box2_rm, "321");
 
-		s_vc(3, box2_center, box1_to_box2_distance);
-		s_vs(3, box1_center, box1_to_box2_distance);
+		double box_center[3], box_eul[3], box_length_xyz[3];
+		s_generate_box(reference_pm, eul, point1_xyz, point2_xyz, box_center, box_eul, box_length_xyz);
 
-		/////////////////////////
-		double box1_vertexes[8][3], box2_vertexes[8][3];
-		for (int i = 0; i < 8; ++i) {
-			s_vc(3, box1_center, box1_vertexes[i]);
-			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box1_length_xyz[0], box1_rm + 0, 3, box1_vertexes[i], 1);
-			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box1_length_xyz[1], box1_rm + 1, 3, box1_vertexes[i], 1);
-			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box1_length_xyz[2], box1_rm + 2, 3, box1_vertexes[i], 1);
-
-			s_vc(3, box2_center, box2_vertexes[i]);
-			s_va(3, (i & 0x01 ? 0.5 : -0.5) * box2_length_xyz[0], box2_rm + 0, 3, box2_vertexes[i], 1);
-			s_va(3, (i & 0x02 ? 0.5 : -0.5) * box2_length_xyz[1], box2_rm + 1, 3, box2_vertexes[i], 1);
-			s_va(3, (i & 0x04 ? 0.5 : -0.5) * box2_length_xyz[2], box2_rm + 2, 3, box2_vertexes[i], 1);
-		}
-
-		dsp(8, 3, *box1_vertexes);
-		dsp(8, 3, *box2_vertexes);
-		/////////////////////////
-
-		// 验证是否 box1 中的点被 box2 所包含
-		auto check_if_contain = [](const double* box1_center, const double* half_length1, const double* box1_rm,
-			const double* box2_center, const double* half_length2, const double* box2_rm)->int
+		if (box_center[0] != 1)
 		{
-			////////////////////
-			int num = 0;
-			////////////////////
-
-			for (int i = 0; i < 8; ++i) {
-				double vertex_to_other_center[3];
-				// compute vertex //
-				s_vc(3, box1_center, vertex_to_other_center);
-				s_va(3, i & 0x01 ? half_length1[0] : -half_length1[0], box1_rm + 0, 3, vertex_to_other_center, 1);
-				s_va(3, i & 0x02 ? half_length1[1] : -half_length1[1], box1_rm + 1, 3, vertex_to_other_center, 1);
-				s_va(3, i & 0x04 ? half_length1[2] : -half_length1[2], box1_rm + 2, 3, vertex_to_other_center, 1);
-
-				// compute vertex to other center //
-				s_vs(3, box2_center, vertex_to_other_center);
-
-				double distance[3];
-				s_mm(3, 1, 3, box2_rm, T(3), vertex_to_other_center, 1, distance, 1);
-
-				if (std::abs(distance[0]) > std::abs(half_length2[0])
-					|| std::abs(distance[1]) > std::abs(half_length2[1])
-					|| std::abs(distance[2]) > std::abs(half_length2[2])) {
-					//return i;
-					continue;
-				}
-
-				num++;
-			}
-			return num;
-		};
-
-		auto contain1 = check_if_contain(box1_center, half_length1, box1_rm,
-			                             box2_center, half_length2, box2_rm);
-
-		auto contain2 = check_if_contain(box2_center, half_length2, box2_rm,
-			                             box1_center, half_length1, box1_rm);
-
-
-		std::cout << "contain:  " << contain1 << "  " << contain2 << std::endl;
-		//if (contain1)return 2;
-		//if (contain2)return 3;
-
-		// check if collide, see OBB collide OBB in reference
-		
-		// check OBB1's direction
-		for (int i = 0; i < 3; ++i) {
-			// direction of box1
-			double da = std::abs(half_length1[i]);
-			double db = 
-				std::abs(half_length2[0] * s_vv(3, box1_rm + i, 3, box2_rm + 0, 3)) +
-				std::abs(half_length2[1] * s_vv(3, box1_rm + i, 3, box2_rm + 1, 3)) +
-				std::abs(half_length2[2] * s_vv(3, box1_rm + i, 3, box2_rm + 2, 3));
-
-			double d = std::abs(s_vv(3, box1_to_box2_distance, 1, box1_rm + i, 3));
-
-			std::cout << "d:" << d << "  da:" << da << "  db:" << db << std::endl;
-
-			// 不干涉
-			if (d > da + db) {
-				return 0;
-			}
+			std::cout << "failed" << std::endl;
 		}
-
-		std::cout << std::endl;
-
-		// check OBB2's direction
-		for (int i = 0; i < 3; ++i) {
-			// direction of box1
-			double da = std::abs(half_length2[i]);
-			double db =
-				std::abs(half_length1[0] * s_vv(3, box2_rm + i, 3, box1_rm + 0, 3)) +
-				std::abs(half_length1[1] * s_vv(3, box2_rm + i, 3, box1_rm + 1, 3)) +
-				std::abs(half_length1[2] * s_vv(3, box2_rm + i, 3, box1_rm + 2, 3));
-
-			double d = std::abs(s_vv(3, box1_to_box2_distance, 1, box2_rm + i, 3));
-
-			std::cout << "d:" << d << "  da:" << da << "  db:" << db << std::endl;
-			// 不干涉
-			if (d > da + db) {
-				return 0;
-			}
-		}
-		std::cout << std::endl;
-		// check (OBB1 x OBB2) 's direction
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				double direction[3];
-				s_c3(box1_rm + i, 3, box2_rm + j, 3, direction, 1);
-
-				if (auto norm = s_norm(3, direction); norm > 1e-10) {
-					// direction of box1
-					double da = 
-						std::abs(half_length1[0] * s_vv(3, direction, 1, box1_rm + 0, 3)) +
-						std::abs(half_length1[1] * s_vv(3, direction, 1, box1_rm + 1, 3)) +
-						std::abs(half_length1[2] * s_vv(3, direction, 1, box1_rm + 2, 3));
-					double db =
-						std::abs(half_length2[0] * s_vv(3, direction, 1, box2_rm + 0, 3)) +
-						std::abs(half_length2[1] * s_vv(3, direction, 1, box2_rm + 1, 3)) +
-						std::abs(half_length2[2] * s_vv(3, direction, 1, box2_rm + 2, 3));
-
-					double d = std::abs(s_vv(3, box1_to_box2_distance, direction));
-
-					std::cout << "d:" << d << "  da:" << da << "  db:" << db << std::endl;
-					// 不干涉
-					if (d > da + db) {
-						return 0;
-					}
-				}
-			}
-		}
+	
+	}
+	
 
 
 
-
-
-		// 干涉但不包含 //
-
-		std::cout << "collide" << std::endl;
-		return 1;
+	auto test_collide = [&](const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz,
+		int result_should_be)
+	{
+		auto result = aris::dynamic::s_collide_check_box2box(box1_center, box1_321_eul, box1_length_xyz, box2_center, box2_321_eul, box2_length_xyz);
+		if (result != result_should_be) std::cout << "\"s_collide_check_box2box\" failed" << std::endl;
 	};
 
-	// 各干涉一个点
-	//const double box1_center[3]{ 0.1,0.2,0.3 };
-	//const double box1_eur[3]{ 0.3,0.1,0.2 };
-	//const double box1_length[3]{ 0.5,0.2,0.8 };
-	//const double box2_center[3]{ 0.3,0.4,0.6 };
-	//const double box2_eur[3]{ 0.1,0.1,0.5 };
-	//const double box2_length[3]{ 0.3,0.3,0.3 };
+	auto test_boxes_devide = [](auto test_collide_func)->void {
+		// 测试A B完全分离
+		{
+			//// A B 分离，且仅符合叉乘判断
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.87 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 0);
+			}
 
-	//// A中仅仅1个点被B包含
-	//const double box1_center[3]{ 0.1,0.2,0.3 };
-	//const double box1_eur[3]{ 0.3,0.1,0.2 };
-	//const double box1_length[3]{ 0.5,0.2,0.8 };
-	//const double box2_center[3]{ 0.3,0.4,0.65 };
-	//const double box2_eur[3]{ 0.1,0.1,0.5 };
-	//const double box2_length[3]{ 0.3,0.3,0.3 };
+			//// A B 分离，且仅符合OBB2方向判断
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.95 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 0);
+			}
 
-	// A B 分离
-	const double box1_center[3]{ 0.1,0.2,0.3 };
-	const double box1_eur[3]{ 0.3,0.1,0.2 };
-	const double box1_length[3]{ 0.5,0.2,0.8 };
-	const double box2_center[3]{ 0.3,0.4,0.9 };
-	const double box2_eur[3]{ 0.1,0.8,0.7 };
-	const double box2_length[3]{ 0.3,0.3,0.3 };
+			//// A B 分离，且仅符合OBB1方向判断
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,1.0 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 0);
+			}
+		}
+	};
 
-	//s_collide_check_box2box(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length);
-	collide(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length);
+	auto test_boxes_interfere = [](auto test_collide_func) {
+		// 测试有干涉无包含
+		{
+			// 各干涉一个点
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.6 };
+				const double box2_eur[3]{ 0.1,0.1,0.5 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
+			}
+
+			// A中仅仅1个点被B包含
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.65 };
+				const double box2_eur[3]{ 0.1,0.1,0.5 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
+			}
+
+			// A B 干涉，且无任何点被对方包含
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.2,0.8 };
+				const double box2_center[3]{ 0.3,0.4,0.86 };
+				const double box2_eur[3]{ 0.1,0.8,0.7 };
+				const double box2_length[3]{ 0.3,0.3,0.3 };
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
+			}
+		}
+
+	};
+
+	auto test_boxes_contain = [](auto test_collide_func) {
+		// 测试A包含B、B包含A
+		{
+			// A包含B，B包含A
+			{
+				const double box1_center[3]{ 0.1,0.2,0.3 };
+				const double box1_eur[3]{ 0.3,0.1,0.2 };
+				const double box1_length[3]{ 0.5,0.4,0.8 };
+				const double box2_center[3]{ 0.1,0.2,0.25 };
+				const double box2_eur[3]{ 0.1,0.1,0.5 };
+				const double box2_length[3]{ 0.1,0.15,0.2 };
+				// A 包含 B
+				test_collide_func(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 2);
+				// B 包含 A
+				test_collide_func(box2_center, box2_eur, box2_length, box1_center, box1_eur, box1_length, 3);
+			}
+
+			// A中仅仅1个点被B包含
+			{
+				//const double box1_center[3]{ 0.1,0.2,0.3 };
+				//const double box1_eur[3]{ 0.3,0.1,0.2 };
+				//const double box1_length[3]{ 0.5,0.2,0.8 };
+				//const double box2_center[3]{ 0.3,0.4,0.65 };
+				//const double box2_eur[3]{ 0.1,0.1,0.5 };
+				//const double box2_length[3]{ 0.3,0.3,0.3 };
+				//test_collide(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
+			}
+
+			// A B 干涉，且无任何点被对方包含
+			{
+				//const double box1_center[3]{ 0.1,0.2,0.3 };
+				//const double box1_eur[3]{ 0.3,0.1,0.2 };
+				//const double box1_length[3]{ 0.5,0.2,0.8 };
+				//const double box2_center[3]{ 0.3,0.4,0.86 };
+				//const double box2_eur[3]{ 0.1,0.8,0.7 };
+				//const double box2_length[3]{ 0.3,0.3,0.3 };
+				//test_collide(box1_center, box1_eur, box1_length, box2_center, box2_eur, box2_length, 1);
+			}
+		}
+	};
+	
+	test_boxes_devide(test_collide);
+	test_boxes_interfere(test_collide);
+	test_boxes_contain(test_collide);
+
+	std::cout << "benchmark collide box 2 box devided:" << aris::core::benchmark(1e6, test_boxes_devide, test_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box interfere:" << aris::core::benchmark(1e6, test_boxes_interfere, test_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box contain:" << aris::core::benchmark(1e6, test_boxes_contain, test_collide) << std::endl;
 }
-
 void test_screw()
 {
 	std::cout << std::endl << "-----------------test screw--------------------" << std::endl;
@@ -2033,6 +2004,7 @@ void test_screw()
 	test_variable_change();
 	test_coordinate_transform();
 	test_solve();
+	test_collide();
 
 	std::cout << "-----------------test screw finished-----------" << std::endl << std::endl;
 }
