@@ -3707,36 +3707,37 @@ namespace aris::dynamic{
  	}
 
 	auto s_generate_box(const double* reference_marker_pm, const double* eul_321, const double* point1_xyz, const double* point2_xyz,
-		double* box_center, double* box_eul, double* box_length)->void {
+		double* box_center, double* box_eul, double* box_length)noexcept->void {
 		
-		double pe_321_in_reference[6]{ (point1_xyz[0] + point2_xyz[0]) * 0.5,
-		                               (point1_xyz[1] + point2_xyz[1]) * 0.5,
-									   (point1_xyz[2] + point2_xyz[2]) * 0.5,
-									   eul_321[0],
-									   eul_321[1],
-									   eul_321[2],
+		// box center //
+		double box_center_in_reference[3]{ 
+			(point1_xyz[0] + point2_xyz[0]) * 0.5,
+			(point1_xyz[1] + point2_xyz[1]) * 0.5,
+			(point1_xyz[2] + point2_xyz[2]) * 0.5,
 		};
-		double pe_321_in_ground[6];
-		s_pe2pe(reference_marker_pm, pe_321_in_reference, pe_321_in_ground, "321", "321");
+		s_pp2pp(reference_marker_pm, box_center_in_reference, box_center);
 
+		// box length //
 		double rm[9], length[3]{ point2_xyz[0] - point1_xyz[0],point2_xyz[1] - point1_xyz[1],point2_xyz[2] - point1_xyz[2] };
-		s_re2rm(pe_321_in_ground + 3, rm, "321");
-
-		
-		s_mm(3, 1, 3, rm, length, box_length);
-
-		
-		// ret: //
+		s_re2rm(eul_321, rm, "321");
+		s_mm(3, 1, 3, rm, T(3), length, 1, box_length, 1);
 		for (int i = 0; i < 3; ++i) box_length[i] = std::abs(box_length[i]);
-		s_vc(3, pe_321_in_ground, box_center);
-		s_vc(3, pe_321_in_ground + 3, box_eul);
+		
+		// box eul //
+		s_re2re(reference_marker_pm, eul_321, box_eul);
 	}
 	auto s_collide_check_box2box(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int
 	{
 		double box1_rm[9], box2_rm[9], half_length1[3], half_length2[3], box1_to_box2_distance[3];
 		s_vc(3, 0.5, box1_length_xyz, half_length1);
 		s_vc(3, 0.5, box2_length_xyz, half_length2);
+		for (int i = 0; i < 3; ++i) {
+			half_length1[0] = std::abs(half_length1[0]);
+			half_length1[1] = std::abs(half_length1[1]);
+			half_length1[2] = std::abs(half_length1[2]);
+		}
+		
 		s_re2rm(box1_321_eul, box1_rm, "321");
 		s_re2rm(box2_321_eul, box2_rm, "321");
 
@@ -3764,7 +3765,7 @@ namespace aris::dynamic{
 #endif
 		// 验证是否 box1 中的点被 box2 所包含
 		auto check_if_contain = [](const double* box1_center, const double* half_length1, const double* box1_rm,
-			const double* box2_center, const double* half_length2, const double* box2_rm)->int
+			const double* box2_center, const double* half_length2, const double* box2_rm)noexcept->int
 		{
 			for (int i = 0; i < 8; ++i) {
 				double vertex_to_other_center[3];
@@ -3889,8 +3890,11 @@ namespace aris::dynamic{
 	};
 
 	auto s_collide_check_sphere2sphere(const double* sphere1_center_xyz, double sphere1_radius,
-		const double* sphere2_center_xyz, double sphere2_radius)->int 
+		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int
 	{
+		sphere1_radius = std::abs(sphere1_radius);
+		sphere2_radius = std::abs(sphere2_radius);
+		
 		double xyz_diff[3];
 		s_vc(3, sphere2_center_xyz, xyz_diff);
 		s_vs(3, sphere1_center_xyz, xyz_diff);
@@ -3908,8 +3912,10 @@ namespace aris::dynamic{
 	}
 
 	auto s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int 
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int
 	{
+		sphere1_radius = std::abs(sphere1_radius);
+		
 		double box2_rm[9];
 		s_re2rm(box2_321_eul, box2_rm, "321");
 
@@ -3932,7 +3938,7 @@ namespace aris::dynamic{
 
 		s_mm(3, 1, 3, box2_rm, T(3), diff, 1, diff_local, 1);
 
-		double half_length[3]{ 0.5 * box2_length_xyz[0],0.5 * box2_length_xyz[1], 0.5 * box2_length_xyz[2] };
+		double half_length[3]{ std::abs(0.5 * box2_length_xyz[0]),std::abs(0.5 * box2_length_xyz[1]), std::abs(0.5 * box2_length_xyz[2]) };
 
 		// 距离小球最近的一个点 //
 		double close_point[3]{
@@ -3966,7 +3972,7 @@ namespace aris::dynamic{
 	}
 
 	auto s_collide_check_point2box(const double* point_xyz,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int 
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int
 	{
 		double diff[3]{
 			point_xyz[0] - box2_center[0],
@@ -3987,7 +3993,7 @@ namespace aris::dynamic{
 	}
 
 	auto s_collide_check_point2sphere(const double* point_xyz,
-		const double* sphere2_center_xyz, double sphere2_radius)->int 
+		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int
 	{
 		double diff[3]{
 			point_xyz[0] - sphere2_center_xyz[0],
