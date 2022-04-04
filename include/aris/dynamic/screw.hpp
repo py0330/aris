@@ -1562,6 +1562,17 @@ namespace aris::dynamic
 	auto ARIS_API s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
 		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int;
 
+	//    检查点与长方体是否碰撞
+	//    ret 0: 两者无干涉
+	//        1: 两者有干涉，同时点也被box包含
+	auto ARIS_API s_collide_check_point2box(const double* point_xyz,
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int;
+
+	//    检查点与球体是否碰撞
+	//    ret 0: 两者无干涉
+	//        1: 两者有干涉，同时点也被sphere包含
+	auto ARIS_API s_collide_check_point2sphere(const double* point_xyz,
+		const double* sphere2_center_xyz, double sphere2_radius)->int;
 }
 
 #endif

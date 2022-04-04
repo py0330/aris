@@ -3907,7 +3907,7 @@ namespace aris::dynamic{
 			return 1;
 	}
 
-	auto ARIS_API s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
+	auto s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
 		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int 
 	{
 		double box2_rm[9];
@@ -3963,5 +3963,38 @@ namespace aris::dynamic{
 			return 3;
 		else
 			return 1;
+	}
+
+	auto s_collide_check_point2box(const double* point_xyz,
+		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)->int 
+	{
+		double diff[3]{
+			point_xyz[0] - box2_center[0],
+			point_xyz[1] - box2_center[1],
+			point_xyz[2] - box2_center[2]
+		};
+		
+		double box2_rm[9];
+		s_re2rm(box2_321_eul, box2_rm, "321");
+
+		double diff_in_box[3];
+		s_mm(3, 1, 3, box2_rm, T(3), diff, 1, diff_in_box, 1);
+
+		return diff_in_box[0] < box2_length_xyz[0]
+			&& diff_in_box[1] < box2_length_xyz[1]
+			&& diff_in_box[2] < box2_length_xyz[2]
+			? 1 : 0;
+	}
+
+	auto s_collide_check_point2sphere(const double* point_xyz,
+		const double* sphere2_center_xyz, double sphere2_radius)->int 
+	{
+		double diff[3]{
+			point_xyz[0] - sphere2_center_xyz[0],
+			point_xyz[1] - sphere2_center_xyz[1],
+			point_xyz[2] - sphere2_center_xyz[2]
+		};
+		
+		return s_norm(3, diff) < sphere2_radius ? 1 : 0;
 	}
 }
