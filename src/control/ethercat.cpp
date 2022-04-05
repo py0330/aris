@@ -542,46 +542,54 @@ namespace aris::control{
 		// check status A, now transition 1 automatically
 		if ((status_word & 0x4F) == 0x00) {
 			// this just set the initial control word...
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 1;
 		}
 		// check status B, now keep and return
 		else if ((status_word & 0x4F) == 0x40) {
 			// transition 2 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
 		// check status C, now transition 7
 		else if ((status_word & 0x6F) == 0x21) {
 			// transition 3 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
 		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23) {
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
+			setControlWord(std::uint16_t(0x06));//change to 0x06 for cooldrive
 			return 3;
 		}
 		// check status E, now transition 9
 		else if ((status_word & 0x6F) == 0x27) {
 			// transition 5 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
+			setControlWord(std::uint16_t(0x07));//change to 0x07 for cooldrive
 			return 4;
 		}
 		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07) {
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 5;
 		}
 		// check status G, now transition 14
 		else if ((status_word & 0x4F) == 0x0F) {
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 6;
 		}
 		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08) {
 			// transition 4 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			setControlWord(std::uint16_t(0x80));
 			return 7;
 		}
 		// unknown status
@@ -625,19 +633,22 @@ namespace aris::control{
 		// check status B, now transition 2
 		else if ((status_word & 0x4F) == 0x40) {
 			// transition 2 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));
+			setControlWord(std::uint16_t(0x06));
 			return 2;
 		}
 		// check status C, now transition 3
 		else if ((status_word & 0x6F) == 0x21) {
 			// transition 3 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));
+			setControlWord(std::uint16_t(0x07));
 			return 3;
 		}
 		// check status D, now transition 4
 		else if ((status_word & 0x6F) == 0x23) {
 			// transition 4 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x0F));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x0F));
+			setControlWord(std::uint16_t(0x0F));
 			//imp_->waiting_count_left = 20;
 			imp_->waiting_count_left = 1000;//change for cooldriver
 
@@ -660,18 +671,21 @@ namespace aris::control{
 		}
 		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07) {
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 6;
 		}
 		// check status G, now transition 14
 		else if ((status_word & 0x4F) == 0x0F) {
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			setControlWord(std::uint16_t(0x00));
 			return 7;
 		}
 		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08) {
 			// transition 4 //
-			imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			setControlWord(std::uint16_t(0x80));
 			return 8;
 		}
 		// unknown status
