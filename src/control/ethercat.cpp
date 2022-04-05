@@ -48,7 +48,7 @@ namespace aris::control{
 	}
 
 	struct PdoEntry::Imp{
-		std::any ec_handle_{ 0 };
+		std::any ec_handle_;
 		std::uint16_t index_{ 0 };
 		std::uint8_t subindex_{ 0 };
 		aris::Size bit_size_{ 0 };
