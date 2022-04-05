@@ -59,8 +59,6 @@ namespace aris::server{
 			bool has_prepared_{ false };
 
 			~InternalData()	{
-				std::cout << "internal dctor" << std::endl;
-				
 				// step 4a. 同步收集4a //
 				if (has_prepared_ && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))){
 					ARIS_LOG(aris::core::LogLvl::kDebug, 0, { "server collect cmd %ji" }, plan_->cmdId());

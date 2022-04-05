@@ -528,6 +528,8 @@ namespace aris::dynamic{
 		}
 
 		// get axis range //
+		if (!model()->findVariable("axis_range"))
+			model()->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::dynamic::MatrixVariable({0,0,0,0,0,0}));
 		s_vc(6, dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("axis_range"))->data().data(),imp_->puma_param.axis_range);
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int{
