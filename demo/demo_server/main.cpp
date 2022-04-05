@@ -46,10 +46,10 @@ int main(int argc, char *argv[]){
 
 	auto &cs = aris::server::ControlServer::instance();
 	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
-	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
-	
-	
+
 	std::cout << aris::core::toXmlString(cs) << std::endl;
+
+
 
 	//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
 

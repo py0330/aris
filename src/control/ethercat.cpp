@@ -1109,7 +1109,7 @@ namespace aris::control{
 			}
 		};
 
-		auto setSlave = [](EthercatMotor* ec_mot, int id) {
+		auto setSlave = [](EthercatMotor*ec_mot, int id) {
 			ec_mot->setSlave(&dynamic_cast<EthercatSlave&>(aris::server::ControlServer::instance().master().slavePool().at(id)));
 		};
 		auto getSlave = [](EthercatMotor*ec_mot)->int {

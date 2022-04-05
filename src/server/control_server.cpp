@@ -980,8 +980,7 @@ namespace aris::server{
 					auto &plan = *internal_data->plan_;
 
 					// make rt stastic thread safe //
-					auto begin_global_count = globalCount();
-					while (begin_global_count == plan.beginGlobalCount() + plan.count() - 1) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+					while (globalCount() == plan.beginGlobalCount() + plan.count() - 1) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
 
 					std::stringstream ss;
 					ss << "cmd " << plan.cmdId() << " stastics:" << std::endl
