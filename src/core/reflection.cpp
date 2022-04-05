@@ -264,7 +264,7 @@ namespace aris::core{
 		std::string str_(str);
 		str_.erase(0, str_.find_first_not_of(" \t\n\r\f\v"));// trim l
 		str_.erase(str_.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
-		*v = str_ == "false" || str_ == "0" ? true : false;
+		*v = str_ == "false" || str_ == "0" ? false : true;
 	}
 
 	auto c2s(char* v)->std::string { return std::string(1, *v); }
