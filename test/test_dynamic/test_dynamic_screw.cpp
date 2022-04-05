@@ -1840,12 +1840,16 @@ void test_collide() {
 		double reference_pm[16];
 		s_pe2pm(reference_pe, reference_pm, "321");
 
-		double eul[3]{ aris::PI / 2,0,0 };
+		double eul[3]{ aris::PI/2,0,0 };
 		double point1_xyz[3]{1,2,3};
 		double point2_xyz[3]{-0.5,0.6,0.2};
 
 		double box_center[3], box_eul[3], box_length_xyz[3];
 		s_generate_box(reference_pm, eul, point1_xyz, point2_xyz, box_center, box_eul, box_length_xyz);
+
+		dsp(1, 3, box_length_xyz);
+		dsp(1, 3, box_center);
+		dsp(1, 3, box_eul);
 	}
 
 	//#define DEBUG_COLLIDE_CHECK_BOX2BOX
