@@ -41,6 +41,8 @@ namespace aris::dynamic{
 		int filter_window_size_{ 20 };
 		double tolerable_variance_{ 0.05 };
 
+		std::string verify_result_path;
+
 		friend auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset);
 	};
 	auto Calibrator::m()->Size { return imp_->m_; }
@@ -374,7 +376,7 @@ namespace aris::dynamic{
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k] / (avg_size * 2 - 1);
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k] / (avg_size * 2 - 1);
 				}
-				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j] * clb->velocityRatio()[j]);
+				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j]);
 
 				// make actual fce //
 				fce[j].push_back(0.0);
@@ -452,6 +454,9 @@ namespace aris::dynamic{
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
 		double zero_check = 1e-4;
+
+		s_nv(rows * n(), 1.0 / real_max, A.data());
+		s_nv(rows, 1.0 / real_max, b.data());
 		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "clb----rank:" << rank << std::endl;
@@ -472,6 +477,10 @@ namespace aris::dynamic{
 		// update inertias //
 		updateInertiaParam(x.data());
 		return 0;
+	}
+	
+	auto Calibrator::setVerifyOutputFileDir(std::string file_path)->void {
+		imp_->verify_result_path = file_path;
 	}
 	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void{
 		// make datasets //
@@ -517,18 +526,18 @@ namespace aris::dynamic{
 
 		std::cout << "dynamic finished, now output results" << std::endl;
 
-		auto output_path = std::string("C:\\Users\\py0330\\Desktop\\data_after\\");
+		std::filesystem::create_directories(imp_->verify_result_path);
 
 		for (int i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			sprintf(posn, (output_path + "pos%d.txt").c_str(), i);
-			sprintf(veln, (output_path + "vel%d.txt").c_str(), i);
-			sprintf(accn, (output_path + "acc%d.txt").c_str(), i);
-			sprintf(fcen, (output_path + "fce%d.txt").c_str(), i);
-			sprintf(fn, (output_path + "f%d.txt").c_str(), i);
-			sprintf(ffn, (output_path + "ff%d.txt").c_str(), i);
-			sprintf(fdn, (output_path + "fd%d.txt").c_str(), i);
+			sprintf(posn, (imp_->verify_result_path + "/pos%d.txt").c_str(), i);
+			sprintf(veln, (imp_->verify_result_path + "/vel%d.txt").c_str(), i);
+			sprintf(accn, (imp_->verify_result_path + "/acc%d.txt").c_str(), i);
+			sprintf(fcen, (imp_->verify_result_path + "/fce%d.txt").c_str(), i);
+			sprintf(fn, (imp_->verify_result_path + "/f%d.txt").c_str(), i);
+			sprintf(ffn, (imp_->verify_result_path + "/ff%d.txt").c_str(), i);
+			sprintf(fdn, (imp_->verify_result_path + "/fd%d.txt").c_str(), i);
 
 			dlmwrite(num, 1, pos[i].data(), posn);
 			dlmwrite(num, 1, vel[i].data(), veln);
@@ -543,6 +552,7 @@ namespace aris::dynamic{
 
 		std::cout << "end" << std::endl;
 	}
+
 	auto Calibrator::clbFile(const std::string &file_paths)->void{
 		auto mtx = aris::dynamic::dlmread(file_paths.c_str());
 

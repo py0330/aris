@@ -126,8 +126,50 @@ auto calibModelYuejiang()->std::unique_ptr<aris::dynamic::Model>
 
 	return m;
 }
-int main()
-{
+
+auto calibFromControlServerXml() {
+	auto& cs = aris::server::ControlServer::instance();
+
+	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh_v1_local.xml");
+	std::cout << "verify" << std::endl;
+
+	auto& model = dynamic_cast<aris::dynamic::Model&>(cs.model());
+
+	model.init();
+
+	auto& clb = model.calibratorPool()[0];
+
+	clb.clbFiles({
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par6_.txt",
+		});
+
+	clb.setVerifyOutputFileDir("C:\\Users\\py033\\Desktop\\calib\\data_after");
+
+	clb.verifyFiles({
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par6_.txt",
+		});
+};
+
+int main(){
+	try {
+		calibFromControlServerXml();
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	return 0;
+	
 	{
 		calibModelYuejiang();
 	}
@@ -184,21 +226,7 @@ int main()
 	}
 	try
 	{
-		/*clb.clbFiles({ 
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j1_rt_log--2018-09-28--11-41-12--6.txt",
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j2_rt_log--2018-09-28--11-41-12--24.txt",
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j3_rt_log--2018-09-28--11-41-12--26.txt" ,
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j4_rt_log--2018-09-28--11-41-12--37.txt" ,
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j5_rt_log--2018-09-28--11-41-12--38.txt" ,
-			"C:\\Users\\py033\\Desktop\\rokae_data\\j6_rt_log--2018-09-28--11-41-12--39.txt" 
-			});*/
-		//clb.clbFiles({
-		//	"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-17--20-39-37--26.txt",
-		//	"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-17--20-39-37--27.txt",
-		//	});
 
-
-		std::cout << "verify" << std::endl;
 
 		//clb.verifyFiles({
 		//	"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-17--20-39-37--26.txt",
