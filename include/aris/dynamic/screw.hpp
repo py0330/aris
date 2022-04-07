@@ -1565,12 +1565,12 @@ namespace aris::dynamic
 	//    检查长方体与球体是否碰撞
 	//    ret 0: 两者无干涉
 	//        1: 两者有干涉
-	//        2: sphere1 包含 box2 
-	//        3: box2    包含 sphere1
-	auto inline ARIS_API s_collide_check_box2sphere(const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz,
-		const double* sphere1_center_xyz, double sphere1_radius)noexcept->int 
+	//        2: box1    包含 sphere2 
+	//        3: sphere2 包含 box1
+	auto inline ARIS_API s_collide_check_box2sphere(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
+		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int 
 	{	
-		auto ret = s_collide_check_sphere2box(sphere1_center_xyz, sphere1_radius, box2_center, box2_321_eul, box2_length_xyz);
+		auto ret = s_collide_check_sphere2box(sphere2_center_xyz, sphere2_radius, box1_center, box1_321_eul, box1_length_xyz);
 		return ret < 2 ? ret : (ret == 2 ? 3 : 2);
 	}
 
