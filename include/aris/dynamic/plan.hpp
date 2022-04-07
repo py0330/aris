@@ -11,26 +11,20 @@
 namespace aris::dynamic
 {
 	using PathPlan = std::function<void(double s, double *pm, double *vs_over_s, double *as_over_s)>;
-	class ARIS_API OptimalTrajectory :public Element
-	{
+	class ARIS_API OptimalTrajectory :public Element{
 	public:
-		struct MotionLimit
-		{
-			double max_vel, min_vel, max_acc, min_acc, max_tor, min_tor, max_jerk, min_jerk;
+		struct MotionLimit{
+			double max_vel{ 0.0 }, min_vel{ 0.0 }, max_acc{ 0.0 }, min_acc{ 0.0 }, max_tor{ 0.0 }, min_tor{ 0.0 }, max_jerk{ 0.0 }, min_jerk{ 0.0 };
 		};
-		struct Node
-		{
-			double time, s, ds, dds;
+		struct Node{
+			double time{ 0.0 }, s{ 0.0 }, ds{ 0.0 }, dds{ 0.0 };
 		};
 
 		template <typename LimitArray>
-		auto setMotionLimit(LimitArray limits)->void
-		{
+		auto setMotionLimit(LimitArray limits)->void{
 			motor_limits.clear();
 			for (auto &limit : limits)
-			{
 				motor_limits.push_back(limit);
-			}
 		}
 		auto setBeginNode(Node node)->void { beg_ = node; }
 		auto setEndNode(Node node)->void { end_ = node; }
@@ -54,10 +48,10 @@ namespace aris::dynamic
 
 
 
-		double failed_s;
+		double failed_s{ 0.0 };
 
 		PathPlan plan;
-		UniversalSolver *solver;
+		UniversalSolver* solver{ nullptr };
 
 		Node beg_, end_;
 		std::list<Node> list;
@@ -69,38 +63,32 @@ namespace aris::dynamic
 		std::vector<double> result_;
 	};
 
-	class ARIS_API FastPath
-	{
+	class ARIS_API FastPath{
 	public:
-		struct MotionLimit
-		{
-			double maxVel, minVel, maxAcc, minAcc;
+		struct MotionLimit{
+			double maxVel{ 0.0 }, minVel{ 0.0 }, maxAcc{ 0.0 }, minAcc{ 0.0 };
 		};
-		struct Node
-		{
-			double time, s, ds, dds;
-			bool isAccelerating;
+		struct Node{
+			double time{ 0.0 }, s{ 0.0 }, ds{ 0.0 }, dds{ 0.0 };
+			bool isAccelerating{ true };
 		};
-		struct Data
-		{
-			double * const Ji;
-			double * const dJi;
-			double * const Cv;
-			double * const Ca;
-			double * const g;
-			double * const h;
-			const Size size;
-			double time, s, ds;
-			double dsLhs, dsRhs;
-			double ddsLhs, ddsRhs;
+		struct Data{
+			double * const Ji{nullptr};
+			double * const dJi{ nullptr };
+			double * const Cv{ nullptr };
+			double * const Ca{ nullptr };
+			double * const g{ nullptr };
+			double * const h{ nullptr };
+			const Size size{0};
+			double time{ 0.0 }, s{ 0.0 }, ds{ 0.0 };
+			double dsLhs{ 0.0 }, dsRhs{ 0.0 };
+			double ddsLhs{ 0.0 }, ddsRhs{ 0.0 };
 		};
 
 		template <typename LimitArray>
-		auto setMotionLimit(LimitArray limits)->void
-		{
+		auto setMotionLimit(LimitArray limits)->void{
 			motor_limits.clear();
-			for (auto &limit : limits)
-			{
+			for (auto &limit : limits){
 				motor_limits.push_back(limit);
 			}
 		}

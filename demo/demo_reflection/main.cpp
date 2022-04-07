@@ -10,14 +10,14 @@ struct Basic {
 	int age_;
 };
 // Basic 类型的转化函数
-auto basicToStr(void* value)->std::string {
+auto basicToStr(Basic* value)->std::string {
 	// 转化得到 Basic 变量 //
 	auto basic = reinterpret_cast<Basic*>(value);
 	
 	// 返回值 //
 	return basic->name_ + "_" + std::to_string(basic->age_);
 }
-auto strToBasic(void* value, std::string_view str)->void {
+auto strToBasic(Basic* value, std::string_view str)->void {
 	// 转化得到 Basic 变量 //
 	auto basic = reinterpret_cast<Basic*>(value);
 
@@ -25,7 +25,6 @@ auto strToBasic(void* value, std::string_view str)->void {
 	basic->name_ = str.substr(0, str.find_last_of('_'));
 	basic->age_ = std::stoi(std::string(str.substr(str.find_last_of('_') + 1, std::string_view::npos)));
 }
-
 
 // 组合类型可以包含属性
 class BaseClass {
@@ -71,8 +70,19 @@ private:
 auto setValue5(ChildClass *c, double v)->void { c->global_value_ = v; }
 auto getValue5(ChildClass *c)->double { return c->global_value_; }
 
-ARIS_REGISTRATION{
+// 多继承 //
+class BaseClass2 {
+public:
+	// 使用成员变量定义
+	float member2;
+};
 
+class MultiInherit :public BaseClass, public BaseClass2 {
+public:
+	MultiInherit() = default;
+};
+
+ARIS_REGISTRATION{
 	// 注册 Basic 类型，以及它和字符串的转换关系(此时不能有其他 prop 属性) //
 	aris::core::class_<Basic>("Basic")
 		.textMethod(basicToStr, strToBasic)
@@ -100,42 +110,85 @@ ARIS_REGISTRATION{
 	aris::core::class_<std::vector<int> >("VecInt")
 		.asArray()
 		;
+
+	// 注册多继承 //
+	aris::core::class_<BaseClass2>("BaseClass2")
+		.prop("member2", &BaseClass2::member2)
+		;
+	
+	aris::core::class_<MultiInherit>("MultiInherit")
+		.inherit<BaseClass>()
+		.inherit<BaseClass2>()
+		;
 }
 
+namespace aris::core {
+	class func_ {
+	public:
+		template <typename R, typename... Param>
+		func_(std::string name, std::function<R(Param...)> f) {
+			using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+			inside_func = [=](std::vector<aris::core::Instance>& param_ins_vec)->void* {
+				auto t = make_param_tuple<Arguments>(
+					param_ins_vec,
+					std::make_index_sequence<std::tuple_size_v<Arguments>>{}
+				);
+				std::apply(f, t);
+				return nullptr;
+			};
 
-class func_ {
-public:
-	template <typename R, typename... Param>
-	func_(std::string name, std::function<R(Param...)> f) {
-		using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
-		inside_func = [=](std::vector<aris::core::Instance> &param_ins_vec)->void* {
-			auto t = make_param_tuple<Arguments>(
-				param_ins_vec,
-				std::make_index_sequence<std::tuple_size_v<Arguments>>{}
-			);
-			std::apply(f, t);
-			return nullptr;
+			param_type_infos_ = std::vector<const std::type_info*>({ &typeid(Param)... });
+			return_type_info_ = &typeid(R);
+		}
+
+		template< class R, class... Param >
+		func_(std::string name, R(*f)(Param...)) {
+			using Arguments = std::tuple < std::add_lvalue_reference_t<Param>...>;
+			inside_func = [=](std::vector<aris::core::Instance>& param_ins_vec)->void* {
+				auto t = make_param_tuple<Arguments>(
+					param_ins_vec,
+					std::make_index_sequence<std::tuple_size_v<Arguments>>{}
+				);
+				std::apply(f, t);
+				return nullptr;
+			};
+
+			param_type_infos_ = std::vector<const std::type_info*>({ &typeid(Param)... });
+			return_type_info_ = &typeid(R);
 		};
-	}
 
-	template <typename... Param>
-	auto invoke(Param&&... params)->void{
-		auto ins_vec = std::vector<aris::core::Instance>({params...});
-		inside_func(ins_vec);
-	}
+		template <typename... Param>
+		auto invoke(Param&&... params)->void {
+			auto ins_vec = std::vector<aris::core::Instance>({ params... });
+			inside_func(ins_vec);
+		}
 
-	auto invoke(std::vector<aris::core::Instance> params)->void {
-		inside_func(params);
-	}
+		auto invoke(std::vector<aris::core::Instance>& params)->void {
+			inside_func(params);
+		}
 
-private:
-	std::function<void*(std::vector<aris::core::Instance> &)> inside_func;
+	private:
+		std::function<void* (std::vector<aris::core::Instance>&)> inside_func;
+		const std::type_info* return_type_info_;
+		std::vector<const std::type_info*> param_type_infos_;
+		const Type* return_type_;
+		std::vector<const Type*> param_types_;
 
-	template <class MyTuple, std::size_t... I>
-	auto make_param_tuple(std::vector<aris::core::Instance> &param_ins_vec, std::index_sequence<I...>)->MyTuple {
-		return MyTuple(*param_ins_vec[I].castTo<std::remove_reference_t<std::tuple_element_t<I, MyTuple>>>()...);
-	}
-};
+
+		auto init()->void {
+			static bool inited{ false };
+			if (inited) return;
+			return_type_ = Type::getType(return_type_info_->hash_code());
+			for (auto& info : param_type_infos_)param_types_.push_back(Type::getType(info->hash_code()));
+		}
+
+		template <class MyTuple, std::size_t... I>
+		auto make_param_tuple(std::vector<aris::core::Instance>& param_ins_vec, std::index_sequence<I...>)->MyTuple {
+			return MyTuple(*param_ins_vec[I].castToPointer<std::remove_reference_t<std::tuple_element_t<I, MyTuple>>>()...);
+		}
+	};
+}
+
 
 //template <typename R, typename... Param>
 //auto select_overload(std::function<R(Param...)> f)->std::function<R(Param...)> { return f; }
@@ -152,8 +205,8 @@ int main(){
 	std::cout << std::setiosflags(std::ios::left);
 
 	//# 使用反射 #//
+	//## 基础类型 ##//
 	{
-		//## 基础类型 ##//
 		// 基础类型可以和字符串交互，也可直接序列化
 		Basic basic1{ "jack", 12 };
 		std::cout << aris::core::toXmlString(basic1) << std::endl;
@@ -165,16 +218,16 @@ int main(){
 		std::cout << std::setw(25) << "data after reflection:" << basic1.name_ << "--" << basic1.age_ << std::endl;
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
-		auto[ptr, ins2] = aris::core::Type::getType("Basic")->create();
+		auto ins2 = aris::core::Type::getType("Basic")->create();
 		ins2.fromString("bob_44");
-		Basic* basic2_ptr = ins2.castTo<Basic>();
+		Basic* basic2_ptr = ins2.castToPointer<Basic>();
 		std::cout << std::setw(25) << "data created:" << basic2_ptr->name_ << "--" << basic2_ptr->age_ << std::endl;
 	}
 
+	//## 组合类型 ##//
 	{
 		std::cout << "--------------------------------------" << std::endl;
 		
-		//## 组合类型 ##//
 		// 组合类型无法直接和字符串做交互，但可序列化成 xml/json 字符串 
 		ChildClass value1;
 		value1.member = 123;
@@ -205,7 +258,7 @@ int main(){
 		std::unique_ptr<BaseClass> value4_insert(new BaseClass);
 		value4_insert->member = 1234567;
 		value4_insert->referenceMember() = "refer";
-		ins.set("value4", *value4_insert.release());  // ins 负责插入对象的生命周期
+		ins.set("value4", std::move(*value4_insert.release()));  // ins 负责插入对象的生命周期
 		ins.set("value5", 12.28);
 		std::cout << std::setw(25) << "write result:" << std::endl
 			<< std::setw(25) << "member:" << value1.member << std::endl
@@ -217,17 +270,17 @@ int main(){
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
 		std::cout << "-------------------" << std::endl;
-		auto[ptr, ins2] = aris::core::Type::getType("ChildClass")->create();
+		auto ins2 = aris::core::Type::getType("ChildClass")->create();
 		ins2.set("member", 1234);
 		ins2.set("referenceMember", std::string("cccc")); // set的类型必须和注册的类型一样
 		ins2.set("value3", 6.25);
 		std::unique_ptr<BaseClass> value4_insert2(new BaseClass);
 		value4_insert2->member = 567;
 		value4_insert2->referenceMember() = "refer2";
-		ins2.set("value4", *value4_insert2.release());  // ins 负责插入对象的生命周期
+		ins2.set("value4", std::move(*value4_insert2.release()));  // ins 负责插入对象的生命周期
 		ins2.set("value5", 12.2833);
 
-		ChildClass* created_ptr = ins2.castTo<ChildClass>();
+		ChildClass* created_ptr = ins2.castToPointer<ChildClass>();
 		std::cout << std::setw(25) << "data created:" << std::endl
 			<< std::setw(25) << "member:" << created_ptr->member << std::endl
 			<< std::setw(25) << "referenceMember:" << created_ptr->referenceMember() << std::endl
@@ -246,15 +299,15 @@ int main(){
 		aris::core::fromXmlString(value3, str);
 
 		// 如果想手动管理所创建实例的生命周期，需release ptr //
-		auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
-		delete base_ptr;
+		//auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
+		//delete base_ptr;
 	}
 
+	//## 数组类型 ##//
 	{
 		std::cout << "--------------------------------------" << std::endl;
 
-		//## 数组类型 ##//
-		// 组合类型无法直接和字符串做交互，但可序列化成 xml/json 字符串 
+		// 数组类型无法直接和字符串做交互，但可序列化成 xml/json 字符串 
 		// 当Instance 对象为数组时，可以使用 at   size  push_back clear 等方法
 		std::vector<BaseClass> value;
 		value.push_back(BaseClass());
@@ -295,10 +348,10 @@ int main(){
 
 		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
 		std::cout << "-------------------" << std::endl;
-		auto[ptr, ins2] = aris::core::Type::getType("VecBase")->create();
+		auto ins2 = aris::core::Type::getType("VecBase")->create();
 		ins2.push_back(value_insert);
 		ins2.push_back(value_insert);
-		std::vector<BaseClass>* basic2_ptr = ins2.castTo<std::vector<BaseClass>>();
+		std::vector<BaseClass>* basic2_ptr = ins2.castToPointer<std::vector<BaseClass>>();
 		std::cout << std::setw(25) << "data created:" << std::endl
 			<< std::setw(25) << "member:" << ins2.at(0).get("member").toString() << std::endl
 			<< std::setw(25) << "referenceMember:" << ins2.at(0).get("referenceMember").toString() << std::endl
@@ -314,10 +367,92 @@ int main(){
 
 
 		// 如果想手动管理所创建实例的生命周期，需release ptr //
-		auto base_ptr = reinterpret_cast<std::vector<BaseClass>*>(ptr.release());
-		delete base_ptr;
+		//auto base_ptr = reinterpret_cast<std::vector<BaseClass>*>(ptr.release());
+		//delete base_ptr;
+	}
+
+	//## 多继承 ##//
+	{
+		std::cout << "--------------------------------------" << std::endl;
+
+		// 多继承类型无法直接和字符串做交互，但可序列化成 xml/json 字符串 
+		
+		MultiInherit multi;
+		multi.member = 10;
+		multi.referenceMember() = "multi_reference_member";
+		multi.member2 = 3.1415926;
+		
+		// 使用 Instance 进行反射交互，Instance 是引用，不负责引用对象生命周期
+		// 读取内容
+		aris::core::Instance ins = multi;
+		std::cout << std::setw(25) << "read result:" << std::endl
+			<< std::setw(25) << "member:" << ins.get("member").toString() << std::endl
+			<< std::setw(25) << "referenceMember:" << ins.get("referenceMember").toString() << std::endl
+			<< std::setw(25) << "member2:" << ins.get("member2").toString() << std::endl;
+
+		// 写入内容
+		std::cout << "-------------------" << std::endl;
+		ins.set("member", 456);
+		ins.set("referenceMember", std::string("multi_ref2")); // set的类型必须和注册的类型一样
+		ins.set("member2", (float)6.28);
+		std::cout << std::setw(25) << "write result:" << std::endl
+			<< std::setw(25) << "member:" << multi.member << std::endl
+			<< std::setw(25) << "referenceMember:" << multi.referenceMember() << std::endl
+			<< std::setw(25) << "member2:" << multi.member2 << std::endl;
+
+
+		// 使用反射创建类型，其中ptr是智能指针，负责实际数据的生命周期，ins2 是Instance，为实际数据的引用，不负责生命周期
+		std::cout << "-------------------" << std::endl;
+		auto ins2 = aris::core::Type::getType("MultiInherit")->create();
+		ins2.set("member", 1234);
+		ins2.set("referenceMember", std::string("cccc")); // set的类型必须和注册的类型一样
+		ins2.set("member2", (float)6.25);
+
+		MultiInherit* created_ptr = ins2.castToPointer<MultiInherit>();
+		std::cout << std::setw(25) << "data created:" << std::endl
+			<< std::setw(25) << "member:" << created_ptr->member << std::endl
+			<< std::setw(25) << "referenceMember:" << created_ptr->referenceMember() << std::endl
+			<< std::setw(25) << "member2:" << created_ptr->member2 << std::endl;
+
+		// 序列化，和 xml 字符串做交互
+		std::cout << "-------------------" << std::endl;
+		auto str = aris::core::toXmlString(ins2);
+		std::cout << str << std::endl;
+
+		std::cout << aris::core::toJsonString(ins2) << std::endl;
+		MultiInherit value3;
+		aris::core::fromXmlString(value3, str);
+
+		// 如果想手动管理所创建实例的生命周期，需release ptr //
+		//auto base_ptr = reinterpret_cast<BaseClass*>(ptr.release());
+		//delete base_ptr;
 	}
 	
+	ChildClass c;
+	aris::core::fromXmlString(c,
+		"<ChildClass member=\"1234\" referenceMember=\"cccc\" value3=\"6.25\" value5=\"12.283300000000001\">"
+    "<BaseClass member=\"567\" referenceMember=\"refer2\"/>"
+"</ChildClass>"
+	);
+	std::cout << aris::core::toXmlString(c) << std::endl;
+
+	ChildClass c2;
+	aris::core::fromJsonString(c2,
+		"{"
+		"\"ChildClass\": {"
+		"\"@member\": \"1234\","
+		"\"@referenceMember\": \"cccc\","
+		"\"@value3\": \"6.25\","
+		"\"BaseClass\": {"
+		"\"@member\": \"567\","
+		"\"@referenceMember\": \"refer2\","
+		"\"#name\": \"value4\""
+		"},"
+		"\"@value5\": \"12.283300000000001\""
+		" }"
+		"}");
+
+	std::cout << aris::core::toJsonString(c2) << std::endl;
 
 	auto f = [](int &a, double b)->double {
 		std::cout << "a:" << a << std::endl;
@@ -330,13 +465,13 @@ int main(){
 	std::function<double(int&, double)> ff = f;
 
 
-	func_ aaa("aaa", ff);
+	aris::core::func_ aaa("aaa", ff);
 
 	auto ffff = select_overload<void(int)>(f1);
 
 	std::function<void(int)> fffff = select_overload<void(int)>(f1);
-	func_ f1_("f1", fffff);
-	//func_ f1_("f1", select_overload<void(int)>(f1));
+	aris::core::func_ f1_("f1", fffff);
+	aris::core::func_ f2_("f2", select_overload<void(int)>(f1));
 
 	auto func = select_overload<void(int)>(f1);
 
@@ -356,6 +491,35 @@ int main(){
 	ins_vec.push_back(ccc);
 
 	aaa.invoke(ins_vec);
+
+
+	aris::core::Instance ins = 0.5;
+
+	auto ins2 = ins;
+	*ins2.castToPointer<double>() = 0.1;
+
+	std::cout << ins.castToValue<double>() << std::endl;
+
+	while (1) {
+		auto v1 = ins.castToValue<std::string>();
+		auto v2 = ins.castToValue<int>();
+		auto v3 = ins.castToValue<float>();
+		auto v4 = ins.castToValue<char>();
+		auto v5 = ins.castToValue<std::uint8_t>();
+		auto v6 = ins.castToValue<double>();
+
+		auto ins2 = ins;
+		auto ins3 = 123;
+
+		double b = 0.546;
+		auto ins4 = b;
+
+
+		static int a = 1;
+		if(a++%1000000 == 0) std::cout << a << std::endl;
+
+	}
+	std::cout << ins.castToValue<std::string>() << std::endl;
 
 	std::cout << bc << std::endl;
 	std::cout << ccc << std::endl;

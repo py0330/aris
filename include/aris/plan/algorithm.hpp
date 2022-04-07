@@ -20,8 +20,7 @@
 namespace aris::plan
 {
 	using PathPlanFunction = std::function<void(double s, double ds, std::vector<double> &x, std::vector<double> &dx_ds, std::vector<double> &ddx_ds2)>;
-	class ARIS_API OptimalTrajectory
-	{
+	class ARIS_API OptimalTrajectory{
 	public:
 		struct MotionLimit { double max_vel, min_vel, max_acc, min_acc, max_tor, min_tor, max_jerk, min_jerk; };
 		struct Node { double s, ds, dds; };
@@ -287,11 +286,11 @@ namespace aris::plan
 		}
 
 		
-		aris::dynamic::Model *model;
-		aris::dynamic::InverseKinematicSolver *solver;
+		aris::dynamic::Model* model{ nullptr };
+		aris::dynamic::InverseKinematicSolver* solver{ nullptr };
 		
 		PathPlanFunction plan;
-		Node beg_, end_;
+		Node beg_{ 0,0,0 }, end_{ 0,0,0 };
 		std::vector<MotionLimit> motor_limits;
 
 		static inline const double dt = 1e-3;

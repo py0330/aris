@@ -67,25 +67,22 @@ namespace aris::core
 	{
 		std::copy_n(other.data_.get(), sizeof(MsgHeader) + other.size(), data_.get());
 	}
-	Msg::Msg(Msg&& other) { swap(other); }
-	Msg& Msg::operator=(Msg &&other) { swap(other); return (*this); }
+	Msg::Msg(Msg&& other)noexcept { swap(other); }
+	Msg& Msg::operator=(Msg &&other)noexcept { swap(other); return (*this); }
 
-	auto MsgStreamBuf::overflow(int_type c)->int_type
-	{
+	auto MsgStreamBuf::overflow(int_type c)->int_type{
 		msg_->resize(msg_->capacity());// 保证在下次resize的时候，所有数据都会被copy，这是因为在resize重新分配内存时，不是按照capacity来copy
 		msg_->resize(msg_->capacity() + 1);
 		setp(msg_->data() + msg_->size(), msg_->data() + msg_->capacity());
 		*(pptr() - 1) = c;
 		return c;
 	}
-	auto MsgStreamBuf::sync()->int
-	{
+	auto MsgStreamBuf::sync()->int{
 		msg_->resize(msg_->capacity() - static_cast<MsgSize>(epptr() - pptr()));
 		return 0;
 	}
 	auto MsgStreamBuf::reset()->void { setp(msg_->data(), msg_->data() + msg_->capacity()); }
-	MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf() 
-	{
+	MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf() {
 		setp(msg.data(), msg.data() + msg.capacity());
 	};
 }

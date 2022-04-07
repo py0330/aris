@@ -4,18 +4,17 @@
 #include <array>
 #include <aris/dynamic/model_solver.hpp>
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-	// puma机器人构型： !!!! 注意，末端的位置姿态还不是完全符合，tbd !!!!
-	//                                                   y    EE(tool0)
-	//                                                   ^  x
-	//                         x4           y5    x6     | /
+	// puma机器人构型：
+	//                                                        EE(tool0)
+	//                                                      y
+	//                         x4           y5    x6       /
 	//                       \ - ********** o *** - ***  *----> z                                
 	//                    d3 * | ... d4 ... | ... d5 ... |             
-	//                  \  *
+	//                  \  *                             x
 	//               --- *                              
 	//               a3  *                                
 	//                .  *                              
@@ -49,6 +48,9 @@ namespace aris::dynamic
 		// BASE wrt REF, by default is 321 type 
 		double base2ref_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string base2ref_pe_type;
+
+		// axis range
+		double axis_range[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 		// inertia vector, size must be 6
 		std::vector<std::array<double, 10> > iv_vec;

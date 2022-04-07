@@ -18,8 +18,7 @@
 #include "aris/ext/json.hpp"
 #include "aris/ext/fifo_map.hpp"
 
-namespace aris::server
-{
+namespace aris::server{
 	struct Interface::Imp {
 		std::map<unsigned, std::function<void(const Interface *interface)>> on_connecteds_;
 		std::map<unsigned, std::function<void(const Interface *interface)>> on_disconnecteds_;
@@ -201,7 +200,7 @@ namespace aris::server
 	auto WebInterface::close()->void { socket().stop(); }
 	auto WebInterface::isConnected() const->bool { return imp_->sock_->isConnected(); }
 	WebInterface::~WebInterface() = default;
-	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name), imp_(new Imp)
+	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::Type type):Interface(name), imp_(new Imp)
 	{
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int {
 			auto send_ret = [socket, msg](std::string str)->void {
@@ -342,7 +341,7 @@ namespace aris::server
 		else
 			return std::make_tuple<std::string, int>("", 0);
 	}
-	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
+	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::Type type) :Interface(name), imp_(new Imp)
 	{
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int{
 			auto send_ret = [socket, msg](std::string str)->void {
@@ -431,14 +430,11 @@ namespace aris::server
 	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
 	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
 
-	struct HttpInterface::Imp
-	{
+	struct HttpInterface::Imp{
 		std::thread http_thread_;
 		std::string port_;
 		std::string document_root_;
 		std::string dav_root_;
-
-		//std::map<std::string, std::function<std::string(void)>> gets_, posts_, deletes_, puts_;
 
 		struct mg_mgr mgr;
 		struct mg_connection *nc;
@@ -449,22 +445,18 @@ namespace aris::server
 		std::mutex mu_running_;
 		std::atomic_bool is_running_{ false };
 
-		static void event_handle_for_aris_ui(struct mg_connection *nc, int ev, void *ev_data)
-		{
-			try 
-			{
+		static void event_handle_for_aris_ui(struct mg_connection *nc, int ev, void *ev_data){
+			try {
 				struct http_message *hm = (struct http_message *) ev_data;
 
 				switch (ev) {
-				case MG_EV_HTTP_REQUEST:
-				{
+				case MG_EV_HTTP_REQUEST:{
 					auto method = std::string(hm->method.p, hm->method.len);
 					auto uri = std::string(hm->uri.p, hm->uri.len);
 
 					std::cout << method << "    " << uri << std::endl;
 
-					if (method == "GET" && uri == "/api/config/interface")
-					{
+					if (method == "GET" && uri == "/api/config/interface"){
 						auto ret = fetchInterfaceConfig();
 
 						mg_printf(nc,
@@ -491,8 +483,7 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
-					else if (method == "POST" && uri.find("/api/dashboards") != std::string::npos && uri.find("cells") != std::string::npos)
-					{
+					else if (method == "POST" && uri.find("/api/dashboards") != std::string::npos && uri.find("cells") != std::string::npos){
 						auto dashid = uri.substr(16, uri.substr(16).find_first_of('/'));
 						auto ret = createCell(dashid, std::string(hm->body.p, hm->body.len));
 
@@ -506,8 +497,7 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), (int)ret.size());
 						break;
 					}
-					else if (method == "DELETE" && uri.find("/api/dashboards") != std::string::npos	&& uri.find("cells") != std::string::npos)
-					{
+					else if (method == "DELETE" && uri.find("/api/dashboards") != std::string::npos	&& uri.find("cells") != std::string::npos){
 						auto ret = deleteCell(uri.substr(16, uri.substr(16).find("/cells")), uri.substr(uri.find("cells/") + 6));
 
 						mg_printf(nc,
@@ -620,8 +610,7 @@ namespace aris::server
 
 						break;
 					}
-					else if (method == "GET" && uri == "/api/config/xml")
-					{
+					else if (method == "GET" && uri == "/api/config/xml"){
 						auto ret = fetchConfigXml();
 
 						mg_printf(nc,
@@ -684,28 +673,26 @@ namespace aris::server
 					{
 						mg_serve_http(nc, hm, reinterpret_cast<Imp*>(nc->user_data)->s_http_server_opts);
 					}
+
+					break;
 				}
 				default:
 					break;
 				}
 			}
-			catch (std::exception &e)
-			{
+			catch (std::exception &e){
 				std::cout << "http error:" << e.what() << std::endl;
 			}
-			catch (...)
-			{
+			catch (...){
 				std::cout << "http error: unknown" << std::endl;
 			}
 			
 		}
-		static void event_handle_for_old(struct mg_connection *nc, int ev, void *ev_data)
-		{
+		static void event_handle_for_old(struct mg_connection *nc, int ev, void *ev_data){
 			struct http_message *hm = (struct http_message *) ev_data;
 
 			switch (ev) {
-			case MG_EV_HTTP_REQUEST:
-			{
+			case MG_EV_HTTP_REQUEST:{
 				std::cout << std::string(hm->message.p, hm->message.len) << std::endl;
 
 				auto http_method = std::string(hm->method.p, hm->method.len);
@@ -719,38 +706,33 @@ namespace aris::server
 				opts.dav_document_root = imp->dav_root_.c_str();
 				opts.enable_directory_listing = "yes";
 
-				if (http_method == "GET" && http_uri == "/api/login/fetch")
-				{
+				if (http_method == "GET" && http_uri == "/api/login/fetch"){
 				}
-				else if (http_method == "POST" && http_uri == "/api/login")
-				{
+				else if (http_method == "POST" && http_uri == "/api/login"){
 
 				}
-				else if (http_method == "GET")
-				{
+				else if (http_method == "GET"){
 				}
-				else if (http_method == "POST")
-				{
+				else if (http_method == "POST"){
 
 				}
-				else
-				{
+				else{
 					std::cout << "unknown cmd" << std::endl;
 				}
+
+				break;
 			}
 			default:
 				break;
 			}
 		}
 	};
-	auto HttpInterface::open()->void
-	{
+	auto HttpInterface::open()->void{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 
 		setRootPath(imp_->document_root_);
 
-		if (imp_->is_running_.exchange(true) == false)
-		{
+		if (imp_->is_running_.exchange(true) == false){
 			mg_mgr_init(&imp_->mgr, NULL);
 
 			// Set HTTP server options //
@@ -769,15 +751,13 @@ namespace aris::server
 			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
 			imp_->s_http_server_opts.enable_directory_listing = "yes";
 			imp_->nc->user_data = imp_.get();
-			imp_->http_thread_ = std::thread([this]()
-			{
+			imp_->http_thread_ = std::thread([this](){
 				for (; imp_->is_running_; ) { mg_mgr_poll(&imp_->mgr, 1000); }
 				mg_mgr_free(&imp_->mgr);
 			});
 		}
 	}
-	auto HttpInterface::close()->void
-	{
+	auto HttpInterface::close()->void{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		if (imp_->is_running_.exchange(false) == true) { imp_->http_thread_.join(); }
 	}
@@ -787,10 +767,7 @@ namespace aris::server
 	auto HttpInterface::setPort(const std::string &port)->void { imp_->port_ = port; }
 	auto HttpInterface::setDocumentRoot(const std::string &root)->void { imp_->document_root_ = root; }
 	HttpInterface::~HttpInterface() = default;
-	// HttpInterface::HttpInterface(HttpInterface && other) = default;
-	// HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
-	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
-	{
+	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp){
 		imp_->document_root_ = document_root;
 		imp_->dav_root_ = document_root;
 		imp_->port_ = port;

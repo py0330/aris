@@ -84,7 +84,7 @@ namespace aris::core{
 	GroupParam& GroupParam::operator=(GroupParam&&)noexcept = default;
 
 	struct Command::Imp{
-		bool is_taken_;
+		bool is_taken_{ false };
 		std::string default_value_{ "" };
 		std::map<std::string, Param*> param_map_;
 		std::map<char, std::string> abbreviation_map_;
@@ -252,7 +252,7 @@ namespace aris::core{
 
 			if (brace_num)THROW_FILE_LINE("brace not pair");
 
-			auto ret = cmd_str.substr(1, i - 1);// here is length
+			auto ret = cmd_str.substr(1, Size(i) - 1);// here is length
 			cmd_str = trim_left(cmd_str.substr(i));
 			return ret;
 		};
@@ -263,7 +263,7 @@ namespace aris::core{
 		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 		cmd_str = trim_left(cmd_str);
 
-		if (cmd != name()) THROW_FILE_LINE("invalid command name: cmd_str and command name not match");
+		if (cmd != name()) THROW_FILE_LINE("invalid command name: cmd_str and command name not match:");
 
 		Command::Imp::reset(this);
 		for (; !cmd_str.empty();) {

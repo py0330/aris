@@ -17,8 +17,7 @@
 #include "aris/dynamic/model_solver.hpp"
 #include "aris/dynamic/puma.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
@@ -48,8 +47,7 @@ namespace aris::dynamic
 		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
 		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 6 ? param.iv_vec[3].data() : default_iv);
 		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
-		auto &p6 = model->partPool().add<Part>("EE", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv,
-			ee_i_pm);
+		auto &p6 = model->partPool().add<Part>("EE", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv, ee_i_pm);
 
 		// add joint //
 		const double j1_pos[3]{      0.0,                 0.0, param.d1 };
@@ -90,6 +88,8 @@ namespace aris::dynamic
 		m5.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[4].data() : default_mot_frc);
 		m6.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[5].data() : default_mot_frc);
 
+		model->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix(1, 6, param.axis_range));
+
 		// add ee general motion //
 		auto &makI = p6.addMarker("tool0");
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
@@ -120,7 +120,7 @@ namespace aris::dynamic
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-		inverse_kinematic.setWhichRoot(8);
+		inverse_kinematic.setWhichRoot(0);
 
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
@@ -191,6 +191,7 @@ namespace aris::dynamic
 		// 驱动在零位处的偏移，以及系数
 		double mp_offset[6];// mp_real = (mp_theoretical - mp_offset) * mp_factor
 		double mp_factor[6];
+		double axis_range[6];
 	};
 	auto pumaInverse(const PumaParamLocal &param, const double *ee_pm, int which_root, double *input)->bool{
 		const double &d1 = param.d1;
@@ -218,11 +219,10 @@ namespace aris::dynamic
 		// 事实上这里可以有2个解
 		if (std::abs(d4) > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return false;//工作空间以外
 		if (which_root & 0x04){
-			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
-		}
-		else
-		{
 			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
+		}
+		else{
+			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
 		}
 
 		// 开始求2，3轴 //
@@ -276,10 +276,18 @@ namespace aris::dynamic
 			q[i] -= offset[i];
 			q[i] *= factor[i];
 
-			while (q[i] > PI) q[i] -= 2 * PI;
-			while (q[i] < -PI) q[i] += 2 * PI;
-		}
+			q[i] = std::fmod(q[i], 2 * PI);
 
+			if (q[i] > PI) q[i] -= 2 * PI;
+			if (q[i] < -PI) q[i] += 2 * PI;
+
+			auto t = std::trunc(param.axis_range[i]);
+			auto mod = param.axis_range[i] - t;
+			if ((q[i] + PI) < mod * 2 * PI)	q[i] += 2 * PI;
+			if ((q[i] - PI) > mod * 2 * PI)	q[i] -= 2 * PI;
+
+			q[i] += t * 2 * PI;
+		}
 		// 将q copy到input中
 		s_vc(6, q, input);
 		return true;
@@ -289,17 +297,17 @@ namespace aris::dynamic
 		PumaParamLocal puma_param;
 		union{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
-			Part* parts[7];
+			Part* parts[7]{ nullptr };
 		};
 		union{
 			struct { RevoluteJoint *R1, *R2, *R3, *R4, *R5, *R6; };
-			RevoluteJoint* joints[6];
+			RevoluteJoint* joints[6]{ nullptr };
 		};
 		union{
 			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6; };
-			Motion* motions[6];
+			Motion* motions[6]{ nullptr };
 		};
-		GeneralMotion *ee;
+		GeneralMotion* ee{nullptr};
 	};
 	
 	auto PumaInverseKinematicSolver::allocateMemory()->void{
@@ -518,6 +526,11 @@ namespace aris::dynamic
 			imp_->puma_param.mp_offset[5] = 0.0;
 			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
 		}
+
+		// get axis range //
+		if (!model()->findVariable("axis_range"))
+			model()->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix({0,0,0,0,0,0}));
+		s_vc(6, dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("axis_range"))->data().data(),imp_->puma_param.axis_range);
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int{
 		if (imp_->which_root_ == 8){
@@ -531,8 +544,8 @@ namespace aris::dynamic
 					for (int j = 0; j < 6; ++j){
 						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
 
-						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
-						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
+						//while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
+						//while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
 
 						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
 					}

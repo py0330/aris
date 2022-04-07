@@ -56,7 +56,7 @@ namespace aris::server
 		auto currentFileLine()->std::tuple<std::string, int>;
 		
 		~ProgramWebInterface();
-		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
+		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::Type type = aris::core::Socket::Type::WEB);
 		// ProgramWebInterface(ProgramWebInterface && other);
 		// ProgramWebInterface& operator=(ProgramWebInterface&& other);
 		ARIS_DELETE_BIG_FOUR(ProgramWebInterface)
@@ -76,7 +76,7 @@ namespace aris::server
 		auto socket()->aris::core::Socket&;
 
 		~WebInterface();
-		WebInterface(const std::string &name = "tcp_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
+		WebInterface(const std::string &name = "tcp_interface", const std::string &port = "5866", aris::core::Socket::Type type = aris::core::Socket::Type::WEB);
 		ARIS_DELETE_BIG_FOUR(WebInterface);
 
 	private:

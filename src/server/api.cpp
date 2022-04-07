@@ -15,8 +15,24 @@ namespace aris::server
 {
 	using Matrix = aris::core::Matrix;
 
-	auto generate_random_id(int length)->std::string 
-	{
+	template <typename TP>
+	std::time_t to_time_t(TP tp) {
+		using namespace std::chrono;
+		auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now() + system_clock::now());
+		return system_clock::to_time_t(sctp);
+	}
+	std::wstring s2ws(const std::string& str) {
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+		return converterX.from_bytes(str);
+	}
+	std::string ws2s(const std::wstring& wstr) {
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+		return converterX.to_bytes(wstr);
+	}
+
+	auto generate_random_id(int length)->std::string{
 		const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		std::string ret;
@@ -34,25 +50,39 @@ namespace aris::server
 	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
 	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
 
-	auto fetchInterfaceConfig()->std::string
-	{
+	auto fetchInterfaceConfig()->std::string{
+		std::filesystem::path interface_path(rootPath() / "robot/interface.xml");
+		if (!std::filesystem::exists(interface_path)) {
+			std::filesystem::create_directories(rootPath() / "robot");
+			
+			const std::string default_interface_str = u8"<Interface>\n"
+				"<Dashboard name=\"手动操作\" editable=\"false\" id=\"NihtPEvZR\">\n"
+				"</Dashboard>\n"
+				" <Dashboard name=\"自动模式\" editable=\"true\" id=\"5uha_EvWR\">\n"
+				" </Dashboard>\n"
+				"<Dashboard name=\"配置工具\" editable=\"true\" id=\"ZtjylPvZg\">\n"
+				"</Dashboard>\n"
+				"<WebSocket url=\"ws://120.27.231.59:5866\" commandSendInterval=\"20\" commandSendDelay=\"300\" getInterval=\"500\" unityUpdateInterval=\"100\"></WebSocket>\n"
+				"<LayoutConfig cols=\"48\" rowHeight=\"36\" margin=\"3\" containerPadding=\"0\" theme=\"dark\"></LayoutConfig>\n"
+				"</Interface>\n";
+			
+			tinyxml2::XMLDocument doc;
+			doc.Parse(default_interface_str.c_str());
+			doc.SaveFile(interface_path.string().c_str());
+		}
+
 		tinyxml2::XMLDocument doc;
-		std::filesystem::path interface_path(rootPath());
-		interface_path = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 
 		my_json js;
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard"))
-			{
+		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement()) {
+			if (ele->Name() == std::string("Dashboard")) {
 				my_json js1;
 				js1["name"] = std::string(ele->Attribute("name"));
 				js1["editable"] = std::string(ele->Attribute("editable")) == "true";
 				js1["i"] = std::string(ele->Attribute("id"));
 				js1["cells"] = std::vector<std::string>();
-				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement())
-				{
+				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement()) {
 					my_json j2;//{"name":"Ethercat配置","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
 					j2["name"] = e1->Attribute("name");
 					j2["type"] = e1->Attribute("type");
@@ -66,16 +96,14 @@ namespace aris::server
 				}
 				js["dashboards"].push_back(js1);
 			}
-			else if (ele->Name() == std::string("WebSocket"))
-			{
+			else if (ele->Name() == std::string("WebSocket")) {
 				js["ws"]["url"] = ele->Attribute("url");
 				js["ws"]["commandSendInterval"] = ele->IntAttribute("commandSendInterval");
 				js["ws"]["commandSendDelay"] = ele->IntAttribute("commandSendDelay");
 				js["ws"]["getInterval"] = ele->IntAttribute("getInterval");
 				js["ws"]["unityUpdateInterval"] = ele->IntAttribute("unityUpdateInterval");
 			}
-			else if (ele->Name() == std::string("LayoutConfig"))
-			{
+			else if (ele->Name() == std::string("LayoutConfig")) {
 				js["layoutConfig"]["cols"] = ele->IntAttribute("cols");
 				js["layoutConfig"]["rowHeight"] = ele->IntAttribute("rowHeight");
 				js["layoutConfig"]["margin"] = ele->IntAttribute("margin");
@@ -83,22 +111,19 @@ namespace aris::server
 				js["layoutConfig"]["theme"] = ele->Attribute("theme");
 			}
 		}
-		
-		return js.dump(-1,' ',true);
+
+		return js.dump(-1, ' ', true);
 	}
-	auto updateDashboard(std::string dash_id, std::string js_str)->std::string 
-	{
+	auto updateDashboard(std::string dash_id, std::string js_str)->std::string {
 		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
-		interface_path = interface_path / "../robot/interface.xml";
+		interface_path = interface_path / "robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 		
 		tinyxml2::XMLElement *dash_ele = nullptr;
 
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id) 
-			{
+		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
+			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id) {
 				dash_ele = ele;
 				break;
 			}
@@ -114,8 +139,7 @@ namespace aris::server
 		dash_ele->SetAttribute("id", js["i"].get<std::string>().c_str());
 
 		dash_ele->DeleteChildren();
-		for (auto js2 : js["cells"])
-		{
+		for (auto js2 : js["cells"]){
 			auto new_cell = doc.NewElement("Cell");
 
 			new_cell->SetAttribute("name",    js2["name"].get<std::string>().c_str());
@@ -130,30 +154,26 @@ namespace aris::server
 			dash_ele->InsertEndChild(new_cell);
 		}
 
-		doc.SaveFile((rootPath() / "../robot/interface.xml").string().c_str());
+		doc.SaveFile((rootPath() / "robot/interface.xml").string().c_str());
 
 		return js_str;
 	}
-	auto createCell(std::string dash_id, std::string cell)->std::string
-	{
+	auto createCell(std::string dash_id, std::string cell)->std::string{
 		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
-		interface_path = interface_path / "../robot/interface.xml";
+		interface_path = interface_path / "robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 
 		tinyxml2::XMLElement *dash_ele = nullptr;
 
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id)
-			{
+		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
+			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id){
 				dash_ele = ele;
 				break;
 			}
 		}
 
 		if (dash_ele == nullptr)return "";
-
 
 		auto cell_js = my_json::parse(cell);
 		auto new_cell = doc.NewElement("Cell");
@@ -167,24 +187,24 @@ namespace aris::server
 		new_cell->SetAttribute("x", 0);
 		new_cell->SetAttribute("y", 0);
 		new_cell->SetAttribute("options", "");
+		dash_ele->InsertEndChild(new_cell);
 
 		cell_js["i"] = id;
 		cell_js["x"] = 0;
 		cell_js["y"] = 0;
 		cell_js["options"] = "{}";
 
-		doc.SaveFile((rootPath() / "../robot/interface.xml").string().c_str());
+		doc.SaveFile((rootPath() / "robot/interface.xml").string().c_str());
 
 		return cell_js.dump(-1,' ',true);
 	}
 	auto deleteCell(std::string dash_id, std::string cell_id)->std::string{
 		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
-		interface_path = interface_path / "../robot/interface.xml";
+		interface_path = interface_path / "robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 
 		tinyxml2::XMLElement *dash_ele = nullptr;
-
 		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
 			if (ele->Name() == std::string("Dashboard") && ele->Attribute("id") == dash_id){
 				dash_ele = ele;
@@ -194,18 +214,14 @@ namespace aris::server
 		if (dash_ele == nullptr)return "";
 
 		tinyxml2::XMLElement *cell_ele = nullptr;
-		for (auto ele = dash_ele->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
+		for (auto ele = dash_ele->FirstChildElement(); ele; ele = ele->NextSiblingElement()){
 			std::cout << ele->Name() << " " << ele->Attribute("id") << "  " << cell_id << std::endl;
-			
-			if (ele->Name() == std::string("Cell") && ele->Attribute("id") == cell_id)
-			{
+			if (ele->Name() == std::string("Cell") && ele->Attribute("id") == cell_id){
 				cell_ele = ele;
 				break;
 			}
 		}
 		if (cell_ele == nullptr)return "";
-		
 
 		my_json j2;
 		j2["name"] = cell_ele->Attribute("name");
@@ -218,39 +234,16 @@ namespace aris::server
 		j2["options"] = cell_ele->Attribute("options");
 		
 		if (cell_ele)dash_ele->DeleteChild(cell_ele);
-		doc.SaveFile((rootPath() / "../robot/interface.xml").string().c_str());
+		doc.SaveFile((rootPath() / "robot/interface.xml").string().c_str());
 
 		return j2.dump(-1,' ',true);
-	}
-
-	template <typename TP>
-	std::time_t to_time_t(TP tp){
-		using namespace std::chrono;
-		auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
-			+ system_clock::now());
-		return system_clock::to_time_t(sctp);
-	}
-
-
-	std::wstring s2ws(const std::string& str){
-		using convert_typeX = std::codecvt_utf8<wchar_t>;
-		std::wstring_convert<convert_typeX, wchar_t> converterX;
-
-		return converterX.from_bytes(str);
-	}
-
-	std::string ws2s(const std::wstring& wstr){
-		using convert_typeX = std::codecvt_utf8<wchar_t>;
-		std::wstring_convert<convert_typeX, wchar_t> converterX;
-
-		return converterX.to_bytes(wstr);
 	}
 
 	auto fetchPrograms()->std::string{
 		my_json js;
 
 		std::filesystem::path program_path(rootPath());
-		program_path = program_path / "../robot/program";
+		program_path = program_path / "robot/program";
 
 		for (auto&dir : std::filesystem::directory_iterator(program_path)){
 			if (std::filesystem::is_directory(dir)){
@@ -357,7 +350,7 @@ namespace aris::server
 	auto createProgram(std::string pro_js_str)->std::string {
 		auto js = my_json::parse(pro_js_str);
 		auto pro_name = js["name"].get<std::string>();
-		auto program_path = rootPath() / "../robot/program" / pro_name;
+		auto program_path = rootPath() / "robot/program" / pro_name;
 
 		if (std::filesystem::exists(program_path))return "";
 
@@ -413,7 +406,7 @@ namespace aris::server
 		return ret;
 	}
 	auto updateProgram(std::string pro_name, std::string data)->std::string{
-		auto program_path = rootPath() / "../robot/program";
+		auto program_path = rootPath() / "robot/program";
 		auto js = my_json::parse(data);
 		
 		// 先将所有文件存到 temp 路径下 //
@@ -487,7 +480,7 @@ namespace aris::server
 		return js.dump(-1,' ',true);
 	}
 	auto deleteProgram(std::string pro_name)->std::string{
-		auto program_path = rootPath() / "../robot/program" / pro_name;
+		auto program_path = rootPath() / "robot/program" / pro_name;
 		if (!std::filesystem::exists(program_path))return "";
 		
 		std::filesystem::remove_all(program_path);
@@ -498,21 +491,21 @@ namespace aris::server
 		return js.dump(-1,' ',true);
 	}
 	auto renameProgram(std::string old_name, std::string new_name_js)->std::string {
-		if (!std::filesystem::exists(rootPath() / "../robot/program" / old_name))return "";
+		if (!std::filesystem::exists(rootPath() / "robot/program" / old_name))return "";
 
 		auto js = my_json::parse(new_name_js);
 
 		auto new_name = js["name"].get<std::string>();
 
-		std::filesystem::rename(rootPath() / "../robot/program" / old_name, rootPath() / "../robot/program" / new_name);
-		std::filesystem::rename(rootPath() / "../robot/program" / new_name / (old_name + ".pro"), rootPath() / "../robot/program" / new_name / (new_name + ".pro"));
-		std::filesystem::rename(rootPath() / "../robot/program" / new_name / (old_name + ".dat"), rootPath() / "../robot/program" / new_name / (new_name + ".dat"));
+		std::filesystem::rename(rootPath() / "robot/program" / old_name, rootPath() / "robot/program" / new_name);
+		std::filesystem::rename(rootPath() / "robot/program" / new_name / (old_name + ".pro"), rootPath() / "robot/program" / new_name / (new_name + ".pro"));
+		std::filesystem::rename(rootPath() / "robot/program" / new_name / (old_name + ".dat"), rootPath() / "robot/program" / new_name / (new_name + ".dat"));
 
 		///////////////////////以下返回///////////////////////////////////
-		auto dir = std::filesystem::directory_entry(rootPath() / "../robot/program" / new_name);
+		auto dir = std::filesystem::directory_entry(rootPath() / "robot/program" / new_name);
 
-		std::filesystem::path dat = rootPath() / "../robot/program" / new_name / (new_name + ".dat")
-			, pro = rootPath() / "../robot/program" / new_name / (new_name + ".pro");
+		std::filesystem::path dat = rootPath() / "robot/program" / new_name / (new_name + ".dat")
+			, pro = rootPath() / "robot/program" / new_name / (new_name + ".pro");
 
 		my_json pro_dir_js;
 		pro_dir_js["name"] = dir.path().filename().string();
@@ -552,7 +545,7 @@ namespace aris::server
 	}
 
 	auto fetchESIPath()->std::string{
-		auto p = std::filesystem::absolute(rootPath() / "../robot/esi");
+		auto p = std::filesystem::absolute(rootPath() / "robot/esi");
 		my_json js;
 		js["path"] = p.string();
 		return js.dump(-1,' ',true);

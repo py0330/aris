@@ -8,7 +8,7 @@ using namespace aris::core;
 
 void test_socket_multi_thread()
 {
-	auto test_func = [](aris::core::Socket::TYPE type)->void{
+	auto test_func = [](aris::core::Socket::Type type)->void{
 		try{
 			Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
 
@@ -96,8 +96,8 @@ void test_socket_multi_thread()
 				if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			}
 
-			if (!connect_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW) )std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-			if (!lose_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW))std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!connect_executed && (type != aris::core::Socket::Type::UDP && type != aris::core::Socket::Type::UDP_RAW) )std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!lose_executed && (type != aris::core::Socket::Type::UDP && type != aris::core::Socket::Type::UDP_RAW))std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 		}
 		catch (std::exception &e){
 			std::cout << e.what();
@@ -105,17 +105,17 @@ void test_socket_multi_thread()
 	};
 
 	std::cout << "test tcp" << std::endl;
-	test_func(aris::core::Socket::TCP);
+	test_func(aris::core::Socket::Type::TCP);
 	std::cout << "test tcp raw" << std::endl;
-	test_func(aris::core::Socket::TCP_RAW);
+	test_func(aris::core::Socket::Type::TCP_RAW);
 	std::cout << "test udp" << std::endl;
-	test_func(aris::core::Socket::UDP);
+	test_func(aris::core::Socket::Type::UDP);
 	std::cout << "test udp raw" << std::endl;
-	test_func(aris::core::Socket::UDP_RAW);
+	test_func(aris::core::Socket::Type::UDP_RAW);
 	std::cout << "test web" << std::endl;
-	test_func(aris::core::Socket::WEB);
+	test_func(aris::core::Socket::Type::WEB);
 	std::cout << "test web raw" << std::endl;
-	test_func(aris::core::Socket::WEB_RAW);
+	test_func(aris::core::Socket::Type::WEB_RAW);
 }
 
 void test_socket()

@@ -537,9 +537,9 @@ namespace aris::dynamic {
 		//////////////////////////////////////////////////////////// PART 2: devide and conquer ///////////////////////////////
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 		struct DebugStruct {
-			int level;
-			int num;
-			Size n;
+			int level{ 0 };
+			int num{ 0 };
+			Size n{ 0 };
 			std::vector<double> U, S, V;
 		};
 		std::list<DebugStruct> _D_list;
@@ -880,19 +880,16 @@ namespace aris::dynamic {
 					for (Size i = 0; i < mn; ++i) {
 						auto base = mu[at(0, i, mu_t)] < 0.0 ? (i == mn - 1 ? dn : d[at(0, i + 1, d_t)]) : d[at(0, i, d_t)];
 						w[at(0, i, w_t)] = base + mu[at(0, i, mu_t)];
-						p2[at(0, i, p2_t)] = i;
+						p2[at(0, i, p2_t)] = static_cast<double>(i);
 					}
 					for (Size i = mn; i < n; ++i) {
 						w[at(0, i, w_t)] = d[at(0, i, d_t)];
-						p2[at(0, i, p2_t)] = i;
+						p2[at(0, i, p2_t)] = static_cast<double>(i);
 					}
 					std::sort(RowIterator<decltype(p2_t)>(p2, p2_t), RowIterator<decltype(p2_t)>(p2, p2_t) + n, [&w, &w_t](const auto& left, const auto& right) {
 						return w[at(0, static_cast<Size>(left), w_t)] < w[at(0, static_cast<Size>(right), w_t)];
 						});
-
-
 				}
-
 
 				// 返回公共参数 //
 				pre_out = DvcPreOut{
@@ -909,8 +906,7 @@ namespace aris::dynamic {
 #ifdef ARIS_DEBUG_DYNAMIC_SVD
 			&
 #endif
-		](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre, const auto& make_ui, const auto& make_vi)->DvcPreOut
-		{
+		](Size n, double *U, auto u_t, double*q, auto q_t, double *S, auto s_t, double *V, auto v_t, const auto&dvc, const auto& dvc_pre, const auto& make_ui, const auto& make_vi)->DvcPreOut{
 			auto pre_out = dvc_pre(n, S, s_t, V, v_t, q, q_t, dvc, dvc_pre, make_ui, make_vi);
 
 			if (n == 1) {
@@ -1166,7 +1162,7 @@ namespace aris::dynamic {
 				{
 					// 计算ui所产生的U（不经过householder变换）
 					for (Size i = 0; i < n; ++i) {
-						make_ui(n, mn, p2[n - i - 1], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, 1);
+						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[n - i - 1]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, 1);
 
 						// 生成 U，基于U1 //
 						s_mc(h + 1, 1, c0 * ui[0], q1, q_t, U + at(0, i, u_t), u_t);
@@ -1209,7 +1205,7 @@ namespace aris::dynamic {
 					s_mc(n - h - 1, n - h - 1, V2, v2_t, V2_new, v2_t_new);
 
 					for (Size i = 0; i < n; ++i) {
-						make_vi(n, mn, p2[n-i-1], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, 1);
+						make_vi(n, static_cast<Size>(mn), static_cast<Size>(p2[n-i-1]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, 1);
 
 						// 左乘V1
 						s_mm(h, 1, h, V1_new, h, vi + 1, 1, V + at(0, i, v_t), v_t);
@@ -1240,7 +1236,7 @@ namespace aris::dynamic {
 					S[at(1, i, s_t)] = d[i];
 				}
 				for (Size i = 0; i < n; ++i) {
-					S[at(0, i, s_t)] = S[at(1, p2[n-i-1], s_t)];
+					S[at(0, i, s_t)] = S[at(1, static_cast<Size>(p2[n-i-1]), s_t)];
 				}
 				s_fill(m - 1, n, 0.0, S + at(1, 0, s_t), s_t);
 				for (Size i = 0; ++i < n;) {
@@ -1296,7 +1292,7 @@ namespace aris::dynamic {
 
 					// 计算U2所产生的U（不经过householder变换）
 					for (Size i = 0; i < n; ++i) {
-						make_ui(n, mn, p2[at(0, n - i - 1, p2_t)], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
+						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
 
 						//dsp(m, m, U, u_t);
 						// 生成 U，基于U2 //
@@ -1337,7 +1333,7 @@ namespace aris::dynamic {
 
 					// 计算U1所产生的U（不经过householder变换）
 					for (Size i = 0; i < n; ++i) {
-						make_ui(n, mn, p2[at(0, n - i - 1, p2_t)], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
+						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
 						//dsp(m, m, U, u_t);
 						// 生成 U，基于U1 //
 						s_mc(h + 1, 1, c0* ui[at(0, 0, ui_t)], q1, q_t, U + at(0, i, u_t), u_t);
@@ -1390,7 +1386,7 @@ namespace aris::dynamic {
 					s_mc(h, h, V1, v1_t, V1_new, v1_t_new);
 
 					for (Size i = 0; i < n; ++i) {
-						make_vi(n, mn, p2[at(0, n - i - 1, p2_t)], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, vi_t);
+						make_vi(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, vi_t);
 
 						// 左乘V1
 						s_mm(h, 1, h, V1_new, v1_t_new, vi + at(1, 0, vi_t), vi_t, V + at(0, i, v_t), v_t);
@@ -1405,7 +1401,7 @@ namespace aris::dynamic {
 					// 因为前面压缩了一行，所以这里复原 V2 到新的内存位置 //
 					s_mc(n - h - 1, n - h - 1, V2, v2_t, V2_new, v2_t_new);
 					for (Size i = 0; i < n; ++i) {
-						make_vi(n, mn, p2[at(0, n - i - 1, p2_t)], dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, vi_t);
+						make_vi(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, vi, vi_t);
 
 						// 左乘V2
 						s_mm(n - h - 1, 1, n - h - 1, V2_new, v2_t_new, vi + at(h + 1, 0, vi_t), vi_t, V + at(h + 1, i, v_t), v_t);
@@ -1449,7 +1445,7 @@ namespace aris::dynamic {
 				}
 
 				for (Size i = 0; i < n; ++i) {
-					S[at(0, i, s_t)] = S[at(1, p2[at(0, n - i - 1, p2_t)], s_t)];
+					S[at(0, i, s_t)] = S[at(1, static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), s_t)];
 				}
 				s_fill(m - 1, n, 0.0, S + at(1, 0, s_t), s_t);
 

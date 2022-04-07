@@ -13,12 +13,9 @@
 #include "aris/core/log.hpp"
 #include "aris/core/object.hpp"
 
-namespace aris::core
-{
-	class ARIS_API Matrix
-	{
+namespace aris::core{
+	class ARIS_API Matrix{
 	public:
-		auto swap(Matrix &other)->Matrix&;
 		auto empty() const->bool;
 		auto size() const->Size;
 		auto data()->double *;
@@ -56,6 +53,8 @@ namespace aris::core
 		template <typename MATRIX_LISTLIST>
 		friend auto combineMatrices(const MATRIX_LISTLIST &matrices)->Matrix;
 
+		auto swap(Matrix& other)noexcept->Matrix&;
+
 		~Matrix();
 		Matrix(double value);
 		Matrix(Size m, Size n, double value = 0);
@@ -63,7 +62,7 @@ namespace aris::core
 		Matrix(const std::initializer_list<Matrix> &data);
 		Matrix();
 		Matrix(const Matrix &other);
-		Matrix(Matrix &&other);
+		Matrix(Matrix &&other)noexcept;
 		Matrix &operator=(Matrix other);
 
 	private:
