@@ -251,6 +251,9 @@ namespace aris::plan{
 	public:
 		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
+		auto virtual collectNrt()->void override {
+			std::cout << "collect disable" << std::endl;
+		}
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "disable_plan");

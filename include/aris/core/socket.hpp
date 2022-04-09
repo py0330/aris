@@ -8,12 +8,12 @@
 namespace aris::core{
 	class ARIS_API Socket{
 	public:
-		enum State{
+		enum class State{
 			IDLE = 0,
 			WAITING_FOR_CONNECTION,
 			WORKING,
 		};
-		enum TYPE{
+		enum class Type{
 			TCP,
 			UDP,
 			WEB,
@@ -34,19 +34,19 @@ namespace aris::core{
 		auto setPort(const std::string &port)->void;
 		auto remoteIP()const->const std::string &;
 		auto setRemoteIP(const std::string &remote_ip)->void;
-		auto connectType()const->TYPE;
-		auto setConnectType(const TYPE type)->void;
+		auto connectType()const->Type;
+		auto setConnectType(const Type type)->void;
 		auto setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> = nullptr)->void;
 		auto setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> = nullptr)->void;
 		auto setOnReceivedConnection(std::function<int(Socket*, const char* remote_ip, int remote_port)> = nullptr)->void;
 		auto setOnLoseConnection(std::function<int(Socket*)> = nullptr)->void;
 
 		virtual ~Socket();
-		Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "", TYPE type = TCP);
+		Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "", Type type = Type::TCP);
 		Socket(const Socket & other) = delete;
-		Socket(Socket && other);
+		Socket(Socket && other)noexcept;
 		Socket &operator=(const Socket& other) = delete;
-		Socket &operator=(Socket&& other);
+		Socket &operator=(Socket&& other)noexcept;
 
 	private:
 		struct Imp;

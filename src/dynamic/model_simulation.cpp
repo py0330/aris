@@ -16,41 +16,7 @@
 #include "aris/dynamic/model.hpp"
 #include "aris/plan/root.hpp"
 
-namespace aris::plan{
-	struct Plan::Imp{
-		std::string name_;
-
-		std::int64_t count_;
-
-		aris::dynamic::Model *model_;
-		aris::control::Master *master_;
-		aris::control::Controller *controller_;
-		aris::control::EthercatMaster *ec_master_;
-		aris::server::ControlServer *cs_;
-
-		std::weak_ptr<Plan> shared_for_this_;
-
-		std::uint64_t option_;
-		std::vector<std::uint64_t> mot_options_;
-
-		aris::core::Command cmd_struct_;
-		std::vector<char> cmd_str_;
-		std::string_view cmd_name_;
-		std::map<std::string_view, std::string_view> cmd_params_;
-
-		std::int64_t begin_global_count_;
-		std::uint64_t command_id_{ 0 };
-		aris::control::Master::RtStasticsData rt_stastic_;
-
-		std::any param;
-		std::any ret;
-		std::int32_t ret_code;
-		char ret_msg[1024]{};
-	};
-}
-
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	struct Calibrator::Imp{
 		struct ConstraintBlock	{
 			Constraint *c;
@@ -63,17 +29,19 @@ namespace aris::dynamic
 		std::vector<ConstraintBlock> cst_blk_vec_;
 		std::vector<ForceBlock> fce_blk_vec_;
 
-		Size dyn_m_, dyn_n_;
+		Size dyn_m_{ 0 }, dyn_n_{ 0 };
 		std::vector<double> C_, C_inv_, U_, tau_, Q_, R_, B_, D_, f_;
 		std::vector<Size> p_;
 
-		Size m_, g_, k_;
+		Size m_{ 0 }, g_{ 0 }, k_{ 0 };
 		std::vector<double> A_, x_, b_;
 
 		std::vector<double> torque_constant_, velocity_ratio_, torque_weight_, velocity_dead_zone_;
 		int pos_idx_{ 0 }, vel_idx_{ 1 }, fce_idx_{ 2 }, data_num_per_motor_{ 3 };
 		int filter_window_size_{ 20 };
 		double tolerable_variance_{ 0.05 };
+
+		std::string verify_result_path;
 
 		friend auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset);
 	};
@@ -249,7 +217,7 @@ namespace aris::dynamic
 		}
 
 		// make A finally //
-		int col1 = 0, col2 = 6;
+		Size col1 = 0, col2 = 6;
 		for (auto &prt : model()->partPool()){
 			if (prt.active() && &prt != &model()->ground()){
 				double q[6]{ 0 };
@@ -363,10 +331,10 @@ namespace aris::dynamic
 
 	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset){
 		const auto[pos_at, vel_at, fce_at, mot_data_num] = clb->dataIndex();
-		const auto filter_size = clb->filterWindowSize();
-		const int mot_num = (int)clb->model()->motionPool().size();
+		const Size filter_size = clb->filterWindowSize();
+		const Size mot_num = clb->model()->motionPool().size();
+		const Size line_num = mot_num * mot_data_num;
 		const auto torque_constant = clb->torqueConstant();
-		const auto line_num = mot_num * mot_data_num;
 		const double dt = 0.001;
 
 		auto &pos = *dataset[0];
@@ -376,7 +344,7 @@ namespace aris::dynamic
 
 		// 预分配内存，为当前数据叠加新的数据 //
 		auto num = mtx.size() / line_num / filter_size - 2;
-		for (int i = 0; i < mot_num; ++i){
+		for (Size i = 0; i < mot_num; ++i){
 			pos[i].reserve(num + pos[i].size());
 			vel[i].reserve(num + vel[i].size());
 			acc[i].reserve(num + acc[i].size());
@@ -408,7 +376,7 @@ namespace aris::dynamic
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at + line_num * k] / (avg_size * 2 - 1);
 					l += mtx[i * line_num * filter_size + j * mot_data_num + vel_at - line_num * k] / (avg_size * 2 - 1);
 				}
-				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j] * clb->velocityRatio()[j]);
+				acc[j].push_back((r - l) * 1.0 / dt / filter_size * clb->velocityRatio()[j]);
 
 				// make actual fce //
 				fce[j].push_back(0.0);
@@ -486,6 +454,9 @@ namespace aris::dynamic
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
 		double zero_check = 1e-4;
+
+		s_nv(rows * n(), 1.0 / real_max, A.data());
+		s_nv(rows, 1.0 / real_max, b.data());
 		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "clb----rank:" << rank << std::endl;
@@ -506,6 +477,10 @@ namespace aris::dynamic
 		// update inertias //
 		updateInertiaParam(x.data());
 		return 0;
+	}
+	
+	auto Calibrator::setVerifyOutputFileDir(std::string file_path)->void {
+		imp_->verify_result_path = file_path;
 	}
 	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void{
 		// make datasets //
@@ -551,18 +526,18 @@ namespace aris::dynamic
 
 		std::cout << "dynamic finished, now output results" << std::endl;
 
-		auto output_path = std::string("C:\\Users\\py0330\\Desktop\\data_after\\");
+		std::filesystem::create_directories(imp_->verify_result_path);
 
 		for (int i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			sprintf(posn, (output_path + "pos%d.txt").c_str(), i);
-			sprintf(veln, (output_path + "vel%d.txt").c_str(), i);
-			sprintf(accn, (output_path + "acc%d.txt").c_str(), i);
-			sprintf(fcen, (output_path + "fce%d.txt").c_str(), i);
-			sprintf(fn, (output_path + "f%d.txt").c_str(), i);
-			sprintf(ffn, (output_path + "ff%d.txt").c_str(), i);
-			sprintf(fdn, (output_path + "fd%d.txt").c_str(), i);
+			sprintf(posn, (imp_->verify_result_path + "/pos%d.txt").c_str(), i);
+			sprintf(veln, (imp_->verify_result_path + "/vel%d.txt").c_str(), i);
+			sprintf(accn, (imp_->verify_result_path + "/acc%d.txt").c_str(), i);
+			sprintf(fcen, (imp_->verify_result_path + "/fce%d.txt").c_str(), i);
+			sprintf(fn, (imp_->verify_result_path + "/f%d.txt").c_str(), i);
+			sprintf(ffn, (imp_->verify_result_path + "/ff%d.txt").c_str(), i);
+			sprintf(fdn, (imp_->verify_result_path + "/fd%d.txt").c_str(), i);
 
 			dlmwrite(num, 1, pos[i].data(), posn);
 			dlmwrite(num, 1, vel[i].data(), veln);
@@ -577,6 +552,7 @@ namespace aris::dynamic
 
 		std::cout << "end" << std::endl;
 	}
+
 	auto Calibrator::clbFile(const std::string &file_paths)->void{
 		auto mtx = aris::dynamic::dlmread(file_paths.c_str());
 
@@ -593,18 +569,17 @@ namespace aris::dynamic
 		std::vector<std::vector<double> > acc(6, std::vector<double>(num));
 		std::vector<std::vector<double> > fce(6, std::vector<double>(num));
 		
-		for (int i = 0; i < num; ++i){
-			for (int j = 0; j < 6; ++j)	{
+		for (Size i = 0; i < num; ++i){
+			for (Size j = 0; j < 6; ++j)	{
 				// make actual pos //
 				pos[j][i] = 0.0;
-				for (int k = 0; k < 10; ++k)
-				{
+				for (Size k = 0; k < 10; ++k){
 					pos[j][i] += mtx[i * 240 + k * 24 + j * 4 + 1] / 10.0;
 				}
 
 				// make actual vel //
 				vel[j][i] = 0.0;
-				for (int k = 0; k < 10; ++k){
+				for (Size k = 0; k < 10; ++k){
 					vel[j][i] += mtx[i * 240 + k * 24 + j * 4 + 2] / 10.0;
 				}
 
@@ -613,7 +588,7 @@ namespace aris::dynamic
 
 				// make actual fce //
 				fce[j][i] = 0.0;
-				for (int k = 0; k < 10; ++k){
+				for (Size k = 0; k < 10; ++k){
 					fce[j][i] += mtx[i * 240 + k * 24 + j * 4 + 3] / 10.0 * torque_constant[j]/1e6;
 				}
 			}
@@ -627,8 +602,8 @@ namespace aris::dynamic
 		std::vector<aris::Size> p(num * m());
 
 		std::cout << "A size:" << num * m() << "x" << n() << std::endl;
-		for (int i = 0; i < num; ++i){
-			for (int j = 0; j < 6; ++j)	{
+		for (Size i = 0; i < num; ++i){
+			for (Size j = 0; j < 6; ++j)	{
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
@@ -774,7 +749,7 @@ namespace aris::dynamic
 	}
 	Calibrator::~Calibrator() = default;
 	Calibrator::Calibrator(const std::string &name) : imp_(new Imp) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(Calibrator);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(Calibrator);
 
 	struct SimResult::TimeResult::Imp { std::deque<double> time_; };
 	/*
@@ -806,9 +781,9 @@ namespace aris::dynamic
 	SimResult::TimeResult::~TimeResult() = default;
 	SimResult::TimeResult::TimeResult(const std::string &name) :imp_(new Imp) {}
 	SimResult::TimeResult::TimeResult(const SimResult::TimeResult&) = default;
-	SimResult::TimeResult::TimeResult(SimResult::TimeResult&&) = default;
+	SimResult::TimeResult::TimeResult(SimResult::TimeResult&&)noexcept = default;
 	SimResult::TimeResult& SimResult::TimeResult::operator=(const TimeResult&) = default;
-	SimResult::TimeResult& SimResult::TimeResult::operator=(TimeResult&&) = default;
+	SimResult::TimeResult& SimResult::TimeResult::operator=(TimeResult&&)noexcept = default;
 
 	struct SimResult::PartResult::Imp
 	{
@@ -892,9 +867,9 @@ namespace aris::dynamic
 	SimResult::PartResult::~PartResult() = default;
 	SimResult::PartResult::PartResult(const std::string &name, Part *part) : imp_(new Imp(part)) {}
 	SimResult::PartResult::PartResult(const SimResult::PartResult&) = default;
-	SimResult::PartResult::PartResult(SimResult::PartResult&&) = default;
+	SimResult::PartResult::PartResult(SimResult::PartResult&&)noexcept = default;
 	SimResult::PartResult& SimResult::PartResult::operator=(const PartResult&) = default;
-	SimResult::PartResult& SimResult::PartResult::operator=(PartResult&&) = default;
+	SimResult::PartResult& SimResult::PartResult::operator=(PartResult&&)noexcept = default;
 
 	struct SimResult::ConstraintResult::Imp
 	{
@@ -988,9 +963,9 @@ namespace aris::dynamic
 	SimResult::ConstraintResult::~ConstraintResult() = default;
 	SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : imp_(new Imp(constraint)) {}
 	SimResult::ConstraintResult::ConstraintResult(const SimResult::ConstraintResult&) = default;
-	SimResult::ConstraintResult::ConstraintResult(SimResult::ConstraintResult&&) = default;
+	SimResult::ConstraintResult::ConstraintResult(SimResult::ConstraintResult&&)noexcept = default;
 	SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(const ConstraintResult&) = default;
-	SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(ConstraintResult&&) = default;
+	SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(ConstraintResult&&)noexcept = default;
 
 	struct SimResult::Imp
 	{
@@ -1067,8 +1042,7 @@ namespace aris::dynamic
 		imp_->part_result_pool_ = findType<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
 		*/
 	}
-	SimResult::SimResult(SimResult&&other) : Element(std::move(other)), imp_(std::move(other.imp_))
-	{
+	SimResult::SimResult(SimResult&&other)noexcept : Element(std::move(other)), imp_(std::move(other.imp_)){
 		/*
 		imp_->time_result_ = findType<TimeResult >("time_result");
 		imp_->constraint_result_pool_ = findType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
@@ -1086,8 +1060,7 @@ namespace aris::dynamic
 		*/
 		return *this;
 	}
-	SimResult& SimResult::operator=(SimResult&&other)
-	{
+	SimResult& SimResult::operator=(SimResult&&other)noexcept{
 		/*
 		Element::operator=(std::move(other));
 		imp_ = other.imp_;
@@ -1099,22 +1072,21 @@ namespace aris::dynamic
 	}
 
 	struct Simulator::Imp {};
-	auto Simulator::simulate(aris::plan::Plan &plan, SimResult &result)->void
-	{
+	auto Simulator::simulate(aris::plan::Plan &plan, SimResult &result)->void{
 		result.allocateMemory();
 		// 记录初始状态 //
 		result.record();
 		
 		auto p = std::unique_ptr<aris::plan::Plan>(plan.clone());
-		p->imp_->count_ = 1;
-		p->imp_->model_ = model();
-		p->imp_->master_ = nullptr;
-		p->imp_->controller_ = nullptr;
-		p->imp_->ec_master_ = nullptr;
-		p->imp_->cs_ = nullptr;
+
+		p->setCount(1);
+		p->setModelBase(model());
+		p->setMaster(nullptr);
+		p->setController(nullptr);
+		p->setControlServer(nullptr);
 
 		// 记录轨迹中的状态 //
-		for (;p->executeRT() != 0;++p->imp_->count_) result.record();
+		for (; p->executeRT() != 0; p->setCount(p->count() + 1)) result.record();
 		
 		// 记录结束状态 //
 		result.record();
@@ -1122,7 +1094,7 @@ namespace aris::dynamic
 	}
 	Simulator::~Simulator() = default;
 	Simulator::Simulator(const std::string &name) :imp_(new Imp) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(Simulator);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(Simulator);
 
 	struct SolverSimulator::Imp
 	{
@@ -1159,7 +1131,7 @@ namespace aris::dynamic
 	auto SolverSimulator::simulate(aris::plan::Plan &plan, SimResult &result)->void{ Simulator::simulate(plan, result); }
 	SolverSimulator::~SolverSimulator() = default;
 	SolverSimulator::SolverSimulator(const std::string &name, Solver *solver) : Simulator(name), imp_(new Imp(solver)) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(SolverSimulator);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(SolverSimulator);
 
 	struct AdamsSimulator::Imp {};
 	auto AdamsSimulator::saveAdams(const std::string &filename, SimResult &result, Size pos)->void
@@ -1831,7 +1803,7 @@ namespace aris::dynamic
 	auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &model()->ground()) ? 1 : prt.id() + (model()->ground().id() < prt.id() ? 1 : 2); }
 	AdamsSimulator::~AdamsSimulator() = default;
 	AdamsSimulator::AdamsSimulator(const std::string &name) : Simulator(name) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(AdamsSimulator);
+	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(AdamsSimulator);
 
 
 	ARIS_REGISTRATION

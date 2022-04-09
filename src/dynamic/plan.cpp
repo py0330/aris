@@ -5,8 +5,7 @@
 namespace aris::dynamic
 {
 	const double dt = 0.01;
-	auto OptimalTrajectory::run()->void
-	{
+	auto OptimalTrajectory::run()->void{
 		// 初始化 //
 		list.clear();
 		list.push_front(beg_);
@@ -16,19 +15,16 @@ namespace aris::dynamic
 
 		failed_s = 0;
 
-		while (l_->s < 1.0 && failed_s < 1.0)
-		{
+		while (l_->s < 1.0 && failed_s < 1.0){
 			l_ = list.insert(list.end(), Node());
 			l_->ds = std::prev(l_)->ds + std::prev(l_)->dds * dt;
 			l_->s = std::prev(l_)->s + std::prev(l_)->ds * dt + 0.5 * std::prev(l_)->dds * dt * dt;
 
 			double max_dds, min_dds;
-			if (cptDdsConstraint(l_->s, l_->ds, max_dds, min_dds))
-			{
+			if (cptDdsConstraint(l_->s, l_->ds, max_dds, min_dds)){
 				l_->dds = max_dds;
 			}
-			else
-			{
+			else{
 				testForward();
 			}
 
@@ -37,15 +33,13 @@ namespace aris::dynamic
 
 		join();
 	}
-	auto OptimalTrajectory::testForward()->void
-	{
+	auto OptimalTrajectory::testForward()->void{
 		failed_s = l_->s;
 		auto l_end_ = l_;
 
-		Size test_distance;
+		Size test_distance{0};
 		// 二分法，结束时，l_beg_为正好可以成功的，l_end_为正好不能成功的
-		while (std::distance(l_beg_, l_end_) > 1)
-		{
+		while (std::distance(l_beg_, l_end_) > 1){
 			// init //
 			std::list<Node> test_list;
 			auto mid_iter = std::next(l_beg_, std::distance(l_beg_, l_end_) / 2);
@@ -53,8 +47,7 @@ namespace aris::dynamic
 
 			// 测试mid_iter是否会成功 //
 			bool test_successful{ true };
-			while (test_list.back().ds > 0.0)
-			{
+			while (test_list.back().ds > 0.0){
 				Node node;
 				node.ds = test_list.back().ds + test_list.back().dds * dt;
 				node.s = test_list.back().s + test_list.back().ds * dt + 0.5 * test_list.back().dds * dt * dt;
@@ -62,24 +55,20 @@ namespace aris::dynamic
 				test_list.push_back(node);
 
 				double max_dds, min_dds;
-				if (cptDdsConstraint(node.s, node.ds, max_dds, min_dds))
-				{
+				if (cptDdsConstraint(node.s, node.ds, max_dds, min_dds)){
 					test_list.back().dds = min_dds;
 				}
-				else
-				{
+				else{
 					test_successful = false;
 					break;
 				}
 			}
 
 			// 测试成功，则左侧置为test_iter,否则右侧置为test_iter
-			if (test_successful)
-			{
+			if (test_successful){
 				l_beg_ = mid_iter;
 			}
-			else
-			{
+			else{
 				l_end_ = mid_iter;
 				failed_s = test_list.back().s;
 				test_distance = test_list.size();
@@ -90,8 +79,7 @@ namespace aris::dynamic
 		list.erase(std::next(l_beg_), list.end());
 		l_ = l_beg_;
 
-		for (Size i = 0; i < test_distance && l_->ds > 0.0 && l_->s < failed_s; ++i)
-		{
+		for (Size i = 0; i < test_distance && l_->ds > 0.0 && l_->s < failed_s; ++i){
 			l_ = list.insert(list.end(), Node());
 
 			l_->ds = std::prev(l_)->ds + std::prev(l_)->dds * dt;
@@ -105,17 +93,13 @@ namespace aris::dynamic
 
 		l_beg_ = l_;
 	}
-	auto OptimalTrajectory::join()->void
-	{
+	auto OptimalTrajectory::join()->void{
 		auto coe = 1.0 / list.back().s;
-
-		for (auto &node : list)
-		{
+		for (auto &node : list){
 			node.s *= coe;
 		}
 	}
-	auto OptimalTrajectory::cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool
-	{
+	auto OptimalTrajectory::cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool{
 		//plan(s)
 
 		////////////////////////////////////////////////////////////////////////////////////////
@@ -140,8 +124,7 @@ namespace aris::dynamic
 		return max_dds > min_dds && s < 1.0;
 	}
 
-	auto OptimalTrajectory::cptInverseJacobi()->void
-	{
+	auto OptimalTrajectory::cptInverseJacobi()->void{
 		auto model = this->model();
 		
 		std::vector<double> Jf_data(model->generalMotionPool().size() * 6 * model->motionPool().size());
@@ -155,8 +138,7 @@ namespace aris::dynamic
 
 		solver->cptGeneralJacobi();
 
-		for (aris::Size k = 0; k < model->generalMotionPool().size(); ++k)
-		{
+		for (aris::Size k = 0; k < model->generalMotionPool().size(); ++k){
 			auto i = model->generalMotionPool().at(k).makI()->fatherPart().id();
 			auto j = model->generalMotionPool().at(k).makJ()->fatherPart().id();
 
@@ -171,24 +153,8 @@ namespace aris::dynamic
 		std::swap(Ji_data, Ji_data_);
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// 只根据电机最大速度和最小速度来计算ds的最大和最小值 //
-	bool FastPath::computeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
-	{
+	bool FastPath::computeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits){
 		static std::vector<double> J_dot_g(data.size);
 		static std::vector<double> lhs(data.size), rhs(data.size);
 
@@ -198,13 +164,11 @@ namespace aris::dynamic
 
 		aris::dynamic::s_mm(data.size, 1, data.size, data.Ji, data.size, data.g, 1, J_dot_g.data(), 1);
 
-		for (Size i = 0; i < data.size; ++i)
-		{
+		for (Size i = 0; i < data.size; ++i){
 			lhs[i] = (limits[i].minVel - data.Cv[i]) / J_dot_g[i];
 			rhs[i] = (limits[i].maxVel - data.Cv[i]) / J_dot_g[i];
 
-			if (J_dot_g[i]<0)
-			{
+			if (J_dot_g[i]<0){
 				std::swap(lhs[i], rhs[i]);
 			}
 		}
@@ -215,8 +179,7 @@ namespace aris::dynamic
 		return (data.dsLhs < data.dsRhs);
 	}
 	// 只根据电机的最大最小加速度和当前ds来计算dds的最大和最小值 //
-	bool FastPath::computeDdsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
-	{
+	bool FastPath::computeDdsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits){
 		auto locData = data;
 
 		static std::vector<double> J_dot_g(locData.size), J_dot_h(locData.size), dJ_dot_g(locData.size);
@@ -232,13 +195,11 @@ namespace aris::dynamic
 		aris::dynamic::s_mm(locData.size, 1, locData.size, locData.Ji, locData.size, locData.h, 1, J_dot_h.data(), 1);
 		aris::dynamic::s_mm(locData.size, 1, locData.size, locData.dJi, locData.size, locData.g, 1, dJ_dot_g.data(), 1);
 
-		for (Size i = 0; i < locData.size; ++i)
-		{
+		for (Size i = 0; i < locData.size; ++i){
 			lhs[i] = (limits[i].minAcc - J_dot_h[i] * locData.ds * locData.ds - dJ_dot_g[i] * locData.ds - locData.Ca[i]) / J_dot_g[i];
 			rhs[i] = (limits[i].maxAcc - J_dot_h[i] * locData.ds * locData.ds - dJ_dot_g[i] * locData.ds - locData.Ca[i]) / J_dot_g[i];
 
-			if (J_dot_g[i]<0)
-			{
+			if (J_dot_g[i]<0){
 				std::swap(lhs[i], rhs[i]);
 			}
 		}
@@ -249,8 +210,7 @@ namespace aris::dynamic
 		return ((data.ddsLhs < 0) && (data.ddsRhs > 0));
 	}
 	// 考虑dds是否有合法取值的情况下,来计算ds的取值范围 //
-	bool FastPath::computeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
-	{
+	bool FastPath::computeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits){
 		const double errorBund = 1e-7;
 
 		auto locData = data;
@@ -260,22 +220,18 @@ namespace aris::dynamic
 		/*迭代计算下限*/
 		locData.ds = locData.dsLhs;
 		//如果不成功,那么2分法求解
-		if (!computeDdsBundPure(locData, limits))
-		{
+		if (!computeDdsBundPure(locData, limits)){
 			double upper = 0;
 			double lower = locData.dsLhs;
 
-			while (std::abs(upper - lower) > errorBund)
-			{
+			while (std::abs(upper - lower) > errorBund){
 				double mid = (upper + lower) / 2;
 				locData.ds = mid;
 
-				if (computeDdsBundPure(locData, limits))
-				{
+				if (computeDdsBundPure(locData, limits)){
 					upper = mid;
 				}
-				else
-				{
+				else{
 					lower = mid;
 				}
 			}
@@ -286,22 +242,17 @@ namespace aris::dynamic
 		/*迭代计算上限*/
 		locData.ds = locData.dsRhs;
 		//如果不成功,那么2分法求解
-		if (!computeDdsBundPure(locData, limits))
-		{
+		if (!computeDdsBundPure(locData, limits)){
 			double upper = locData.dsRhs;
 			double lower = 0;
 
-			while (std::abs(upper - lower) > errorBund)
-			{
+			while (std::abs(upper - lower) > errorBund){
 				double mid = (upper + lower) / 2;
 				locData.ds = mid;
 
-				if (computeDdsBundPure(locData, limits))
-				{
+				if (computeDdsBundPure(locData, limits)){
 					lower = mid;
-				}
-				else
-				{
+				}else{
 					upper = mid;
 				}
 			}
@@ -321,8 +272,7 @@ namespace aris::dynamic
 		return true;
 	}
 	// 考虑下一时刻ds能否让dds取到合法值的dds范围 //
-	bool FastPath::computeDdsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
-	{
+	bool FastPath::computeDdsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits){
 		auto locData = data;
 
 		if (!computeDdsBundPure(locData, limits))return false;
@@ -339,12 +289,10 @@ namespace aris::dynamic
 	}
 
 	// 经过多少个减速后加速 //
-	int FastPath::computeForward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
-	{
+	int FastPath::computeForward(std::list<Node>::iterator iter, FastPath::Data &data, int num){
 		// 进行n个减速 //
-		for (int i = 0; i < num; ++i)
-		{
-			auto c_iter = std::prev(iter, num - i);
+		for (int i = 0; i < num; ++i){
+			auto c_iter = std::prev(iter, Size(num) - i);
 			data.time = c_iter->time;
 			data.s = c_iter->s;
 			data.ds = c_iter->ds;
@@ -375,13 +323,10 @@ namespace aris::dynamic
 		std::next(iter)->s = iter->s + iter->ds * dt + 0.5 * iter->dds * dt*dt;
 		return 0;
 	}
-	int FastPath::computeBackward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
-	{
+	int FastPath::computeBackward(std::list<Node>::iterator iter, FastPath::Data &data, int num){
 		// 进行n个加速 //
-		for (int i = 0; i < num; ++i)
-		{
-
-			auto c_iter = std::next(iter, num - i);
+		for (int i = 0; i < num; ++i){
+			auto c_iter = std::next(iter, Size(num) - i);
 			data.time = c_iter->time;
 			data.s = c_iter->s;
 			data.ds = c_iter->ds;
@@ -506,8 +451,7 @@ namespace aris::dynamic
 		/*使得双方时间一致*/
 		int size = std::lround(this->list.back().time / dt);
 		resultVec.resize(size);
-		for (int i = 0; i < size; ++i)
-		{
+		for (Size i = 0; i < size; ++i){
 			double id = static_cast<double>(i + 1) * (this->list.size() - 1) / size;
 
 			int down = std::lround(std::floor(id));

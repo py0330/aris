@@ -15,30 +15,29 @@
 #include "aris/dynamic/model.hpp"
 
 namespace aris::dynamic{
-
 	struct Marker::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		double pm_[4][4]{ { 0 } };
-		Part *part_;
+		Part* part_{ nullptr };
 	};
-	struct Model::Imp{
+	struct Model::Imp {
 		double time_{ 0.0 };
 		aris::core::Calculator calculator_;
 		Environment environment_;
-		std::unique_ptr<aris::core::PointerArray<Variable,          Element>> variable_pool_;
-		std::unique_ptr<aris::core::PointerArray<Part,              Element>> part_pool_;
-		std::unique_ptr<aris::core::PointerArray<Joint,             Element>> joint_pool_;
-		std::unique_ptr<aris::core::PointerArray<Motion,            Element>> motion_pool_;
-		std::unique_ptr<aris::core::PointerArray<MotionBase,        Element>> general_motion_pool_;
-		std::unique_ptr<aris::core::PointerArray<Force,             Element>> force_pool_;
-		std::unique_ptr<aris::core::PointerArray<Solver,            Element>> solver_pool_;
-		std::unique_ptr<aris::core::PointerArray<Simulator,         Element>> simulator_pool_;
-		std::unique_ptr<aris::core::PointerArray<SimResult,         Element>> sim_result_pool_;
-		std::unique_ptr<aris::core::PointerArray<Calibrator,        Element>> calibrator_pool_;
+		std::unique_ptr<aris::core::PointerArray<Variable, Element>> variable_pool_;
+		std::unique_ptr<aris::core::PointerArray<Part, Element>> part_pool_;
+		std::unique_ptr<aris::core::PointerArray<Joint, Element>> joint_pool_;
+		std::unique_ptr<aris::core::PointerArray<Motion, Element>> motion_pool_;
+		std::unique_ptr<aris::core::PointerArray<MotionBase, Element>> general_motion_pool_;
+		std::unique_ptr<aris::core::PointerArray<Force, Element>> force_pool_;
+		std::unique_ptr<aris::core::PointerArray<Solver, Element>> solver_pool_;
+		std::unique_ptr<aris::core::PointerArray<Simulator, Element>> simulator_pool_;
+		std::unique_ptr<aris::core::PointerArray<SimResult, Element>> sim_result_pool_;
+		std::unique_ptr<aris::core::PointerArray<Calibrator, Element>> calibrator_pool_;
 
-		Size actuator_pos_size_, actuator_dim_, end_effector_pos_size_, end_effector_dim_;
+		Size actuator_pos_size_{ 0 }, actuator_dim_{ 0 }, end_effector_pos_size_{ 0 }, end_effector_dim_{ 0 };
 
-		Part* ground_;
+		Part* ground_{ nullptr };
 	};
 	auto Model::init()->void { 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void{
@@ -66,7 +65,6 @@ namespace aris::dynamic{
 			interaction.makI_ = &*mak_i;
 			interaction.makJ_ = &*mak_j;
 		};
-
 		auto ground = std::find_if(partPool().begin(), partPool().end(), [](const auto &part)->bool{
 			return part.name() == "ground";
 		});
@@ -701,7 +699,7 @@ namespace aris::dynamic{
 		auto setTools = [](MultiModel* m, LocalStringList name_list)->void {
 			m->tools().clear();
 			for (auto name : name_list.strs)
-				m->tools().push_back(m->findMarker(name));
+				if(m->findMarker(name))m->tools().push_back(m->findMarker(name));
 		};
 		auto getWobjs = [](MultiModel* m)->LocalStringList {
 			LocalStringList name_list;

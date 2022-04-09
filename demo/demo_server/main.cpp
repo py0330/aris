@@ -6,49 +6,7 @@
 
 #include <aris/dynamic/puma_5axis.hpp>
 
-using namespace aris::dynamic;
-using namespace aris::robot;
-
-//系统传递函数H(s)=1/(ms)
-void PIDcalOne(double m, double ts, double *KP)
-{
-	double T = ts / 3.0;
-	KP[0] = m / T;
-}
-//系统传递函数H(s)=1/(ms+h)
-void PIDcalTeo(double m, double h, double ts, double overshoot, double *KP, double *KI)
-{
-	double temp = std::log(overshoot);
-	double kesi = 1 / sqrt(1 + aris::PI * aris::PI / temp / temp);
-	double omega = 4 / kesi / ts;
-
-	KI[0] = omega * omega * m;
-	KP[0] = 2 * kesi * omega * m - h;
-}
-auto f(aris::dynamic::Model *m, double *A)
-{
-	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool()[1]);
-	s.kinPos();
-	s.kinVel();
-	s.cptGeneralInverseDynamicMatrix();
-	s.cptJacobiWrtEE();
-
-	// J_inv
-	double U[36], tau[6], J_inv[36], tau2[6];
-	aris::Size p[6], rank;
-	s_householder_utp(6, 6, s.Jf(), U, tau, p, rank, 1e-7);
-	s_householder_utp2pinv(6, 6, rank, U, tau, p, J_inv, tau2, 1e-7);
-
-	// M = (M + I) * J_inv 
-	double M[36], tem[36];
-	s_mc(6, 6, s.M(), s.nM(), M, 6);
-	for (int i = 0; i < 6; ++i)M[at(i, i, 6)] += m->motionPool()[i].frcCoe()[2];
-	s_mm(6, 6, 6, M, J_inv, tem);
-	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
-}
-
-auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
-{
+auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>{
 	aris::dynamic::PumaParam param;
 	param.d1 = 0.3295;
 	param.a1 = 0.04;
@@ -83,34 +41,42 @@ auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynami
 }
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 	aris::core::setLanguage(1);
 
 	auto &cs = aris::server::ControlServer::instance();
+	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
+
+	std::cout << aris::core::toXmlString(cs) << std::endl;
+
+
+
+	//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
 
 	cs.resetMaster(aris::robot::rokae::xb4::createMaster().release());
 	cs.resetController(aris::robot::rokae::xb4::createController().release());
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
+	//std::cout << aris::core::toXmlString(cs) << std::endl;
 
+	
 
-	cs.init();
-	cs.planRoot().planPool().front().parse("en -m=1");
-	cs.planRoot().planPool().front().prepareNrt();
-	cs.planRoot().planPool().front().executeRT();
-	cs.controller().motorPool()[0].targetToq();
+	//cs.resetModel(new aris::dynamic::Model);
+	//cs.resetPlanRoot(new aris::plan::PlanRoot);
+	//cs.resetModel(new aris::dynamic::Model);
 
+	auto str = aris::core::toXmlString(cs);
 
-	char a;
-	std::cin >> a;
-
+	aris::core::fromXmlString(cs,str);
 
 
 
 	try
 	{
+		cs.interfacePool().add<aris::server::HttpInterface>("http", "8001", "C:/Users/py033/WebstormProjects/RobotControllerHMI/client/build");
+		cs.interfacePool().add<aris::server::ProgramWebInterface>();
+		
 		cs.init();
 		cs.open();
 		cs.start();

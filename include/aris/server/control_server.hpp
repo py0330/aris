@@ -41,6 +41,7 @@ namespace aris::server
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
 		using PostCallback = std::add_pointer<void(ControlServer&)>::type;
+		using ExecuteCmdCallback = std::function<void(aris::plan::Plan&)>;
 
 		static auto instance()->ControlServer &;
 
@@ -50,13 +51,6 @@ namespace aris::server
 		auto resetModel(dynamic::ModelBase* model)->void;
 		auto model()->dynamic::ModelBase&;
 		auto model()const->const dynamic::ModelBase& { return const_cast<ControlServer*>(this)->model(); }
-
-		// model //
-		//template<typename T = aris::dynamic::Model, typename... Args>
-		//auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
-		//auto resetModel(dynamic::Model *model)->void;
-		//auto model()->dynamic::Model&;
-		//auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 
 		// master //
 		template<typename T = aris::control::Master, typename... Args>
@@ -95,7 +89,7 @@ namespace aris::server
 		auto customModule()const->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
 
 		// rt error handler //
-		// p can be nullptr, means idel
+		// p can be nullptr, means idle
 		auto setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)>)->void;
 
 		// operation in RT & NRT context //
@@ -116,12 +110,11 @@ namespace aris::server
 		auto open()->void;
 		auto close()->void;
 		auto runCmdLine()->void;
-		auto executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
-		auto executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmd(std::vector<std::pair<std::string, ExecuteCmdCallback>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmd(std::string cmd_str, ExecuteCmdCallback callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmdInCmdLine(std::vector<std::pair<std::string, ExecuteCmdCallback>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmdInCmdLine(std::string cmd_string, ExecuteCmdCallback callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
 		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;
-		auto currentCollectPlan()->std::shared_ptr<aris::plan::Plan>;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;

@@ -223,8 +223,8 @@ namespace aris::core{
 
 	struct Socket::Imp{
 		Socket* socket_;
-		Socket::State state_{ IDLE };
-		Socket::TYPE type_{ TCP };
+		Socket::State state_{ State::IDLE };
+		Socket::Type type_{ Type::TCP };
 		bool is_server_{false};
 
 		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
@@ -233,7 +233,7 @@ namespace aris::core{
 		std::function<int(Socket *)> onLoseConnection;
 
 		decltype(socket(AF_INET, SOCK_STREAM, 0)) lisn_socket_, recv_socket_;  //也可以用SOCKET类型
-		struct sockaddr_in server_addr_, client_addr_;
+		struct sockaddr_in server_addr_ {}, client_addr_{};
 		socklen_t sin_size_;
 
 		std::string remote_ip_, port_;
@@ -249,7 +249,7 @@ namespace aris::core{
 		WSADATA wsa_data_;             //windows下才用,linux下无该项
 #endif
 		~Imp() = default;
-		Imp(Socket* sock) :socket_(sock), lisn_socket_(0), recv_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
+		Imp(Socket* sock) :socket_(sock), lisn_socket_(0), recv_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::State::IDLE)
 			, onReceivedMsg(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
 
 		static void receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready);
@@ -266,7 +266,7 @@ namespace aris::core{
 				close_sock(recv_socket_);
 				
 				std::unique_lock<std::recursive_mutex> state_lck(state_mutex_);
-				state_ = IDLE;
+				state_ = State::IDLE;
 				recv_thread_.detach();
 				if (onLoseConnection)onLoseConnection(socket_);
 				return;
@@ -278,7 +278,7 @@ namespace aris::core{
 		signal(SIGPIPE, SIG_IGN);
 #endif
 		// 改变状态 //
-		imp->state_ = WAITING_FOR_CONNECTION;
+		imp->state_ = State::WAITING_FOR_CONNECTION;
 
 		// 通知主线程,accept线程已经拷贝完毕,准备监听 //
 		accept_thread_ready.set_value();
@@ -292,7 +292,7 @@ namespace aris::core{
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock()){
 					close_sock(imp->lisn_socket_);
-					imp->state_ = IDLE;
+					imp->state_ = State::IDLE;
 					return;
 				}
 
@@ -300,7 +300,7 @@ namespace aris::core{
 				continue;
 			}
 
-			if (imp->type_ == WEB || imp->type_ == WEB_RAW){
+			if (imp->type_ == Type::WEB || imp->type_ == Type::WEB_RAW){
 				std::this_thread::sleep_for(std::chrono::seconds(3));
 				
 				char recv_data[1024]{ 0 };
@@ -330,8 +330,8 @@ namespace aris::core{
 				checksum.update(server_key);
 				std::string hash = checksum.final();
 
-				std::uint32_t message_digest[5];
-				for (int i = 0; i < 20; ++i){
+				std::uint32_t message_digest[5]{};
+				for (Size i = 0; i < 20; ++i){
 					char num[5] = "0x00";
 					std::copy_n(hash.data() + i * 2, 2, num + 2);
 					std::uint8_t n = std::stoi(num, 0, 16);
@@ -377,7 +377,7 @@ namespace aris::core{
 		signal(SIGPIPE, SIG_IGN);
 #endif
 		// 改变状态 //
-		imp->state_ = Socket::WORKING;
+		imp->state_ = Socket::State::WORKING;
 
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();
@@ -388,7 +388,7 @@ namespace aris::core{
 		// 开启接受数据的循环 //
 		for (;;){
 			switch (imp->type_){
-			case TCP:{
+			case Type::TCP:{
 				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), sizeof(MsgHeader)) <= 0) { imp->lose_tcp(); return; }
 				if (recv_msg.size() > 0x00100000 || recv_msg.size() < 0) { imp->lose_tcp(); return; }
 				recv_msg.resize(recv_msg.size());
@@ -396,7 +396,7 @@ namespace aris::core{
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case TCP_RAW: {
+			case Type::TCP_RAW: {
 				char data[1024];
 				int ret = recv(imp->recv_socket_, data, 1024, 0);
 				if (ret <= 0) {
@@ -406,7 +406,7 @@ namespace aris::core{
 				if (ret > 0 && imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
 				break;
 			}
-			case WEB:{
+			case Type::WEB:{
 				std::string payload_data;
 				for (bool fin{ false }; !fin;){
 					// 接受头 //
@@ -482,7 +482,7 @@ namespace aris::core{
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case WEB_RAW:{
+			case Type::WEB_RAW:{
 				std::int64_t real_length{ 0 };
 				std::string payload_data;
 
@@ -546,7 +546,7 @@ namespace aris::core{
 
 				break;
 			}
-			case UDP:{
+			case Type::UDP:{
 				int ret = recvfrom(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 				
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
@@ -558,7 +558,7 @@ namespace aris::core{
 				if(ret > 0 && imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
-			case UDP_RAW:{
+			case Type::UDP_RAW:{
 				char data[1024];
 				int ret = recvfrom(imp->recv_socket_, data, 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
@@ -574,22 +574,22 @@ namespace aris::core{
 		std::unique_lock<std::mutex> lck2(imp_->close_mutex_, std::adopt_lock);
 
 		switch (imp_->state_){
-		case IDLE:
+		case State::IDLE:
 			break;
-		case WAITING_FOR_CONNECTION:
+		case State::WAITING_FOR_CONNECTION:
 			shutdown(imp_->lisn_socket_, 2);
 			if (imp_->accept_thread_.joinable())imp_->accept_thread_.join();
 			break;
-		case WORKING:
+		case State::WORKING:
 			switch (connectType()){
-			case TCP:
-			case TCP_RAW:
-			case WEB:
-			case WEB_RAW:
+			case Type::TCP:
+			case Type::TCP_RAW:
+			case Type::WEB:
+			case Type::WEB_RAW:
 				if (shutdown(imp_->recv_socket_, 2) < 0) ARIS_LOG(SOCKET_SHUT_DOWN_ERROR, errno);
 				break;
-			case UDP:
-			case UDP_RAW:
+			case Type::UDP:
+			case Type::UDP_RAW:
 				if (close_sock(imp_->recv_socket_) < 0) ARIS_LOG(SOCKET_SHUT_CLOSE_ERROR, errno);
 				break;
 			}
@@ -598,7 +598,7 @@ namespace aris::core{
 			break;
 		}
 
-		imp_->state_ = Socket::IDLE;
+		imp_->state_ = Socket::State::IDLE;
 	}
 	auto Socket::startServer(const std::string &port)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
@@ -607,7 +607,7 @@ namespace aris::core{
 		if (this->port().empty())THROW_FILE_LINE("Socket can't Start as server, because it has empty port\n");
 
 		switch (imp_->state_){
-		case IDLE:
+		case State::IDLE:
 			break;
 		default:
 			THROW_FILE_LINE("Socket can't Start as server, because it is not at idle state\n");
@@ -618,14 +618,14 @@ namespace aris::core{
 		//////////////////////////////////////////////////////////////////////////////////////////////
 		int sock_type;
 		switch (connectType()){
-		case TCP:
-		case TCP_RAW:
-		case WEB:
-		case WEB_RAW:
+		case Type::TCP:
+		case Type::TCP_RAW:
+		case Type::WEB:
+		case Type::WEB_RAW:
 			sock_type = SOCK_STREAM;
 			break;
-		case UDP:
-		case UDP_RAW:
+		case Type::UDP:
+		case Type::UDP_RAW:
 			sock_type = SOCK_DGRAM;
 			break;
 		}
@@ -675,7 +675,7 @@ namespace aris::core{
 			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
-		if (connectType() == TCP || connectType() == TCP_RAW || connectType() == WEB || connectType() == WEB_RAW){
+		if (connectType() == Type::TCP || connectType() == Type::TCP_RAW || connectType() == Type::WEB || connectType() == Type::WEB_RAW){
 			// 监听lisn_socket_描述符 //
 			if (listen(imp_->lisn_socket_, 5) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
 
@@ -717,7 +717,7 @@ namespace aris::core{
 		if (this->port().empty())THROW_FILE_LINE("Socket can't connect, because it empty port\n");
 
 		switch (imp_->state_){
-		case IDLE:
+		case State::IDLE:
 			break;
 		default:
 			THROW_FILE_LINE("Socket can't connect, because it is busy now, please close it\n");
@@ -728,14 +728,14 @@ namespace aris::core{
 		///////////////////////////////////////////////////////////////////////////////
 		int sock_type;
 		switch (connectType()){
-		case TCP:
-		case TCP_RAW:
-		case WEB:
-		case WEB_RAW:
+		case Type::TCP:
+		case Type::TCP_RAW:
+		case Type::WEB:
+		case Type::WEB_RAW:
 			sock_type = SOCK_STREAM;
 			break;
-		case UDP:
-		case UDP_RAW:
+		case Type::UDP:
+		case Type::UDP_RAW:
 			sock_type = SOCK_DGRAM;
 			break;
 		}
@@ -751,13 +751,13 @@ namespace aris::core{
 		imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
 		switch (connectType()){
-		case TCP:
-		case TCP_RAW:{
+		case Type::TCP:
+		case Type::TCP_RAW:{
 			// 连接 //
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
 				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 
-			imp_->state_ = Socket::WORKING;
+			imp_->state_ = Socket::State::WORKING;
 
 			// Start Thread //
 			std::promise<void> receive_thread_ready;
@@ -767,8 +767,8 @@ namespace aris::core{
 
 			return;
 		}
-		case WEB:
-		case WEB_RAW:{
+		case Type::WEB:
+		case Type::WEB_RAW:{
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
 				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 
@@ -793,7 +793,7 @@ namespace aris::core{
 			////////////   这里应该check更多，tbd //
 			if(header_map.find("Sec-WebSocket-Accept") == header_map.end())THROW_FILE_LINE("Socket can't connect, web sock error 3\n");
 
-			imp_->state_ = Socket::WORKING;
+			imp_->state_ = Socket::State::WORKING;
 
 			// Start Thread //
 			std::promise<void> receive_thread_ready;
@@ -803,9 +803,9 @@ namespace aris::core{
 
 			return;
 		}
-		case UDP:
-		case UDP_RAW:
-			imp_->state_ = Socket::WORKING;
+		case Type::UDP:
+		case Type::UDP_RAW:
+			imp_->state_ = Socket::State::WORKING;
 			return;
 		}
 	}
@@ -817,15 +817,15 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		switch (imp_->state_){
-		case WORKING:{
+		case State::WORKING:{
 			switch (imp_->type_){
-			case TCP:
+			case Type::TCP:
 				if (send(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
-			case WEB:{
+			case Type::WEB:{
 				auto packed_data = imp_->is_server_ 
 					? pack_data_server(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader))
 					: pack_data_client(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader));
@@ -835,7 +835,7 @@ namespace aris::core{
 					return;
 				break;
 			}
-			case UDP:{
+			case Type::UDP:{
 				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 				imp_->server_addr_.sin_family = AF_INET;
 				imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
@@ -863,16 +863,16 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		switch (imp_->state_){
-		case WORKING:{
+		case State::WORKING:{
 			switch (imp_->type_){
-			case TCP_RAW: {
+			case Type::TCP_RAW: {
 				if (send(imp_->recv_socket_, data, size, 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
 			}
-			case WEB_RAW:{
+			case Type::WEB_RAW:{
 				auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
 				if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
@@ -880,7 +880,7 @@ namespace aris::core{
 					return;
 				break;
 			}
-			case UDP_RAW:{
+			case Type::UDP_RAW:{
 				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 				imp_->server_addr_.sin_family = AF_INET;
 				imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
@@ -905,7 +905,7 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		switch (imp_->state_){
-		case WORKING:
+		case State::WORKING:
 			return true;
 		default:
 			return false;
@@ -931,8 +931,8 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->remote_ip_ = remote_ip;
 	}
-	auto Socket::connectType()const->TYPE { return imp_->type_; }
-	auto Socket::setConnectType(const TYPE type)->void { imp_->type_ = type; }
+	auto Socket::connectType()const->Type { return imp_->type_; }
+	auto Socket::setConnectType(const Type type)->void { imp_->type_ = type; }
 	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->onReceivedMsg = OnReceivedData;
@@ -957,7 +957,7 @@ namespace aris::core{
 #endif
 		}
 	}
-	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :imp_(new Imp(this)){
+	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, Type type) :imp_(new Imp(this)){
 		// 启动服务器 //
 #ifdef WIN32 
 		if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)THROW_FILE_LINE("Socket can't Start as server, because it can't WSAstartup\n");
@@ -966,34 +966,34 @@ namespace aris::core{
 		setPort(port);
 		setConnectType(type);
 	}
-	Socket::Socket(Socket&&s){
+	Socket::Socket(Socket&&s)noexcept{
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 	};
-	Socket& Socket::operator=(Socket&&s){
+	Socket& Socket::operator=(Socket&&s)noexcept {
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 		return *this;
 	}
 
 	ARIS_REGISTRATION{
-		aris::core::class_<Socket::TYPE>("Socket::connect_type")
-			.textMethod([](Socket::TYPE *v)->std::string{
-				auto type = *reinterpret_cast<Socket::TYPE*>(v);
-				if (type == Socket::TCP)return "TCP";
-				else if (type == Socket::TCP_RAW)return "TCP_RAW";
-				else if (type == Socket::WEB)return "WEB";
-				else if (type == Socket::WEB_RAW)return "WEB_RAW";
-				else if (type == Socket::UDP)return "UDP";
-				else if (type == Socket::UDP_RAW)return "UDP_RAW";
+		aris::core::class_<Socket::Type>("Socket::connect_type")
+			.textMethod([](Socket::Type *v)->std::string{
+				auto type = *reinterpret_cast<Socket::Type*>(v);
+				if (type == Socket::Type::TCP)return "TCP";
+				else if (type == Socket::Type::TCP_RAW)return "TCP_RAW";
+				else if (type == Socket::Type::WEB)return "WEB";
+				else if (type == Socket::Type::WEB_RAW)return "WEB_RAW";
+				else if (type == Socket::Type::UDP)return "UDP";
+				else if (type == Socket::Type::UDP_RAW)return "UDP_RAW";
 				else THROW_FILE_LINE("unknown connect type");
-			},[](Socket::TYPE *v,std::string_view str)->void{
-				if (str == "TCP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP;
-				else if (str == "TCP_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP_RAW;
-				else if (str == "WEB")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB;
-				else if (str == "WEB_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB_RAW;
-				else if (str == "UDP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::UDP;
-				else if (str == "UDP_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::UDP_RAW;
+			},[](Socket::Type *v,std::string_view str)->void{
+				if (str == "TCP")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::TCP;
+				else if (str == "TCP_RAW")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::TCP_RAW;
+				else if (str == "WEB")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::WEB;
+				else if (str == "WEB_RAW")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::WEB_RAW;
+				else if (str == "UDP")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::UDP;
+				else if (str == "UDP_RAW")*reinterpret_cast<Socket::Type*>(v) = Socket::Type::UDP_RAW;
 				else THROW_FILE_LINE("unknown connect type");
 			});
 

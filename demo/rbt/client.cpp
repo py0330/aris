@@ -30,7 +30,7 @@ int sendRequest(int argc, char *argv[])
 
 	// 连接并发送msg //
 	aris::core::Socket client("client");
-	client.setConnectType(aris::core::Socket::TCP);
+	client.setConnectType(aris::core::Socket::Type::TCP);
     client.setRemoteIP("127.0.0.1");
     client.setPort("5868");
 

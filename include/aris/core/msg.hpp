@@ -93,8 +93,8 @@ namespace aris::core
 		explicit Msg(const std::string &msg_str);
 		Msg(const MsgBase &other);
 		Msg(const Msg& other);
-		Msg(Msg&& other);
-		Msg& operator=(Msg &&other);
+		Msg(Msg&& other)noexcept;
+		Msg& operator=(Msg &&other)noexcept;
 
 	private:
 		std::unique_ptr<char[]> data_;

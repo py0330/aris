@@ -485,15 +485,13 @@ namespace aris::control
 			ecrt_domain_process(m_handle.domain_);
 		}
 	}
-	auto aris_ecrt_master_send(EthercatMaster *mst)->void
-	{
+	auto aris_ecrt_master_send(EthercatMaster *mst)->void{
 		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 		
 		ec_master_state_t ms;
 		ecrt_master_state(m_handle.ec_master_, &ms);
 
-		if (ms.link_up)
-		{
+		if (ms.link_up){
 			ecrt_domain_queue(m_handle.domain_);
 
 			ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
@@ -514,15 +512,18 @@ namespace aris::control
 		}
 	}
 
-	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void
-	{
-		auto &pe_handle = std::any_cast<const PdoEntryHandle&>(entry->ecHandle());
-		read_bit2(reinterpret_cast<char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
+	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void{
+		if (entry->index()) {
+			auto& pe_handle = std::any_cast<const PdoEntryHandle&>(entry->ecHandle());
+			read_bit2(reinterpret_cast<char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
+		}
 	}
-	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data)->void
-	{
-		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
-		write_bit2(reinterpret_cast<const char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
+	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data)->void{
+		if (entry->index()) {
+			auto& pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
+			write_bit2(reinterpret_cast<const char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
+		}
+
 	}
 
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,
