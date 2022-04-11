@@ -176,8 +176,10 @@ namespace aris::core{
 		tinyxml2::XMLDocument doc;
 		auto ret = doc.Parse(xml_str.data(), xml_str.size());
 
-		if (ret != tinyxml2::XML_SUCCESS)
-			THROW_FILE_LINE("load xml failed : " + std::to_string(ret));
+		if (ret != tinyxml2::XML_SUCCESS) {
+			THROW_FILE_LINE("load xml failed : " + std::to_string(ret) + "\n" + doc.ErrorStr());
+		}
+			
 
 		auto root_ele = doc.RootElement();
 
