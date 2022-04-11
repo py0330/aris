@@ -813,20 +813,20 @@ namespace aris::server{
 				if (!(inter->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 					need_run_internal.push_back(inter);
 
-			// 检查 server 是否处于错误状态 //
-			if (auto err = this->errorCode()) {
-				for (auto& inter : need_run_internal) {
-					inter->plan_->setRetCode(err);
-					inter->plan_->setRetMsg("server in error, use cl to clear");
-				}
-				return ret_plan;
-			}
-
 			// 检查 server 是否已经在运行 //
 			if (!imp_->is_running_) {
 				for (auto& inter : need_run_internal) {
 					inter->plan_->setRetCode(aris::plan::Plan::SERVER_NOT_STARTED);
 					inter->plan_->setRetMsg("server not started, use cs_start to start");
+				}
+				return ret_plan;
+			}
+
+			// 检查 server 是否处于错误状态 //
+			if (auto err = this->errorCode()) {
+				for (auto& inter : need_run_internal) {
+					inter->plan_->setRetCode(err);
+					inter->plan_->setRetMsg("server in error, use cl to clear");
 				}
 				return ret_plan;
 			}
