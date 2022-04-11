@@ -423,18 +423,20 @@ namespace aris::control{
 		EthercatSlave* slave_{ nullptr };
 
 		std::int16_t control_word_idx_        { 0x6040 }, 
-			         mode_of_operation_idx_   { 0x6060 }, 
-			         target_pos_idx_          { 0x607A },
+		             mode_of_operation_idx_   { 0x6060 }, 
+		             target_pos_idx_          { 0x607A },
 			         target_vel_idx_          { 0x60FF },
-			         target_toq_idx_          { 0x6071 },
-			         offset_vel_idx_          { 0x60B1 },
-			         offset_toq_idx_          { 0x60B2 },
-			         status_word_idx_         { 0x6041 },
-			         mode_of_display_idx_     { 0x6061 },
-			         actual_pos_idx_          { 0x6064 },
-			         actual_vel_idx_          { 0x606C },
-			         actual_toq_idx_          { 0x6077 },
-			         actual_cur_idx_          { 0x6078 }
+		             target_toq_idx_          { 0x6071 },
+		             offset_vel_idx_          { 0x60B1 },
+		             offset_toq_idx_          { 0x60B2 },
+		             status_word_idx_         { 0x6041 },
+		             mode_of_display_idx_     { 0x6061 },
+		             actual_pos_idx_          { 0x6064 },
+		             actual_vel_idx_          { 0x606C },
+		             actual_toq_idx_          { 0x6077 },
+		             actual_cur_idx_          { 0x6078 },
+			         output_io_idx_           { 0x60fe },
+		             error_code_idx_          { 0x603f }
 			;
 		std::int8_t  control_word_subidx_     { 0x00 }, 
 			         mode_of_operation_subidx_{ 0x00 }, 
@@ -448,7 +450,9 @@ namespace aris::control{
 			         actual_pos_subidx_       { 0x00 },
 			         actual_vel_subidx_       { 0x00 },
 			         actual_toq_subidx_       { 0x00 },
-			         actual_cur_subidx_       { 0x00 }
+			         actual_cur_subidx_       { 0x00 },
+			         output_io_subidx_        { 0x01 },
+			         error_code_subidx_       { 0x00 }
 			;
 	};
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
@@ -775,6 +779,31 @@ namespace aris::control{
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
+
+	auto EthercatMotor::hasRtOutputIo()noexcept->bool {
+		return slave()->findPdoEntry(imp_->output_io_idx_, imp_->output_io_subidx_);
+	}
+	auto EthercatMotor::setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void {
+		slave()->writePdo(imp_->output_io_idx_, sub_idx, value);
+	}
+	auto EthercatMotor::setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void {
+		slave()->writeSdo(imp_->output_io_idx_, sub_idx, value);
+	}
+
+	auto EthercatMotor::hasRtErrorCode()noexcept->bool {
+		return slave()->findPdoEntry(imp_->error_code_idx_, imp_->error_code_subidx_);
+	}
+	auto EthercatMotor::errorCodeRt()noexcept->std::uint16_t {
+		std::uint16_t value;
+		slave()->readPdo(imp_->error_code_idx_, imp_->error_code_subidx_, value);
+		return value;
+	}
+	auto EthercatMotor::errorCodeNrt()noexcept->std::uint16_t {
+		std::uint16_t value;
+		slave()->readSdo(imp_->error_code_idx_, imp_->error_code_subidx_, value);
+		return value;
+	}
+
 	auto EthercatMotor::slave()->EthercatSlave* { return imp_->slave_; }
 	auto EthercatMotor::setSlave(EthercatSlave* slave)->void { imp_->slave_ = slave; }
 	// default: 0x6040 //
@@ -971,6 +1000,37 @@ namespace aris::control{
 	auto EthercatMotor::setActualCurSubindex(std::uint8_t index)noexcept->void {
 		imp_->actual_toq_subidx_ = index;
 	}
+
+	// default: 0x60fe //
+	auto EthercatMotor::outputIoIndex()const noexcept->std::uint16_t {
+		return imp_->output_io_idx_;
+	}
+	auto EthercatMotor::setOutputIoIndex(std::uint16_t index)noexcept->void {
+		imp_->output_io_idx_ = index;
+	}
+	// default: 0x01 //
+	auto EthercatMotor::outputIoSubindex()const noexcept->std::uint8_t {
+		return imp_->output_io_subidx_;
+	}
+	auto EthercatMotor::setOutputIoSubindex(std::uint8_t index)noexcept->void {
+		imp_->output_io_subidx_ = index;
+	}
+
+	// default: 0x603F //
+	auto EthercatMotor::errorCodeIndex()const noexcept->std::uint16_t {
+		return imp_->error_code_idx_;
+	}
+	auto EthercatMotor::setErrorCodeIndex(std::uint16_t index)noexcept->void {
+		imp_->error_code_idx_ = index;
+	}
+	// default: 0x00 //
+	auto EthercatMotor::errorCodeSubindex()const noexcept->std::uint8_t {
+		return imp_->error_code_subidx_;
+	}
+	auto EthercatMotor::setErrorCodeSubindex(std::uint8_t index)noexcept->void {
+		imp_->error_code_subidx_ = index;
+	}
+
 	EthercatMotor::~EthercatMotor() = default;
 	EthercatMotor::EthercatMotor(EthercatSlave* slave
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
@@ -1063,6 +1123,8 @@ namespace aris::control{
 				EthercatMotorIndex_{"actual_vel",m->actualVelIndex(),m->actualVelSubindex()},
 				EthercatMotorIndex_{"actual_toq",m->actualToqIndex(),m->actualToqSubindex()},
 				EthercatMotorIndex_{"actual_cur",m->actualCurIndex(),m->actualCurSubindex()},
+				EthercatMotorIndex_{"output_io",m->actualCurIndex(),m->actualCurSubindex()},
+				EthercatMotorIndex_{"error_code",m->actualCurIndex(),m->actualCurSubindex()},
 			}};
 			return idx_vec;
 		};
@@ -1119,6 +1181,14 @@ namespace aris::control{
 				else if (ec_mot_index.name_ == "actual_cur") {
 					m->setActualCurIndex(ec_mot_index.index_);
 					m->setActualCurSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "output_io") {
+					m->setOutputIoIndex(ec_mot_index.index_);
+					m->setOutputIoSubindex(ec_mot_index.sub_index_);
+				}
+				else if (ec_mot_index.name_ == "error_code") {
+					m->setErrorCodeIndex(ec_mot_index.index_);
+					m->setErrorCodeSubindex(ec_mot_index.sub_index_);
 				}
 			}
 		};

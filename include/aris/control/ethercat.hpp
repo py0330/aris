@@ -223,6 +223,16 @@ namespace aris::control
 		// require pdo 0x6060 0x6061 //
 		auto virtual mode(std::uint8_t md)->int override;
 
+		auto virtual hasRtOutputIo()noexcept->bool override;
+		auto virtual setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
+		auto virtual setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
+		
+		auto virtual hasRtErrorCode()noexcept->bool override;
+		auto virtual errorCodeRt()noexcept->std::uint16_t override;
+		auto virtual errorCodeNrt()noexcept->std::uint16_t override;
+
+
+
 		auto slave()->EthercatSlave*;
 		auto setSlave(EthercatSlave*)->void;
 
@@ -316,6 +326,20 @@ namespace aris::control
 		// default: 0x00 //
 		auto actualCurSubindex()const noexcept->std::uint8_t;
 		auto setActualCurSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x60fe //
+		auto outputIoIndex()const noexcept->std::uint16_t;
+		auto setOutputIoIndex(std::uint16_t index)noexcept->void;
+		// default: 0x01 //
+		auto outputIoSubindex()const noexcept->std::uint8_t;
+		auto setOutputIoSubindex(std::uint8_t index)noexcept->void;
+
+		// default: 0x603F //
+		auto errorCodeIndex()const noexcept->std::uint16_t;
+		auto setErrorCodeIndex(std::uint16_t index)noexcept->void;
+		// default: 0x00 //
+		auto errorCodeSubindex()const noexcept->std::uint8_t;
+		auto setErrorCodeSubindex(std::uint8_t index)noexcept->void;
 
 		virtual ~EthercatMotor();
 		EthercatMotor(EthercatSlave* slave = nullptr
