@@ -4,8 +4,7 @@
 #include <aris_lib_export.h>
 #include <aris/control/master_slave.hpp>
 
-namespace aris::control
-{
+namespace aris::control{
 	class ARIS_API Motor{
 	public:
 		auto motId()const->aris::Size;
@@ -64,6 +63,16 @@ namespace aris::control
 		auto virtual enable()->int = 0;
 		auto virtual home()->int = 0;
 		auto virtual mode(std::uint8_t md)->int = 0;
+
+		// manipulate output io //
+		auto virtual hasRtOutputIo()noexcept->bool = 0;
+		auto virtual setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void = 0;
+		auto virtual setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void = 0;
+
+		// error code //
+		auto virtual hasRtErrorCode()noexcept->bool = 0;
+		auto virtual errorCodeRt()noexcept->std::uint16_t = 0;
+		auto virtual errorCodeNrt()noexcept->std::uint16_t = 0;
 
 		virtual ~Motor();
 		explicit Motor(double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
