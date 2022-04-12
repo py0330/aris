@@ -4,8 +4,61 @@
 
 #include "aris.hpp"
 
-int main()
-{
+class A { 
+public:
+	std::string name; 
+};
+class B :public A {};
+class C {
+public:
+	auto resetPool(aris::core::PointerArray<A>* pool) { a_pool_.reset(pool); }
+	auto pool()->aris::core::PointerArray<A>& { return *a_pool_; }
+
+private:
+	std::unique_ptr<aris::core::PointerArray<A>> a_pool_{new aris::core::PointerArray<A> };
+};
+
+ARIS_REGISTRATION{
+	aris::core::class_<A>("A")
+		.prop("name", &A::name)
+		;
+
+	aris::core::class_<B>("B")
+		;
+
+	aris::core::class_<aris::core::PointerArray<A>>("A_POOL")
+		.asRefArray()
+		;
+
+	aris::core::class_<C>("C")
+		.prop("a_pool", &C::resetPool, &C::pool)
+		;
+}
+
+
+int main(){
+	{
+		C c;
+
+		std::cout << aris::core::toXmlString(c) << std::endl;
+	
+	}
+
+	
+	auto &cs = aris::server::ControlServer::instance();
+	
+	try {
+		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh.xml");
+	}
+	catch (std::runtime_error& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	cs.model().init();
+
+	std::cout << dynamic_cast<aris::dynamic::MultiModel&>(cs.model()).tools().size() << std::endl;
+
+
 	aris::core::Socket server, client;
 	server.setConnectType(aris::core::Socket::Type::TCP_RAW);
 	client.setConnectType(aris::core::Socket::Type::TCP_RAW);

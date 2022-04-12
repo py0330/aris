@@ -1123,8 +1123,8 @@ namespace aris::control{
 				EthercatMotorIndex_{"actual_vel",m->actualVelIndex(),m->actualVelSubindex()},
 				EthercatMotorIndex_{"actual_toq",m->actualToqIndex(),m->actualToqSubindex()},
 				EthercatMotorIndex_{"actual_cur",m->actualCurIndex(),m->actualCurSubindex()},
-				EthercatMotorIndex_{"output_io",m->actualCurIndex(),m->actualCurSubindex()},
-				EthercatMotorIndex_{"error_code",m->actualCurIndex(),m->actualCurSubindex()},
+				EthercatMotorIndex_{"output_io",m->outputIoIndex(),m->outputIoSubindex()},
+				EthercatMotorIndex_{"error_code",m->errorCodeIndex(),m->errorCodeSubindex()},
 			}};
 			return idx_vec;
 		};
