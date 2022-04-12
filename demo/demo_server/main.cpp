@@ -44,8 +44,15 @@ auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynami
 int main(int argc, char *argv[]){
 	aris::core::setLanguage(1);
 
-	auto &cs = aris::server::ControlServer::instance();
-	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");
+	auto& cs = aris::server::ControlServer::instance();
+	try {
+		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(4).xml");
+	}
+	catch (std::runtime_error&e) {
+		std::cout << e.what() << std::endl;
+	}
+	
+	
 
 	std::cout << aris::core::toXmlString(cs) << std::endl;
 

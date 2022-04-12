@@ -166,9 +166,162 @@ void test_server_parse_exception(){
 	cs.stop();
 	std::cout << "test parse exception end" << std::endl;
 }
+void test_server_prepare_exception() {
+	auto& cs = aris::server::ControlServer::instance();
+	std::cout << "test prepare exception" << std::endl;
+	cs.resetMaster(new aris::control::Master);
+	cs.resetController(new aris::control::Controller);
+	cs.resetModel(new aris::dynamic::Model);
+	cs.resetPlanRoot(new aris::plan::PlanRoot);
+
+	std::int64_t option = aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+	std::atomic_int prepare_num{ 0 }, execute_num{ 0 }, collect_num{ 0 };
+
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void {
+			plan->option() = option;
+			++prepare_num;
+		}, [&](const aris::plan::Plan* plan)->int {
+			++execute_num;
+			return 0;
+		}, [&](aris::plan::Plan* plan)->void {
+			++collect_num;
+		}, "<Command name=\"test_PREPARE_EXCEPTION1\"/>");
+
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void {
+			plan->option() = option;
+			throw std::runtime_error("prepare exception");
+			++prepare_num;
+		}, [&](const aris::plan::Plan* plan)->int {
+			++execute_num;
+			return 0;
+		}, [&](aris::plan::Plan* plan)->void {
+			++collect_num;
+		}, "<Command name=\"test_PREPARE_EXCEPTION2\"/>");
+	cs.init();
+	cs.open();
+	cs.start();
+
+	std::string cmd1("test_PREPARE_EXCEPTION1");
+	std::string cmd2("test_PREPARE_EXCEPTION2");
+
+	int exe_count = 0;
+	aris::server::ControlServer::ExecuteCmdCallback callback = [&exe_count](aris::plan::Plan&) {
+		exe_count++;
+	};
+
+	for (int i = 0; i < 2; ++i) {
+		auto ret = cs.executeCmd(cmd1);
+		if (!ret || 
+			ret->retCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+
+		ret = cs.executeCmd(cmd2);
+		if (!ret || 
+			ret->retCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
+			ret->retMsg() != std::string("prepare exception")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	for (int i = 0; i < 2; ++i) {
+		auto ret = cs.executeCmd({ {cmd1, callback}, {cmd1, callback}, {cmd1, callback}, {cmd2, callback}, {cmd1, callback}, {cmd2, callback} });
+		if (ret.size() != 6 ||
+			ret[0]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[1]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[2]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[3]->retCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
+			ret[4]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[5]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			exe_count != (i + 1) * 6 ||
+			prepare_num != 5 + 3 * i ||
+			execute_num != 2 ||
+			collect_num != 5 + 3 * i
+			) std::cout << __FILE__ << " " << __LINE__ << ":test PREPARE EXCEPTION failed" << std::endl;
+	}
+
+	cs.stop();
+	std::cout << "test prepare exception end" << std::endl;
+}
+void test_server_prepare_ret_error() {
+	auto& cs = aris::server::ControlServer::instance();
+	std::cout << "test prepare exception" << std::endl;
+	cs.resetMaster(new aris::control::Master);
+	cs.resetController(new aris::control::Controller);
+	cs.resetModel(new aris::dynamic::Model);
+	cs.resetPlanRoot(new aris::plan::PlanRoot);
+
+	std::int64_t option = aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+	std::atomic_int prepare_num{ 0 }, execute_num{ 0 }, collect_num{ 0 };
+
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void {
+			plan->option() = option;
+			++prepare_num;
+		}, [&](const aris::plan::Plan* plan)->int {
+			++execute_num;
+			return 0;
+		}, [&](aris::plan::Plan* plan)->void {
+			++collect_num;
+		}, "<Command name=\"test_PREPARE_EXCEPTION1\"/>");
+
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void {
+			plan->option() = option;
+			++prepare_num;
+			plan->setRetCode(-1);
+			plan->setRetMsg("prepare failed");
+		}, [&](const aris::plan::Plan* plan)->int {
+			++execute_num;
+			return 0;
+		}, [&](aris::plan::Plan* plan)->void {
+			++collect_num;
+		}, "<Command name=\"test_PREPARE_EXCEPTION2\"/>");
+	cs.init();
+	cs.open();
+	cs.start();
+
+	std::string cmd1("test_PREPARE_EXCEPTION1");
+	std::string cmd2("test_PREPARE_EXCEPTION2");
+
+	int exe_count = 0;
+	aris::server::ControlServer::ExecuteCmdCallback callback = [&exe_count](aris::plan::Plan&) {
+		exe_count++;
+	};
+
+	for (int i = 0; i < 2; ++i) {
+		auto ret = cs.executeCmd(cmd1);
+		if (!ret ||
+			ret->retCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+
+		ret = cs.executeCmd(cmd2);
+		if (!ret ||
+			ret->retCode() != -1 ||
+			ret->retMsg() != std::string("prepare failed")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	for (int i = 0; i < 2; ++i) {
+		auto ret = cs.executeCmd({ {cmd1, callback}, {cmd1, callback}, {cmd1, callback}, {cmd2, callback}, {cmd1, callback}, {cmd2, callback} });
+		if (ret.size() != 6 ||
+			ret[0]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[1]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[2]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[3]->retCode() != -1 ||
+			ret[4]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[5]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			exe_count != (i + 1) * 6 ||
+			prepare_num != 8 + 4 * i ||
+			execute_num != 2 ||
+			collect_num != 8 + 4 * i
+			) std::cout << __FILE__ << " " << __LINE__ << ":test PREPARE EXCEPTION failed" << std::endl;
+	}
+
+	cs.stop();
+	std::cout << "test prepare exception end" << std::endl;
+}
 
 void test_control_server(){
 	//test_server_option();
-	test_server_parse_exception();
+	//test_server_parse_exception();
+	//test_server_prepare_exception();
+	test_server_prepare_ret_error();
 }
 
