@@ -39,7 +39,7 @@
 #include "aris/core/sha1.h"
 
 
-#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept"}
+#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept : %d"}
 #define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"}
 #define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"}
 #define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"}
@@ -289,14 +289,14 @@ namespace aris::core{
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 			
 			if (imp->recv_socket_ <= 0){
+				ARIS_LOG(SOCKET_FAILED_ACCEPT, (int)imp->recv_socket_);
+				
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock()){
 					close_sock(imp->lisn_socket_);
 					imp->state_ = State::IDLE;
 					return;
 				}
-
-				ARIS_LOG(SOCKET_FAILED_ACCEPT);
 				continue;
 			}
 

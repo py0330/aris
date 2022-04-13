@@ -739,9 +739,14 @@ namespace aris::server{
 			catch (std::exception &e){ // case 1.2 : exception
 				for (aris::Size j = 0; j < i; j++)
 					ret_plan[j]->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
-				for (aris::Size j = i + 1; j < cmd_vec.size(); j++)
-					internal_data[j]=std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(nullptr), cmd_vec[j].second});
-				ret_plan[i] = std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
+				for (aris::Size j = i + 1; j < cmd_vec.size(); j++) {
+					internal_data[j] = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan), cmd_vec[j].second });
+					ret_plan[j] = internal_data[j]->plan_;
+					ret_plan[j]->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+				}
+				
+				internal_data[i]->plan_ =  std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
+				ret_plan[i] = internal_data[i]->plan_;
 				ret_plan[i]->setRetCode(aris::plan::Plan::PARSE_EXCEPTION);
 				std::fill_n(ret_plan[i]->retMsg(), 1024, '\0');
 				std::copy_n(e.what(), std::strlen(e.what()), ret_plan[i]->retMsg());
