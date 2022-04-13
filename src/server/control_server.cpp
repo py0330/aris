@@ -745,7 +745,7 @@ namespace aris::server{
 					ret_plan[j]->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				}
 				
-				internal_data[i] = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan), cmd_vec[i].second });
+				internal_data[i]->plan_ =  std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				ret_plan[i] = internal_data[i]->plan_;
 				ret_plan[i]->setRetCode(aris::plan::Plan::PARSE_EXCEPTION);
 				std::fill_n(ret_plan[i]->retMsg(), 1024, '\0');
