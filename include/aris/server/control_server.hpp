@@ -37,6 +37,47 @@ namespace aris::server
 		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}
 	};
 
+	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
+	// 1.   parse cmd list
+	//   1.1 ---   all success : goto 2   ---err_code : SUCCESS              ---err_msg : ""                ---plan : cloned
+	//   1.2 ---   any throw   : goto 5a  ---err_code :                      ---err_msg :                   ---plan : 
+	//                                         before : PREPARE_CANCELLED               : ""                        : cloned
+	//                                      error_cmd : PARSE_EXCEPTION                 : exception.what()          : default
+	//                                          after :                                 : ""                        : default
+	// 
+	// 2.   prepare cmd list
+	//   2.1 ---   all success : goto 3   ---err_code : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
+	//   2.2 ---  ret code < 0 : goto 5   ---err_code :                      ---err_msg :                   ---plan :
+	//                                         before : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
+	//                                      error_cmd : ret_code                        : prepare_ret_msg           : cloned
+	//                                          after : PREPARE_CANCELLED               : ""                        : cloned        
+	//   2.3 ---   any throw   : goto 5   ---err_code :                      ---err_msg :                   ---plan :
+	//                                         before : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
+	//                                      error_cmd : ret_code                        : exception.what()          : cloned
+	//                                          after : PREPARE_CANCELLED               : ""                        : cloned  
+	//     
+	// 3.   before execute in Nrt
+	//   3.1 ---   all success : goto 4   ---err_code : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
+	//   3.2 ---    any error  : goto 5   ---err_code :                      ---err_msg :                   ---plan :
+	//                                  need run cmds : SERVER_IN_ERROR                 : "server in error..."      : prepared
+	//                                                : SERVER_NOT_STARTED              : "server not started..."   : prepared
+	//                                                : COMMAND_POOL_IS_FULL            : "cmd pool is full..."     : prepared
+	//                              non-need run cmds : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
+	// 
+	// 4.   execute in RT
+	//   4.1 ---   all success : goto 5   ---err_code :                      ---err_msg :                   ---plan : 
+	//                                  need run cmds : SUCCESS                         : execute_ret_msg           : executed
+	//                              non-need run cmds : SUCCESS                         : prepare_ret_msg   ---plan : prepared
+	//   4.2 ---    ret < 0    : goto 5   ---err_code :                      ---err_msg :                   ---plan :
+	//                           need run cmds before : SUCCESS                         : execute_ret_msg           : executed
+	//                            need run cmds error : err_code                        : execute_ret_msg           : executed
+	//                            need run cmds after : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
+	//                              non-need run cmds : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
+	// 
+	// 5.   collect cmd list   : goto 5
+	// 
+	// 6.   post callback      : goto end
+	// end
 	class ARIS_API ControlServer{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;

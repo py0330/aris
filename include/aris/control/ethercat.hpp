@@ -226,6 +226,7 @@ namespace aris::control
 		auto virtual hasRtOutputIo()noexcept->bool override;
 		auto virtual setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
 		auto virtual setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
+		auto virtual outputIoNrt(std::uint8_t sub_idx)noexcept->std::uint32_t override;
 		
 		auto virtual hasRtErrorCode()noexcept->bool override;
 		auto virtual errorCodeRt()noexcept->std::uint16_t override;
