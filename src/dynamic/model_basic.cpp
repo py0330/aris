@@ -18,12 +18,10 @@
 
 namespace aris::dynamic
 {
-	auto MatrixVariable::fromString(std::string_view str)->void 
-	{
+	auto MatrixVariable::fromString(std::string_view str)->void {
 		static aris::core::Calculator c;
 		static int i = 0;
-		if (i == 0)
-		{
+		if (i == 0){
 			c.addVariable("PI", "Number", double(3.141592653));
 			i = 1;
 		}
@@ -40,12 +38,10 @@ namespace aris::dynamic
 			.prop("active", &DynEle::activate, &DynEle::active)
 			;
 
-		auto getGravity =[](Environment *env)->aris::core::Matrix
-		{
+		auto getGravity =[](Environment *env)->aris::core::Matrix{
 			return aris::core::Matrix(1, 6, env->gravity());
 		};
-		auto setGravity = [](Environment *env, aris::core::Matrix gra)->void
-		{
+		auto setGravity = [](Environment *env, aris::core::Matrix gra)->void{
 			env->setGravity(gra.data());
 		};
 
@@ -53,12 +49,10 @@ namespace aris::dynamic
 			.prop("gravity", &setGravity, &getGravity)
 			;
 
-		auto variableToText = [](Variable *b)->std::string 
-		{
+		auto variableToText = [](Variable *b)->std::string{
 			return b->toString();
 		};
-		auto variableFromText = [](Variable *b, std::string_view str)->void
-		{
+		auto variableFromText = [](Variable *b, std::string_view str)->void{
 			b->fromString(str);
 		};
 		aris::core::class_<Variable>("Variable")
@@ -67,6 +61,10 @@ namespace aris::dynamic
 			;
 
 		aris::core::class_<MatrixVariable>("MatrixVariable")
+			.inherit<Variable>()
+			;
+
+		aris::core::class_<StringVariable>("StringVariable")
 			.inherit<Variable>()
 			;
 	}

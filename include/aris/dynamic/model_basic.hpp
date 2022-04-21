@@ -107,6 +107,7 @@ namespace aris::dynamic
 	class ARIS_API StringVariable final : public VariableTemplate<std::string> {
 	public:
 		auto virtual toString() const->std::string override { return data(); }
+		auto virtual fromString(std::string_view str)->void override { data() = str; }
 
 		virtual ~StringVariable() = default;
 		explicit StringVariable(const std::string &name = "string_variable", const std::string &data = "") : VariableTemplate(name, data) {}
