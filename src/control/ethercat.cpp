@@ -789,6 +789,11 @@ namespace aris::control{
 	auto EthercatMotor::setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void {
 		slave()->writeSdo(imp_->output_io_idx_, sub_idx, value);
 	}
+	auto EthercatMotor::outputIoNrt(std::uint8_t sub_idx)noexcept->std::uint32_t {
+		std::uint32_t value;
+		slave()->readSdo(imp_->output_io_idx_, sub_idx, value);
+		return value;
+	}
 
 	auto EthercatMotor::hasRtErrorCode()noexcept->bool {
 		return slave()->findPdoEntry(imp_->error_code_idx_, imp_->error_code_subidx_);

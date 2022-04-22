@@ -79,8 +79,7 @@ namespace aris::dynamic
 		std::string name_;
 	};
 	
-	template<typename VariableType> class VariableTemplate : public Variable
-	{
+	template<typename VariableType> class VariableTemplate : public Variable{
 	public:
 		auto data()->VariableType& { return data_; }
 		auto data()const->const VariableType& { return data_; }
@@ -107,12 +106,21 @@ namespace aris::dynamic
 	class ARIS_API StringVariable final : public VariableTemplate<std::string> {
 	public:
 		auto virtual toString() const->std::string override { return data(); }
+		auto virtual fromString(std::string_view str)->void override { data() = str; }
 
 		virtual ~StringVariable() = default;
 		explicit StringVariable(const std::string &name = "string_variable", const std::string &data = "") : VariableTemplate(name, data) {}
 		ARIS_DEFINE_BIG_FOUR(StringVariable);
 	};
+	class ARIS_API BoolVariable final : public VariableTemplate<bool>{
+	public:
+		auto virtual toString() const->std::string override { return data() ? "true":"false"; }
+		auto virtual fromString(std::string_view str)->void override { data() = str == "false" ? true : false; }
 
+		virtual ~BoolVariable() = default;
+		explicit BoolVariable(const std::string & name = "bool_variable", bool data = true) : VariableTemplate(name, data) {}
+		ARIS_DEFINE_BIG_FOUR(BoolVariable);
+	};
 	/// @}
 }
 

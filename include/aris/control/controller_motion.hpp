@@ -68,6 +68,7 @@ namespace aris::control{
 		auto virtual hasRtOutputIo()noexcept->bool = 0;
 		auto virtual setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void = 0;
 		auto virtual setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void = 0;
+		auto virtual outputIoNrt(std::uint8_t sub_idx)noexcept->std::uint32_t = 0;
 
 		// error code //
 		auto virtual hasRtErrorCode()noexcept->bool = 0;

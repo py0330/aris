@@ -14,44 +14,6 @@
 #include "aris/server/api.hpp"
 
 namespace aris::server{
-	//
-	// # 基本规则 #
-	// 1. 每个输入的 str ，一定会有返回的 plan ，一定会在流程结束执行 回调函数 ，即使parse失败
-	// 2. 任何一个 str parse 失败，全部指令的 prepare execute collect 等函数 都不执行，但所有指令的回调依然执行
-	// 3. 若任何一个prepare失败：
-	//    之前的指令错误码为 EXECUTE_CANCELLED  同时   会 执行 collect 函数；
-	//    之后的指令错误码为 PREPARE_CANCELLED  同时 不会 执行 collect 函数；
-	//    
-	//    对于本条出错指令：
-	//    case 3.1 抛异常失败 : 错误码为 PREPARE_EXCEPTION， 同时 不会 执行 collect 函数
-	//    case 3.2 错误码 < 0 : 错误码为 用户设置的错误码 ， 同时   会 执行 collect 函数
-	//
-	// # 运行流程 #
-	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
-	// 1.   parse list
-	//   1.1 ---   all success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
-	//   1.2 ---   any throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
-	// 2.   prepare list
-	//   2.1 ---   all success : goto 3       
-	//   2.2 ---  ret code < 0 : goto 5a  ---err_code : ret_code             ---err_msg : ret_msg          
-	//   2.3 ---   any throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
-	// 3.   execute list Async
-	//   3.1 ---   not execute : goto 4a
-	//   3.2 ---       success : goto 4b
-	//   3.3 ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same with err_code
-	//   3.4 --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same with err_code
-	//   3.5 --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same with err_code
-	//   3.6 ---    RT ret < 0 : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
-	// 4a.  collect list Sync
-	//   4.1 ---   not collect : goto 5a
-	//   4.2 ---       success : goto 5a
-	// 4b.  collect list Async
-	//   4.3 ---   not collect : goto 5b
-	//   4.4 ---       success : goto 5b
-	// 5a.  callback Sync  : goto end
-	// 5b.  callback Async : goto end
-	// end
-	//
 	struct ControlServer::Imp{
 		struct InternalData{
 			std::shared_ptr<aris::plan::Plan> plan_;
@@ -650,47 +612,6 @@ namespace aris::server{
 		}
 	}
 	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>{
-		// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
-		// 1.   parse cmd list
-		//   1.1 ---   all success : goto 2   ---err_code : SUCCESS              ---err_msg : ""                ---plan : cloned
-		//   1.2 ---   any throw   : goto 5a  ---err_code :                      ---err_msg :                   ---plan : 
-		//                                         before : PREPARE_CANCELLED               : ""                        : cloned
-		//                                      error_cmd : PARSE_EXCEPTION                 : exception.what()          : default
-		//                                          after :                                 : ""                        : empty
-		// 
-		// 2.   prepare cmd list
-		//   2.1 ---   all success : goto 3   ---err_code : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
-		//   2.2 ---  ret code < 0 : goto 5   ---err_code :                      ---err_msg :                   ---plan :
-		//                                         before : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
-		//                                      error_cmd : ret_code                        : prepare_ret_msg           : cloned
-		//                                          after : PREPARE_CANCELLED               : ""                        : cloned        
-		//   2.3 ---   any throw   : goto 5   ---err_code :                      ---err_msg :                   ---plan :
-		//                                         before : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
-		//                                      error_cmd : ret_code                        : exception.what()          : cloned
-		//                                          after : PREPARE_CANCELLED               : ""                        : cloned  
-		//     
- 		// 3.   execute in Nrt
-		//   3.1 ---   all success : goto 4   ---err_code : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
-		//   3.2 ---    any error  : goto 5   ---err_code :                      ---err_msg :                   ---plan :
-		//                                  need run cmds : SERVER_IN_ERROR                 : "server in error..."      : prepared
-		//                                                : SERVER_NOT_STARTED              : "server not started..."   : prepared
-		//                                                : COMMAND_POOL_IS_FULL            : "cmd pool is full..."     : prepared
-		//                              non-need run cmds : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
-		// 
-		// 4.   execute in RT
-		//   4.1 ---   all success : goto 5   ---err_code :                      ---err_msg :                   ---plan : 
-		//                                  need run cmds : SUCCESS                         : execute_ret_msg           : executed
-		//                              non-need run cmds : SUCCESS                         : prepare_ret_msg   ---plan : prepared
-		//   4.2 ---    ret < 0    : goto 5   ---err_code :                      ---err_msg :                   ---plan :
-		//                           need run cmds before : SUCCESS                         : execute_ret_msg           : executed
-		//                            need run cmds error : err_code                        : execute_ret_msg           : executed
-		//                            need run cmds after : EXECUTE_CANCELLED               : prepare_ret_msg           : prepared
-		//                              non-need run cmds : SUCCESS              ---err_msg : prepare_ret_msg   ---plan : prepared
-		// 
-		// 5.   collect cmd list   : goto 5
-		// 
-		// 6.   post callback      : goto end
-		// end
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
 		// step 1.  parse //

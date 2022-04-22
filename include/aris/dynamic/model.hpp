@@ -357,7 +357,6 @@ namespace aris::dynamic{
 		X,
 		A,
 		UNKNOWN,
-
 	};
 	
 	// 多轴模型，覆盖了ModelBase类的虚方法 //
@@ -565,12 +564,19 @@ namespace aris::dynamic{
 
 	// axis 为外部轴的轴，0,1,2,3,4,5 分别代表xyz（平移）abc（旋转）
 	// pm 为外部轴的位置姿态
-	auto inline createExternalAxisModel(const double *pos, const double *axis, bool is_revolute)->std::unique_ptr < Model > {
+	// is_revolute: 是否为转轴
+	// is_coupling: 是否与其他模型耦合，仅影响规划
+	auto inline createExternalAxisModel(const double *pos, const double *axis, bool is_revolute, bool is_coupling = false)->std::unique_ptr < Model > {
 		auto m = std::make_unique<aris::dynamic::Model>();
 		m->setName("ExAxisModel");
 
 		auto &platform = m->partPool().add<Part>("EE");
 		
+		m->variablePool().add<MatrixVariable>("pos", aris::core::Matrix(1, 3, pos));
+		m->variablePool().add<MatrixVariable>("axis", aris::core::Matrix(1, 3, axis));
+		m->variablePool().add<BoolVariable>("is_revolute", is_revolute);
+		m->variablePool().add<BoolVariable>("is_coupling", is_coupling);
+
 		if (is_revolute) {
 			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
 			auto& motion = m->addMotion(joint);
