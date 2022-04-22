@@ -277,7 +277,7 @@ int main(){
 
 	// 添加外部轴 //
 	double pos[3]{ 1,-0.5,0 }, axis[3]{ 0,0,1 };
-	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false).release());
+	model.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, true).release());
 
 	// 添加第一个机器人 //
 	aris::dynamic::PumaParam param;
@@ -299,7 +299,7 @@ int main(){
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
-	
+	std::cout << aris::core::toXmlString(model) << std::endl;
 
 
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射

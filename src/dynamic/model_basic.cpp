@@ -67,5 +67,9 @@ namespace aris::dynamic
 		aris::core::class_<StringVariable>("StringVariable")
 			.inherit<Variable>()
 			;
+
+		aris::core::class_<BoolVariable>("BoolVariable")
+			.inherit<Variable>()
+			;
 	}
 }

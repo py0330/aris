@@ -357,7 +357,6 @@ namespace aris::dynamic{
 		X,
 		A,
 		UNKNOWN,
-
 	};
 	
 	// 多轴模型，覆盖了ModelBase类的虚方法 //
@@ -571,6 +570,10 @@ namespace aris::dynamic{
 
 		auto &platform = m->partPool().add<Part>("EE");
 		
+		m->variablePool().add<MatrixVariable>("pos", aris::core::Matrix(1, 3, pos));
+		m->variablePool().add<MatrixVariable>("axis", aris::core::Matrix(1, 3, axis));
+		m->variablePool().add<BoolVariable>("is_revolute", is_revolute);
+
 		if (is_revolute) {
 			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
 			auto& motion = m->addMotion(joint);
