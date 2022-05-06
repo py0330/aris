@@ -31,7 +31,8 @@ void test_constraint()
 	auto &p1 = model.jointPool().add<PrismaticJoint>("p1", &mak_i, &mak_j);
 	auto &s1 = model.jointPool().add<SphericalJoint>("s1", &mak_i, &mak_j);
 	auto &u1 = model.jointPool().add<UniversalJoint>("u1", &mak_i, &mak_j);
-	auto &m1 = model.motionPool().add<Motion>("m1", &mak_i, &mak_j);
+	auto &m1 = model.motionPool().add<Motion>("m1", &mak_i, &mak_j, 2);
+	auto &m2 = model.motionPool().add<Motion>("m2", &mak_i, &mak_j, 5);
 	auto &g1 = model.generalMotionPool().add<GeneralMotion>("g1", &mak_i, &mak_j);
 	model.init();
 
@@ -274,7 +275,7 @@ void test_constraint()
 		if (!s_is_equal(u1.dim(), result1, cp, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
 	}
 
-	// test motion //
+	// test prismatic motion //
 	{
 		const double relative_pe[6]{ 0,0,0.521,0,0,0 };
 		const double relative_vs[6]{ 0,0,0.689,0,0,0 };
@@ -344,6 +345,89 @@ void test_constraint()
 
 		m1.updA();
 		if (!s_is_equal(m1.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+	}
+
+	// test prismatic motion //
+	{
+		m2.setMpFactor(aris::PI/180);
+		m2.setRotateRange(1.1);
+
+		const double relative_pe[6]{ 0,0,0,0,0,0.521 };
+		const double relative_vs[6]{ 0,0,0,0,0,0.689 };
+		const double relative_as[6]{ 0,0,0,0,0,0.123 };
+
+		double relative_pm[16];
+		s_pe2pm(relative_pe, relative_pm, "123");
+
+		double mak_i_pm[16];
+		s_pm_dot_pm(*mak_j.pm(), relative_pm, mak_i_pm);
+
+		double glb_pm_m[16];
+		s_pm_dot_inv_pm(mak_i_pm, *mak_i.prtPm(), glb_pm_m);
+
+		prt_m.setPm(glb_pm_m);
+		prt_m.setVs(mak_j, relative_vs);
+		prt_m.setAs(mak_j, relative_as);
+
+		const double glb_cmI[]{ 0.0000000000000000,
+			0.0000000000000000,
+			0.0000000000000000,
+			0.3079933521941341,
+			0.9160761481654764,
+			0.2567967791202347 };
+		const double glb_cmJ[]{ -0.0000000000000000,
+			- 0.0000000000000000,
+			- 0.0000000000000000,
+			- 0.3079933521941341,
+			- 0.9160761481654764,
+			- 0.2567967791202347 };
+		const double prt_cmI[]{ 0.0000000000000000,
+			0.0000000000000000,
+			0.0000000000000000,
+			0.0004168476687283,
+			- 0.9836665218650195,
+			0.1800000000000003 };
+		const double prt_cmJ[]{ -0.0000000000000000,
+			- 0.0000000000000000,
+			- 0.0000000000000000,
+			- 0.9595498045177748,
+			0.1376401563857811,
+			- 0.2456000000000001 };
+		const double cp[6]{ -0.521,0,0,0,0,0 };
+		const double ca[]{ 0 };
+
+
+		double result1[42], result2[48];
+
+
+		m2.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, m2.dim(), result1, 5, glb_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, glb_cmJ, m2.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
+
+		m2.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, m2.dim(), result1, 6, prt_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, prt_cmJ, m2.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+
+		m2.cptCa(result1);
+		if (!s_is_equal(m2.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+
+		m2.cptCp(result1);
+		if (!s_is_equal(m2.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+
+		m2.updP();
+		if (!s_is_equal(m2.mp(), 360+0.521*180/aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		
+		m2.updV();
+		if (!s_is_equal(m2.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+
+		m2.updA();
+		if (!s_is_equal(m2.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+
+		// check infinite range
+		m2.setRotateRange(std::numeric_limits<double>::infinity());
+		m2.setMp(100.8 * 180 / aris::PI);
+		double rotate_pe[6]{ 0,0,0,0,0,100.9 };
+		mak_i.setPe(mak_j, rotate_pe, "123");
+		m2.updP();
+		if (!s_is_equal(m2.mp(), 100.9 * 180 / aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
 	}
 
 	// test general motion //

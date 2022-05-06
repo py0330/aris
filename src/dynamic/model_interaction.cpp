@@ -63,7 +63,8 @@ namespace aris::dynamic{
 
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
-		Size component_axis_{ 5 };
+		Size component_axis_{ 2 };
+		double rotate_range_{ 0.0 };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 }, mf_{ 0 };
@@ -103,7 +104,39 @@ namespace aris::dynamic{
 	auto Motion::cptCv(double *cv)const noexcept->void { cv[0] = mv(); }
 	auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
 	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
-	auto Motion::updP() noexcept->void { setMpInternal(s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis())); }
+	auto Motion::updP() noexcept->void { 
+		// mp_internal
+		auto mp_internal = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis());
+
+		// mp
+		auto mp = mp_internal / imp_->mp_factor_ - imp_->mp_offset_;
+		
+		if (2 < axis() && axis() < 6) {
+			// 转动一圈所对应的周期
+			auto period = 2 * PI / imp_->mp_factor_;
+			
+			// 计算需偏移的周期，如果有指定rotateRange(), 应该在 rotateRange() 附近的 period / 2 中，否则在上一次位置的 period / 2 //
+			auto mid = std::isfinite(rotateRange()) ? rotateRange() : *p() / period;
+
+			auto t = std::trunc(mid);
+			auto mod = mid - t;
+
+			// 将 mp 置于【-周期，+周期】 内
+			mp = std::fmod(mp, period);
+
+			// 将 mp 置于【mod-半个周期，mod+半个周期】 内
+			while (mp > (mod + 0.5) * period) mp -= period;
+			while (mp < (mod - 0.5) * period) mp += period;
+
+			// 叠加需偏移的整数个周期
+			mp += t * period;
+			
+			setMp(mp);
+		}
+		else {
+			setMp(mp);
+		}
+	}
 	auto Motion::setP(const double *mp) noexcept->void { imp_->mp_ = *mp;/*imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_;*/ }
 	auto Motion::v() const noexcept->const double* { return &imp_->mv_; }
 	auto Motion::updV() noexcept->void {
@@ -130,6 +163,8 @@ namespace aris::dynamic{
 		const_cast<double*>(locCmI())[axis] = 1.0;
 	}
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
+	auto Motion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
+	auto Motion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
 	auto Motion::mfDyn() const noexcept->double { return Constraint::imp_->cf_[0]; }
@@ -905,10 +940,8 @@ namespace aris::dynamic{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalJoint);
 
-	auto SphericalJoint::locCmI() const noexcept->const double*
-	{
-		static const double loc_cm_I[18]
-		{
+	auto SphericalJoint::locCmI() const noexcept->const double*{
+		static const double loc_cm_I[18]{
 			1,0,0,
 			0,1,0,
 			0,0,1,
@@ -918,15 +951,13 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto SphericalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
-	{
+	auto SphericalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 		/////////////////////////以下是pa的计算方法///////////////////////////
 		double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
 		s_inv_pp2pp(makI_pm, pp_j, cp);
 		/////////////////////////以上是pa的计算方法///////////////////////////
 	}
-	auto SphericalJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
-	{
+	auto SphericalJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void{
 		double pm[16];
 		s_inv_pm(makI_pm, pm);
 		s_tmf(pm, dm);
@@ -969,7 +1000,6 @@ namespace aris::dynamic{
 			.inherit<aris::dynamic::Interaction>()
 			;
 
-
 		aris::core::class_<RevoluteJoint>("RevoluteJoint")
 			.inherit<aris::dynamic::Joint>()
 			;
@@ -993,6 +1023,7 @@ namespace aris::dynamic{
 		aris::core::class_<Motion>("Motion")
 			.inherit<aris::dynamic::MotionBase>()
 			.prop("component", &Motion::setAxis, &Motion::axis)
+			.prop("rotate_range", &Motion::setRotateRange, &Motion::rotateRange)
 			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
 			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
 			.prop("mp", &setMp, &getMp)
