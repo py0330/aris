@@ -215,7 +215,7 @@ namespace aris::dynamic{
 
 		// 将末端设置成D坐标系，同时得到它在A中的表达 //
 		double E_in_A[16];
-		s_inv_pm_dot_pm(A_pm, ee_pm, E_in_A);
+		s_inv_pm_dot_pm(A_pm,   ee_pm,     E_in_A);
 		double D_in_A[16];
 		s_pm_dot_inv_pm(E_in_A, E_pm_in_D, D_in_A);
 
@@ -298,7 +298,7 @@ namespace aris::dynamic{
 		return true;
 	}
 	struct PumaInverseKinematicSolver::Imp{
-		int which_root_{ 0 };
+		int which_root_{ 8 };
 		PumaParamLocal puma_param;
 		union{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
