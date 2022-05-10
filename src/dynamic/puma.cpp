@@ -125,7 +125,6 @@ namespace aris::dynamic{
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-		inverse_kinematic.setWhichRoot(0);
 
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
