@@ -548,8 +548,9 @@ namespace aris::dynamic{
 					for (int j = 0; j < 6; ++j){
 						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
 
-						//while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
-						//while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
+						// 如果是8 的话，忽略轴的范围，选择最近的可达解 //
+						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
+						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
 
 						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
 					}
