@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 
 	auto& cs = aris::server::ControlServer::instance();
 	try {
-		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(4).xml");
+		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh.xml");
 	}
 	catch (std::runtime_error&e) {
 		std::cout << e.what() << std::endl;

@@ -13,9 +13,12 @@
 #include "aris/core/object.hpp"
 #include "aris/core/serialization.hpp"
 #include "aris/core/expression_calculator.hpp"
+#include "aris/core/log.hpp"
 
 #include "aris/ext/json.hpp"
 #include "aris/ext/fifo_map.hpp"
+
+#define SERIALIZATION_PROP_NOT_FOUND       aris::core::LogLvl::kWarning, -4001, {"serialize %s warning : prop %s not found", "序列化 %s 错误：属性 %s 没有找到"}
 
 namespace aris::core{
 	auto typename_xml2c(const tinyxml2::XMLElement *ele)->std::string{
@@ -105,7 +108,7 @@ namespace aris::core{
 
 				// 如果无法找到对应的attr，什么也不做
 				if (found == attrs.end()) {
-					//std::cout << "WARNING:basic prop not found : " << prop->name() << std::endl;
+					ARIS_LOG(SERIALIZATION_PROP_NOT_FOUND, ele->Name(), prop->name().data());
 					iter = props.erase(iter);
 					continue;
 				}
@@ -132,7 +135,6 @@ namespace aris::core{
 				prop->set(&ins, std::move(prop_ins));
 				child_eles.erase(found);
 				iter = props.erase(iter);
-				//if (prop->acceptPtr()) ptr.release();
 			}
 			else
 				++iter;
@@ -147,7 +149,7 @@ namespace aris::core{
 				});
 
 			if (found == child_eles.end()) {
-				//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
+				ARIS_LOG(SERIALIZATION_PROP_NOT_FOUND, ele->Name(), prop->name().data());
 				continue;
 			}
 
@@ -155,7 +157,6 @@ namespace aris::core{
 			auto prop_ins = Type::getType(c_type)->create();
 			from_xml_ele(prop_ins, *found);
 			prop->set(&ins, std::move(prop_ins));
-			//if(prop->acceptPtr())ptr.release();
 			child_eles.erase(found);
 		}
 
@@ -168,7 +169,6 @@ namespace aris::core{
 				auto attr_ins = type->create();
 				from_xml_ele(attr_ins, child_ele);
 				ins.push_back(std::move(attr_ins));
-				//if (ins.type()->isRefArray())ptr.release();
 			}
 		}
 	}

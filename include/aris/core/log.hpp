@@ -17,16 +17,6 @@
 
 #include <aris_lib_export.h>
 
-//#define _LOG_I(level, code, info, ...)               \
-//	aris::core::log(level, code, \
-//	std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) + "|"+ __LINE__+"|"+aris::core::localeString(info, ##__VA_ARGS__))
-//
-//
-//#define LOG(...) _LOG_I(##__VA_ARGS__)
-
-
-
-
 #define LOG_AND_THROW(error) ARIS_LOG(aris::core::LogLvl::kError, 0, error), throw std::runtime_error(error)
 
 #define THROW_FILE_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
@@ -102,7 +92,14 @@ namespace aris::core{
 #ifdef UNIX
 	#define ARIS_LOG_IMP(lvl, code, msgs, ...) aris::core::log(aris::core::LogData::makeLogData(std::chrono::system_clock::now(), __FILE__, __LINE__, lvl, code, aris::core::localeString(msgs, ##__VA_ARGS__)))
 #endif
-
+	//
+	// 建议用法：
+	// 
+	// 先定义错误信息：
+	// #define SOME_ERROR                         aris::core::LogLvl::kError, -3001, {"some error:%d", "一些错误：%d"}
+	// 
+	// 在出错的地方使用：
+	// ARIS_LOG(SOME_ERROR, -3211)
 	#define ARIS_LOG(...) ARIS_UNPACK(ARIS_LOG_IMP, (__VA_ARGS__))
 
 	// 默认log的文件夹、单文件最多条数等 //
