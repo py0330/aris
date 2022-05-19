@@ -122,6 +122,18 @@ namespace aris::server{
 			err_code_and_fixed_.store(err_code_and_fixed);
 			server_->master().resetRtStasticData(nullptr, false);
 			server_->master().lout() << std::flush;
+			
+			// 清理掉所有当前在执行的plan //
+			if (cmd_now < cmd_end) {
+				auto& p = *internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
+				p.setRetCode(err.code);
+				p.setRetMsg(err_msg_);
+				for (auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id) {
+					auto& p = *internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
+					p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					p.setRetMsg("execute has been cancelled.");
+				}
+			}
 			cmd_now_.store(cmd_end);
 		}
 		// 否则执行cmd queue中的cmd //
