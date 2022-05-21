@@ -251,65 +251,57 @@ namespace aris::control{
 		std::uint32_t bit_position;
 	};
 
-	auto aris_ecrt_master_request(EthercatMaster *master)->void
-	{
+	auto aris_ecrt_master_request(EthercatMaster *master)->void{
 		// check if product code and vendor id is paired
 		aris::control::EthercatMaster local_mst;
 		if (aris_ecrt_scan(&local_mst))THROW_FILE_LINE("scan slaves failed!");
-		for (int i = 0; i< master->slavePool().size();++i)
-		{
-			auto &slave = master->slavePool()[i];
+		for (int i = 0; i< master->slavePool().size();++i){
+			auto &slave =  master->slavePool()[i];
 			
-			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
-			{
+			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave)){
 				if (slave.isVirtual())continue;
 				
-				if(slave.phyId() > local_mst.slavePool().size()) THROW_FILE_LINE("wrong physical id!");
+				if(slave.phyId() >= local_mst.slavePool().size()) THROW_FILE_LINE("wrong physical id!");
 				
 				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
 				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_LINE(":wrong product code of slave " + std::to_string(i));
-				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(i));
+				if (ec_slave->vendorID()    != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(i));
 			}
 		}
 		// check finished
 
 		// make subfunction， which start the master
-		auto start_ethercat = [](EthercatMaster *master) 
-		{
+		auto start_ethercat = [](EthercatMaster *master) {
 			MasterHandle m_handle{ nullptr, nullptr, nullptr };
 
 			// request master //
 			if (!(m_handle.ec_master_ = ecrt_request_master(0)))THROW_FILE_LINE("master request failed!");
 
 			// create domain //
-			if (!(m_handle.domain_ = ecrt_master_create_domain(m_handle.ec_master_)))THROW_FILE_LINE("failed to create domain");
+			if (!(m_handle.domain_    = ecrt_master_create_domain(m_handle.ec_master_)))THROW_FILE_LINE("failed to create domain");
 
 			// make slaves //
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
-			for (auto &slave : master->slavePool())
-			{
+			for (auto &slave : master->slavePool())	{
 				if (slave.isVirtual())continue;
 				
-				std::vector<ec_sync_info_t> ec_sync_info_vec;
-				std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
+				std::vector<ec_sync_info_t>                                  ec_sync_info_vec;
+				std::vector<std::vector<ec_pdo_info_t> >                     ec_pdo_info_vec_vec;
 				std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;
 
-				for (int i = 0; i< slave.smPool().size();++i)
-				{
+				for (int i = 0; i< slave.smPool().size();++i) {
 					auto &sm = slave.smPool()[i];
 					
 					ec_pdo_info_vec_vec.push_back(std::vector<ec_pdo_info_t>());
 					ec_pdo_entry_info_vec_vec_vec.push_back(std::vector<std::vector<ec_pdo_entry_info_t> >());
 
-					for (auto &pdo : sm)
-					{
+					for (auto &pdo : sm){
 						ec_pdo_entry_info_vec_vec_vec.back().push_back(std::vector<ec_pdo_entry_info_t>());
-						for (auto &entry : pdo)
-						{
+						for (auto &entry : pdo){
 							entry.ecHandle() = PdoEntryHandle();
 							auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
 
-							//etherlab 会根据index是否为0来判断是否结束
+							// etherlab 会根据index是否为0来判断是否结束
 							if (entry.index())ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset_, &pe_handle.bit_position });
 							ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.bitSize()) });
 						}
@@ -321,7 +313,6 @@ namespace aris::control{
 					ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(i), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT,
 						static_cast<unsigned int>(ec_pdo_info_vec_vec.back().size()), ec_pdo_info_vec_vec.back().data(), EC_WD_DEFAULT });
 				}
-
 
 				SlaveHandle s_handle;
 
@@ -376,7 +367,6 @@ namespace aris::control{
 		for (auto &sla : check_master_pdos.slavePool())
 			if (dynamic_cast<EthercatSlave*>(&sla))
 				check_master_pdos.slavePool().push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
-
 
 		start_ethercat(&check_master_pdos);
 		aris_ecrt_master_stop(&check_master_pdos);
