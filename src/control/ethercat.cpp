@@ -141,21 +141,15 @@ namespace aris::control{
 			return found_entry->second;
 	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int{
-		if (isVirtual())return 0;
-
 		if (auto entry = findPdoEntry(index, subindex)) {
 			std::copy_n(entry->imp_->value_, entry->imp_->bit_size_ / 8 + (entry->imp_->bit_size_ % 8 ? 1 : 0), (char*)value);
-			//aris_ecrt_pdo_read(entry, value);
 			return 0;
 		}
 		return -1;
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int{
-		if (isVirtual())return 0;
-
 		if (auto entry = findPdoEntry(index, subindex)) {
 			std::copy_n((const char*)value, entry->imp_->bit_size_/8 + (entry->imp_->bit_size_ % 8 ? 1 : 0), entry->imp_->value_);
-			//aris_ecrt_pdo_write(entry, value);
 			return 0;
 		}
 		return -1;
