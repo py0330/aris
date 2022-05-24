@@ -543,14 +543,38 @@ namespace aris::dynamic{
 		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
+		// 获取对应子模型中的末端数量
+		auto getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+
+		// 获取对应子模型中的末端种类
+		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
+		// 获取所有子模型中的末端种类
 		auto getEeTypes()->std::vector<EEType>;
+
+		// 获取对应子模型中的末端
+		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
+		// 获取所有子模型中的末端
 		auto getEes()->std::vector<MotionBase*>;
+
+		// 获取对应子模型中的电机数量
+		auto getMotionNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+		
+		// 获取对应子模型中的电机种类
+		auto getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
+		// 获取所有子模型中的电机种类
+		auto getMotionTypes()->std::vector<EEType>;
+		
+		// 获取对应子模型中的电机
+		auto getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*>;
+		// 获取所有子模型中的电机
+		auto getMotions()->std::vector<Motion*>;
+		
+		// 获取对应子模型中的电机id
+		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getMotionIds()->std::vector<Size>;
 
-		auto getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
-		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
-		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+		
+
 
 		virtual ~MultiModel();
 		explicit MultiModel();
