@@ -6,8 +6,7 @@
 
 using namespace aris::core;
 
-void test_socket_multi_thread()
-{
+void test_socket_multi_thread(){
 	auto test_func = [](aris::core::Socket::Type type)->void{
 		try{
 			Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
@@ -117,10 +116,54 @@ void test_socket_multi_thread()
 	std::cout << "test web raw" << std::endl;
 	test_func(aris::core::Socket::Type::WEB_RAW);
 }
+void test_socket_connect_time_out() {
+	auto test_func = [](aris::core::Socket::Type type)->void {
+		Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
 
+		client.setConnectTimeoutMs(1000);
+		try {
+			client.connect();
+			std::cout << "failed to connect with timeout" << std::endl;
+		}
+		catch (std::runtime_error& e) {
+		}
+
+		try {
+			std::thread t([&]() {
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				server.startServer();
+				});
+			t.detach();
+			client.connect();
+		}
+		catch (std::runtime_error& e) {
+			std::cout << "failed to connect with timeout" << std::endl;
+		}
+		
+		{
+			std::thread t;
+			
+			try {
+				t = std::thread([&]() {
+					std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+					server.startServer();
+					});
+				
+				client.connect();
+				t.join();
+			}
+			catch (std::runtime_error& e) {
+				t.join();
+			}
+		}
+	};
+	std::cout << "test tcp connect time out" << std::endl;
+	test_func(aris::core::Socket::Type::TCP);
+}
 void test_socket()
 {
 	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
 	test_socket_multi_thread();
-	std::cout << "-----------------test socket finished------------" << std::endl << std::endl;
+	test_socket_connect_time_out();
+	std::cout << "-----------------test socket finished------------" << std::endl;
 }

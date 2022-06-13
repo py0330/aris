@@ -226,6 +226,7 @@ namespace aris::core{
 		Socket::State state_{ State::IDLE };
 		Socket::Type type_{ Type::TCP };
 		bool is_server_{false};
+		std::int64_t connect_time_out_{ -1 };
 
 		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
 		std::function<int(Socket *, const char *data, int size)> onReceivedData;
@@ -242,7 +243,7 @@ namespace aris::core{
 		std::recursive_mutex state_mutex_;
 
 		std::thread recv_thread_, accept_thread_;
-		std::mutex close_mutex_;
+		std::recursive_mutex close_mutex_;
 
 		// 连接的socket //
 #ifdef WIN32
@@ -257,7 +258,7 @@ namespace aris::core{
 
 		auto lose_tcp()->void{
 			// 需要用close_lck 来确保本段代码不会被stop中断 //
-			std::unique_lock<std::mutex> close_lck(close_mutex_, std::defer_lock);
+			std::unique_lock<std::recursive_mutex> close_lck(close_mutex_, std::defer_lock);
 			if (!close_lck.try_lock()){
 				close_sock(recv_socket_);
 			}
@@ -288,16 +289,22 @@ namespace aris::core{
 			// 服务器阻塞,直到客户程序建立连接 //
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 			
-			if (imp->recv_socket_ <= 0){
+			if (imp->recv_socket_ == -1){
 				ARIS_LOG(SOCKET_FAILED_ACCEPT, (int)imp->recv_socket_);
 				
-				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
+				std::unique_lock<std::recursive_mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock()){
 					close_sock(imp->lisn_socket_);
 					imp->state_ = State::IDLE;
+					imp->accept_thread_.detach();
 					return;
 				}
-				continue;
+				else {
+					std::cout << "some error happned when socket accept" << std::endl;
+					std::this_thread::sleep_for(std::chrono::seconds(1));
+					continue;
+				}
+				
 			}
 
 			if (imp->type_ == Type::WEB || imp->type_ == Type::WEB_RAW){
@@ -370,6 +377,7 @@ namespace aris::core{
 		imp->recv_thread_ = std::thread(receiveThread, imp, std::move(receive_thread_ready));
 		fut.wait();
 
+		imp->accept_thread_.detach();
 		return;
 	}
 	auto Socket::Imp::receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready)->void{
@@ -549,7 +557,7 @@ namespace aris::core{
 			case Type::UDP:{
 				int ret = recvfrom(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 				
-				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
+				std::unique_lock<std::recursive_mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (ret <= 0 && !close_lck.try_lock()) return;
 				if (ret != sizeof(MsgHeader) + recv_msg.size()){
 					ARIS_LOG(SOCKET_UDP_WRONG_MSG_SIZE);
@@ -561,7 +569,7 @@ namespace aris::core{
 			case Type::UDP_RAW:{
 				char data[1024];
 				int ret = recvfrom(imp->recv_socket_, data, 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
-				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
+				std::unique_lock<std::recursive_mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (ret <= 0 && !close_lck.try_lock()) return;
 				if (ret > 0 && imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
 				break;
@@ -571,14 +579,16 @@ namespace aris::core{
 	auto Socket::stop()->void{
 		std::lock(imp_->state_mutex_, imp_->close_mutex_);
 		std::unique_lock<std::recursive_mutex> lck1(imp_->state_mutex_, std::adopt_lock);
-		std::unique_lock<std::mutex> lck2(imp_->close_mutex_, std::adopt_lock);
+		std::unique_lock<std::recursive_mutex> lck2(imp_->close_mutex_, std::adopt_lock);
 
 		switch (imp_->state_){
 		case State::IDLE:
 			break;
 		case State::WAITING_FOR_CONNECTION:
 			shutdown(imp_->lisn_socket_, 2);
-			if (imp_->accept_thread_.joinable())imp_->accept_thread_.join();
+			close_sock(imp_->lisn_socket_);
+			while (imp_->accept_thread_.joinable())
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			break;
 		case State::WORKING:
 			switch (connectType()){
@@ -683,7 +693,6 @@ namespace aris::core{
 			std::promise<void> accept_thread_ready;
 			auto ready = accept_thread_ready.get_future();
 			imp_->accept_thread_ = std::thread(Socket::Imp::acceptThread, this->imp_.get(), std::move(accept_thread_ready));
-			imp_->accept_thread_.detach();
 			ready.wait();
 		}
 		else{
@@ -708,26 +717,27 @@ namespace aris::core{
 
 		return;
 	}
-	auto Socket::connect(const std::string &remote_ip, const std::string &port)->void{
+	auto Socket::connect(const std::string& remote_ip, const std::string& port)->void {
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
+		// check ip & port //
 		if (!remote_ip.empty())setRemoteIP(remote_ip);
 		if (!port.empty())setPort(port);
 		if (remoteIP().empty())THROW_FILE_LINE("Socket can't connect, because it empty ip address\n");
 		if (this->port().empty())THROW_FILE_LINE("Socket can't connect, because it empty port\n");
 
-		switch (imp_->state_){
+		// check state //
+		switch (imp_->state_) {
 		case State::IDLE:
 			break;
 		default:
 			THROW_FILE_LINE("Socket can't connect, because it is busy now, please close it\n");
 		}
-
 		imp_->is_server_ = false;
 
-		///////////////////////////////////////////////////////////////////////////////
+		// 根据 UDP 或 TCP 设置连接类型 //
 		int sock_type;
-		switch (connectType()){
+		switch (connectType()) {
 		case Type::TCP:
 		case Type::TCP_RAW:
 		case Type::WEB:
@@ -739,23 +749,106 @@ namespace aris::core{
 			sock_type = SOCK_DGRAM;
 			break;
 		}
-		//////////////////////////////////////////////////////////////////////////////
 
-		// 服务器端开始建立socket描述符 //
-		if ((imp_->recv_socket_ = socket(AF_INET, sock_type, 0)) < 0)THROW_FILE_LINE("Socket can't connect, because can't socket\n");
-
-		// 客户端填充server_addr_结构 //
+		// 填充 ip & port //
 		memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 		imp_->server_addr_.sin_family = AF_INET;
 		imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
 		imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
+		// 建立 socket 描述符 //
+		if ((imp_->recv_socket_ = socket(AF_INET, sock_type, 0)) < 0)THROW_FILE_LINE("Socket can't connect, because can't socket\n");
+
+		// 设置 time_out //
+#ifdef WIN32
+		if (imp_->connect_time_out_ >= 0) {
+			u_long block = 1;
+			if (ioctlsocket(imp_->recv_socket_, FIONBIO, &block) == SOCKET_ERROR) {
+				close_sock(imp_->recv_socket_);
+				THROW_FILE_LINE("Socket can't connect, because can't set time out\n");
+			}
+		}
+#endif
+#ifdef UNIX
+		if (imp_->connect_time_out_ >= 0) {
+			fcntl(sock, F_SETFL, O_NONBLOCK);
+		}
+#endif
+		// tbd on linux /////
+
+
+		// 连接 socket //
 		switch (connectType()){
 		case Type::TCP:
 		case Type::TCP_RAW:{
 			// 连接 //
-			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
+			if (::connect(imp_->recv_socket_, (const struct sockaddr*)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1) {
+
+				fd_set setW, setE;
+				FD_ZERO(&setW);
+				FD_SET(imp_->recv_socket_, &setW);
+				FD_ZERO(&setE);
+				FD_SET(imp_->recv_socket_, &setE);
+
+				timeval time_out = { 0 };
+				time_out.tv_sec = imp_->connect_time_out_ / 1000;
+				time_out.tv_usec = (imp_->connect_time_out_ % 1000) * 1000;
+
+#ifdef WIN32
+				if (WSAGetLastError() == WSAEWOULDBLOCK) {
+					// connection pending
+					int ret = select(0, NULL, &setW, &setE, &time_out);
+					if (ret <= 0){
+						// select() failed or connection timed out
+						close_sock(imp_->recv_socket_);
+						if (ret == 0) {
+							WSASetLastError(WSAETIMEDOUT);
+							THROW_FILE_LINE("Socket can't connect, because time out\n");
+						}
+						else {
+							THROW_FILE_LINE("Socket can't connect, because failed to select\n");
+						}
+					}
+
+					if (FD_ISSET(imp_->recv_socket_, &setE)){
+						// connection failed
+						int err = 0, err_size = sizeof(int);
+						getsockopt(imp_->recv_socket_, SOL_SOCKET, SO_ERROR, (char*) &err, &err_size);
+						close_sock(imp_->recv_socket_);
+						WSASetLastError(err);
+						THROW_FILE_LINE("Socket can't connect, because failed to FD_ISSET\n");
+					}
+				}
+				else {
+					close_sock(imp_->recv_socket_);
+					THROW_FILE_LINE("Socket can't connect, because can't connect\n");
+				}
+#endif
+#ifdef UNIX
+				if ((auto res = select(sock + 1, NULL, &setW, &setE, &time_out)) == 1){
+					int so_error;
+					socklen_t len = sizeof(so_error);
+
+					if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) < 0) {
+						close_sock(imp_->recv_socket_);
+						THROW_FILE_LINE("Socket can't connect, because can't getsockopt\n");
+					}
+					// Check the value returned... 
+					if (so_error) {
+						close_sock(imp_->recv_socket_);
+						THROW_FILE_LINE("Socket can't connect, because getsockopt error\n");
+					}
+				}
+				else if (res == 0) {
+					close_sock(imp_->recv_socket_);
+					THROW_FILE_LINE("Socket can't connect, because time out\n");
+				}
+				else {
+					close_sock(imp_->recv_socket_);
+					THROW_FILE_LINE("Socket can't connect, because failed to select\n");
+				}
+#endif	
+			}
 
 			imp_->state_ = Socket::State::WORKING;
 
@@ -769,8 +862,10 @@ namespace aris::core{
 		}
 		case Type::WEB:
 		case Type::WEB_RAW:{
-			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
+			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1) {
+				close_sock(imp_->recv_socket_);
 				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
+			}
 
 			char handshake_text[]{
 				"GET / HTTP/1.1\r\n"
@@ -915,6 +1010,7 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		return imp_->state_;
 	};
+	
 	auto Socket::port()const->const std::string&{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		return imp_->port_;
@@ -932,6 +1028,14 @@ namespace aris::core{
 		imp_->remote_ip_ = remote_ip;
 	}
 	auto Socket::connectType()const->Type { return imp_->type_; }
+	auto Socket::connectTimeoutMs()const->std::int64_t {
+		return imp_->connect_time_out_;
+	}
+	auto Socket::setConnectTimeoutMs(std::int64_t time_out_ms)->void {
+		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+		imp_->connect_time_out_ = time_out_ms;
+	}
+
 	auto Socket::setConnectType(const Type type)->void { imp_->type_ = type; }
 	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
