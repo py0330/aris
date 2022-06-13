@@ -825,7 +825,7 @@ namespace aris::core{
 				}
 #endif
 #ifdef UNIX
-				if ((auto res = select(sock + 1, NULL, &setW, &setE, &time_out)) == 1){
+				if (auto res = select(sock + 1, NULL, &setW, &setE, &time_out);res == 1) {
 					int so_error;
 					socklen_t len = sizeof(so_error);
 
