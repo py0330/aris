@@ -771,7 +771,10 @@ namespace aris::core{
 #endif
 #ifdef UNIX
 		if (imp_->connect_time_out_ >= 0) {
-			fcntl(sock, F_SETFL, O_NONBLOCK);
+			if (fcntl(imp_->recv_socket_, F_SETFL, O_NONBLOCK) < 0) {
+				close_sock(imp_->recv_socket_);
+				THROW_FILE_LINE("Socket can't connect, because time out\n");
+			}
 		}
 #endif
 		// tbd on linux /////
@@ -825,7 +828,7 @@ namespace aris::core{
 				}
 #endif
 #ifdef UNIX
-				if (auto res = select(sock + 1, NULL, &setW, &setE, &time_out);res == 1) {
+				if (auto res = select(imp_->recv_socket_ + 1, NULL, &setW, &setE, &time_out);res == 1) {
 					int so_error;
 					socklen_t len = sizeof(so_error);
 
