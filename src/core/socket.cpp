@@ -851,7 +851,7 @@ namespace aris::core{
 						close_sock(imp_->recv_socket_);
 						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
 					}
-				}while(1)
+				} while (1);
 #endif	
 			}
 
