@@ -27,6 +27,8 @@
 #include <signal.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 #endif
 
 #include <map>
@@ -760,25 +762,18 @@ namespace aris::core{
 		if ((imp_->recv_socket_ = socket(AF_INET, sock_type, 0)) < 0)THROW_FILE_LINE("Socket can't connect, because can't socket\n");
 
 		// 设置 time_out //
-#ifdef WIN32
 		if (imp_->connect_time_out_ >= 0) {
+#ifdef WIN32
 			u_long block = 1;
 			if (ioctlsocket(imp_->recv_socket_, FIONBIO, &block) == SOCKET_ERROR) {
+#endif
+#ifdef UNIX
+			if (fcntl(imp_->recv_socket_, F_SETFL, O_NONBLOCK) < 0) {
+#endif
 				close_sock(imp_->recv_socket_);
 				THROW_FILE_LINE("Socket can't connect, because can't set time out\n");
 			}
 		}
-#endif
-#ifdef UNIX
-		if (imp_->connect_time_out_ >= 0) {
-			if (fcntl(imp_->recv_socket_, F_SETFL, O_NONBLOCK) < 0) {
-				close_sock(imp_->recv_socket_);
-				THROW_FILE_LINE("Socket can't connect, because time out\n");
-			}
-		}
-#endif
-		// tbd on linux /////
-
 
 		// 连接 socket //
 		switch (connectType()){
@@ -786,7 +781,6 @@ namespace aris::core{
 		case Type::TCP_RAW:{
 			// 连接 //
 			if (::connect(imp_->recv_socket_, (const struct sockaddr*)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1) {
-
 				fd_set setW, setE;
 				FD_ZERO(&setW);
 				FD_SET(imp_->recv_socket_, &setW);
@@ -828,28 +822,36 @@ namespace aris::core{
 				}
 #endif
 #ifdef UNIX
-				if (auto res = select(imp_->recv_socket_ + 1, NULL, &setW, &setE, &time_out);res == 1) {
-					int so_error;
-					socklen_t len = sizeof(so_error);
+				do {
+					auto ret = select(imp_->recv_socket_ + 1, NULL, &setW, &setE, &time_out);
+					if (ret > 0) {
+						int so_error;
+						socklen_t len = sizeof(so_error);
+						if (getsockopt(imp_->recv_socket_, SOL_SOCKET, SO_ERROR, &so_error, &len) < 0) {
+							close_sock(imp_->recv_socket_);
+							THROW_FILE_LINE("Socket can't connect, because can't getsockopt\n");
+						}
+						if (so_error) {
+							close_sock(imp_->recv_socket_);
+							if (time_out.tv_sec == 0 && time_out.tv_usec == 0)
+								THROW_FILE_LINE("Socket can't connect, because getsockopt error\n");
+							else
+								continue;
+						}
+						else
+							break;// 正常结束
 
-					if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) < 0) {
-						close_sock(imp_->recv_socket_);
-						THROW_FILE_LINE("Socket can't connect, because can't getsockopt\n");
+
 					}
-					// Check the value returned... 
-					if (so_error) {
+					else if (ret == 0) {
 						close_sock(imp_->recv_socket_);
-						THROW_FILE_LINE("Socket can't connect, because getsockopt error\n");
+						THROW_FILE_LINE("Socket can't connect, because time out\n");
 					}
-				}
-				else if (res == 0) {
-					close_sock(imp_->recv_socket_);
-					THROW_FILE_LINE("Socket can't connect, because time out\n");
-				}
-				else {
-					close_sock(imp_->recv_socket_);
-					THROW_FILE_LINE("Socket can't connect, because failed to select\n");
-				}
+					else {
+						close_sock(imp_->recv_socket_);
+						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
+					}
+				}while(1)
 #endif	
 			}
 
