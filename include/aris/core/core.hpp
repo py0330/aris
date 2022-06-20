@@ -13,6 +13,7 @@
 #include <aris/core/serialization.hpp>
 #include <aris/core/data_structure.hpp>
 #include <aris/core/signal_slots.hpp>
+#include <aris/core/version.hpp>
 
 #endif // ARIS_H_
 
