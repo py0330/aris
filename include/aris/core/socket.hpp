@@ -30,12 +30,19 @@ namespace aris::core{
 		auto stop()->void;
 		auto sendMsg(const aris::core::MsgBase &data)->void;
 		auto sendRawData(const char *data, int size)->void;
+
 		auto port()const->const std::string &;
 		auto setPort(const std::string &port)->void;
 		auto remoteIP()const->const std::string &;
 		auto setRemoteIP(const std::string &remote_ip)->void;
 		auto connectType()const->Type;
 		auto setConnectType(const Type type)->void;
+		// connect timeout: milliseconds
+		// 若想用阻塞模式，将该值设为-1
+		// 默认值为 -1
+		auto connectTimeoutMs()const->std::int64_t;
+		auto setConnectTimeoutMs(std::int64_t time_out_ms)->void;
+
 		auto setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> = nullptr)->void;
 		auto setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> = nullptr)->void;
 		auto setOnReceivedConnection(std::function<int(Socket*, const char* remote_ip, int remote_port)> = nullptr)->void;

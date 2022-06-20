@@ -53,9 +53,14 @@ int main(int argc, char *argv[]){
 	}
 	
 	
-
+	auto &m = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
 	
+	double pos[3]{ 0,0,0 };
+	double axis[3]{ 0,0,1 };
+	m.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false, false).release());
 
+	auto t = m.getMotionTypes();
+	
 
 
 	//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh(5).xml");

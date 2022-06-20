@@ -463,13 +463,9 @@ namespace aris::dynamic{
 		std::vector<Size> motions;
 
 		Size id = 0;
-		for (auto& m : subModels()) {
-			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
-				for (int i = 0; i < model->inputPosSize(); ++i) {
-					motions.push_back(id++);
-				}
-			}
-		}
+		for (auto& m : subModels()) 
+			for (int i = 0; i < m.inputPosSize(); ++i) 
+				motions.push_back(id++);
 
 		return motions;
 	}
@@ -572,6 +568,68 @@ namespace aris::dynamic{
 		}
 
 		return ees;
+	}
+	auto MultiModel::getMotionNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size> {
+		std::vector<Size> mot_nums;
+
+		for (auto id : submodel_ids) {
+			auto& m = subModels()[id];
+			mot_nums.push_back(m.inputPosSize());
+		}
+
+		return mot_nums;
+	}
+	// 获取对应子模型中的电机种类
+	auto MultiModel::getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType> {
+		std::vector<EEType> mot_types;
+
+		for (auto id : submodel_ids) {
+			auto& m = subModels()[id];
+
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& mot : model->motionPool()) {
+					switch (mot.axis()) {
+					case 0:
+					case 1:
+					case 2:
+						mot_types.push_back(aris::dynamic::EEType::X);
+						break;
+					case 3:
+					case 4:
+					case 5:
+						mot_types.push_back(aris::dynamic::EEType::A);
+						break;
+					default:
+						mot_types.push_back(aris::dynamic::EEType::UNKNOWN);
+					}
+				}
+			}
+			else {
+				mot_types.push_back(aris::dynamic::EEType::UNKNOWN);
+			}
+		}
+		return mot_types;
+	}
+	auto MultiModel::getMotionTypes()->std::vector<EEType> {
+		std::vector<Size> model_ids(subModels().size());
+		std::iota(model_ids.begin(), model_ids.end(), 0);
+		return getMotionTypes(model_ids);
+	}
+	// 获取对应子模型中的电机
+	auto MultiModel::getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*> {
+		std::vector<aris::dynamic::Motion*> mots;
+
+		for (auto id : submodel_ids) {
+			auto& m = subModels()[id];
+
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& gm : model->motionPool()) {
+					mots.push_back(&gm);
+				}
+			}
+		}
+
+		return mots;
 	}
 	auto MultiModel::getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size> {
 		std::vector<Size> motion_ids;
