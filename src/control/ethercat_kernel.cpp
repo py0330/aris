@@ -334,7 +334,7 @@ namespace aris::control{
 
 			// activate master
 			if (ecrt_master_activate(m_handle.ec_master_)) { THROW_FILE_LINE("failed activate master, perhaps pdo map is wrong"); }
-			if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))THROW_FILE_LINE("failed ecrt_domain_data");
+			if (ec_pdo_entry_reg_vec.size()>1 && !(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))THROW_FILE_LINE("failed ecrt_domain_data");
 
 			// set handle
 			master->ecHandle() = m_handle;

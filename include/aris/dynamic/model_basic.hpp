@@ -115,7 +115,7 @@ namespace aris::dynamic
 	class ARIS_API BoolVariable final : public VariableTemplate<bool>{
 	public:
 		auto virtual toString() const->std::string override { return data() ? "true":"false"; }
-		auto virtual fromString(std::string_view str)->void override { data() = str == "false" ? true : false; }
+		auto virtual fromString(std::string_view str)->void override { data() = str == "false" ? false : true; }
 
 		virtual ~BoolVariable() = default;
 		explicit BoolVariable(const std::string & name = "bool_variable", bool data = true) : VariableTemplate(name, data) {}

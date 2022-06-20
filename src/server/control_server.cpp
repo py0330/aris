@@ -885,7 +885,7 @@ namespace aris::server{
 	}
 	auto ControlServer::start()->void{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_running_)LOG_AND_THROW({ "failed to start server, because it is already started " });
+		if (imp_->is_running_)THROW_FILE_LINE("failed to start server, because it is already started ");
 		
 		struct RaiiCollector{
 			ControlServer *cs_;
@@ -947,7 +947,7 @@ namespace aris::server{
 	auto ControlServer::stop()->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW({ "failed to stop server, because it is not running" });
+		if (!imp_->is_running_)THROW_FILE_LINE("failed to stop server, because it is not running");
 		imp_->is_running_ = false;
 
 		// 清除所有指令，并回收所有指令 //
@@ -969,7 +969,7 @@ namespace aris::server{
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
 		if (!imp_->is_running_)
-			LOG_AND_THROW({ "failed to get current TARGET, because ControlServer is not running" });
+			THROW_FILE_LINE("failed to get current TARGET, because ControlServer is not running");
 
 		auto execute_internal = imp_->internal_data_queue_[imp_->cmd_now_.load() % Imp::CMD_POOL_SIZE];
 		return execute_internal ? execute_internal->plan_ : std::shared_ptr<aris::plan::Plan>();
@@ -978,7 +978,7 @@ namespace aris::server{
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)
-			LOG_AND_THROW({ (std::string("failed") + __FILE__ + std::to_string(__LINE__)).data() });
+			THROW_FILE_LINE("failed getRtData");
 
 		imp_->get_data_func_ = &get_func;
 		imp_->get_data_ = &data;

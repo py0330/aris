@@ -650,8 +650,10 @@ namespace aris::core{
 #ifdef UNIX
 		if (sock_type == SOCK_STREAM){
 			int tcp_timeout = 10000; //10 seconds before aborting a write()
-			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0)
+			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
+			}
 
 			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
@@ -659,21 +661,33 @@ namespace aris::core{
 			int keepInterval = 1; // 探测时发包的时间间隔为5 秒
 			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 
-			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) < 0)
+			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt SO_KEEPALIVE FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
+			}
 		}
 #endif
 
 
 		// 设置socketopt选项,使得地址在程序结束后立即可用 //
 		int nvalue = 1;
-		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
+		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0) {
+			close_sock(imp_->lisn_socket_);
+			THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
+		}
+			
 
 		// 服务器端填充server_addr_结构,并且bind //
 		memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
@@ -684,12 +698,16 @@ namespace aris::core{
 #ifdef WIN32
 			int err = WSAGetLastError();
 #endif
+			close_sock(imp_->lisn_socket_);
 			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
 		if (connectType() == Type::TCP || connectType() == Type::TCP_RAW || connectType() == Type::WEB || connectType() == Type::WEB_RAW){
 			// 监听lisn_socket_描述符 //
-			if (listen(imp_->lisn_socket_, 5) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
+			if (listen(imp_->lisn_socket_, 5) == -1) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
+			}
 
 			// 启动等待连接的线程 //
 			std::promise<void> accept_thread_ready;
@@ -701,13 +719,19 @@ namespace aris::core{
 			// 因为UDP没法shutdown，所以用非阻塞模式 //
 #ifdef WIN32
 			DWORD read_timeout = 10;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			}
 #endif
 #ifdef UNIX
 			struct timeval read_timeout;
 			read_timeout.tv_sec = 0;
 			read_timeout.tv_usec = 10000;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			}
 #endif
 			imp_->recv_socket_ = imp_->lisn_socket_;
 			
@@ -795,16 +819,17 @@ namespace aris::core{
 				if (WSAGetLastError() == WSAEWOULDBLOCK) {
 					// connection pending
 					int ret = select(0, NULL, &setW, &setE, &time_out);
-					if (ret <= 0){
-						// select() failed or connection timed out
+					if (ret < 0){
 						close_sock(imp_->recv_socket_);
-						if (ret == 0) {
-							WSASetLastError(WSAETIMEDOUT);
-							THROW_FILE_LINE("Socket can't connect, because time out\n");
-						}
-						else {
-							THROW_FILE_LINE("Socket can't connect, because failed to select\n");
-						}
+						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
+					}
+					else if (ret == 0) {
+						close_sock(imp_->recv_socket_);
+						WSASetLastError(WSAETIMEDOUT);
+						THROW_FILE_LINE("Socket can't connect, because time out\n");
+					}
+					else {
+					
 					}
 
 					if (FD_ISSET(imp_->recv_socket_, &setE)){
@@ -840,8 +865,6 @@ namespace aris::core{
 						}
 						else
 							break;// 正常结束
-
-
 					}
 					else if (ret == 0) {
 						close_sock(imp_->recv_socket_);
