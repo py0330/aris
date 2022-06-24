@@ -386,6 +386,24 @@ namespace aris::core{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
+		// 设置为 non-blocking 模式 //
+#ifdef WIN32
+		u_long block = 0;
+		if (ioctlsocket(imp->recv_socket_, FIONBIO, &block) == SOCKET_ERROR) {
+			imp->lose_tcp();
+		}
+#endif
+#ifdef UNIX
+		long arg;
+		if ((arg = fcntl(imp->recv_socket_, F_GETFL, NULL)) < 0) {
+			imp->lose_tcp();
+		}
+		arg &= (~O_NONBLOCK);
+		if (fcntl(imp->recv_socket_, F_SETFL, arg) < 0) {
+			imp->lose_tcp();
+		}
+#endif
+		
 		// 改变状态 //
 		imp->state_ = Socket::State::WORKING;
 
