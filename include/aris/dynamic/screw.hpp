@@ -82,7 +82,21 @@ namespace aris::dynamic
 		plane2[3] = plane1[3] - s_vv(3, plane2, 1, pm + 3, 4);
 	}
 
-	//auto inline s_interp_pm_by_planes
+	auto inline s_q_dot_q(const double* q1, const double* q2, double* q3) {
+		//q = [cross(v1, v2) + s1 * v2 + s2 * v1; s1* s2 - v1'*v2];
+
+		q3[0] = -q1[2] * q2[1] + q1[1] * q2[2] + q1[3] * q2[0] + q2[3] * q1[0];
+		q3[1] =  q1[2] * q2[0] - q1[0] * q2[2] + q1[3] * q2[1] + q2[3] * q1[1];
+		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] + q1[3] * q2[2] + q2[3] * q1[2];
+		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] + q1[3] * q2[3];
+	}
+
+	auto inline s_inv_q(const double* q, double* inv_q) {
+		inv_q[0] = -q[0];
+		inv_q[1] = -q[1];
+		inv_q[2] = -q[2];
+		inv_q[3] =  q[3];
+	}
 
 
 	auto ARIS_API s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
