@@ -81,8 +81,8 @@ namespace aris::dynamic
 		s_pm_dot_v3(pm, plane1, plane2);
 		plane2[3] = plane1[3] - s_vv(3, plane2, 1, pm + 3, 4);
 	}
-
-	auto inline s_q_dot_q(const double* q1, const double* q2, double* q3) {
+	
+	auto inline s_q_dot_q(const double* q1, const double* q2, double* q3)noexcept->void {
 		//q = [cross(v1, v2) + s1 * v2 + s2 * v1; s1* s2 - v1'*v2];
 
 		q3[0] = -q1[2] * q2[1] + q1[1] * q2[2] + q1[3] * q2[0] + q2[3] * q1[0];
@@ -90,14 +90,65 @@ namespace aris::dynamic
 		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] + q1[3] * q2[2] + q2[3] * q1[2];
 		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] + q1[3] * q2[3];
 	}
+	auto inline s_inv_q_dot_q(const double* q1, const double* q2, double* q3)noexcept->void {
+		//q = [cross(v1, v2) + s1 * v2 + s2 * v1; s1* s2 - v1'*v2];
 
-	auto inline s_inv_q(const double* q, double* inv_q) {
+		q3[0] = -q1[2] * q2[1] + q1[1] * q2[2] - q1[3] * q2[0] + q2[3] * q1[0];
+		q3[1] = q1[2] * q2[0] - q1[0] * q2[2] - q1[3] * q2[1] + q2[3] * q1[1];
+		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] - q1[3] * q2[2] + q2[3] * q1[2];
+		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
+	}
+	auto inline s_q_dot_inv_q(const double* q1, const double* q2, double* q3)noexcept->void {
+		//q = [cross(v1, v2) + s1 * v2 + s2 * v1; s1* s2 - v1'*v2];
+
+		q3[0] = -q1[2] * q2[1] + q1[1] * q2[2] + q1[3] * q2[0] - q2[3] * q1[0];
+		q3[1] = q1[2] * q2[0] - q1[0] * q2[2] + q1[3] * q2[1] - q2[3] * q1[1];
+		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] + q1[3] * q2[2] - q2[3] * q1[2];
+		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
+	}
+	auto inline s_inv_q(const double* q, double* inv_q)noexcept->void {
 		inv_q[0] = -q[0];
 		inv_q[1] = -q[1];
 		inv_q[2] = -q[2];
 		inv_q[3] =  q[3];
 	}
 
+	auto inline s_q_to_theta_v(const double* q, const double* dq, const double* ddq,
+							   double &theta, double *v, double &dtheta, double *dv, double &d2theta, double *d2v)noexcept->void {
+		theta = std::acos(q[3]);
+
+		auto c = q[3];
+		auto s = std::sin(theta);
+
+		if (theta > 1e-7) {
+			s_vc(3, 1.0 / s, q, v);
+			dtheta = -dq[3] / s;
+
+			dv[0] = (dq[0] - v[0] * c * dtheta) / s;
+			dv[1] = (dq[1] - v[1] * c * dtheta) / s;
+			dv[2] = (dq[2] - v[2] * c * dtheta) / s;
+
+			d2theta = -(ddq[3] * s - dq[3] * c * dtheta) / (s * s);
+			d2v[0] = ((ddq[0] - dv[0] * c * dtheta + v[0] * s * dtheta * dtheta - v[0] * c * d2theta) * s
+				- (dq[0] - v[0] * c * dtheta) * c * dtheta) / (s * s);
+			d2v[1] = ((ddq[1] - dv[1] * c * dtheta + v[1] * s * dtheta * dtheta - v[1] * c * d2theta) * s
+				- (dq[1] - v[1] * c * dtheta) * c * dtheta) / (s * s);
+			d2v[2] = ((ddq[2] - dv[2] * c * dtheta + v[2] * s * dtheta * dtheta - v[2] * c * d2theta) * s
+				- (dq[2] - v[2] * c * dtheta) * c * dtheta) / (s * s);
+		}
+		else {
+			// not correct, tbd
+			v[0] = 0.0;
+			v[1] = 0.0;
+			v[2] = 0.0;
+			dv[0] = 0.0;
+			dv[1] = 0.0;
+			dv[2] = 0.0;
+			d2v[0] = 0.0;
+			d2v[1] = 0.0;
+			d2v[2] = 0.0;
+		}
+	}
 
 	auto ARIS_API s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
 	auto ARIS_API s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;

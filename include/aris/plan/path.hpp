@@ -309,7 +309,7 @@ namespace aris::plan{
 			tscts2* v2[0],
 			tscts2* v2[1],
 			tscts2* v2[2],
-			tssts2
+			-tssts2
 		};
 
 		double k1 =  theta2 * 2 * cts2 - theta2 * 2 * s * tssts2;
@@ -323,41 +323,134 @@ namespace aris::plan{
 		};
 
 		// qb3 dqb3 d2qb3 // 
+		double qb3[4], dqb3[4], d2qb3[4];
+		aris::dynamic::s_q_dot_q(qb1, qb2, qb3);
+
+		double tem4[4];
+		aris::dynamic::s_q_dot_q(qb1, dqb2, dqb3);
+		aris::dynamic::s_q_dot_q(dqb1, qb2, tem4);
+		aris::dynamic::s_va(4, tem4, dqb3);
+
+		aris::dynamic::s_q_dot_q(qb1, d2qb2, d2qb3);
+		aris::dynamic::s_q_dot_q(d2qb1, qb2, tem4);
+		aris::dynamic::s_va(4, tem4, d2qb3);
+		aris::dynamic::s_q_dot_q(dqb1, dqb2, tem4);
+		aris::dynamic::s_va(4, 2.0, tem4, d2qb3);
+
+		// theta_b3 & vb3 //
+		double theta_b3, vb3[4], dtheta_b3, dvb3[4], d2theta_b3, d2vb3[4];
+		aris::dynamic::s_q_to_theta_v(qb3, dqb3, d2qb3, theta_b3, vb3, dtheta_b3, dvb3, d2theta_b3, d2vb3);
 		
-		// 
-		// 
-		//// p //
-		//p[0] = circle1[0] + circle2[0] - p1[0];
-		//p[1] = circle1[1] + circle2[1] - p1[1];
-		//p[2] = circle1[2] + circle2[2] - p1[2];
+		// qb3 dqb3 d2qb3 //
+		double qb[4], dqb[4], d2qb[4];
+		double stb3s = std::sin(theta_b3 * s);
+		double ctb3s = std::cos(theta_b3 * s);
 
-		//// dp //
-		//double m1 = 3 * (s - 1) * (s - 1) * theta1 * co1;
-		//double m2 = -3 * (s - 1) * (s - 1) * theta1 * si1;
-		//double m3 = 3 * s * s * theta2 * co2;
-		//double m4 = -3 * s * s * theta2 * si2;
+		qb[0] = stb3s * vb3[0];
+		qb[1] = stb3s * vb3[1];
+		qb[2] = stb3s * vb3[2];
+		qb[3] = ctb3s;
 
-		//dp[0] = m1 * ry1[0] + m2 * rx1[0] + m3 * ry2[0] + m4 * rx2[0];
-		//dp[1] = m1 * ry1[1] + m2 * rx1[1] + m3 * ry2[1] + m4 * rx2[1];
-		//dp[2] = m1 * ry1[2] + m2 * rx1[2] + m3 * ry2[2] + m4 * rx2[2];
+		double l1 = ctb3s * (theta_b3 + s * dtheta_b3);
+		double l2 = stb3s * (theta_b3 + s * dtheta_b3);
 
-		//// d2p //
-		//double j1 = 6 * (s - 1) * theta1;
-		//double k1 = 9 * (s - 1) * (s - 1) * (s - 1) * (s - 1) * theta1 * theta1;
-		//double j2 = 6 * s * theta2;
-		//double k2 = 9 * s * s * s * s * theta2 * theta2;
+		dqb[0] = l1 * vb3[0] + stb3s * dvb3[0];
+		dqb[1] = l1 * vb3[1] + stb3s * dvb3[1];
+		dqb[2] = l1 * vb3[2] + stb3s * dvb3[2];
+		dqb[3] = -l2;
 
-		//double n1 = j1 * co1 - k1 * si1;
-		//double n2 = -k1 * co1 - j1 * si1;
-		//double n3 = j2 * co2 - k2 * si2;
-		//double n4 = -k2 * co2 - j2 * si2;
+		double m1 = -l2*(theta_b3 + s*dtheta_b3) + ctb3s * (2.0 *dtheta_b3 + s*d2theta_b3);
+		double m2 = 2.0* l1;
+
+		d2qb[0] = m1 * vb3[0] + m2 * dvb3[0] + stb3s * d2vb3[0];
+		d2qb[1] = m1 * vb3[1] + m2 * dvb3[1] + stb3s * d2vb3[1];
+		d2qb[2] = m1 * vb3[2] + m2 * dvb3[2] + stb3s * d2vb3[2];
+		d2qb[3] = -l1 * (theta_b3 + s*dtheta_b3) - stb3s * (2.0 * dtheta_b3 + s*d2theta_b3);
+		
+		// q dq d2q //
+		double q_[4], dq_[4], d2q_[4];
 
 
-		//d2p[0] = n1 * ry1[0] + n2 * rx1[0] + n3 * ry2[0] + n4 * rx2[0];
-		//d2p[1] = n1 * ry1[1] + n2 * rx1[1] + n3 * ry2[1] + n4 * rx2[1];
-		//d2p[2] = n1 * ry1[2] + n2 * rx1[2] + n3 * ry2[2] + n4 * rx2[2];
+		aris::dynamic::s_q_dot_q(qa, qb, q_);
+
+		aris::dynamic::s_q_dot_q(qa, dqb, dq_);
+		aris::dynamic::s_q_dot_q(dqa, qb, tem4);
+		aris::dynamic::s_va(4, tem4, dq_);
+
+		aris::dynamic::s_q_dot_q(qa, d2qb, d2q_);
+		aris::dynamic::s_q_dot_q(d2qa, qb, tem4);
+		aris::dynamic::s_va(4, tem4, d2q_);
+		aris::dynamic::s_q_dot_q(dqa, dqb, tem4);
+		aris::dynamic::s_va(4, 2.0, tem4, d2q_);
+
+		// make real q1 //
+		aris::dynamic::s_q_dot_q(q1_input, q_, q);
+		aris::dynamic::s_q_dot_q(q1_input, dq_, dq);
+		aris::dynamic::s_q_dot_q(q1_input, d2q_, d2q);
 	}
 
+	auto inline s_darc_ds(Size dim, const double* dp_ds_input, const double* d2p_ds2_input, 
+		double& darc_ds, double &d2arc_ds2, double& ds_darc, double& d2s_darc2)noexcept->void
+	{
+		darc_ds = aris::dynamic::s_norm(dim, dp_ds_input);
+
+		d2arc_ds2 = darc_ds > 1e-8
+			? aris::dynamic::s_vv(dim, dp_ds_input, d2p_ds2_input) / darc_ds
+			: aris::dynamic::s_norm(dim, d2p_ds2_input);
+			
+		//
+		// ds / dA = 1 / (dA / ds)
+		// d2s / dA2 = -[d(dA / ds) / dA] / (dA / ds) ^ 2
+		//			 = -[d2A / ds2 * ds / dA] / (dA / ds) ^ 2
+		//			 = -(d2A / ds2) / (dA / ds) ^ 3
+
+		ds_darc = 1 / darc_ds;
+		d2s_darc2 = -d2arc_ds2 / darc_ds / darc_ds/ darc_ds;
+	}
+
+	auto inline s_estimate_arc(double s, double darc0, double d2arc0, double darc1, double d2arc1, double darc50,
+		double &arc, double &darc, double d2arc)noexcept->void
+	{
+		//  % UNTITLED 此处提供此函数的摘要
+		//	% 此处提供详细说明
+
+		//	% 使用1元3次方程 a s ^ 3 + b s ^ 2 + c s + d  模拟在s = 0和s = 1处的dp
+		//	% [ 0 0 0 1 ] [ a ] = [ darc0  ]
+		//	% | 1 1 1 1 | | b |   | darc1  |
+		//	% | 0 0 1 0 | | c |   | d2arc0 |
+		//	% [ 3 2 1 0 ] [ d ]   [ d2arc1 ]
+		//	%
+		//	%系数矩阵的逆为：
+		//	% [  2 -2  1  1 ]
+		//	% | -3  3 -2 -1 |
+		//	% |  0  0  1  0 |
+		//	% [  1  0  0  0 ]
+		//	%
+		//	%因而：
+		//	% a = 2 * darc0 - 2 * darc1 + d2arc0 + d2arc1;
+		//  % b = -3 * darc0 + 3 * darc1 - 2 * d2arc0 - d2arc1;
+		//  % c = d2arc0;
+		//  % d = darc0;
+		//  %
+		//	% 后续需要修正d，因此先计算前三项。
+
+		double a = 2 * darc0 - 2 * darc1 + d2arc0 + d2arc1;
+		double b = -3 * darc0 + 3 * darc1 - 2 * d2arc0 - d2arc1;
+		double c = d2arc0;
+
+		//  % 上述一元三次方程，无法保证s = 0.5时，darc的正确性，因此需修正
+		//	% 使用 cos 函数，在不改变0，1处的darc的前提下，将s = 0.5处的darc修正到正确值
+		//	% 修正函数为(1 - cos(2 pi s)) / 2 * darc_error_at_0.5
+		//	% 而 darc_error_at_0.5 = dp50 - 0.125.*a - 0.25.*b - 0.5.*c - darc0;
+		//  %
+		//	% 将上述等式化简，可得修正之后的一次项d，以及cos函数的系数 e：
+		double d = 0.5 * darc50 - 0.0625 * a - 0.125 * b - 0.25 * c + 0.5 * darc0;
+		double e = -0.5 * darc50 + 0.0625 * a + 0.125 * b + 0.25 * c + 0.5 * darc0;
+
+		arc  =  a*s*s*s*s/4 + b*s*s*s/3 + c*s*s/2 + d*s + e*std::sin(2 * PI * s) / 2 / PI;
+		darc =  a*s*s*s     + b*s*s     + c*s     + d   + e*std::cos(2 * PI * s);
+		d2arc = a*s*s    *3 + b*s*s  *2 + c             - e*std::sin(2 * PI * s) * 2 * PI;
+	}
 }
 
 #endif
