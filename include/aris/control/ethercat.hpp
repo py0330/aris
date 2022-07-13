@@ -183,6 +183,7 @@ namespace aris::control
 		auto virtual recv()->void override;
         auto virtual sync()->void override;
         auto virtual queue()->void override;
+		auto virtual linkup()->bool override;
 		auto virtual release()->void override;
 
 	private:

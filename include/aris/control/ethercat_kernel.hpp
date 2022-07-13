@@ -47,6 +47,7 @@ namespace aris::control
 	auto aris_ecrt_master_send(EthercatMaster *master)->void;
     auto aris_ecrt_master_queue(EthercatMaster *mst)->void;
     auto aris_ecrt_master_sync(EthercatMaster *mst)->void;
+	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState* master_state)->void;
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *master_state, EthercatMaster::SlaveLinkState *slave_state)->void;
 
 	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void;

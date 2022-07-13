@@ -46,8 +46,12 @@ namespace aris::control{
 			};
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
-            mst.recv();
-			mst.queue();
+            
+			auto link_up = mst.linkup();
+			if (link_up) {
+				mst.recv();
+				mst.queue();
+			}
 			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();
@@ -56,18 +60,23 @@ namespace aris::control{
                 static std::int64_t ns_wakeup, ns_send, ns_sync, ns_strategy, ns_recv, ns_total;
 				ns_wakeup = aris::control::aris_rt_time_since_last_time();
 #endif
-				// sync //
-				mst.sync();
-
-				// receive //
-                mst.send();
-#ifdef DEBUG_MASTER_TIME
-				ns_send = aris::control::aris_rt_time_since_last_time();
-#endif
+				if (link_up) {
+					// receive //
+					mst.send();
 
 #ifdef DEBUG_MASTER_TIME
-				ns_sync = aris::control::aris_rt_time_since_last_time();
+					ns_send = aris::control::aris_rt_time_since_last_time();
 #endif
+
+					// sync //
+					mst.sync();
+#ifdef DEBUG_MASTER_TIME
+					ns_sync = aris::control::aris_rt_time_since_last_time();
+#endif
+				}
+
+
+
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
@@ -89,13 +98,17 @@ namespace aris::control{
                 ns_strategy = aris::control::aris_rt_time_since_last_time();
 #endif
 
-                // recv //
-                mst.recv();
+				link_up = mst.linkup();
+
+				if (link_up) {
+					// recv //
+					mst.recv();
 #ifdef DEBUG_MASTER_TIME
-                ns_recv = aris::control::aris_rt_time_since_last_time();
+					ns_recv = aris::control::aris_rt_time_since_last_time();
 #endif
-				// queue //
-                mst.queue();
+					// queue //
+					mst.queue();
+				}
 
                 // record stastics //
                 auto time = aris_rt_time_since_last_time();
