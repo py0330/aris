@@ -51,18 +51,23 @@ namespace aris::control{
 			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();
-				
+
 #ifdef DEBUG_MASTER_TIME
-                static std::int64_t ns_wakeup, ns_recv, ns_send, ns_strategy, ns_total;
+                static std::int64_t ns_wakeup, ns_send, ns_sync, ns_strategy, ns_recv, ns_total;
 				ns_wakeup = aris::control::aris_rt_time_since_last_time();
 #endif
+				// sync //
+				mst.sync();
+
 				// receive //
                 mst.send();
 #ifdef DEBUG_MASTER_TIME
-				ns_recv = aris::control::aris_rt_time_since_last_time();
+				ns_send = aris::control::aris_rt_time_since_last_time();
 #endif
-                mst.sync();
 
+#ifdef DEBUG_MASTER_TIME
+				ns_sync = aris::control::aris_rt_time_since_last_time();
+#endif
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
@@ -84,12 +89,12 @@ namespace aris::control{
                 ns_strategy = aris::control::aris_rt_time_since_last_time();
 #endif
 
-                // send
+                // recv //
                 mst.recv();
 #ifdef DEBUG_MASTER_TIME
-                ns_send = aris::control::aris_rt_time_since_last_time();
+                ns_recv = aris::control::aris_rt_time_since_last_time();
 #endif
-
+				// queue //
                 mst.queue();
 
                 // record stastics //
@@ -104,7 +109,8 @@ namespace aris::control{
 #ifdef DEBUG_MASTER_TIME
                 if (ns_send > 600000 || ns_total > 800000)
                     mst.mout() << "********************************************\n"
-                    << "too large latency: " << ns_wakeup << "   " << ns_recv << "   " << ns_send << "   " << ns_strategy << "   " << ns_total
+                    << "wakeup: " << ns_wakeup << "   send:" << ns_send 
+					<< "   sync:" << ns_send << "   stag:" << ns_strategy << "   recv:" << ns_recv << "   total:" << ns_total
                     << "********************************************" << std::endl;
 #endif
 
