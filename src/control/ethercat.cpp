@@ -231,13 +231,7 @@ namespace aris::control{
 	auto EthercatMaster::start()->void { aris_ecrt_master_request(this); Master::start(); }
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
 	auto EthercatMaster::send()->void { 
-		for (auto& slave : slavePool())
-			if (!slave.isVirtual())
-				for (auto& sm : slave.smPool())
-					if (sm.rx())
-						for (auto& pdo : sm)
-							for (auto& entry : pdo)
-								aris_ecrt_pdo_write(&entry, entry.imp_->value_);
+
 		aris_ecrt_master_send(this);
 	}
 	auto EthercatMaster::recv()->void { 
@@ -250,7 +244,20 @@ namespace aris::control{
 							for (auto& entry : pdo)
 								aris_ecrt_pdo_read(&entry, entry.imp_->value_);
 	}
-	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&{
+    auto EthercatMaster::sync()->void {
+        aris_ecrt_master_sync(this);
+    }
+    auto EthercatMaster::queue()->void{
+        for (auto& slave : slavePool())
+            if (!slave.isVirtual())
+                for (auto& sm : slave.smPool())
+                    if (sm.rx())
+                        for (auto& pdo : sm)
+                            for (auto& entry : pdo)
+                                aris_ecrt_pdo_write(&entry, entry.imp_->value_);
+        aris_ecrt_master_queue(this);
+    }
+    auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&{
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>(&Master::slavePool());
 		return imp_->slave_pool_;
 	}

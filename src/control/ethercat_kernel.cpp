@@ -450,6 +450,16 @@ namespace aris::control{
 			ecrt_domain_process(m_handle.domain_);
 		}
 	}
+    auto aris_ecrt_master_queue(EthercatMaster *mst)->void{
+        auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
+
+        ec_master_state_t ms;
+        ecrt_master_state(m_handle.ec_master_, &ms);
+
+        if (ms.link_up){
+            ecrt_domain_queue(m_handle.domain_);
+        }
+    }
 	auto aris_ecrt_master_send(EthercatMaster *mst)->void{
 		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 		
@@ -457,16 +467,22 @@ namespace aris::control{
 		ecrt_master_state(m_handle.ec_master_, &ms);
 
 		if (ms.link_up){
-			ecrt_domain_queue(m_handle.domain_);
-
-			ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
-			ecrt_master_sync_reference_clock(m_handle.ec_master_);
-			ecrt_master_sync_slave_clocks(m_handle.ec_master_);
-
 			ecrt_master_send(m_handle.ec_master_);
 		}
 	}
+    auto aris_ecrt_master_sync(EthercatMaster *mst)->void{
+        auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 
+        ec_master_state_t ms;
+        ecrt_master_state(m_handle.ec_master_, &ms);
+
+        if (ms.link_up){
+            ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
+            ecrt_master_sync_reference_clock(m_handle.ec_master_);
+            ecrt_master_sync_slave_clocks(m_handle.ec_master_);
+        }
+
+    }
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {
 		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, reinterpret_cast<ec_master_state_t*>(ms));
 		for (int i = 0; i < mst->slavePool().size(); ++i){
@@ -511,6 +527,8 @@ namespace aris::control{
 	auto aris_ecrt_master_stop(EthercatMaster *master)->void {}
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void {}
 	auto aris_ecrt_master_send(EthercatMaster *master)->void {}
+    auto aris_ecrt_master_queue(EthercatMaster *mst)->void{}
+    auto aris_ecrt_master_sync(EthercatMaster *mst)->void{}
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {}
 
 	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void {}

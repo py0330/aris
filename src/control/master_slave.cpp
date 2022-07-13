@@ -12,7 +12,7 @@
 
 #include "aris/core/core.hpp"
 
-//#define DEBUG_MASTER_TIME
+#define DEBUG_MASTER_TIME
 
 namespace aris::control{
 	struct Slave::Imp { 
@@ -46,34 +46,27 @@ namespace aris::control{
 			};
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
-			
+            mst.recv();
+			mst.queue();
 			while (mst.imp_->is_rt_thread_running_){
 				// rt timer //
 				aris_rt_task_wait_period();
 				
 #ifdef DEBUG_MASTER_TIME
-				static std::int64_t ns_wakeup, ns_recv, ns_send, ns_strategy, ns_total;
+                static std::int64_t ns_wakeup, ns_recv, ns_send, ns_strategy, ns_total;
 				ns_wakeup = aris::control::aris_rt_time_since_last_time();
 #endif
 				// receive //
-				mst.recv();
+                mst.send();
 #ifdef DEBUG_MASTER_TIME
 				ns_recv = aris::control::aris_rt_time_since_last_time();
 #endif
-				// send
-				mst.send();
-#ifdef DEBUG_MASTER_TIME
-				ns_send = aris::control::aris_rt_time_since_last_time();
-#endif
-
-
+                mst.sync();
 
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
-#ifdef DEBUG_MASTER_TIME
-				ns_strategy = aris::control::aris_rt_time_since_last_time();
-#endif
-				// flush lout
+
+                // flush lout
 				mst.lout() << std::flush;
 				if (!mst.imp_->lout_msg_.empty()){
 					mst.imp_->lout_pipe_.sendMsg(mst.imp_->lout_msg_);
@@ -87,19 +80,34 @@ namespace aris::control{
 					mst.mout().reset();
 				}
 
-				// record stastics //
-				auto time = aris_rt_time_since_last_time();
-				add_time_to_stastics(time, &mst.imp_->global_stastics_);
-				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
-				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
-#ifdef DEBUG_MASTER_TIME				
-				ns_total = aris::control::aris_rt_time_since_last_time();
-
-				if (ns_send > 300000 || ns_total > 500000)
-					mst.mout() << "********************************************\n"
-					<< "too large latency: " << ns_wakeup << "   " << ns_recv << "   " << ns_send << "   " << ns_strategy << "   " << ns_total
-					<< "********************************************" << std::endl;
+#ifdef DEBUG_MASTER_TIME
+                ns_strategy = aris::control::aris_rt_time_since_last_time();
 #endif
+
+                // send
+                mst.recv();
+#ifdef DEBUG_MASTER_TIME
+                ns_send = aris::control::aris_rt_time_since_last_time();
+#endif
+
+                mst.queue();
+
+                // record stastics //
+                auto time = aris_rt_time_since_last_time();
+                add_time_to_stastics(time, &mst.imp_->global_stastics_);
+                if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
+                if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
+#ifdef DEBUG_MASTER_TIME
+                ns_total = aris::control::aris_rt_time_since_last_time();
+#endif
+
+#ifdef DEBUG_MASTER_TIME
+                if (ns_send > 600000 || ns_total > 800000)
+                    mst.mout() << "********************************************\n"
+                    << "too large latency: " << ns_wakeup << "   " << ns_recv << "   " << ns_send << "   " << ns_strategy << "   " << ns_total
+                    << "********************************************" << std::endl;
+#endif
+
 			}
 		}
 
