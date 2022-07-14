@@ -1,15 +1,12 @@
 #ifndef ARIS_CORE_VERSION_H_
 #define ARIS_CORE_VERSION_H_
 
-
 #include <string>
 #include <utility>
 
 #include "aris_lib_export.h"
 
 namespace aris::core {
-    
-    // 返回值 <版本号, 版本描述>
     auto ARIS_API version()->std::pair<std::string, std::string>;
     
 }   // namespace aris::core

@@ -458,7 +458,7 @@ namespace aris::control{
 		ecrt_master_sync_reference_clock(m_handle.ec_master_);
 		ecrt_master_sync_slave_clocks(m_handle.ec_master_);
     }
-	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState* master_state)->void {
+	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState* ms)->void {
 		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, reinterpret_cast<ec_master_state_t*>(ms));
 	}
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {
