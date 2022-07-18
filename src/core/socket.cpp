@@ -41,16 +41,26 @@
 #include "aris/core/sha1.h"
 
 
-#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept : %d"}
-#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"}
-#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"}
-#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"}
-#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"}
-#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"}
-#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"}
-#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"}
-#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"}
-#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"}
+#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept : %d" \
+																						 "Socket 接受链接失败：%d"		}
+#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"\
+                                                                                         "Websocket 协议握手失败：%d"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"\
+                                                                                         "Websocket 协议握手失败：非法的key值"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"\
+                                                                                         "Websocket 协议握手失败：提前失去连接"}
+#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"\
+                                                                                         "Websocket 数据接收失败，过大的数据包，字节数：%ji"}
+#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"\
+                                                                                         "Websocket 数据接受失败，数据不是消息类型（Msg类型）"}
+#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"\
+                                                                                         "Websocket 数据接受失败，错误的消息大小，消息大小：%i，负载大小：%ji"}
+#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"\
+                                                                                         "UDP 消息大小不对"}
+#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"\
+                                                                                         "Socket Shutdown 关闭错误：%d"}
+#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"\
+                                                                                         "Socket Close 关闭错误：%d"}
 
 namespace aris::core{
 	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int{
