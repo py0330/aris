@@ -81,6 +81,9 @@ namespace aris::control
 	protected:
 		auto virtual send()->void { for (auto &s : slavePool())s.send(); }
 		auto virtual recv()->void { for (auto &s : slavePool())s.recv(); }
+        auto virtual sync()->void {}
+        auto virtual queue()->void {}
+		auto virtual linkup()->bool { return true; }
 		auto virtual release()->void {}
 
 	private:
