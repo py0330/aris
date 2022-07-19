@@ -17,8 +17,6 @@
 
 #include <aris_lib_export.h>
 
-#define LOG_AND_THROW(error) ARIS_LOG(aris::core::LogLvl::kError, 0, error), throw std::runtime_error(error)
-
 #define THROW_FILE_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
 
 #define ARIS_COUT aris::core::cout()

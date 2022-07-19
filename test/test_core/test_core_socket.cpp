@@ -120,6 +120,17 @@ void test_socket_connect_time_out() {
 	auto test_func = [](aris::core::Socket::Type type)->void {
 		Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
 
+		server.setOnLoseConnection([](aris::core::Socket* s)->int {
+			std::cout << "server lose connection" << std::endl;
+			return 0;
+			});
+
+		client.setOnLoseConnection([](aris::core::Socket* s)->int {
+			std::cout << "client lose connection" << std::endl;
+			return 0;
+			});
+
+
 		client.setConnectTimeoutMs(1000);
 		try {
 			client.connect();
@@ -135,11 +146,18 @@ void test_socket_connect_time_out() {
 				});
 			t.detach();
 			client.connect();
+			cout() << "connected" << std::endl;
 		}
 		catch (std::runtime_error& e) {
-			std::cout << "failed to connect with timeout" << std::endl;
+			cout() << "failed to connect with timeout" << std::endl;
 		}
 		
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+		std::cout << "stop client" << std::endl;
+		client.stop();
+
+		
+
 		{
 			std::thread t;
 			
@@ -163,7 +181,7 @@ void test_socket_connect_time_out() {
 void test_socket()
 {
 	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
-	test_socket_multi_thread();
+	//test_socket_multi_thread();
 	test_socket_connect_time_out();
 	std::cout << "-----------------test socket finished------------" << std::endl;
 }

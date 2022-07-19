@@ -41,16 +41,26 @@
 #include "aris/core/sha1.h"
 
 
-#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept : %d"}
-#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"}
-#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"}
-#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"}
-#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"}
-#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"}
-#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"}
-#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"}
-#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"}
-#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"}
+#define SOCKET_FAILED_ACCEPT                         aris::core::LogLvl::kError, -3001, {"socket failed to accept : %d" \
+																						 "Socket 接受链接失败：%d"		}
+#define WEBSOCKET_SHAKE_HAND_FAILED                  aris::core::LogLvl::kError, -3002, {"websocket shake hand failed : %d"\
+                                                                                         "Websocket 协议握手失败：%d"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY      aris::core::LogLvl::kError, -3003, {"websocket shake hand failed : invalid key"\
+                                                                                         "Websocket 协议握手失败：非法的key值"}
+#define WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION aris::core::LogLvl::kError, -3004, {"websocket shake hand failed : lose connection before succesful"\
+                                                                                         "Websocket 协议握手失败：提前失去连接"}
+#define WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT           aris::core::LogLvl::kError, -3005, {"websocket receive too large or negative object, size:%ji"\
+                                                                                         "Websocket 数据接收失败，过大的数据包，字节数：%ji"}
+#define WEBSOCKET_RECEIVE_RAW                        aris::core::LogLvl::kError, -3006, {"websocket espect msg, but receive raw data"\
+                                                                                         "Websocket 数据接受失败，数据不是消息类型（Msg类型）"}
+#define WEBSOCKET_RECEIVE_WRONG_MSG_SIZE             aris::core::LogLvl::kError, -3007, {"websocket receive wrong msg size, msg size:%i payload size:%ji"\
+                                                                                         "Websocket 数据接受失败，错误的消息大小，消息大小：%i，负载大小：%ji"}
+#define SOCKET_UDP_WRONG_MSG_SIZE                    aris::core::LogLvl::kError, -3008, {"UDP msg size not correct"\
+                                                                                         "UDP 消息大小不对"}
+#define SOCKET_SHUT_DOWN_ERROR                       aris::core::LogLvl::kError, -3009, {"socket shut down error %d"\
+                                                                                         "Socket Shutdown 关闭错误：%d"}
+#define SOCKET_SHUT_CLOSE_ERROR                      aris::core::LogLvl::kError, -3010, {"socket close error %d"\
+                                                                                         "Socket Close 关闭错误：%d"}
 
 namespace aris::core{
 	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int{
@@ -386,6 +396,24 @@ namespace aris::core{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
+		// 设置为 non-blocking 模式 //
+#ifdef WIN32
+		u_long block = 0;
+		if (ioctlsocket(imp->recv_socket_, FIONBIO, &block) == SOCKET_ERROR) {
+			imp->lose_tcp();
+		}
+#endif
+#ifdef UNIX
+		long arg;
+		if ((arg = fcntl(imp->recv_socket_, F_GETFL, NULL)) < 0) {
+			imp->lose_tcp();
+		}
+		arg &= (~O_NONBLOCK);
+		if (fcntl(imp->recv_socket_, F_SETFL, arg) < 0) {
+			imp->lose_tcp();
+		}
+#endif
+		
 		// 改变状态 //
 		imp->state_ = Socket::State::WORKING;
 
@@ -650,8 +678,10 @@ namespace aris::core{
 #ifdef UNIX
 		if (sock_type == SOCK_STREAM){
 			int tcp_timeout = 10000; //10 seconds before aborting a write()
-			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0)
+			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
+			}
 
 			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
@@ -659,21 +689,33 @@ namespace aris::core{
 			int keepInterval = 1; // 探测时发包的时间间隔为5 秒
 			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 
-			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) < 0)
+			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt SO_KEEPALIVE FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
-			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
+			}
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount)) < 0) {
+				close_sock(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
+			}
 		}
 #endif
 
 
 		// 设置socketopt选项,使得地址在程序结束后立即可用 //
 		int nvalue = 1;
-		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
+		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0) {
+			close_sock(imp_->lisn_socket_);
+			THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
+		}
+			
 
 		// 服务器端填充server_addr_结构,并且bind //
 		memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
@@ -684,12 +726,16 @@ namespace aris::core{
 #ifdef WIN32
 			int err = WSAGetLastError();
 #endif
+			close_sock(imp_->lisn_socket_);
 			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
 		if (connectType() == Type::TCP || connectType() == Type::TCP_RAW || connectType() == Type::WEB || connectType() == Type::WEB_RAW){
 			// 监听lisn_socket_描述符 //
-			if (listen(imp_->lisn_socket_, 5) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
+			if (listen(imp_->lisn_socket_, 5) == -1) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
+			}
 
 			// 启动等待连接的线程 //
 			std::promise<void> accept_thread_ready;
@@ -701,13 +747,19 @@ namespace aris::core{
 			// 因为UDP没法shutdown，所以用非阻塞模式 //
 #ifdef WIN32
 			DWORD read_timeout = 10;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			}
 #endif
 #ifdef UNIX
 			struct timeval read_timeout;
 			read_timeout.tv_sec = 0;
 			read_timeout.tv_usec = 10000;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0) {
+				close_sock(imp_->lisn_socket_);
+				THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
+			}
 #endif
 			imp_->recv_socket_ = imp_->lisn_socket_;
 			
@@ -795,16 +847,17 @@ namespace aris::core{
 				if (WSAGetLastError() == WSAEWOULDBLOCK) {
 					// connection pending
 					int ret = select(0, NULL, &setW, &setE, &time_out);
-					if (ret <= 0){
-						// select() failed or connection timed out
+					if (ret < 0){
 						close_sock(imp_->recv_socket_);
-						if (ret == 0) {
-							WSASetLastError(WSAETIMEDOUT);
-							THROW_FILE_LINE("Socket can't connect, because time out\n");
-						}
-						else {
-							THROW_FILE_LINE("Socket can't connect, because failed to select\n");
-						}
+						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
+					}
+					else if (ret == 0) {
+						close_sock(imp_->recv_socket_);
+						WSASetLastError(WSAETIMEDOUT);
+						THROW_FILE_LINE("Socket can't connect, because time out\n");
+					}
+					else {
+					
 					}
 
 					if (FD_ISSET(imp_->recv_socket_, &setE)){
@@ -840,8 +893,6 @@ namespace aris::core{
 						}
 						else
 							break;// 正常结束
-
-
 					}
 					else if (ret == 0) {
 						close_sock(imp_->recv_socket_);
