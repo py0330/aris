@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 2.3.1.220718 DESCRIPTION "")
+project(aris VERSION 2.3.2.220720 DESCRIPTION "")
 
 # version
 configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)

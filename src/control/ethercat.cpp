@@ -420,6 +420,7 @@ namespace aris::control{
 		
 
 		int waiting_count_left{ 0 }; // enable 在用
+		int enable_waiting_count_{ 10 };
 
 		// home 在用 //
 		int home_count{ 0 };
@@ -659,7 +660,7 @@ namespace aris::control{
 			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x0F));
 			setControlWord(std::uint16_t(0x0F));
 			//imp_->waiting_count_left = 20;
-			imp_->waiting_count_left = 1000;//change for cooldriver
+			imp_->waiting_count_left = imp_->enable_waiting_count_;//change for cooldriver
 
 			// check mode to set correct pos, vel or cur //
 			switch (modeOfDisplay()) {
@@ -784,7 +785,12 @@ namespace aris::control{
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
-
+	auto EthercatMotor::enableWaitingCount()noexcept->int {
+		return imp_->enable_waiting_count_;
+	}
+	auto EthercatMotor::setEnableWaitingCount(int count)noexcept->void {
+		imp_->enable_waiting_count_ = count;
+	}
 	auto EthercatMotor::hasRtOutputIo()noexcept->bool {
 		return slave()->findPdoEntry(imp_->output_io_idx_, imp_->output_io_subidx_);
 	}
@@ -1211,6 +1217,7 @@ namespace aris::control{
 		};
 		aris::core::class_<EthercatMotor>("EthercatMotor")
 			.inherit<Motor>()
+			.prop("enable_waiting_count", &EthercatMotor::setEnableWaitingCount, &EthercatMotor::enableWaitingCount)
 			.prop("slave", &setSlave, &getSlave)
 			.prop("ec_index", &setEcMotIndexes, &getEcMotIndexes)
 			;
