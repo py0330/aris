@@ -824,7 +824,7 @@ namespace aris::server{
 	}
 	auto ControlServer::executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback, int chanel)->std::shared_ptr<aris::plan::Plan>{
 		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_str, post_callback) };
-		auto ret = executeCmd(cmd_vec);
+		auto ret = executeCmd(cmd_vec, chanel);
 		return ret.front();
 	}
 	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>> cmd_vec, int chanel)->std::vector<std::shared_ptr<aris::plan::Plan>>{
@@ -833,7 +833,7 @@ namespace aris::server{
 
 		const auto &cur_thread_id = std::this_thread::get_id();
 		if (cur_thread_id == imp_->main_thread_id_) {
-			return executeCmd(cmd_vec);
+			return executeCmd(cmd_vec, chanel);
 		} 
 		else {
 			imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>>>>();
@@ -846,7 +846,7 @@ namespace aris::server{
 	}
 	auto ControlServer::executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback, int chanel)->std::shared_ptr<aris::plan::Plan>{
 		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_string, post_callback) };
-		auto ret = executeCmdInCmdLine(cmd_vec);
+		auto ret = executeCmdInCmdLine(cmd_vec, chanel);
 		return ret.front();
 	}
 	auto ControlServer::init()->void{
