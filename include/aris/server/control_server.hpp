@@ -138,7 +138,7 @@ namespace aris::server
 		auto setRtPlanPostCallback(PostCallback post_callback)->void;
 		auto running()->bool;
 		auto globalCount()->std::int64_t;
-		auto currentExecutePlanRt()->aris::plan::Plan *;
+		auto currentExecutePlanRt(int chanel = 0)->aris::plan::Plan *;
 		auto globalMotionCheckOption()->std::uint64_t*;// 全局的初始检查选项，也是每个 plan 的初始检查选项，但不影响空闲时候的检查
 		auto idleMotionCheckOption()->std::uint64_t*;
 		auto setAutoLogActive(bool auto_log)->void; // 为每个 plan 自动创建日志
@@ -151,13 +151,13 @@ namespace aris::server
 		auto open()->void;
 		auto close()->void;
 		auto runCmdLine()->void;
-		auto executeCmd(std::vector<std::pair<std::string, ExecuteCmdCallback>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmd(std::string cmd_str, ExecuteCmdCallback callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
-		auto executeCmdInCmdLine(std::vector<std::pair<std::string, ExecuteCmdCallback>>)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmdInCmdLine(std::string cmd_string, ExecuteCmdCallback callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
-		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;
-		auto waitForAllExecution()->void;
-		auto waitForAllCollection()->void;
+		auto executeCmd(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = 0)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmd(std::string cmd_str, ExecuteCmdCallback callback = nullptr, int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmdInCmdLine(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = 0)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmdInCmdLine(std::string cmd_string, ExecuteCmdCallback callback = nullptr, int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
+		auto currentExecutePlan(int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
+		auto waitForAllExecution(int chanel = 0)->void;
+		auto waitForAllCollection(int chanel = 0)->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;
 		auto setErrorCode(std::int32_t err_code, const char *err_msg = nullptr)->void;
 		auto errorCode()const->int;
