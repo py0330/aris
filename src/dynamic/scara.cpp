@@ -172,6 +172,8 @@ namespace aris::dynamic{
 		auto &m3 = model->addMotion(j3);
 		auto &m4 = model->addMotion(r4);
 
+		m2.setMpOffset(-aris::PI / 2);
+
 		const double default_mot_frc[3]{ 0.0, 0.0, 0.0 };
 		m1.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[0].data() : default_mot_frc);
 		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);

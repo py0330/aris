@@ -89,14 +89,14 @@ int main(int argc, char *argv[]){
 
 	auto &scara = aris::dynamic::createModelScara(scara_param);
 
-	double input[4]{ 0.1,aris::PI / 2 + 0.8,0.23,0.3 };
+	double input[4]{ 0.2,-0.1,0.23,0.3 };
 	scara->setInputPos(input);
 	scara->forwardKinematics();
-	double pm[16];
+	double pm[4];
 	scara->getOutputPos(pm);
-	aris::dynamic::dsp(4, 4, pm);
+	aris::dynamic::dsp(1, 4, pm);
 	
-	double output2[4]{ 0.3734, - 0.7835,   0.2000,   2.7708 };
+	double output2[4]{ 1.9751,   0.2985,   0.2300, - 1.0708 };
 	scara->setOutputPos(output2);
 	scara->inverseKinematics();
 	scara->getInputPos(input);
