@@ -151,13 +151,18 @@ namespace aris::server
 		auto open()->void;
 		auto close()->void;
 		auto runCmdLine()->void;
-		auto executeCmd(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = 0)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmd(std::string cmd_str, ExecuteCmdCallback callback = nullptr, int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
-		auto executeCmdInCmdLine(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = 0)->std::vector<std::shared_ptr<aris::plan::Plan>>;
-		auto executeCmdInCmdLine(std::string cmd_string, ExecuteCmdCallback callback = nullptr, int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
-		auto currentExecutePlan(int chanel = 0)->std::shared_ptr<aris::plan::Plan>;
-		auto waitForAllExecution(int chanel = 0)->void;
-		auto waitForAllCollection(int chanel = 0)->void;
+
+		auto setDefaultChanel(int chanel)noexcept->void;
+		auto defaultChanel()const noexcept->int;
+
+		// chanel 为 -1 时，会使用defaultChanel
+		auto executeCmd(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = -1)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmd(std::string cmd_str, ExecuteCmdCallback callback = nullptr, int chanel = -1)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmdInCmdLine(std::vector<std::pair<std::string, ExecuteCmdCallback>>, int chanel = -1)->std::vector<std::shared_ptr<aris::plan::Plan>>;
+		auto executeCmdInCmdLine(std::string cmd_string, ExecuteCmdCallback callback = nullptr, int chanel = -1)->std::shared_ptr<aris::plan::Plan>;
+		auto currentExecutePlan(int chanel = -1)->std::shared_ptr<aris::plan::Plan>;
+		auto waitForAllExecution(int chanel = -1)->void;
+		auto waitForAllCollection(int chanel = -1)->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;
 		auto setErrorCode(std::int32_t err_code, const char *err_msg = nullptr)->void;
 		auto errorCode()const->int;

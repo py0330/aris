@@ -61,8 +61,10 @@ namespace aris::server{
 		// mem pool //
 		std::vector<char> mempool_;
 		
+		// chanel //
 		enum { CHANEL_SIZE = 4 };
 		ChanelData chanels[CHANEL_SIZE];
+		int default_chanel_{ 0 };
 
 		// 全局count //
 		std::atomic<std::int64_t> global_count_{ 0 };
@@ -149,7 +151,6 @@ namespace aris::server{
 		}
 		// 否则执行cmd queue中的cmd //
 		else {
-			
 			bool is_idle = true;
 			for (int i = 0; i < CHANEL_SIZE; ++i) {
 				auto& chanel = chanels[i];
@@ -246,10 +247,8 @@ namespace aris::server{
 
 		// 给与外部想要的数据 //
 		if (if_get_data_.exchange(false)){ // 原子操作
-			auto cmd_end = chanels[0].cmd_end_.load();
-			auto cmd_now = chanels[0].cmd_now_.load();
-
-
+			auto cmd_end = chanels[default_chanel_].cmd_end_.load();
+			auto cmd_now = chanels[default_chanel_].cmd_now_.load();
 			get_data_func_->operator()(ControlServer::instance(), cmd_end > cmd_now ? &*chanels[0].internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_ : nullptr, *get_data_);
 			if_get_data_ready_.store(true); // 原子操作
 		}
@@ -653,8 +652,17 @@ namespace aris::server{
 			}
 		}
 	}
+	auto ControlServer::setDefaultChanel(int chanel)noexcept->void {
+		imp_->default_chanel_ = chanel;
+	}
+	auto ControlServer::defaultChanel()const noexcept->int {
+		return imp_->default_chanel_;
+	}
 	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec, int chanel)->std::vector<std::shared_ptr<aris::plan::Plan>>{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+
+		// pre process //
+		chanel = chanel == -1 ? defaultChanel() : chanel;
 
 		// step 1.  parse //
 		std::vector<std::shared_ptr<Imp::InternalData>> internal_data(cmd_vec.size());
@@ -940,14 +948,15 @@ namespace aris::server{
 		imp_->is_collect_running_ = true;
 		imp_->collect_thread_ = std::thread([this](){
 			while (this->imp_->is_collect_running_){
+				bool has_collect_plan = false;
 				for (int i = 0; i < Imp::CHANEL_SIZE; ++i) {
-					
-					
 					auto cmd_collect = imp_->chanels[i].cmd_collect_.load();//原子操作
 					auto cmd_now = imp_->chanels[i].cmd_now_.load();//原子操作
 
 					// step 4b. //
 					if (cmd_collect < cmd_now) {
+						has_collect_plan = true;
+
 						auto& internal_data = imp_->chanels[i].internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE];
 						auto& plan = *internal_data->plan_;
 
@@ -970,9 +979,10 @@ namespace aris::server{
 						internal_data.reset();
 						aris::server::ControlServer::instance().imp_->chanels[i].cmd_collect_++;
 					}
-					else {
-						std::this_thread::sleep_for(std::chrono::milliseconds(1));
-					}
+				}
+			
+				if (!has_collect_plan) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				}
 			}
 		});
@@ -999,13 +1009,19 @@ namespace aris::server{
 		master().stop();
 	}
 	auto ControlServer::waitForAllExecution(int chanel)->void {
+		// pre process //
+		chanel = chanel == -1 ? defaultChanel() : chanel;
 		while (imp_->chanels[chanel].cmd_end_.load() != imp_->chanels[chanel].cmd_now_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
 	auto ControlServer::waitForAllCollection(int chanel)->void {
+		// pre process //
+		chanel = chanel == -1 ? defaultChanel() : chanel;
 		while (imp_->chanels[chanel].cmd_end_.load() != imp_->chanels[chanel].cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
-	auto ControlServer::currentExecutePlan(int chanel)->std::shared_ptr<aris::plan::Plan>
-	{
+	auto ControlServer::currentExecutePlan(int chanel)->std::shared_ptr<aris::plan::Plan>{
+		// pre process //
+		chanel = chanel == -1 ? defaultChanel() : chanel;
+
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
 		if (!imp_->is_running_)
 			THROW_FILE_LINE("failed to get current TARGET, because ControlServer is not running");
