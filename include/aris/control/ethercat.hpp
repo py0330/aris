@@ -235,7 +235,8 @@ namespace aris::control
 		auto virtual errorCodeRt()noexcept->std::uint16_t override;
 		auto virtual errorCodeNrt()noexcept->std::uint16_t override;
 
-
+		auto virtual enableWaitingCount()noexcept->int;
+		auto virtual setEnableWaitingCount(int count)noexcept->void;
 
 		auto slave()->EthercatSlave*;
 		auto setSlave(EthercatSlave*)->void;

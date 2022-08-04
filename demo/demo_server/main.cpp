@@ -82,6 +82,26 @@ int main(int argc, char *argv[]){
 
 	aris::core::fromXmlString(cs,str);
 
+	aris::dynamic::ScaraParam scara_param;
+
+	scara_param.a = 1.0;
+	scara_param.b = 1.0;
+
+	auto &scara = aris::dynamic::createModelScara(scara_param);
+
+	double input[4]{ 0.2,-0.1,0.23,0.3 };
+	scara->setInputPos(input);
+	scara->forwardKinematics();
+	double pm[4];
+	scara->getOutputPos(pm);
+	aris::dynamic::dsp(1, 4, pm);
+	
+	double output2[4]{ 1.9751,   0.2985,   0.2300, - 1.0708 };
+	scara->setOutputPos(output2);
+	scara->inverseKinematics();
+	scara->getInputPos(input);
+
+	aris::dynamic::dsp(1, 4, input);
 
 
 	try
