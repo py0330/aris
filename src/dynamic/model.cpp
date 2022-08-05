@@ -242,6 +242,19 @@ namespace aris::dynamic{
 		ret.Element::model_ = this;
 		return ret;
 	}
+	auto Model::addScrewJoint(Part& first_part, Part& second_part, const double* position, const double* axis, double pitch)->ScrewJoint& {
+		double glb_pm[16], loc_pm[16];
+		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
+		auto name = "joint_" + std::to_string(jointPool().size());
+		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
+		auto& mak_i = first_part.addMarker(name + "_i", loc_pm);
+		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
+		auto& mak_j = second_part.addMarker(name + "_j", loc_pm);
+
+		auto& ret = jointPool().add<ScrewJoint>(name, &mak_i, &mak_j, pitch);
+		ret.Element::model_ = this;
+		return ret;
+	}
 	auto Model::addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&{
 		double glb_pm[16], loc_pm[16];
 		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
@@ -288,16 +301,23 @@ namespace aris::dynamic{
 	}
 	auto Model::addMotion(Joint &joint)->Motion&{
 		Size dim;
+		double pitch{ 0.0 };
 
 		if (dynamic_cast<RevoluteJoint*>(&joint)){
 			dim = 5;
-		}else if (dynamic_cast<PrismaticJoint*>(&joint)){
+		}
+		else if (dynamic_cast<ScrewJoint*>(&joint)) {
+			dim = 5;
+			pitch = -joint.locCmI()[27];
+		}
+		else if (dynamic_cast<PrismaticJoint*>(&joint)){
 			dim = 2;
 		}else{
 			THROW_FILE_LINE("wrong joint when Model::addMotion(joint)");
 		}
 
 		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
+		ret.setPitch(pitch);
 		ret.Element::model_ = this;
 		return ret;
 	}

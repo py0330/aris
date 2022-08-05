@@ -851,6 +851,7 @@ namespace aris::dynamic{
 			double tem[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 			s_inv_um(d->rel_.dim_, d->cmU_, d->rel_.size_, tem, 6);
 			s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, d->dm_, 6);
+			s_permutate_inv(6, 6, d->p_, d->dm_, 6);
 		}
 	};
 	auto UniversalSolver::allocateMemory()->void{

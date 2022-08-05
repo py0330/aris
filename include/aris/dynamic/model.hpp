@@ -306,6 +306,7 @@ namespace aris::dynamic{
 		auto addPartByPe(const double*pe, const char* eul_type, const double *prt_iv = nullptr)->Part&;
 		auto addPartByPq(const double*pq, const double *prt_iv = nullptr)->Part&;
 		auto addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&;
+		auto addScrewJoint(Part& first_part, Part& second_part, const double* position, const double* axis, double pitch)->ScrewJoint&;
 		auto addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&;
 		// 
 		// first  axis 位于 first  part

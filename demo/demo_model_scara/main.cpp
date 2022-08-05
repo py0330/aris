@@ -91,8 +91,10 @@ int main()
 	auto &joint1 = m.addRevoluteJoint(link1, m.ground(), joint1_position, joint1_axis);
 	auto &joint2 = m.addRevoluteJoint(link2, link1, joint2_position, joint2_axis);
 	auto &joint3 = m.addPrismaticJoint(link3, link2, joint3_position, joint3_axis);
-	auto &joint4 = m.addRevoluteJoint(link4, link3, joint4_position, joint4_axis);
+	//auto &joint4 = m.addRevoluteJoint(link4, link3, joint4_position, joint4_axis);
+	auto& joint4 = m.addScrewJoint(link4, link3, joint4_position, joint4_axis, 0.15);
 	
+
 	// 添加驱动，驱动位于关节上
 	auto &motion1 = m.addMotion(joint1);
 	auto &motion2 = m.addMotion(joint2);
@@ -108,6 +110,8 @@ int main()
 	// 添加两个求解器，并为求解器分配内存。注意，求解器一但分配内存后，请不要再添加或删除杆件、关节、驱动、末端等所有元素
 	auto &inverse_kinematic_solver = m.solverPool().add<aris::dynamic::InverseKinematicSolver>();
 	auto &inverse_dynamic_solver = m.solverPool().add<aris::dynamic::InverseDynamicSolver>();
+	auto& forward_kinematic_solver = m.solverPool().add<aris::dynamic::ForwardKinematicSolver>();
+	auto& forward_dynamic_solver = m.solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 	
 	auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
 	m.init();
@@ -121,11 +125,35 @@ int main()
 	
 	// 求解，位置求解需要迭代，有可能会失败,因此这里做一个判断
 	if (inverse_kinematic_solver.kinPos()) throw std::runtime_error("kinematic position failed");
+	aris::dynamic::dsp(4, 4, *link3.pm());
+	
+	
+	//if (forward_kinematic_solver.kinPos()) throw std::runtime_error("kinematic position failed");
+	//aris::dynamic::dsp(4, 4, *link3.pm());
+	//double mpe_result[6];
+	//end_effector.getMpe(mpe_result,"321");
+	//aris::dynamic::dsp(1, 6, mpe_result);
+
+	//aris::dynamic::dsp(4, 4, *link4.pm());
+
+	//joint4.cptCp(mpe_result);
+	//aris::dynamic::dsp(1, 5, mpe_result);
+
+	//motion4.cptCp(mpe_result);
+	//aris::dynamic::dsp(1, 1, mpe_result);
+
+	//double cmi[30], cmj[30];
+	//joint4.cptPrtCm(cmi,cmj);
+	//aris::dynamic::dsp(6, 5, cmi);
+
+	//motion4.cptPrtCm(cmi, cmj);
+	//aris::dynamic::dsp(6, 1, cmi);
+
 	
 	// 结果储存在电机的mp()函数里，将结果打印出来
 	std::cout << "input position : " << motion1.mp() << "  " << motion2.mp() << "  " << motion3.mp() << "  " << motion4.mp() << std::endl;
 	/// [Inverse_Position]
-
+	//0.0464169 - 0.352239 - 0.3 - 0.964974
 	//-------------------------------------------- 速度反解 --------------------------------------------//
 	/// [Inverse_Velocity]
 	// 现在求速度反解，首先设置末端的线速度和角速度
@@ -134,10 +162,21 @@ int main()
 	
 	// 求解
 	inverse_kinematic_solver.kinVel();
-	
+
 	// 结果储存在电机的mv()函数里，将结果打印出来
 	std::cout << "input velocity : " << motion1.mv() << "  " << motion2.mv() << "  " << motion3.mv() << "  " << motion4.mv() << std::endl;
 	/// [Inverse_Velocity]
+	aris::dynamic::dsp(1, 6, link2.vs());
+	aris::dynamic::dsp(1, 6, link3.vs());
+	aris::dynamic::dsp(1, 6, link4.vs());
+
+	double cv[6];
+	joint4.cptCvDiff(cv);
+	aris::dynamic::dsp(1, 5, cv);
+	inverse_kinematic_solver.kinVel();
+
+	// 结果储存在电机的mv()函数里，将结果打印出来
+	std::cout << "input velocity : " << motion1.mv() << "  " << motion2.mv() << "  " << motion3.mv() << "  " << motion4.mv() << std::endl;
 
 	//-------------------------------------------- 动力学反解 --------------------------------------------//
 	/// [Inverse_Dynamic]

@@ -64,6 +64,7 @@ namespace aris::dynamic{
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
 		Size component_axis_{ 2 };
+		double pitch_{ 0.0 };
 		double rotate_range_{ 0.0 };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
@@ -77,18 +78,22 @@ namespace aris::dynamic{
 		//cp[0] += mp();  
 
 		if (axis() > 2) {//角度
-			double re[3]{ 0.0 }, rm[9], pm_j_should_be[16];
+			double re[3]{ 0.0 }, rm[9], pm_i_should_be[16]{0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1};
 			re[axis() - 3] = mpInternal();
 			s_re2rm(re, rm, "123");
 
-			s_vc(16, makJ_pm, pm_j_should_be);
-			s_mm(3, 3, 3, makJ_pm, 4, rm, 3, pm_j_should_be, 4);
+			s_vc(3, makJ_pm + 3, 4, pm_i_should_be + 3, 4);
+			s_mm(3, 3, 3, makJ_pm, 4, rm, 3, pm_i_should_be, 4);
+
+			// for pitch
+			s_va(3, pitch() * mpInternal() / 2 / PI, makJ_pm + axis() - 3, 4, pm_i_should_be + 3, 4);
+			//pm_i_should_be[at(axis() - 3, 3, 4)] += pitch() * mpInternal() / 2 / PI;
 
 			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
+			s_inv_pm_dot_pm(makI_pm, pm_i_should_be, pm_j2i);
 			s_pm2ps(pm_j2i, ps_j2i);
 
-			cp[0] = ps_j2i[axis()];
+			cp[0] = ps_j2i[axis()] + pitch() * ps_j2i[axis() - 3];
 		}
 		else{
 			double pm_j_should_be[16];
@@ -101,8 +106,11 @@ namespace aris::dynamic{
 			cp[0] = ps_j2i[axis()];
 		}
 	}
-	auto Motion::cptCv(double *cv)const noexcept->void { cv[0] = mv(); }
-	auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
+	auto Motion::cptCv(double *cv)const noexcept->void { cv[0] = mv() * (1 + pitch() * pitch()); }
+	auto Motion::cptCa(double *ca)const noexcept->void { 
+		Constraint::cptCa(ca); 
+		ca[0] += ma() * (1 + pitch() * pitch()); 
+	}
 	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
 	auto Motion::updP() noexcept->void { 
 		// mp_internal
@@ -116,7 +124,13 @@ namespace aris::dynamic{
 			auto period = 2 * PI / imp_->mp_factor_;
 			
 			// 计算需偏移的周期，如果有指定rotateRange(), 应该在 rotateRange() 附近的 period / 2 中，否则在上一次位置的 period / 2 //
-			auto mid = std::isfinite(rotateRange()) ? rotateRange() : *p() / period;
+			//auto mid = std::isfinite(rotateRange()) ? rotateRange() : *p() / period;
+			
+			// 在有pitch的情况下，不考虑 rotateRange()
+			// 在没有pitch的情况下，考虑 rotateRange()
+			// 在rotateRange()非有限值的情况下，使用当前所在的位置作为中间点
+			auto mid = pitch() ? s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis() - 3) / pitch()
+				: (std::isfinite(rotateRange()) ? rotateRange() : *p() / period);
 
 			auto t = std::trunc(mid);
 			auto mod = mid - t;
@@ -157,12 +171,25 @@ namespace aris::dynamic{
 		return &imp_->mf_; 
 	}
 	auto Motion::setF(const double *mf) noexcept->void { Constraint::imp_->cf_[0] = *mf - mfFrc(); }
-	auto Motion::setAxis(Size axis)->void {
+	auto Motion::setAxis(Size axis)noexcept->void {
+		if (axis > 5)THROW_FILE_LINE("invalid axis");
+		
 		imp_->component_axis_ = axis;
 		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 		const_cast<double*>(locCmI())[axis] = 1.0;
+		
+		if(axis > 2)
+			const_cast<double*>(locCmI())[axis - 3] = imp_->pitch_;
 	}
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
+	auto Motion::pitch()const noexcept->double {
+		return imp_->pitch_;
+	}
+	auto Motion::setPitch(double pitch)noexcept->void {
+		imp_->pitch_ = pitch;
+		if (axis() > 2)
+			const_cast<double*>(locCmI())[axis() - 3] = imp_->pitch_;
+	}
 	auto Motion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
 	auto Motion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
@@ -236,7 +263,6 @@ namespace aris::dynamic{
 	}
 	auto GeneralMotion::cptCv(double *cv)const noexcept->void { s_inv_tv(*mpm(), mvs(), cv); }
 	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-	
 	auto GeneralMotion::pSize()const noexcept->Size { 
 		switch (poseType()) {
 		case GeneralMotion::PoseType::EULER123:return 6;
@@ -804,6 +830,52 @@ namespace aris::dynamic{
 		s_tmf(pm, dm);
 	}
 	RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ) {}
+
+	auto ScrewJoint::locCmI() const noexcept->const double* {
+		return loc_cm_i_;
+	}
+	auto ScrewJoint::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		double pm_j_in_i[16];
+		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
+		
+		double theta = std::atan2(pm_j_in_i[4] - pm_j_in_i[1], pm_j_in_i[0] + pm_j_in_i[5]);
+
+		cp[0] = pm_j_in_i[3];
+		cp[1] = pm_j_in_i[7];
+		cp[2] = std::fmod(pm_j_in_i[11], pitch_) - pitch_ * std::atan2(pm_j_in_i[4] - pm_j_in_i[1], pm_j_in_i[0] + pm_j_in_i[5])/2/PI;
+
+		// 这里用i的z轴叉乘j的z轴，在i坐标系下，因此叉乘出来有如下结果:
+		cp[3] = -pm_j_in_i[6];
+		cp[4] = pm_j_in_i[2];
+	}
+	auto ScrewJoint::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		double pm[16], tm[36];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, tm);
+		double sm[36]{
+			1,0,0,0,0,0,
+			0,1,0,0,0,0,
+			0,0,1,0,0,0,
+			0,0,0,1,0,0,
+			0,0,0,0,1,0,
+			0,0,pitch_,0,0,1
+		};
+		s_mm(6, 6, 6, sm, tm, dm);
+	}
+	ScrewJoint::ScrewJoint(const std::string& name, Marker* makI, Marker* makJ, double pitch) : Joint(name, makI, makJ) {
+		double loc_cm_I[30]{
+			1,0,0,0,0,
+			0,1,0,0,0,
+			0,0,1,0,0,
+			0,0,0,1,0,
+			0,0,0,0,1,
+			0,0,-pitch,0,0
+		};
+
+		s_vc(30, loc_cm_I, loc_cm_i_);
+		pitch_ = pitch;
+	}
+
 
 	auto PrismaticJoint::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[30] {
