@@ -308,7 +308,7 @@ namespace aris::dynamic{
 		}
 		else if (dynamic_cast<ScrewJoint*>(&joint)) {
 			dim = 5;
-			pitch = -joint.locCmI()[27];
+			pitch = dynamic_cast<ScrewJoint*>(&joint)->pitch();
 		}
 		else if (dynamic_cast<PrismaticJoint*>(&joint)){
 			dim = 2;

@@ -179,7 +179,7 @@ namespace aris::dynamic{
 		const_cast<double*>(locCmI())[axis] = 1.0;
 		
 		if(axis > 2)
-			const_cast<double*>(locCmI())[axis - 3] = imp_->pitch_;
+			const_cast<double*>(locCmI())[axis - 3] = imp_->pitch_ / 2 / PI;
 	}
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
 	auto Motion::pitch()const noexcept->double {
@@ -188,7 +188,7 @@ namespace aris::dynamic{
 	auto Motion::setPitch(double pitch)noexcept->void {
 		imp_->pitch_ = pitch;
 		if (axis() > 2)
-			const_cast<double*>(locCmI())[axis() - 3] = imp_->pitch_;
+			const_cast<double*>(locCmI())[axis() - 3] = imp_->pitch_/ 2 / PI;
 	}
 	auto Motion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
 	auto Motion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
@@ -862,6 +862,12 @@ namespace aris::dynamic{
 		};
 		s_mm(6, 6, 6, sm, tm, dm);
 	}
+	auto ScrewJoint::pitch()const noexcept->double {
+		return pitch_;
+	}
+	auto ScrewJoint::setPitch(double pitch)noexcept->void {
+		pitch_ = pitch;
+	}
 	ScrewJoint::ScrewJoint(const std::string& name, Marker* makI, Marker* makJ, double pitch) : Joint(name, makI, makJ) {
 		double loc_cm_I[30]{
 			1,0,0,0,0,
@@ -869,7 +875,7 @@ namespace aris::dynamic{
 			0,0,1,0,0,
 			0,0,0,1,0,
 			0,0,0,0,1,
-			0,0,-pitch,0,0
+			0,0,-pitch/2/PI,0,0
 		};
 
 		s_vc(30, loc_cm_I, loc_cm_i_);
@@ -1080,6 +1086,11 @@ namespace aris::dynamic{
 			.inherit<aris::dynamic::Joint>()
 			;
 
+		aris::core::class_<ScrewJoint>("ScrewJoint")
+			.inherit<aris::dynamic::Joint>()
+			.prop("pitch", &ScrewJoint::setPitch, &ScrewJoint::pitch)
+			;
+
 		aris::core::class_<UniversalJoint>("UniversalJoint")
 			.inherit<aris::dynamic::Joint>()
 			;
@@ -1095,6 +1106,7 @@ namespace aris::dynamic{
 		aris::core::class_<Motion>("Motion")
 			.inherit<aris::dynamic::MotionBase>()
 			.prop("component", &Motion::setAxis, &Motion::axis)
+			.prop("pitch", &Motion::setPitch, &Motion::pitch)
 			.prop("rotate_range", &Motion::setRotateRange, &Motion::rotateRange)
 			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
 			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)

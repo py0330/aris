@@ -167,6 +167,8 @@ namespace aris::dynamic
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
 		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto pitch()const noexcept->double;
+		auto setPitch(double pitch)noexcept->void;
 
 		virtual ~ScrewJoint() = default;
 		explicit ScrewJoint(const std::string & name = "screw_joint", Marker * makI = nullptr, Marker * makJ = nullptr, double pitch = 0.0);
