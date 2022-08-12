@@ -86,23 +86,66 @@ int main(int argc, char *argv[]){
 
 	scara_param.a = 1.0;
 	scara_param.b = 1.0;
+	scara_param.pitch = 0.16;
 
 	auto &scara = aris::dynamic::createModelScara(scara_param);
 
-	double input[4]{ 0.2,-0.1,0.23,0.3 };
+	double input[4]{ 0.2,-0.1,0.23,0.3+2*aris::PI };
 	scara->setInputPos(input);
-	scara->forwardKinematics();
-	double pm[4];
-	scara->getOutputPos(pm);
-	aris::dynamic::dsp(1, 4, pm);
+	if(scara->forwardKinematics())
+		std::cout << "forward failed" << std::endl;
+
+	double ee_pe[4];
+	scara->getOutputPos(ee_pe);
+	aris::dynamic::dsp(1, 4, ee_pe);
+
+
+	input[3] -= 6 * aris::PI;
+
+	double part4_pe[6]{ 0.5,-1.9,3.8,1.28,0.0,0.0 };
+	scara->partPool()[4].setPe(part4_pe, "321");
+
+
+	std::cout << "-------------------------" << std::endl;
+	scara->setInputPos(input);
+	if (scara->forwardKinematics())
+		std::cout << "forward failed" << std::endl;
+	scara->getOutputPos(ee_pe);
+	aris::dynamic::dsp(1, 4, ee_pe);
+
+
+	double pe[6];
+	scara->jointPool()[3].makI()->getPe(pe, "321");
+	aris::dynamic::dsp(1, 6, pe);
+	scara->jointPool()[3].makJ()->getPe(pe, "321");
+	aris::dynamic::dsp(1, 6, pe);
+
 	
-	double output2[4]{ 1.9751,   0.2985,   0.2300, - 1.0708 };
+
+	double cp[5];
+	scara->jointPool()[3].cptCp(cp);
+	aris::dynamic::dsp(1, 5, cp);
+
+	scara->motionPool()[3].cptCp(cp);
+	aris::dynamic::dsp(1, 1, cp);
+
+
+	
+	double output2[4]{ 1.9750707431192676,   0.2985027474418893,   0.3976394372673613, - 1.2707963268361159 };
 	scara->setOutputPos(output2);
 	scara->inverseKinematics();
 	scara->getInputPos(input);
 
-	aris::dynamic::dsp(1, 4, input);
 
+
+	aris::dynamic::dsp(1, 4, input);
+	
+
+	scara->setOutputPos(ee_pe);
+	scara->inverseKinematics();
+	scara->getInputPos(input);
+
+	aris::dynamic::dsp(1, 4, input);
 
 	try
 	{
@@ -117,7 +160,7 @@ int main(int argc, char *argv[]){
 		double data[6];
 		cs.controller().ftSensorPool()[0].getFtData(data);
 
-		std::cout << aris::core::toXmlString(cs) << std::endl;
+		//std::cout << aris::core::toXmlString(cs) << std::endl;
 
 		cs.runCmdLine();
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");

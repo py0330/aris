@@ -25,6 +25,9 @@ namespace aris::dynamic{
 		double a{ 0.0 };
 		double b{ 0.0 };
 
+		bool has_pitch{ false };
+		double pitch{ 0.0 };
+
 		// TOOL 0, by default is 321 type
 		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string tool0_pe_type;
