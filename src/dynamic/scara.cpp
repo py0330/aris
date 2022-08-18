@@ -18,7 +18,7 @@
 #include "aris/dynamic/scara.hpp"
 
 namespace aris::dynamic{
-
+	// 不考虑 pitch //
 	auto scaraInverse(const double *param, const double *ee_xyza, int which_root, double *input)->int {
 		const double &a = param[0];
 		const double &b = param[1];
@@ -62,7 +62,8 @@ namespace aris::dynamic{
 
 					if (scaraInverse(dh, output, i, diff_q[solution_num]) == 0) {
 						diff_norm[solution_num] = 0;
-						for (int j = 0; j < ROOT_SIZE; ++j) {
+
+						for (auto j: { 0,1,3 }) {
 							diff_q[solution_num][j] -= model()->motionPool()[j].mpInternal();
 
 							// 如果是2 的话，忽略轴的范围，选择最近的可达解 //
@@ -71,6 +72,11 @@ namespace aris::dynamic{
 
 							diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
 						}
+
+						// 对3轴抵消4轴的pitch影响 //
+						diff_q[solution_num][2] -= model()->motionPool()[2].mpInternal() 
+							+ (model()->motionPool()[3].mpInternal() + diff_q[solution_num][3]) / 2 / PI
+							* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
 
 						++solution_num;
 					}
@@ -92,8 +98,9 @@ namespace aris::dynamic{
 				pe[2] = model()->motionPool()[2].mpInternal() + diff_q[real_solution][2];
 				model()->jointPool()[2].makI()->setPe(*model()->jointPool()[2].makJ(), pe, "123");
 
-				pe[2] = 0.0;
-				pe[5] = model()->motionPool()[3].mpInternal() + diff_q[real_solution][2];
+				pe[2] = (model()->motionPool()[3].mpInternal() + diff_q[real_solution][3]) / 2 / PI
+					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
+				pe[5] = model()->motionPool()[3].mpInternal() + diff_q[real_solution][3];
 				model()->jointPool()[3].makI()->setPe(*model()->jointPool()[3].makJ(), pe, "123");
 
 				for (auto& m : model()->motionPool()) m.updP();
@@ -164,7 +171,7 @@ namespace aris::dynamic{
 		auto &r1 = model->addRevoluteJoint(p1, model->ground(), joint1_position, joint1_axis);
 		auto &r2 = model->addRevoluteJoint(p2, p1, joint2_position, joint2_axis);
 		auto &j3 = model->addPrismaticJoint(p3, p2, joint3_position, joint3_axis);
-		auto &r4 = model->addRevoluteJoint(p4, p3, joint4_position, joint4_axis);
+		auto &r4 = model->addScrewJoint(p4, p3, joint4_position, joint4_axis, param.pitch);
 
 		// add actuation //
 		auto &m1 = model->addMotion(r1);
@@ -172,6 +179,7 @@ namespace aris::dynamic{
 		auto &m3 = model->addMotion(j3);
 		auto &m4 = model->addMotion(r4);
 
+		// 设置0位为打直的位置
 		m2.setMpOffset(-aris::PI / 2);
 
 		const double default_mot_frc[3]{ 0.0, 0.0, 0.0 };

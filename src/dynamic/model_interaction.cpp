@@ -93,7 +93,14 @@ namespace aris::dynamic{
 			s_inv_pm_dot_pm(makI_pm, pm_i_should_be, pm_j2i);
 			s_pm2ps(pm_j2i, ps_j2i);
 
-			cp[0] = ps_j2i[axis()] + pitch() * ps_j2i[axis() - 3];
+			if (pitch()) {
+				// 设若延轴向每转 a 弧度，转动所需做功为 a ，移动所需做功为 (pitch / 2/ PI)^2 * a
+				double k = pitch() / 2 / PI;
+				cp[0] = ps_j2i[axis() - 3] / (1+k*k)/k;
+			}
+			else {
+				cp[0] = ps_j2i[axis()];
+			}
 		}
 		else{
 			double pm_j_should_be[16];
@@ -172,8 +179,6 @@ namespace aris::dynamic{
 	}
 	auto Motion::setF(const double *mf) noexcept->void { Constraint::imp_->cf_[0] = *mf - mfFrc(); }
 	auto Motion::setAxis(Size axis)noexcept->void {
-		if (axis > 5)THROW_FILE_LINE("invalid axis");
-		
 		imp_->component_axis_ = axis;
 		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 		const_cast<double*>(locCmI())[axis] = 1.0;
@@ -838,11 +843,21 @@ namespace aris::dynamic{
 		double pm_j_in_i[16];
 		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
 		
-		double theta = std::atan2(pm_j_in_i[4] - pm_j_in_i[1], pm_j_in_i[0] + pm_j_in_i[5]);
+		auto pitch_compensation = pm_j_in_i[11];
+		if (pitch()) {
+			pitch_compensation -= pitch_ / 2 / PI * std::atan2(pm_j_in_i[4] - pm_j_in_i[1], pm_j_in_i[0] + pm_j_in_i[5]);
+			pitch_compensation = std::fmod(pitch_compensation, pitch_);
+			if (pitch_compensation > pitch_ / 2)
+				pitch_compensation -= pitch_;
+			else if(pitch_compensation < -pitch_ / 2)
+				pitch_compensation += pitch_;
+		}
+
+
 
 		cp[0] = pm_j_in_i[3];
 		cp[1] = pm_j_in_i[7];
-		cp[2] = std::fmod(pm_j_in_i[11], pitch_) - pitch_ * std::atan2(pm_j_in_i[4] - pm_j_in_i[1], pm_j_in_i[0] + pm_j_in_i[5])/2/PI;
+		cp[2] = pitch_compensation;
 
 		// 这里用i的z轴叉乘j的z轴，在i坐标系下，因此叉乘出来有如下结果:
 		cp[3] = -pm_j_in_i[6];
