@@ -182,6 +182,9 @@ namespace aris::dynamic{
 		// 设置0位为打直的位置
 		m2.setMpOffset(-aris::PI / 2);
 
+		// 考虑到可能存在多解，4轴改为选用当前的位置作为周期求解
+		m4.setRotateRange(std::numeric_limits<double>::infinity());
+
 		const double default_mot_frc[3]{ 0.0, 0.0, 0.0 };
 		m1.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[0].data() : default_mot_frc);
 		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);

@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
 
 	auto &scara = aris::dynamic::createModelScara(scara_param);
 
-	double input[4]{ 0.2,-0.1,0.23,0.3+2*aris::PI };
+	double input[4]{ 0.2,-0.1,0.23,0.3+4*aris::PI };
 	scara->setInputPos(input);
 	if(scara->forwardKinematics())
 		std::cout << "forward failed" << std::endl;
@@ -132,12 +132,12 @@ int main(int argc, char *argv[]){
 
 	
 	double output2[4]{ 1.9750707431192676,   0.2985027474418893,   0.3976394372673613, - 1.2707963268361159 };
+	
+	scara->getInputPos(input);
+	aris::dynamic::dsp(1, 4, input);
 	scara->setOutputPos(output2);
 	scara->inverseKinematics();
 	scara->getInputPos(input);
-
-
-
 	aris::dynamic::dsp(1, 4, input);
 	
 

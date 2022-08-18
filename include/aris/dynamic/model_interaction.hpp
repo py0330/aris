@@ -241,6 +241,8 @@ namespace aris::dynamic
 		auto virtual f()const noexcept->const double* override;
 		auto virtual setF(const double *mf) noexcept->void override;
 
+		// mp          = mp_internal / mp_offset - mp_offset
+		// mp_internal = (mp + mp_offset) * mp_factor
 		auto mp()const noexcept->double { return *p(); }
 		auto setMp(double mp) noexcept->void { setP(&mp); }
 		auto mv() const noexcept->double { return *v(); }
@@ -282,10 +284,17 @@ namespace aris::dynamic
 		auto frcCoe() const noexcept ->const double3&;
 		auto setFrcCoe(const double *frc_coe) noexcept->void;
 		auto frcZeroCheck()const noexcept ->double { return 1e-2; }
+		
+		// 位置偏移
 		auto mpOffset()const noexcept->double;
 		auto setMpOffset(double mp_offset)noexcept->void;
+		
+		// 位置系数，默认为1，此时单位是m 或 rad
 		auto mpFactor()const noexcept->double;
 		auto setMpFactor(double mp_factor)noexcept->void;
+		
+		// mp          = mp_internal / mp_offset - mp_offset
+		// mp_internal = (mp + mp_offset) * mp_factor
 		auto mpInternal()const noexcept->double;
 		auto setMpInternal(double mp_internal)noexcept->void;
 

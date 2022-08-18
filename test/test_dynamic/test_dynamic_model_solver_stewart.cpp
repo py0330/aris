@@ -19,9 +19,6 @@ void test_stewart_inverse_solver()
 
 	inv.kinPos();
 
-	for (int i = 0; i < 6; ++i)std::cout << m->motionPool()[i].mp() << "  ";
-	std::cout << std::endl;
-
 	//adams.saveAdams("C:\\Users\\py033\\Desktop\\test2.cmd");
 }
 

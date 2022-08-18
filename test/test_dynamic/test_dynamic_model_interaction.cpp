@@ -33,6 +33,8 @@ void test_constraint()
 	auto &u1 = model.jointPool().add<UniversalJoint>("u1", &mak_i, &mak_j);
 	auto &m1 = model.motionPool().add<Motion>("m1", &mak_i, &mak_j, 2);
 	auto &m2 = model.motionPool().add<Motion>("m2", &mak_i, &mak_j, 5);
+	auto& m3 = model.motionPool().add<Motion>("m3", &mak_i, &mak_j, 5);
+	m3.setPitch(0.16);
 	auto &g1 = model.generalMotionPool().add<GeneralMotion>("g1", &mak_i, &mak_j);
 	model.init();
 
@@ -347,10 +349,13 @@ void test_constraint()
 		if (!s_is_equal(m1.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
 	}
 
-	// test prismatic motion //
+	// test rotational motion //
 	{
 		m2.setMpFactor(aris::PI/180);
 		m2.setRotateRange(1.1);
+		m2.setMp(0.0);
+		m2.setMv(0.0);
+		m2.setMa(0.0);
 
 		const double relative_pe[6]{ 0,0,0,0,0,0.521 };
 		const double relative_vs[6]{ 0,0,0,0,0,0.689 };
@@ -428,6 +433,103 @@ void test_constraint()
 		mak_i.setPe(mak_j, rotate_pe, "123");
 		m2.updP();
 		if (!s_is_equal(m2.mp(), 100.9 * 180 / aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		
+		// check finite range
+		m2.setRotateRange(5.2);
+		m2.setMp(5.69 * 360);
+		rotate_pe[5] = 5.69 * 2 * aris::PI;
+		mak_i.setPe(mak_j, rotate_pe, "123");
+		m2.updP();
+		if (!s_is_equal(m2.mp(), 5.69 * 360, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+
+		m2.setMp(5.71 * aris::PI * 180);
+		rotate_pe[5] = 5.71 * 2 * aris::PI;
+		mak_i.setPe(mak_j, rotate_pe, "123");
+		m2.updP();
+		if (!s_is_equal(m2.mp(), 4.71 * 360, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+	}
+
+	// test screw motion //
+	{
+		m3.setPitch(0.16);
+		m3.setMpFactor(aris::PI / 180);
+		m3.setRotateRange(1.1);
+		m3.setMp(0.0);
+		m3.setMv(0.0);
+		m3.setMa(0.0);
+
+		double pitch_per_rad = 0.16 / 2 / aris::PI;
+
+		const double relative_pe[6]{ 0,0,pitch_per_rad*0.521,0,0,0.521 };
+		const double relative_vs[6]{ 0,0,pitch_per_rad*0.689,0,0,0.689 };
+		const double relative_as[6]{ 0,0,pitch_per_rad*0.123,0,0,0.123 };
+
+		double relative_pm[16];
+		s_pe2pm(relative_pe, relative_pm, "123");
+
+		double mak_i_pm[16];
+		s_pm_dot_pm(*mak_j.pm(), relative_pm, mak_i_pm);
+
+		double glb_pm_m[16];
+		s_pm_dot_inv_pm(mak_i_pm, *mak_i.prtPm(), glb_pm_m);
+
+		prt_m.setPm(glb_pm_m);
+		prt_m.setVs(mak_j, relative_vs);
+		prt_m.setAs(mak_j, relative_as);
+
+		const double glb_cmI[]{ 0.0000000000000000,
+			0.0000000000000000,
+			0.0000000000000000,
+			0.3079933521941341,
+			0.9160761481654764,
+			0.2567967791202347 };
+		const double glb_cmJ[]{ -0.0000000000000000,
+			-0.0000000000000000,
+			-0.0000000000000000,
+			-0.3079933521941341,
+			-0.9160761481654764,
+			-0.2567967791202347 };
+		const double prt_cmI[]{ 0.0000000000000000,
+			0.0000000000000000,
+			0.0000000000000000,
+			0.0004168476687283,
+			-0.9836665218650195,
+			0.1800000000000003 };
+		const double prt_cmJ[]{ -0.0000000000000000,
+			-0.0000000000000000,
+			-0.0000000000000000,
+			-0.9595498045177748,
+			0.1376401563857811,
+			-0.2456000000000001 };
+		const double cp[6]{ -0.521,0,0,0,0,0 };
+		const double ca[]{ 0 };
+
+
+		double result1[42], result2[48];
+
+
+		m3.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, m3.dim(), result1, 5, glb_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, glb_cmJ, m3.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
+
+		aris::dynamic::dsp(6, m3.dim(), result1, 5);
+
+		m3.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, m3.dim(), result1, 6, prt_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, prt_cmJ, m3.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+
+		m3.cptCa(result1);
+		if (!s_is_equal(m3.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+
+		m3.cptCp(result1);
+		if (!s_is_equal(m3.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+
+		m3.updP();
+		if (!s_is_equal(m3.mp(), 0.521 * 180 / aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+
+		m3.updV();
+		if (!s_is_equal(m3.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+
+		m3.updA();
+		if (!s_is_equal(m3.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
 	}
 
 	// test general motion //

@@ -121,42 +121,42 @@ namespace aris::dynamic{
 	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
 	auto Motion::updP() noexcept->void { 
 		// mp_internal
-		auto mp_internal = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis());
+		double mp_internal;
+		if (2 < axis() && axis() < 6 && pitch()) {
+			// screw joint //
+			// 根据伸缩量，计算所需转动角度 //
+			mp_internal = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis() - 3) / pitch() * 2 * aris::PI;
+		}
+		else if (2 < axis() && axis() < 6) {
+			auto period = 2 * aris::PI;
 
-		// mp
-		auto mp = mp_internal / imp_->mp_factor_ - imp_->mp_offset_;
-		
-		if (2 < axis() && axis() < 6) {
-			// 转动一圈所对应的周期
-			auto period = 2 * PI / imp_->mp_factor_;
-			
-			// 计算需偏移的周期，如果有指定rotateRange(), 应该在 rotateRange() 附近的 period / 2 中，否则在上一次位置的 period / 2 //
-			//auto mid = std::isfinite(rotateRange()) ? rotateRange() : *p() / period;
-			
-			// 在有pitch的情况下，不考虑 rotateRange()
-			// 在没有pitch的情况下，考虑 rotateRange()
-			// 在rotateRange()非有限值的情况下，使用当前所在的位置作为中间点
-			auto mid = pitch() ? s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis() - 3) / pitch()
-				: (std::isfinite(rotateRange()) ? rotateRange() : *p() / period);
+			// 计算实际的内置角度 //
+			mp_internal = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis());
 
+			// 计算角度所对应的中点，这里取mpInternal
+			auto mid = std::isfinite(rotateRange()) ? rotateRange() + mpFactor() * mpOffset()/period : mpInternal() / period;
+			
+			// 对mid取整、取余 //
 			auto t = std::trunc(mid);
 			auto mod = mid - t;
 
 			// 将 mp 置于【-周期，+周期】 内
-			mp = std::fmod(mp, period);
+			mp_internal = std::fmod(mp_internal, period);
 
 			// 将 mp 置于【mod-半个周期，mod+半个周期】 内
-			while (mp > (mod + 0.5) * period) mp -= period;
-			while (mp < (mod - 0.5) * period) mp += period;
+			while (mp_internal > (mod + 0.5) * period) mp_internal -= period;
+			while (mp_internal < (mod - 0.5) * period) mp_internal += period;
 
 			// 叠加需偏移的整数个周期
-			mp += t * period;
-			
-			setMp(mp);
+			mp_internal += t * period;
 		}
 		else {
-			setMp(mp);
+			mp_internal = s_sov_axis_distance(*makJ()->pm(), *makI()->pm(), axis());
 		}
+
+		// mp
+		auto mp = mp_internal / imp_->mp_factor_ - imp_->mp_offset_;
+		setMp(mp);
 	}
 	auto Motion::setP(const double *mp) noexcept->void { imp_->mp_ = *mp;/*imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_;*/ }
 	auto Motion::v() const noexcept->const double* { return &imp_->mv_; }
