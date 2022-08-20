@@ -459,6 +459,10 @@ namespace aris::dynamic{
 	}
 
 	ARIS_REGISTRATION{
+		aris::core::class_<ScaraForwardKinematicSolver>("ScaraForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
+			;
+
 		aris::core::class_<ScaraInverseKinematicSolver>("ScaraInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			.prop("which_root", &ScaraInverseKinematicSolver::setWhichRoot, &ScaraInverseKinematicSolver::whichRoot)
