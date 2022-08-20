@@ -35,7 +35,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::core::PointerArray<SimResult, Element>> sim_result_pool_;
 		std::unique_ptr<aris::core::PointerArray<Calibrator, Element>> calibrator_pool_;
 
-		Size actuator_pos_size_{ 0 }, actuator_dim_{ 0 }, end_effector_pos_size_{ 0 }, end_effector_dim_{ 0 };
+		Size end_effector_pos_size_{ 0 }, end_effector_dim_{ 0 };
 
 		Part* ground_{ nullptr };
 	};
@@ -127,12 +127,6 @@ namespace aris::dynamic{
 			calibratorPool()[i].id_ = i;
 		}
 
-		imp_->actuator_pos_size_ = 0;
-		imp_->actuator_dim_ = 0;
-		for (auto &m : motionPool()) {
-			imp_->actuator_pos_size_ += m.pSize();
-			imp_->actuator_dim_ += m.dim();
-		}
 		imp_->end_effector_pos_size_ = 0;
 		imp_->end_effector_dim_ = 0;
 		for (auto &m : generalMotionPool()) {
@@ -163,18 +157,34 @@ namespace aris::dynamic{
 	auto Model::forwardKinematicsAcc()noexcept->int { return solverPool()[1].dynAccAndFce(); }
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
-	auto Model::inputPosSize()const noexcept->Size { return imp_->actuator_pos_size_; }
-	auto Model::inputVelSize()const noexcept->Size { return imp_->actuator_dim_; }
-	auto Model::inputAccSize()const noexcept->Size { return imp_->actuator_dim_; }
-	auto Model::inputFceSize()const noexcept->Size { return imp_->actuator_dim_; }
-	auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
-	auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
-	auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
-	auto Model::getInputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getV(mv + pos); }
-	auto Model::setInputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setA(ma + pos); }
-	auto Model::getInputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getA(ma + pos); }
-	auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
-	auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
+	auto Model::inputPosSize()const noexcept->Size { return motionPool().size(); }
+	auto Model::inputVelSize()const noexcept->Size { return motionPool().size(); }
+	auto Model::inputAccSize()const noexcept->Size { return motionPool().size(); }
+	auto Model::inputFceSize()const noexcept->Size { return motionPool().size(); }
+
+#define ARIS_DATA_DEFINATION(TYPE, type, VARIABLE, setVARIABLE)                         \
+		auto Model::type##At(Size idx)const noexcept->double {                          \
+			return this->motionPool()[idx].VARIABLE();                                  \
+		}                                                                               \
+		auto Model::set##TYPE##At(double VARIABLE, Size idx)noexcept->void {            \
+			this->motionPool()[idx].setVARIABLE(&VARIABLE);                             \
+		}                                                                               \
+
+		ARIS_DATA_DEFINATION(InputPos, inputPos, mp, setP)
+		ARIS_DATA_DEFINATION(InputVel, inputVel, mv, setV)
+		ARIS_DATA_DEFINATION(InputAcc, inputAcc, ma, setA)
+		ARIS_DATA_DEFINATION(InputFce, inputFce, mf, setF)
+#undef ARIS_DATA_DEFINATION
+
+
+	//auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
+	//auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
+	//auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
+	//auto Model::getInputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getV(mv + pos); }
+	//auto Model::setInputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setA(ma + pos); }
+	//auto Model::getInputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getA(ma + pos); }
+	//auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
+	//auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
 	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
 	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }
@@ -398,6 +408,42 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::core::PointerArray<ModelBase>> models_;
 		std::vector<aris::dynamic::Marker*> tools_, wobjs_;
 	};
+
+#define ARIS_INPUTDATA_DEFINATION(TYPE, VARIABLE)                                                                       \
+		auto MultiModel::input##TYPE##Size()const noexcept->aris::Size {                                                \
+			aris::Size size = 0;                                                                                        \
+			for (auto& m : subModels())size += m.input##TYPE##Size();                                                   \
+			return size;                                                                                                \
+		}                                                                                                               \
+		auto MultiModel::getInput##TYPE(double* mp)const noexcept->void {                                               \
+			for (aris::Size k = 0, i = 0; i < subModels().size(); k += subModels()[i].input##TYPE##Size(), ++i)         \
+				subModels()[i].getInput##TYPE(mp + k);                                                                  \
+		}                                                                                                               \
+		auto MultiModel::setInput##TYPE(const double* mp)noexcept->void {                                               \
+			for (aris::Size k = 0, i = 0; i < subModels().size(); k += subModels()[i].input##TYPE##Size(), ++i)         \
+				subModels()[i].setInput##TYPE(mp + k);                                                                  \
+		}                                                                                                               \
+		auto MultiModel::input##TYPE##At(Size idx)const noexcept->double{                                               \
+			for (aris::Size k = 0, i = 0; i < subModels().size(); k += subModels()[i].input##TYPE##Size(), ++i)         \
+				if(k + subModels()[i].input##TYPE##Size() > idx){                                                       \
+					return subModels()[i].input##TYPE##At(idx - k);                                                     \
+				};                                                                                                      \
+			return 0.0;                                                                                                 \
+		}                                                                                                               \
+		auto MultiModel::setInput##TYPE##At(double VARIABLE, Size idx)noexcept->void {                                  \
+		    for (aris::Size k = 0, i = 0; i < subModels().size(); k += subModels()[i].input##TYPE##Size(), ++i)         \
+				if(k + subModels()[i].input##TYPE##Size() > idx){                                                       \
+					return subModels()[i].setInput##TYPE##At(VARIABLE,idx - k);                                         \
+				};                                                                                                      \
+		}                                                                                                                
+
+		ARIS_INPUTDATA_DEFINATION(Pos, mp)
+		ARIS_INPUTDATA_DEFINATION(Vel, mv)
+		ARIS_INPUTDATA_DEFINATION(Acc, ma)
+		ARIS_INPUTDATA_DEFINATION(Fce, mf)
+#undef ARIS_INPUTDATA_DEFINATION
+
+
 	auto MultiModel::resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void {
 		imp_->models_.reset(pool);
 	}

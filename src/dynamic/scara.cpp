@@ -72,7 +72,6 @@ namespace aris::dynamic{
 		}
 		ScaraForwardKinematicSolver() = default;
 	};
-
 	class ScaraInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
 	public:
 		auto virtual kinPos()->int override {
@@ -298,7 +297,7 @@ namespace aris::dynamic{
 				double diff_norm[ROOT_NUM];
 
 				for (int i = 0; i < ROOT_NUM; ++i) {
-					double input[4], output[4];
+					double output[4];
 					if (planarScaraInverse(dh, output, i, diff_q[solution_num])) {
 						diff_norm[solution_num] = 0;
 						for (int j = 0; j < ROOT_SIZE; ++j) {

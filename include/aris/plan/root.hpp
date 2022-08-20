@@ -51,6 +51,9 @@ namespace aris::plan{
 			NOT_RUN_COLLECT_FUNCTION = 0x01ULL << 4,
 		};
 		enum MotorOption : std::uint64_t{
+			UPDATE_MODEL_POS_FROM_CONTROLLER = 0x01ULL << 11,
+			UPDATE_MODEL_VEL_FROM_CONTROLLER = 0x01ULL << 12,
+			
 			USE_TARGET_POS = 0x01ULL << 16,
 			USE_TARGET_VEL = 0x01ULL << 17,
 			USE_TARGET_TOQ = 0x01ULL << 18,
@@ -698,6 +701,34 @@ namespace aris::plan{
 		explicit MoveSeries(const std::string &name = "move_series");
 		ARIS_DEFINE_BIG_FOUR(MoveSeries);
 	};
+
+	auto inline createDefaultPlanRoot()->std::unique_ptr<aris::plan::PlanRoot> {
+		auto root = std::make_unique<PlanRoot>();
+
+		root->planPool().add<aris::plan::Enable>();
+		root->planPool().add<aris::plan::Disable>();
+		root->planPool().add<aris::plan::Home>();
+		root->planPool().add<aris::plan::Mode>();
+		root->planPool().add<aris::plan::Show>();
+		root->planPool().add<aris::plan::Sleep>();
+		root->planPool().add<aris::plan::Clear>();
+		root->planPool().add<aris::plan::Recover>();
+		auto& rs = root->planPool().add<aris::plan::Reset>();
+		//rs.command().findParam("pos")->setDefaultValue("{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}");
+
+		auto& mvaj = root->planPool().add<aris::plan::MoveAbsJ>();
+		//mvaj.command().findParam("vel")->setDefaultValue("0.1");
+
+		root->planPool().add<aris::plan::MoveL>();
+		root->planPool().add<aris::plan::MoveJ>();
+
+		root->planPool().add<aris::plan::GetXml>();
+		root->planPool().add<aris::plan::SetXml>();
+		root->planPool().add<aris::plan::Start>();
+		root->planPool().add<aris::plan::Stop>();
+
+		return root;
+	}
 }
 
 #endif

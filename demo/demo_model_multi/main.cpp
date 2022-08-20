@@ -310,16 +310,16 @@ int main(){
 	model.wobjs().push_back(model.findMarker("ExAxisModel.ground.wobj1"));
 	
 
-	double input[7];
+	double input[13];
 	model.getInputPos(input);
-	aris::dynamic::dsp(1, 7, input);
+	aris::dynamic::dsp(1, 13, input);
 
-	double output[7]{0.0,0.28,0,0.63,0,aris::PI/2,0};
+	double output[13]{0.0,0.28,0,0.63,0,aris::PI/2,0,0.28,0,0.63,0,aris::PI / 2,0 };
 	model.setOutputPos(output);
 	model.inverseKinematics();
 	//double input[6];
 	model.getInputPos(input);
-	aris::dynamic::dsp(1, 7, input);
+	aris::dynamic::dsp(1, 13, input);
 
 
 	// 构造mvl ，调试一下

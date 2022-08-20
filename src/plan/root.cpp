@@ -795,9 +795,21 @@ namespace aris::plan{
 
 	auto Show::prepareNrt()->void{	for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; }
 	auto Show::executeRT()->int{
-		master()->mout() << "pos: ";
+		double ee[6];
+		
+		model()->getOutputPos(ee);
+
+		master()->mout() << "controller pos: ";
 		for (auto &m : controller()->motorPool()){
 			master()->mout() << std::setprecision(15) << m.actualPos() << "   ";
+		}
+		master()->mout() << "\nmodel pos     : ";
+		for (int i = 0; i < model()->inputPosSize();++i) {
+			master()->mout() << std::setprecision(15) << model()->inputPosAt(i) << "   ";
+		}
+		master()->mout() << "\nmodel ee      : ";
+		for (int i = 0; i < model()->outputPosSize(); ++i) {
+			master()->mout() << std::setprecision(15) << ee[i] << "   ";
 		}
 		master()->mout() << std::endl;
 		return 0;
@@ -839,6 +851,8 @@ namespace aris::plan{
 				total_count = std::max(total_count, t_count);
 			}
 		}
+
+		model()->forwardKinematics();
 
 		return static_cast<int>(total_count - count());
 	}
@@ -946,7 +960,7 @@ namespace aris::plan{
 				else if (acc_mat.size() == model()->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i)mvj_param.joint_acc[i] *= controller()->motorPool()[i].maxAcc();
+				for (int i = 0; i < controller()->motorPool().size(); ++i)mvj_param.joint_acc[i] *= controller()->motorPool()[i].maxAcc();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
@@ -962,7 +976,7 @@ namespace aris::plan{
 				else if (vel_mat.size() == model()->motionPool().size()) std::copy(vel_mat.begin(), vel_mat.end(), mvj_param.joint_vel.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i)mvj_param.joint_vel[i] *= controller()->motorPool()[i].maxVel();
+				for (int i = 0; i < controller()->motorPool().size(); ++i)mvj_param.joint_vel[i] *= controller()->motorPool()[i].maxVel();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
@@ -978,7 +992,7 @@ namespace aris::plan{
 				else if (dec_mat.size() == model()->motionPool().size()) std::copy(dec_mat.begin(), dec_mat.end(), mvj_param.joint_dec.begin());
 				else THROW_FILE_LINE("");
 
-				for (int i = 0; i < 6; ++i) mvj_param.joint_dec[i] *= controller()->motorPool()[i].maxAcc();
+				for (int i = 0; i < controller()->motorPool().size(); ++i) mvj_param.joint_dec[i] *= controller()->motorPool()[i].maxAcc();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(model()->motionPool().size(), c->motorPool().size()); ++i)
@@ -988,6 +1002,8 @@ namespace aris::plan{
 		}
 
 		this->param() = mvj_param;
+
+		for (auto& option : motorOptions())option |= aris::plan::Plan::USE_TARGET_POS | aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
@@ -999,17 +1015,19 @@ namespace aris::plan{
 		double p, v, a;
 		static Size max_total_count;
 		if (count() == 1){
-			auto gm = dynamic_cast<aris::dynamic::GeneralMotion*>(&model()->generalMotionPool().at(0));
+			// begin pos //
+			model()->getInputPos(mvj_param->joint_pos_begin.data());
 			
 			// inverse kinematic //
-			double end_pm[16];
-			aris::dynamic::s_pq2pm(mvj_param->ee_pq.data(), end_pm);
-			gm->setMpm(end_pm);
+			auto& gm = model()->generalMotionPool().at(0);
+			double end_pe321[6]{0.0};
+			aris::dynamic::s_pq2pe(mvj_param->ee_pq.data(), end_pe321,"321");
+			
+			gm.setP(end_pe321);
 			if (model()->solverPool().at(0).kinPos())return -1;
 
-			// init joint_pos //
+			// compute max count //
 			for (Size i = 0; i < std::min(controller()->motorPool().size(), model()->motionPool().size()); ++i){
-				mvj_param->joint_pos_begin[i] = controller()->motorPool()[i].targetPos();
 				mvj_param->joint_pos_end[i] = *model()->motionPool()[i].p();
 				aris::plan::moveAbsolute(static_cast<double>(count()), mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i]
 					, mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000
@@ -1025,7 +1043,7 @@ namespace aris::plan{
 				mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000,
 				p, v, a, mvj_param->total_count[i]);
 
-			controller()->motorPool()[i].setTargetPos(p);
+			model()->setInputPosAt(p, i);
 		}
 
 		return max_total_count == 0 ? 0 : static_cast<int>(max_total_count - count());
@@ -1103,12 +1121,15 @@ namespace aris::plan{
 		double p, v, a;
 		aris::Size pos_total_count, ori_total_count;
 		if (count() == 1){
-			auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+			auto &gm = model()->generalMotionPool().at(0);
+			double begin_pe321[6]{ 0.0 };
+			gm.updP();
+			gm.getP(begin_pe321);
+			aris::dynamic::s_pe2pm(begin_pe321, begin_pm);
+
 
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvl_param->ee_pq.data(), end_pm);
-			gm.updP();
-			gm.getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 
 			// relative_pa //
@@ -1138,10 +1159,12 @@ namespace aris::plan{
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
-		auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(model()->generalMotionPool().at(0));
+		double target_pe321[6]{0.0};
+		aris::dynamic::s_pm2pe(pm2, target_pe321, "321");
+		auto &gm = model()->generalMotionPool().at(0);
+		gm.setP(target_pe321);
 
 		// 反解计算电机位置 //
-		gm.setMpm(pm2);
 		if (model()->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
