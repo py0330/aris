@@ -45,6 +45,34 @@ namespace aris::dynamic{
 
 		return 0;
 	}
+	class ScaraForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
+	public:
+		auto virtual kinPos()->int override {
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+			
+			// link1~4 //
+			double pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+			pe[5] = model()->motionPool()[0].mpInternal();
+			model()->jointPool()[0].makI()->setPe(*model()->jointPool()[0].makJ(), pe, "123");
+
+			pe[5] = model()->motionPool()[1].mpInternal();
+			model()->jointPool()[1].makI()->setPe(*model()->jointPool()[1].makJ(), pe, "123");
+
+			pe[5] = 0.0;
+			pe[2] = model()->motionPool()[2].mpInternal();
+			model()->jointPool()[2].makI()->setPe(*model()->jointPool()[2].makJ(), pe, "123");
+
+			pe[2] = model()->motionPool()[3].mpInternal() / 2 / PI
+				* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
+			pe[5] = model()->motionPool()[3].mpInternal();
+			model()->jointPool()[3].makI()->setPe(*model()->jointPool()[3].makJ(), pe, "123");
+
+			for (auto& m : model()->generalMotionPool()) m.updP();
+			return 0;
+		}
+		ScaraForwardKinematicSolver() = default;
+	};
+
 	class ScaraInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
 	public:
 		auto virtual kinPos()->int override {
@@ -124,7 +152,8 @@ namespace aris::dynamic{
 				pe[2] = input[2];
 				model()->jointPool()[2].makI()->setPe(*model()->jointPool()[2].makJ(), pe, "123");
 
-				pe[2] = 0.0;
+				pe[2] = input[3] / 2 / PI
+					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
 				pe[5] = input[3];
 				model()->jointPool()[3].makI()->setPe(*model()->jointPool()[3].makJ(), pe, "123");
 
@@ -219,7 +248,7 @@ namespace aris::dynamic{
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::ScaraInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<aris::dynamic::ForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::ScaraForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 

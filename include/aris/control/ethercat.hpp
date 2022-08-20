@@ -6,8 +6,7 @@
 #include <aris_lib_export.h>
 #include <aris/control/controller_motion.hpp>
 
-namespace aris::control
-{
+namespace aris::control{
 	class ARIS_API PdoEntry:public aris::core::NamedObject{
 	public:
 		auto ecHandle()->std::any&;
