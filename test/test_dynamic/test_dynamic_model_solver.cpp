@@ -87,7 +87,7 @@ const char xml_file_ur5[] =
 "        <Motion name=\"motion_5\" active=\"true\" prt_m=\"L6\" prt_n=\"L5\" mak_i=\"joint_5_i\" mak_j=\"joint_5_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
 "    </MotionPoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee\" active=\"false\" pose_type=\"POSE_MATRIX\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
 "    </GeneralMotionPoolElement>"
 "	 <ForcePoolElement name=\"force_pool\">"
 "		 <SingleComponentForce name=\"F1\" active=\"true\" prt_m=\"L1\" prt_n=\"ground\" mak_i=\"joint_0_i\" mak_j=\"joint_0_j\" component=\"5\"/>"
@@ -275,7 +275,7 @@ const char xml_file_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee_mot\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -522,8 +522,8 @@ const char xml_file_ur5_on_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"        <GeneralMotion name=\"ee_mot\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee_mot\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -792,9 +792,9 @@ const char xml_file_multi[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee_mot0\" active=\"true\" is_end_effector=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"		     <GeneralMotion name=\"ee_mot1\" active=\"true\" is_end_effector=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
-"        <GeneralMotion name=\"ee_mot2\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot0\" pose_type=\"POSE_MATRIX\" active=\"true\" is_end_effector=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"		     <GeneralMotion name=\"ee_mot1\" pose_type=\"POSE_MATRIX\" active=\"true\" is_end_effector=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot2\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -1528,6 +1528,7 @@ void test_3R(){
 
 	// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 	auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
+	end_effector.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -1640,18 +1641,12 @@ void test_spatial_3R() {
 
 	const double input_p[3]{ -0.0648537067263432, -0.4611742608347527,0.5260279675610960 };
 	const double input_v[3]{ 0.2647720948695498, -0.5918279267633222,   0.6270558318937725 };
-	//const double input_v[3]{ 0, -0,   0 };
 	const double input_a[3]{ 0.8080984807847047, -0.7798913328042270,   0.1717928520195222 };
-	//const double input_a[3]{ 0.12583793824850, - 0.20983915520481,   0.68529017636600 };
 	const double input_mf[3]{ 2.38785341840188,   11.67748642234510,   11.88566035434441 };
 	const double output_mp[3]{ 1.44289773536124,   0.95831993644642, - 0.06223788216391 };
 	const double output_mv[3]{ 0.52771694098338, - 0.21125096928605,   0.26852624155161 };
-	//const double output_mv[3]{ 0, -0,   0 };
 	const double output_ma[3]{ 0.58072210209051, - 1.28967595464846,   0.74033932202756 };
-	//const double output_ma[3]{ 0, - 0,   0 };
-
 	const double output_mf[3]{ 7.14145694781323,   11.88566035434453,   2.48646973518439 };
-	//const double output_mf[3]{ 8.70770033236996,   26.64183070368489,   0.35315337792617 };
 
 	const double error[8]{ 1e-9, 1e-9, 1e-8, 1e-8, 1e-9, 1e-9, 1e-8, 1e-8 };
 
@@ -1943,6 +1938,7 @@ void bench_3R()
 
 		// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 		auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
+		end_effector.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
 		////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 

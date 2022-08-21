@@ -3,9 +3,12 @@
 #include <aris/plan/plan.hpp>
 
 #include "test_plan_function.h"
+#include "test_plan_path.h"
 
 int main(int argc, char *argv[])
 {
+	test_path();
+	
 	//test_function();
 
 

@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
-	//std::cout << aris::core::toXmlString(cs) << std::endl;
+	std::cout << aris::core::toXmlString(cs) << std::endl;
 
 	
 
@@ -81,8 +81,6 @@ int main(int argc, char *argv[]){
 	auto str = aris::core::toXmlString(cs);
 
 	aris::core::fromXmlString(cs,str);
-
-
 
 	try
 	{
@@ -97,7 +95,7 @@ int main(int argc, char *argv[]){
 		double data[6];
 		cs.controller().ftSensorPool()[0].getFtData(data);
 
-		std::cout << aris::core::toXmlString(cs) << std::endl;
+		//std::cout << aris::core::toXmlString(cs) << std::endl;
 
 
 		cs.executeCmd("sl --count=3000", nullptr, 0);

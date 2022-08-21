@@ -160,6 +160,24 @@ namespace aris::dynamic
 		explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 		ARIS_DEFINE_BIG_FOUR(RevoluteJoint);
 	};
+	class ARIS_API ScrewJoint final :public Joint{
+	public:
+		static auto Dim()->Size { return 5; }
+		auto virtual dim() const noexcept->Size override { return Dim(); }
+		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto pitch()const noexcept->double;
+		auto setPitch(double pitch)noexcept->void;
+
+		virtual ~ScrewJoint() = default;
+		explicit ScrewJoint(const std::string & name = "screw_joint", Marker * makI = nullptr, Marker * makJ = nullptr, double pitch = 0.0);
+		ARIS_DEFINE_BIG_FOUR(ScrewJoint);
+	private:
+		double loc_cm_i_[30];
+		double pitch_{ 0.0 };
+	};
+
 	class ARIS_API PrismaticJoint final :public Joint{
 	public:
 		static auto Dim()->Size { return 5; }
@@ -223,6 +241,8 @@ namespace aris::dynamic
 		auto virtual f()const noexcept->const double* override;
 		auto virtual setF(const double *mf) noexcept->void override;
 
+		// mp          = mp_internal / mp_offset - mp_offset
+		// mp_internal = (mp + mp_offset) * mp_factor
 		auto mp()const noexcept->double { return *p(); }
 		auto setMp(double mp) noexcept->void { setP(&mp); }
 		auto mv() const noexcept->double { return *v(); }
@@ -235,8 +255,15 @@ namespace aris::dynamic
 		// 驱动轴，可以为0~5
 		// 0-2： 为 x-z 方向的平移
 		// 3-5： 为 x-z 方向的转动
-		auto setAxis(Size axis)->void;
+		auto setAxis(Size axis)noexcept->void;
 		auto axis()const noexcept->Size;
+
+		// 导程
+		// 表示每转一圈，行进距离，单位是 m/round
+		// 只有在axis() 为 3-5时才有用
+		// 当pitch不为0时，不会考虑
+		auto pitch()const noexcept->double;
+		auto setPitch(double pitch)noexcept->void;
 
 		// 仅仅影响  updP() 函数计算转动轴的转角 mp 所处的象限   【注意是mp，不是mpInternal】
 		//
@@ -257,10 +284,17 @@ namespace aris::dynamic
 		auto frcCoe() const noexcept ->const double3&;
 		auto setFrcCoe(const double *frc_coe) noexcept->void;
 		auto frcZeroCheck()const noexcept ->double { return 1e-2; }
+		
+		// 位置偏移
 		auto mpOffset()const noexcept->double;
 		auto setMpOffset(double mp_offset)noexcept->void;
+		
+		// 位置系数，默认为1，此时单位是m 或 rad
 		auto mpFactor()const noexcept->double;
 		auto setMpFactor(double mp_factor)noexcept->void;
+		
+		// mp          = mp_internal / mp_offset - mp_offset
+		// mp_internal = (mp + mp_offset) * mp_factor
 		auto mpInternal()const noexcept->double;
 		auto setMpInternal(double mp_internal)noexcept->void;
 

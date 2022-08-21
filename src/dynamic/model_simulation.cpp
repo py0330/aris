@@ -1148,8 +1148,7 @@ namespace aris::dynamic{
 
 		file.close();
 	}
-	auto AdamsSimulator::saveAdams(std::ofstream &file, SimResult &result, Size pos)->void
-	{
+	auto AdamsSimulator::saveAdams(std::ofstream &file, SimResult &result, Size pos)->void{
 		// 名字 //
 		auto model_name = std::string("model");
 		auto geoid = 0;
@@ -1222,10 +1221,8 @@ namespace aris::dynamic{
 			<< "    y_component_gravity = " << model()->environment().gravity()[1] << "  &\r\n"
 			<< "    z_component_gravity = " << model()->environment().gravity()[2] << "\r\n"
 			<< "!\r\n";
-		for (auto &part : model()->partPool())
-		{
-			if (&part == &model()->ground())
-			{
+		for (auto &part : model()->partPool()){
+			if (&part == &model()->ground()){
 				file << "!----------------------------------- ground -----------------------------------!\r\n"
 					<< "!\r\n"
 					<< "!\r\n"
@@ -1240,8 +1237,7 @@ namespace aris::dynamic{
 					<< "! ****** Markers for current part ******\r\n"
 					<< "!\r\n";
 			}
-			else
-			{
+			else{
 				double pe[6];
 				s_pm2pe(*part.pm(), pe, "313");
 				core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
@@ -1324,8 +1320,7 @@ namespace aris::dynamic{
 			}
 
 			//导入marker
-			for (auto &marker : part.markerPool())
-			{
+			for (auto &marker : part.markerPool()){
 				double pe[6];
 
 				s_pm2pe(*marker.prtPm(), pe, "313");
@@ -1339,24 +1334,39 @@ namespace aris::dynamic{
 					<< "!\r\n";
 			}
 		}
-		for (auto &joint : model()->jointPool())
-		{
+		for (auto &joint : model()->jointPool()){
+#define ARIS_ADAMS_EXPORT_JOINT(TYPE)                                                                                                             \
+			file << "constraint create joint " << TYPE << "  &\r\n"                                                                               \
+				<< "    joint_name = ." << model_name << "." << joint.name() << "  &\r\n"                                                         \
+				<< "    adams_id = " << adamsID(joint) << "  &\r\n"                                                                               \
+				<< "    i_marker_name = ." << model_name << "." << joint.makI()->fatherPart().name() << "." << joint.makI()->name() << "  &\r\n"  \
+				<< "    j_marker_name = ." << model_name << "." << joint.makJ()->fatherPart().name() << "." << joint.makJ()->name() << "  \r\n"   \
+				<< "!\r\n"
 			std::string type;
-			if (dynamic_cast<RevoluteJoint*>(&joint))type = "revolute";
-			else if (dynamic_cast<PrismaticJoint*>(&joint))type = "translational";
-			else if (dynamic_cast<UniversalJoint*>(&joint))type = "universal";
-			else if (dynamic_cast<SphericalJoint*>(&joint))type = "spherical";
-			else THROW_FILE_LINE("unrecognized joint type");
+			if (dynamic_cast<RevoluteJoint*>(&joint))ARIS_ADAMS_EXPORT_JOINT("revolute");
+			else if (dynamic_cast<PrismaticJoint*>(&joint))ARIS_ADAMS_EXPORT_JOINT("translational");
+			else if (dynamic_cast<UniversalJoint*>(&joint))ARIS_ADAMS_EXPORT_JOINT("universal");
+			else if (dynamic_cast<SphericalJoint*>(&joint))ARIS_ADAMS_EXPORT_JOINT("spherical");
+			else if (dynamic_cast<ScrewJoint*>(&joint)) {
+				file << "constraint create joint " << "screw" << "  &\r\n"                                                                            \
+					<< "    joint_name = ." << model_name << "." << joint.name() << "  &\r\n"                                                         \
+					<< "    adams_id = " << adamsID(joint) << "  &\r\n"                                                                               \
+					<< "    i_marker_name = ." << model_name << "." << joint.makI()->fatherPart().name() << "." << joint.makI()->name() << "  &\r\n"  \
+					<< "    j_marker_name = ." << model_name << "." << joint.makJ()->fatherPart().name() << "." << joint.makJ()->name() << "  &\r\n"   \
+					<< "    pitch = " << dynamic_cast<ScrewJoint*>(&joint)->pitch() << "\r\n"
+					<< "!\r\n";
 
-			file << "constraint create joint " << type << "  &\r\n"
-				<< "    joint_name = ." << model_name << "." << joint.name() << "  &\r\n"
-				<< "    adams_id = " << adamsID(joint) << "  &\r\n"
-				<< "    i_marker_name = ." << model_name << "." << joint.makI()->fatherPart().name() << "." << joint.makI()->name() << "  &\r\n"
-				<< "    j_marker_name = ." << model_name << "." << joint.makJ()->fatherPart().name() << "." << joint.makJ()->name() << "  \r\n"
-				<< "!\r\n";
+				file << "constraint create joint " << "cylindrical" << "  &\r\n"                                                                      \
+					<< "    joint_name = ." << model_name << ".__" << joint.name() << "  &\r\n"                                                         \
+					<< "    adams_id = " << adamsID(joint) + model()->jointPool().size() << "  &\r\n"                                                 \
+					<< "    i_marker_name = ." << model_name << "." << joint.makI()->fatherPart().name() << "." << joint.makI()->name() << "  &\r\n"  \
+					<< "    j_marker_name = ." << model_name << "." << joint.makJ()->fatherPart().name() << "." << joint.makJ()->name() << "  \r\n"   \
+					<< "!\r\n";
+			}
+			else THROW_FILE_LINE("unrecognized joint type");
+#undef ARIS_ADAMS_EXPORT_JOINT
 		}
-		for (auto &motion : model()->motionPool())
-		{
+		for (auto &motion : model()->motionPool()){
 			std::string axis_names[6]{ "x","y","z","B1","B2","B3" };
 			std::string axis_name = axis_names[motion.axis()];
 
@@ -1365,20 +1375,17 @@ namespace aris::dynamic{
 			std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << motion.mpInternal() << " + " << motion.mv() << " * time + " << motion.ma()*0.5 << " * time * time").str();
 
 			// 构建akima曲线 //
-			if (pos == -1)
-			{
+			if (pos == -1){
 				file << "data_element create spline &\r\n"
 					<< "    spline_name = ." << model_name + "." + motion.name() + "_akima &\r\n"
 					<< "    adams_id = " << adamsID(motion) << "  &\r\n"
 					<< "    units = m &\r\n"
 					<< "    x = " << time.at(0);
-				for (auto p = time.begin() + 1; p < time.end(); ++p)
-				{
+				for (auto p = time.begin() + 1; p < time.end(); ++p){
 					file << "," << *p;
 				}
 				file << "    y = " << mot_akima.at(motion.id()).at(0);
-				for (auto p = mot_akima.at(motion.id()).begin() + 1; p < mot_akima.at(motion.id()).end(); ++p)
-				{
+				for (auto p = mot_akima.at(motion.id()).begin() + 1; p < mot_akima.at(motion.id()).end(); ++p){
 					file << "," << *p;
 				}
 				file << " \r\n!\r\n";
@@ -1759,11 +1766,9 @@ namespace aris::dynamic{
 		}
 		
 	}
-	auto AdamsSimulator::saveAdams(const std::string &filename)->void
-	{
+	auto AdamsSimulator::saveAdams(const std::string &filename)->void{
 		std::string filename_ = filename;
-		if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
-		{
+		if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")	{
 			filename_ += ".cmd";
 		}
 

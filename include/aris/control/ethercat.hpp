@@ -4,10 +4,10 @@
 #include <filesystem>
 
 #include <aris_lib_export.h>
+#include <aris/core/core.hpp>
 #include <aris/control/controller_motion.hpp>
 
-namespace aris::control
-{
+namespace aris::control{
 	class ARIS_API PdoEntry:public aris::core::NamedObject{
 	public:
 		auto ecHandle()->std::any&;
@@ -385,6 +385,54 @@ namespace aris::control
 		EthercatSlave *slave_{ nullptr };
 	};
 
+	auto inline createDefaultEthercatMaster(int motor_num, int io_num, int ft_sensor_num)->std::unique_ptr<EthercatMaster> {
+		auto mst = std::make_unique<EthercatMaster>();
+
+		for (int i = 0; i < motor_num; ++i) {
+			auto &slave = mst->slavePool().add<EthercatSlave>();
+			std::string xml_str =
+				"<EthercatSlave phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00\""
+				" vendor_id=\"0x00\" revision_num=\"0x00\" dc_assign_activate=\"0x0300\">"
+				"	<SyncManagerPoolObject>"
+				"		<SyncManager is_tx=\"false\"/>"
+				"		<SyncManager is_tx=\"true\"/>"
+				"		<SyncManager is_tx=\"false\">"
+				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
+				"				<PdoEntry name=\"control_word\" index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_operation\" index=\"0x6060\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"target_pos\" index=\"0x607A\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"target_vel\" index=\"0x60FF\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"targer_toq\" index=\"0x6071\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"offset_vel\" index=\"0x60B1\" subindex=\"0x00\" size=\"32\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"		<SyncManager is_tx=\"true\">"
+				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
+				"				<PdoEntry name=\"status_word\" index=\"0x6041\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_display\" index=\"0x6061\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"pos_actual_value\" index=\"0x6064\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"vel_actual_value\" index=\"0x606c\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"toq_actual_value\" index=\"0x6077\" subindex=\"0x00\" size=\"16\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"	</SyncManagerPoolObject>"
+				"</EthercatSlave>";
+			aris::core::fromXmlString(slave, xml_str);
+			slave.setVirtual(true);
+		}
+
+		return mst;
+	}
+	auto inline createDefaultEthercatController(int motor_num, int io_num, int ft_sensor_num, EthercatMaster &ec_master)->std::unique_ptr<Controller> {
+		auto controller = std::make_unique<Controller>();
+
+		for (int i = 0; i < motor_num; ++i) {
+			auto &motor = controller->motorPool().add<EthercatMotor>();
+			motor.setSlave(&ec_master.slavePool()[i]);
+		}
+
+		return controller;
+	}
 
 	class ARIS_API EthercatIoBeckhoff : public EthercatDigitalIo{
 	public:

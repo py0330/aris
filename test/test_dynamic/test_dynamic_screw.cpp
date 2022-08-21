@@ -1846,10 +1846,6 @@ void test_collide() {
 
 		double box_center[3], box_eul[3], box_length_xyz[3];
 		s_generate_box(reference_pm, eul, point1_xyz, point2_xyz, box_center, box_eul, box_length_xyz);
-
-		dsp(1, 3, box_length_xyz);
-		dsp(1, 3, box_center);
-		dsp(1, 3, box_eul);
 	}
 
 	//#define DEBUG_COLLIDE_CHECK_BOX2BOX
@@ -2176,9 +2172,9 @@ void test_collide() {
 
 	test_spheres_devide(test_spheres_collide);
 
-	std::cout << "benchmark collide box 2 box devided:" << aris::core::benchmark(1e6, test_boxes_devide, test_boxes_collide) << std::endl;
-	std::cout << "benchmark collide box 2 box interfere:" << aris::core::benchmark(1e6, test_boxes_interfere, test_boxes_collide) << std::endl;
-	std::cout << "benchmark collide box 2 box contain:" << aris::core::benchmark(1e6, test_boxes_contain, test_boxes_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box devided:" << aris::core::benchmark(1e4, test_boxes_devide, test_boxes_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box interfere:" << aris::core::benchmark(1e4, test_boxes_interfere, test_boxes_collide) << std::endl;
+	std::cout << "benchmark collide box 2 box contain:" << aris::core::benchmark(1e4, test_boxes_contain, test_boxes_collide) << std::endl;
 }
 void test_screw()
 {

@@ -14,6 +14,39 @@
 #include "aris/server/api.hpp"
 
 namespace aris::server{
+	auto TransferModelController::updateDataController2Model(
+		const std::vector<std::uint64_t>& options, 
+		const aris::control::Controller* controller, 
+		aris::dynamic::ModelBase* model)->void
+	{
+		for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			auto& cm = controller->motorPool()[i];
+			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
+				model->setInputPosAt(cm.targetPos(), i);
+			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_VEL_FROM_CONTROLLER))
+				model->setInputVelAt(cm.targetVel(), i);
+		}
+	}
+	auto TransferModelController::updateDataModel2Controller(
+		const std::vector<std::uint64_t>& options, 
+		const aris::dynamic::ModelBase* model,
+		aris::control::Controller* controller) ->void
+	{
+		for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			auto& cm = controller->motorPool()[i];
+			if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
+				cm.setTargetPos(model->inputPosAt(i));
+			if ((options[i] & aris::plan::Plan::USE_TARGET_VEL))
+				cm.setTargetVel(model->inputVelAt(i));
+			if ((options[i] & aris::plan::Plan::USE_TARGET_TOQ))
+				cm.setTargetToq(model->inputFceAt(i));
+			if ((options[i] & aris::plan::Plan::USE_OFFSET_VEL))
+				cm.setOffsetVel(model->inputVelAt(i));
+			if ((options[i] & aris::plan::Plan::USE_OFFSET_TOQ))
+				cm.setOffsetToq(model->inputFceAt(i));
+		}
+	}
+	
 	struct ControlServer::Imp{
 		enum { CMD_POOL_SIZE = 10000 };
 		
@@ -95,6 +128,7 @@ namespace aris::server{
 		std::unique_ptr<aris::control::Controller> controller_;
 		std::unique_ptr<aris::control::Master> master_;
 		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
+		std::unique_ptr<TransferModelController> transfer_model_controller_;
 		std::unique_ptr<aris::core::PointerArray<aris::server::Interface>> interface_pool_{new aris::core::PointerArray<aris::server::Interface> };
 		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
 		std::unique_ptr<CustomModule> custom_module_{new CustomModule};
@@ -257,23 +291,15 @@ namespace aris::server{
 		if (auto call = post_callback_.load())call(ControlServer::instance());
 	}
 	auto ControlServer::Imp::executeCmd(aris::plan::Plan &plan)->int{
+		// 从controller 向model更新数据 //
+		server_->updateDataController2Model(plan.motorOptions());
+
 		// 执行plan函数 //
 		int ret = plan.executeRT();
 
 		// 控制电机 //
-		model_->getInputPos(mem_transfer_p_);
-		model_->getInputVel(mem_transfer_v_);
-		model_->getInputAcc(mem_transfer_a_);
-		model_->getInputFce(mem_transfer_f_);
+		server_->updateDataModel2Controller(plan.motorOptions());
 
-		for (std::size_t i = 0; i < std::min(model_->inputPosSize(), controller_->motorPool().size()); ++i){
-			auto &cm = controller_->motorPool()[i];
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_p_[i]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_v_[i]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_f_[i]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_v_[i]);
-			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_f_[i]);
-		}
 
 		return ret;
 	}
@@ -297,7 +323,7 @@ namespace aris::server{
 				error_code = aris::plan::Plan::MOTION_NOT_ENABLED;
 				sprintf(error_msg, 
 					aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-					u8"电机 %zd 没在使能模式，当前Count: %zd\n":
+					u8"电机 %zd 没在使能模式，当前周期: %zd\n":
 					u8"Motor %zd is not in OPERATION_ENABLE mode in count %zd\n",
 					display_id, count_);
 				return error_code;
@@ -313,7 +339,7 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 目标位置不是有效值，当前Count %zu:\n目标位置: %f\n":
+							u8"电机 %zu 目标位置不是有效值，当前周期: %zu\t目标位置: %f\n":
 							u8"Motor %zu target position is INFINITE in count %zu:\nvalue: %f\n" ,
 							display_id, count_, cm.targetPos());
 						return error_code;
@@ -327,7 +353,7 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 超出正限位，当前Count %zu:\n允许最大位置: %f\t目标位置: %f\n":
+							u8"电机 %zu 超出正限位，当前周期: %zu\t允许最大位置: %f\t目标位置: %f\n":
 							u8"Motor %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n" ,
 							display_id, count_, cm.maxPos(), cm.targetPos());
 						return error_code;
@@ -341,7 +367,7 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 超出负限位，当前Count  %zu:\n允许最小值: %f\t目标位置: %f\n":
+							u8"电机 %zu 超出负限位，当前周期: %zu\t允许最小值: %f\t目标位置: %f\n":
 							u8"Motor %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n" ,
 							display_id, count_, cm.minPos(), cm.targetPos());
 						return error_code;
@@ -354,7 +380,7 @@ namespace aris::server{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
 						sprintf(error_msg, 
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 速度过大，当前Count %zu:\n上次位置: %f\t本次位置: %f\n":
+							u8"电机 %zu 速度过大，当前周期: %zu\t上次位置: %f\t本次位置: %f\n":
 							u8"Motor %zu target position NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n",
 							display_id, count_, ld.p, cm.targetPos());
 						return error_code;
@@ -566,36 +592,42 @@ namespace aris::server{
 
 		return fix_finished;
 	}
-	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
+	auto ControlServer::instance()noexcept->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::resetModel(dynamic::ModelBase *model)->void { imp_->model_.reset(model); }
+	auto ControlServer::model()->dynamic::ModelBase& { return *imp_->model_; }
+
 	auto ControlServer::resetMaster(control::Master *master)->void { imp_->master_.reset(master); }
+	auto ControlServer::master()->control::Master& { return *imp_->master_; }
+
 	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
+	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
+
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
+	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
+	
+	auto ControlServer::resetTransferModelController(TransferModelController*method)->void { imp_->transfer_model_controller_.reset(method); }
+	auto ControlServer::transferModelController()->TransferModelController& { return *imp_->transfer_model_controller_; }
+	
 	auto ControlServer::resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void {
 		imp_->interface_pool_.reset(pool);
 	}
-	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
-	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
-	auto ControlServer::model()->dynamic::ModelBase& { return *imp_->model_; }
-	auto ControlServer::master()->control::Master& { return *imp_->master_; }
-	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
-	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
+
+	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
 	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
+
+	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
 	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
-	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)->void {
+	
+	auto ControlServer::updateDataController2Model(const std::vector<std::uint64_t>& options)noexcept->void {
+		imp_->transfer_model_controller_->updateDataController2Model(options, &controller(), &model());
+	}
+	auto ControlServer::updateDataModel2Controller(const std::vector<std::uint64_t>& options)noexcept->void {
+		imp_->transfer_model_controller_->updateDataModel2Controller(options, &model(), &controller());
+	}
+	
+	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)noexcept->void {
 		imp_->error_handle_ = call_back;
-	}
-	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void{
-		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
-		err.code = err_code;
-		imp_->err_code_and_fixed_.store(err_code_and_fixed);
-		if (err_msg)std::strcpy(imp_->err_msg_, err_msg);
-	}
-	auto ControlServer::errorCode()const->int{
-		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
-		err_code_and_fixed = imp_->err_code_and_fixed_.load();
-		return err.err_code;
 	}
 	auto ControlServer::errorMsg()const->const char * { return imp_->err_msg_; }
 	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
@@ -607,10 +639,11 @@ namespace aris::server{
 		auto cmd_end = imp_->chanels[chanel].cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->chanels[chanel].internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
 	}
-	auto ControlServer::globalMotionCheckOption()->std::uint64_t* { return imp_->global_mot_check_options_; }
-	auto ControlServer::idleMotionCheckOption()->std::uint64_t* { return imp_->idle_mot_check_options_; }
-	auto ControlServer::setAutoLogActive(bool auto_log)->void { imp_->is_rt_log_started_.store(auto_log); }
-	auto ControlServer::autoLogActive()->bool { return imp_->is_rt_log_started_.load(); }
+	auto ControlServer::globalMotionCheckOption()noexcept->std::uint64_t* { return imp_->global_mot_check_options_; }
+	auto ControlServer::idleMotionCheckOption()noexcept->std::uint64_t* { return imp_->idle_mot_check_options_; }
+	auto ControlServer::setAutoLogActive(bool auto_log)noexcept->void { imp_->is_rt_log_started_.store(auto_log); }
+	auto ControlServer::autoLogActive()noexcept->bool { return imp_->is_rt_log_started_.load(); }
+
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void{
@@ -1045,6 +1078,18 @@ namespace aris::server{
 
 		imp_->if_get_data_ready_.store(false);
 	}
+	auto ControlServer::setErrorCode(std::int32_t err_code, const char* err_msg)noexcept->void {
+		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
+		err.code = err_code;
+		imp_->err_code_and_fixed_.store(err_code_and_fixed);
+		if (err_msg)std::strcpy(imp_->err_msg_, err_msg);
+	}
+	auto ControlServer::errorCode()const noexcept->int {
+		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+		err_code_and_fixed = imp_->err_code_and_fixed_.load();
+		return err.err_code;
+	}
+	auto ControlServer::errorMsg()const noexcept->const char* { return imp_->err_msg_; }
 	auto ControlServer::clearError()->void 
 	{ 
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -1082,6 +1127,7 @@ namespace aris::server{
 		makeMaster<aris::control::Master>();
 		makeController<aris::control::Controller>("controller");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");
+		makeTransferModelController<TransferModelController>();
 	}
 
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
@@ -1744,11 +1790,13 @@ namespace aris::server{
 
 	ARIS_REGISTRATION {
 		aris::core::class_<CustomModule>("CustomModule");
-		
+		aris::core::class_<TransferModelController>("TransferModelController");
+
 		typedef aris::control::Master &(ControlServer::*MasterFunc)();
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::ModelBase &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
+		typedef TransferModelController& (ControlServer::* TransferModelControllerFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
 		typedef aris::server::CustomModule &(ControlServer::*CustomModuleFunc)();
@@ -1760,11 +1808,23 @@ namespace aris::server{
 			.prop("plan_root",     &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
 			.prop("interface",     &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			.prop("middle_ware",   &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
+			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
+			.prop("master", &ControlServer::resetMaster, MasterFunc(&ControlServer::master))
+			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
+			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
+			.prop("model_controller_transfer", &ControlServer::resetTransferModelController, TransferModelControllerFunc(&ControlServer::transferModelController))
+			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
+			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
 			.prop("custom_module", &ControlServer::resetCustomModule, CustomModuleFunc(&ControlServer::customModule))
 			;
 		
 		aris::core::class_<ProgramMiddleware>("ProgramMiddleware")
 			.inherit<MiddleWare>()
+			;
+
+		aris::core::class_<ScaraTransferModelController>("ScaraTransferModelController")
+			.inherit<TransferModelController>()
+			.prop("pitch", &ScaraTransferModelController::pitch_)
 			;
 	}
 }

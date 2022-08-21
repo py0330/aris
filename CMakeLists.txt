@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 2.3.2.220720 DESCRIPTION "")
+project(aris VERSION 2.3.2.220803 DESCRIPTION "add which root for scara")
 
 # version
 configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)
@@ -179,7 +179,8 @@ endif(BUILD_TESTS)
 option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)
 	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
-					demo_model_delta demo_model_scara demo_model_seven_axis demo_model_multi demo_stewart demo_hulk demo_ur demo_server demo_rokae_server demo_reflection)
+					demo_model_delta demo_model_scara demo_model_seven_axis demo_model_multi demo_stewart demo_hulk demo_ur 
+					demo_server demo_server_scara demo_rokae_server demo_reflection)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})

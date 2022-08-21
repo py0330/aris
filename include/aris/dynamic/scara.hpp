@@ -9,12 +9,12 @@ namespace aris::dynamic{
 	// 包含4个自由度。共4个杆件  link1~4
 	// 尺寸示意：
 	//
-	//                           o
-	//                           |        y
-	//                           |  b     ^
-	//                           |        |
-	//           o---------------o        *---> x
-	//        origin         a
+	//                           
+	//                                  y
+	//                                ^
+	//                                |
+	//           o--------o--------o  *---> x
+	//        origin    a       b
 	//---------------------------------------------------------------------------------------------
 	
 	/// @defgroup dynamic_model_group 动力学建模模块
@@ -24,6 +24,9 @@ namespace aris::dynamic{
 		// DH PARAM //
 		double a{ 0.0 };
 		double b{ 0.0 };
+
+		bool has_pitch{ false };
+		double pitch{ 0.0 };
 
 		// TOOL 0, by default is 321 type
 		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };

@@ -14,8 +14,59 @@
 #include "aris/core/core.hpp"
 #include "aris/dynamic/model_base.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
+	//// inputs //
+	//auto ModelBase::inputPosSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getInputPos(double* mp)const noexcept->void { }
+	//auto ModelBase::setInputPos(const double* mp)noexcept->void { }
+	//auto ModelBase::inputPosAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setInputPosAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::inputVelSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getInputVel(double* mv)const noexcept->void { }
+	//auto ModelBase::getInputVel(double* mv, Size idx)const noexcept->void { }
+	//auto ModelBase::inputVelAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setInputVelAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::inputAccSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getInputAcc(double* ma)const noexcept->void { }
+	//auto ModelBase::getInputAcc(double* ma, Size idx)const noexcept->void { }
+	//auto ModelBase::inputAccAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setInputAccAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::inputFceSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getInputFce(double* mf)const noexcept->void { }
+	//auto ModelBase::getInputFce(double* mf, Size idx)const noexcept->void { }
+	//auto ModelBase::inputFceAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setInputFceAt(double mp, Size idx)noexcept->void { }
+
+	//// outputs //
+	//auto ModelBase::outputPosSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getOutputPos(double* mp)const noexcept->void { }
+	//auto ModelBase::getOutputPos(double* mp, Size idx)const noexcept->void { }
+	//auto ModelBase::outputPosAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setOutputPosAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::outputVelSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getOutputVel(double* mv)const noexcept->void { }
+	//auto ModelBase::getOutputVel(double* mv, Size idx)const noexcept->void { }
+	//auto ModelBase::outputVelAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setOutputVelAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::outputAccSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getOutputAcc(double* ma)const noexcept->void { }
+	//auto ModelBase::getOutputAcc(double* ma, Size idx)const noexcept->void { }
+	//auto ModelBase::outputAccAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setOutputAccAt(double mp, Size idx)noexcept->void { }
+
+	//auto ModelBase::outputFceSize()const noexcept->Size { return 0; }
+	//auto ModelBase::getOutputFce(double* mf)const noexcept->void { }
+	//auto ModelBase::getOutputFce(double* mf, Size idx)const noexcept->void { }
+	//auto ModelBase::outputFceAt(Size idx)const noexcept->double { return 0; }
+	//auto ModelBase::setOutputFceAt(double mf, Size idx)noexcept->void { }
+
+
+
 	ARIS_REGISTRATION
 	{
 		//typedef Environment&(Model::*EnvironmentFunc)();

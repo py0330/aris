@@ -217,31 +217,27 @@ namespace aris::dynamic{
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
-		auto virtual inputPosSize()const noexcept->Size override;
-		auto virtual getInputPos(double *mp)const noexcept->void override;
-		auto virtual setInputPos(const double *mp)noexcept->void override;
-		auto virtual inputVelSize()const noexcept->Size override;
-		auto virtual getInputVel(double *mv)const noexcept->void override;
-		auto virtual setInputVel(const double *mv)noexcept->void override;
-		auto virtual inputAccSize()const noexcept->Size override;
-		auto virtual getInputAcc(double *ma)const noexcept->void override;
-		auto virtual setInputAcc(const double *ma)noexcept->void override;
-		auto virtual inputFceSize()const noexcept->Size override;
-		auto virtual getInputFce(double *mf)const noexcept->void override;
-		auto virtual setInputFce(const double *mf)noexcept->void override;
+#define ARIS_INPUT_DATA_DEFINATION(TYPE, VARIABLE)                                             \
+		auto virtual input##TYPE##Size()const noexcept->Size override;                         \
+		auto virtual input##TYPE##At(Size idx)const noexcept->double override;                 \
+		auto virtual setInput##TYPE##At(double VARIABLE, Size idx)noexcept->void override;     \
+		
+		ARIS_INPUT_DATA_DEFINATION(Pos, mp)
+		ARIS_INPUT_DATA_DEFINATION(Vel, mp)
+		ARIS_INPUT_DATA_DEFINATION(Acc, mp)
+		ARIS_INPUT_DATA_DEFINATION(Fce, mp)
+#undef ARIS_INPUTDATA_DEFINATION
 
-		auto virtual outputPosSize()const noexcept->Size override;
-		auto virtual getOutputPos(double *mp)const noexcept->void override;
-		auto virtual setOutputPos(const double *mp)noexcept->void override;
-		auto virtual outputVelSize()const noexcept->Size override;
-		auto virtual getOutputVel(double *mv)const noexcept->void override;
-		auto virtual setOutputVel(const double *mv)noexcept->void override;
-		auto virtual outputAccSize()const noexcept->Size override;
-		auto virtual getOutputAcc(double *ma)const noexcept->void override;
-		auto virtual setOutputAcc(const double *ma)noexcept->void override;
-		auto virtual outputFceSize()const noexcept->Size override;
-		auto virtual getOutputFce(double *mf)const noexcept->void override;
-		auto virtual setOutputFce(const double *mf)noexcept->void override;
+#define ARIS_OUTPUT_DATA_DEFINATION(TYPE, VARIABLE)                                             \
+		auto virtual output##TYPE##Size()const noexcept->Size override;                         \
+		auto virtual getOutput##TYPE(double *VARIABLE)const noexcept->void override;            \
+		auto virtual setOutput##TYPE(const double* VARIABLE)noexcept->void override;            \
+
+		ARIS_OUTPUT_DATA_DEFINATION(Pos, mp)
+		ARIS_OUTPUT_DATA_DEFINATION(Vel, mv)
+		ARIS_OUTPUT_DATA_DEFINATION(Acc, ma)
+		ARIS_OUTPUT_DATA_DEFINATION(Fce, mf)
+#undef ARIS_INPUTDATA_DEFINATION
 		/// @}
 
 		auto virtual init()->void override;
@@ -306,6 +302,7 @@ namespace aris::dynamic{
 		auto addPartByPe(const double*pe, const char* eul_type, const double *prt_iv = nullptr)->Part&;
 		auto addPartByPq(const double*pq, const double *prt_iv = nullptr)->Part&;
 		auto addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&;
+		auto addScrewJoint(Part& first_part, Part& second_part, const double* position, const double* axis, double pitch)->ScrewJoint&;
 		auto addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&;
 		// 
 		// first  axis 位于 first  part
@@ -402,61 +399,18 @@ namespace aris::dynamic{
 		}
 
 		// inputs //
-		auto virtual inputPosSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.inputPosSize();
-			return size;
-		}
-		auto virtual getInputPos(double* mp)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputPosSize(), ++idx)
-				subModels()[idx].getInputPos(mp + pos);
-		}
-		auto virtual setInputPos(const double* mp)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputPosSize(), ++idx)
-				subModels()[idx].setInputPos(mp + pos);
-		}
+#define ARIS_INPUTDATA_DEFINATION(TYPE, VARIABLE)                                              \
+		auto virtual input##TYPE##Size()const noexcept->Size override;                         \
+		auto virtual getInput##TYPE(double* VARIABLE)const noexcept->void override;            \
+		auto virtual setInput##TYPE(const double* VARIABLE)noexcept->void override;            \
+		auto virtual input##TYPE##At(Size idx)const noexcept->double override;                 \
+		auto virtual setInput##TYPE##At(double VARIABLE, Size idx)noexcept->void override;     \
 
-		auto virtual inputVelSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.inputVelSize();
-			return size;
-		}
-		auto virtual getInputVel(double* mv)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputVelSize(), ++idx)
-				subModels()[idx].getInputVel(mv + pos);
-		}
-		auto virtual setInputVel(const double* mv)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputVelSize(), ++idx)
-				subModels()[idx].setInputVel(mv + pos);
-		}
-
-		auto virtual inputAccSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.inputAccSize();
-			return size;
-		}
-		auto virtual getInputAcc(double* ma)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputAccSize(), ++idx)
-				subModels()[idx].getInputAcc(ma + pos);
-		}
-		auto virtual setInputAcc(const double* ma)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputAccSize(), ++idx)
-				subModels()[idx].setInputAcc(ma + pos);
-		}
-
-		auto virtual inputFceSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.inputFceSize();
-			return size;
-		}
-		auto virtual getInputFce(double* mf)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputFceSize(), ++idx)
-				subModels()[idx].getInputFce(mf + pos);
-		}
-		auto virtual setInputFce(const double* mf)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].inputFceSize(), ++idx)
-				subModels()[idx].setInputFce(mf + pos);
-		}
+		ARIS_INPUTDATA_DEFINATION(Pos, mp)
+		ARIS_INPUTDATA_DEFINATION(Vel, mv)
+		ARIS_INPUTDATA_DEFINATION(Acc, ma)
+		ARIS_INPUTDATA_DEFINATION(Fce, mf)
+#undef ARIS_INPUTDATA_DEFINATION
 
 		// outputs //
 		auto virtual outputPosSize()const noexcept->aris::Size override {
