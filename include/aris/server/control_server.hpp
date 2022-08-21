@@ -207,7 +207,7 @@ namespace aris::server
 		auto setRtPlanPostCallback(PostCallback post_callback)noexcept->void;
 		auto running()noexcept->bool;
 		auto globalCount()noexcept->std::int64_t;
-		auto currentExecutePlanRt()noexcept->aris::plan::Plan *;
+		auto currentExecutePlanRt(int chanel=0)noexcept->aris::plan::Plan *;
 		auto globalMotionCheckOption()noexcept->std::uint64_t*;// 全局的初始检查选项，也是每个 plan 的初始检查选项，但不影响空闲时候的检查
 		auto idleMotionCheckOption()noexcept->std::uint64_t*;
 		auto setAutoLogActive(bool auto_log)noexcept->void; // 为每个 plan 自动创建日志

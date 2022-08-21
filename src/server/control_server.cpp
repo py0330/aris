@@ -629,12 +629,12 @@ namespace aris::server{
 	auto ControlServer::setRtErrorCallback(std::function<void(aris::plan::Plan *p, int error_num, const char *error_msg)> call_back)noexcept->void {
 		imp_->error_handle_ = call_back;
 	}
-	auto ControlServer::errorMsg()const->const char * { return imp_->err_msg_; }
-	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
-	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
-	auto ControlServer::running()->bool { return imp_->is_running_; }
-	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
-	auto ControlServer::currentExecutePlanRt(int chanel)->aris::plan::Plan *{
+	auto ControlServer::errorMsg()const noexcept->const char * { return imp_->err_msg_; }
+	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)noexcept->void { imp_->pre_callback_.store(pre_callback); }
+	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)noexcept->void { imp_->post_callback_.store(post_callback); }
+	auto ControlServer::running()noexcept->bool { return imp_->is_running_; }
+	auto ControlServer::globalCount()noexcept->std::int64_t { return imp_->global_count_.load(); }
+	auto ControlServer::currentExecutePlanRt(int chanel)noexcept->aris::plan::Plan *{
 		auto cmd_now = imp_->chanels[chanel].cmd_now_.load();
 		auto cmd_end = imp_->chanels[chanel].cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->chanels[chanel].internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
@@ -1089,7 +1089,6 @@ namespace aris::server{
 		err_code_and_fixed = imp_->err_code_and_fixed_.load();
 		return err.err_code;
 	}
-	auto ControlServer::errorMsg()const noexcept->const char* { return imp_->err_msg_; }
 	auto ControlServer::clearError()->void 
 	{ 
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
