@@ -529,10 +529,10 @@ namespace aris::dynamic{
 		model->variablePool().add<aris::dynamic::MatrixVariable>("base_pe", aris::core::Matrix(1, 6, param.base2ref_pe));
 		model->variablePool().add<aris::dynamic::StringVariable>("base_pe_type", param.base2ref_pe_type.empty() ? std::string("321") : param.base2ref_pe_type);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix(1, 6, param.axis_range));
-		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("install_method", aris::core::Matrix(1, 1, param.install_method));
 
 		// 设置重力 //
-		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+		const double gravity[6]{ 0.0, 0.0, -9.8, 0.0, 0.0, 0.0 };
 		model->environment().setGravity(gravity);
 
 		// 这里的末端角度不对，和注释对不上 tbd//
@@ -584,6 +584,13 @@ namespace aris::dynamic{
 		auto &m4 = model->addMotion(j4);
 		auto &m5 = model->addMotion(j5);
 		auto &m6 = model->addMotion(j6);
+
+		m1.setRotateRange(param.axis_range[0]);
+		m2.setRotateRange(param.axis_range[1]);
+		m3.setRotateRange(param.axis_range[2]);
+		m4.setRotateRange(param.axis_range[3]);
+		m5.setRotateRange(param.axis_range[4]);
+		m6.setRotateRange(param.axis_range[5]);
 
 		const double default_mot_frc[3]{0.0, 0.0, 0.0};
 
