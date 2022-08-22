@@ -40,6 +40,13 @@ namespace aris::dynamic{
 		double a3{ 0.0 };
 		double d4{ 0.0 };
 
+		// 安装方式
+		// 0, 正常安装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面 z 轴
+		// 1，顶部吊装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面-z 轴
+		// 2，左侧吊装，零位时末端法兰盘朝向：地面-z 轴，零位时末端1轴朝向：地面 x 轴
+		// 3，右侧吊装，零位时末端法兰盘朝向：地面-z 轴，零位时末端1轴朝向：地面-x 轴
+		int install_method{0};
+
 		// TOOL 0, by default is 321 type
 		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string tool0_pe_type;
@@ -48,7 +55,10 @@ namespace aris::dynamic{
 		double base2ref_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string base2ref_pe_type;
 
-		// axis range
+		// axis rotate range
+		// 代表关节角度所处在的区间偏移，关节角做更新时，会处于 [-pi + range()*2pi, pi + range()*2pi] 中
+		// 例如，当 axis_range = 0 时，关节角处于 [ -pi, pi ] 中，当 axis_range = 0.5 时，处于[ 0, 2*pi ]中
+		// 如果axis_range = nan，此时关节角根据当前位置 x 来计算，结果处于: [ -pi + x, pi + x ] 中
 		double axis_range[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 		// inertia vector, size must be 6

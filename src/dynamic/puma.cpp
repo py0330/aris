@@ -34,129 +34,7 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	
-	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
-
-		model->setName("PumaModel");
-
-		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a1, param.a2, param.d3, param.a3, param.d4 }));
-		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_pe", aris::core::Matrix(1, 6, param.tool0_pe));
-		model->variablePool().add<aris::dynamic::StringVariable>("tool0_pe_type", param.tool0_pe_type.empty() ? std::string("321"): param.tool0_pe_type);
-		model->variablePool().add<aris::dynamic::MatrixVariable>("base_pe", aris::core::Matrix(1, 6, param.base2ref_pe));
-		model->variablePool().add<aris::dynamic::StringVariable>("base_pe_type", param.base2ref_pe_type.empty() ? std::string("321") : param.base2ref_pe_type);
-		model->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix(1, 6, param.axis_range));
-		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
-
-		// 设置重力 //
-		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
-		model->environment().setGravity(gravity);
-
-		// 这里的末端角度不对，和注释对不上 tbd//
-		// compute ee info //
-		const double axis_6_pe[]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3, 0.0, aris::PI / 2.0, 0.0 };
-		double axis_6_pm[16];
-		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
-		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-
-		s_pe2pm(axis_6_pe, axis_6_pm, "321");
-		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
-		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
-
-		// add part //
-		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
-		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 6 ? param.iv_vec[0].data() : default_iv);
-		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 6 ? param.iv_vec[1].data() : default_iv);
-		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
-		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 6 ? param.iv_vec[3].data() : default_iv);
-		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
-		auto &p6 = model->partPool().add<Part>("EE", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv, ee_i_pm);
-
-		// add joint //
-		const double j1_pos[3]{      0.0,                 0.0, param.d1 };
-		const double j2_pos[3]{ param.a1,                 0.0, param.d1 };
-		const double j3_pos[3]{ param.a1,                 0.0, param.d1 + param.a2 };
-		const double j4_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
-		const double j5_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
-		const double j6_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
-
-		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
-		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
-		const double j3_axis[6]{ 0.0, 1.0, 0.0 };
-		const double j4_axis[6]{ 1.0, 0.0, 0.0 };
-		const double j5_axis[6]{ 0.0, 1.0, 0.0 };
-		const double j6_axis[6]{ 1.0, 0.0, 0.0 };
-
-		auto &j1 = model->addRevoluteJoint(p1, model->ground(), j1_pos, j1_axis);
-		auto &j2 = model->addRevoluteJoint(p2, p1, j2_pos, j2_axis);
-		auto &j3 = model->addRevoluteJoint(p3, p2, j3_pos, j3_axis);
-		auto &j4 = model->addRevoluteJoint(p4, p3, j4_pos, j4_axis);
-		auto &j5 = model->addRevoluteJoint(p5, p4, j5_pos, j5_axis);
-		auto &j6 = model->addRevoluteJoint(p6, p5, j6_pos, j6_axis);
-
-		// add actuation //
-		auto &m1 = model->addMotion(j1);
-		auto &m2 = model->addMotion(j2);
-		auto &m3 = model->addMotion(j3);
-		auto &m4 = model->addMotion(j4);
-		auto &m5 = model->addMotion(j5);
-		auto &m6 = model->addMotion(j6);
-
-		const double default_mot_frc[3]{0.0, 0.0, 0.0};
-
-		m1.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[0].data() : default_mot_frc);
-		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);
-		m3.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[2].data() : default_mot_frc);
-		m4.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[3].data() : default_mot_frc);
-		m5.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[4].data() : default_mot_frc);
-		m6.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[5].data() : default_mot_frc);
-
-		
-
-		// add ee general motion //
-		auto &makI = p6.addMarker("tool0");
-		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
-		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
-
-		// change robot pose wrt ground //
-		double robot_pm[16];
-		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
-
-		p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
-		p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
-		p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
-		p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
-		p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
-		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
-		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
-		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
-
-		// add tools and wobj //
-		for (int i = 1; i < 17; ++i) {
-			p6.addMarker("tool" + std::to_string(i));
-		}
-		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
-
-		// add solver
-		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
-		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
-		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-
-		// make topology correct // 
-		for (auto &m : model->motionPool())m.activate(true);
-		for (auto &gm : model->generalMotionPool())gm.activate(false);
-		for (auto &f : model->forcePool())f.activate(false);
-
-		model->init();
-
-		return model;
-	}
-
-
-
-
-
-	struct PumaParamLocal{
+	struct PumaParamLocal {
 		// puma机器人构型：
 		//
 		//
@@ -217,24 +95,24 @@ namespace aris::dynamic{
 		double mp_factor[6];
 		double axis_range[6];
 	};
-	auto pumaInverse(const PumaParamLocal &param, const double *ee_pm, int which_root, double *input)->bool{
-		const double &d1 = param.d1;
-		const double &d2 = param.d2;
-		const double &d3 = param.d3;
-		const double &d4 = param.d4;
-		const double &d5 = param.d5;
+	auto pumaInverse(const PumaParamLocal& param, const double* ee_pm, int which_root, double* input)->bool {
+		const double& d1 = param.d1;
+		const double& d2 = param.d2;
+		const double& d3 = param.d3;
+		const double& d4 = param.d4;
+		const double& d5 = param.d5;
 
-		const double *A_pm = param.pm_A_in_Ground;
-		const double *E_pm_in_D = param.pm_EE_in_D;
+		const double* A_pm = param.pm_A_in_Ground;
+		const double* E_pm_in_D = param.pm_EE_in_D;
 
-		const double *offset = param.mp_offset;
-		const double *factor = param.mp_factor;
+		const double* offset = param.mp_offset;
+		const double* factor = param.mp_factor;
 
 		double q[6]{ 0 };
 
 		// 将末端设置成D坐标系，同时得到它在A中的表达 //
 		double E_in_A[16];
-		s_inv_pm_dot_pm(A_pm,   ee_pm,     E_in_A);
+		s_inv_pm_dot_pm(A_pm, ee_pm, E_in_A);
 		double D_in_A[16];
 		s_pm_dot_inv_pm(E_in_A, E_pm_in_D, D_in_A);
 
@@ -242,10 +120,10 @@ namespace aris::dynamic{
 		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
 		// 事实上这里可以有2个解
 		if (std::abs(d4) > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return false;//工作空间以外
-		if (which_root & 0x04){
+		if (which_root & 0x04) {
 			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
 		}
-		else{
+		else {
 			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
 		}
 
@@ -261,17 +139,17 @@ namespace aris::dynamic{
 		double y = R23456_pm[7];
 		double z = R23456_pm[11];
 
-		double a1 = std::sqrt((x - d1)*(x - d1) + z * z);
-		double a2 = std::sqrt(d3*d3 + d5*d5);
+		double a1 = std::sqrt((x - d1) * (x - d1) + z * z);
+		double a2 = std::sqrt(d3 * d3 + d5 * d5);
 
 		if (a1 > (a2 + std::abs(d2)))return false;//工作空间以外
-		if (which_root & 0x02){
-			q[1] = -std::atan2(z, x - d1) + std::acos((a1*a1 + d2 * d2 - a2 * a2) / (2 * a1*d2));
-			q[2] = -(PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2*d2))) + std::atan2(d3, d5);
+		if (which_root & 0x02) {
+			q[1] = -std::atan2(z, x - d1) + std::acos((a1 * a1 + d2 * d2 - a2 * a2) / (2 * a1 * d2));
+			q[2] = -(PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
 		}
-		else{
-			q[1] = -std::atan2(z, x - d1) - std::acos((a1*a1 + d2 * d2 - a2 * a2) / (2 * a1*d2));
-			q[2] = (PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2*d2))) + std::atan2(d3, d5);
+		else {
+			q[1] = -std::atan2(z, x - d1) - std::acos((a1 * a1 + d2 * d2 - a2 * a2) / (2 * a1 * d2));
+			q[2] = (PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
 		}
 
 		// 开始求4,5,6轴 //
@@ -284,19 +162,19 @@ namespace aris::dynamic{
 
 		s_pm2pe(R456_pm, R456_pe, "121");
 
-		if (which_root & 0x01){
-			q[3] = R456_pe[3]>PI ? R456_pe[3] - PI : R456_pe[3] + PI;
+		if (which_root & 0x01) {
+			q[3] = R456_pe[3] > PI ? R456_pe[3] - PI : R456_pe[3] + PI;
 			q[4] = 2 * PI - R456_pe[4];
-			q[5] = R456_pe[5]>PI ? R456_pe[5] - PI : R456_pe[5] + PI;
+			q[5] = R456_pe[5] > PI ? R456_pe[5] - PI : R456_pe[5] + PI;
 		}
-		else{
+		else {
 			q[3] = R456_pe[3];
 			q[4] = R456_pe[4];
 			q[5] = R456_pe[5];
 		}
 
 		// 添加所有的偏移 //
-		for (int i = 0; i < 6; ++i){
+		for (int i = 0; i < 6; ++i) {
 			q[i] -= offset[i];
 			q[i] *= factor[i];
 
@@ -316,25 +194,25 @@ namespace aris::dynamic{
 		s_vc(6, q, input);
 		return true;
 	}
-	struct PumaInverseKinematicSolver::Imp{
+	struct PumaInverseKinematicSolver::Imp {
 		int which_root_{ 8 };
 		PumaParamLocal puma_param;
-		union{
-			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
+		union {
+			struct { Part* GR, * L1, * L2, * L3, * L4, * L5, * L6; };
 			Part* parts[7]{ nullptr };
 		};
-		union{
-			struct { RevoluteJoint *R1, *R2, *R3, *R4, *R5, *R6; };
+		union {
+			struct { RevoluteJoint* R1, * R2, * R3, * R4, * R5, * R6; };
 			RevoluteJoint* joints[6]{ nullptr };
 		};
-		union{
-			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6; };
+		union {
+			struct { Motion* M1, * M2, * M3, * M4, * M5, * M6; };
 			Motion* motions[6]{ nullptr };
 		};
-		GeneralMotion* ee{nullptr};
+		GeneralMotion* ee{ nullptr };
 	};
-	
-	auto PumaInverseKinematicSolver::allocateMemory()->void{
+
+	auto PumaInverseKinematicSolver::allocateMemory()->void {
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;
@@ -472,8 +350,8 @@ namespace aris::dynamic{
 
 		// get mp_offset and mp_factor //
 		{
-			auto &param = imp_->puma_param;
-			
+			auto& param = imp_->puma_param;
+
 			// mp_offset[0] 始终为0，因为A是在关节角度为0时定义出来的
 			imp_->puma_param.mp_offset[0] = 0.0;
 			imp_->puma_param.mp_factor[0] = R1_mak_on_L1 == imp_->R1->makI() ? 1.0 : -1.0;
@@ -553,19 +431,19 @@ namespace aris::dynamic{
 
 		// get axis range //
 		if (!model()->findVariable("axis_range"))
-			model()->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix({0,0,0,0,0,0}));
-		s_vc(6, dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("axis_range"))->data().data(),imp_->puma_param.axis_range);
+			model()->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix({ 0,0,0,0,0,0 }));
+		s_vc(6, dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("axis_range"))->data().data(), imp_->puma_param.axis_range);
 	}
-	auto PumaInverseKinematicSolver::kinPos()->int{
-		if (imp_->which_root_ == 8){
+	auto PumaInverseKinematicSolver::kinPos()->int {
+		if (imp_->which_root_ == 8) {
 			int solution_num = 0;
 			double diff_q[8][6];
 			double diff_norm[8];
 
-			for (int i = 0; i < 8; ++i)	{
-				if (pumaInverse(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num])){
+			for (int i = 0; i < 8; ++i) {
+				if (pumaInverse(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num])) {
 					diff_norm[solution_num] = 0;
-					for (int j = 0; j < 6; ++j){
+					for (int j = 0; j < 6; ++j) {
 						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
 
 						// 如果是8 的话，忽略轴的范围，选择最近的可达解 //
@@ -583,15 +461,15 @@ namespace aris::dynamic{
 
 			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
 
-			for (aris::Size i = 0; i < 6; ++i){
-				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]){
+			for (aris::Size i = 0; i < 6; ++i) {
+				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
 					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 					imp_->parts[i + 1]->setPm(pm_prt_i);
 				}
-				else{
+				else {
 					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
@@ -604,17 +482,17 @@ namespace aris::dynamic{
 
 			return 0;
 		}
-		else{
-			if (double q[6]; pumaInverse(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q)){
-				for (aris::Size i = 0; i < 6; ++i){
-					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]){
+		else {
+			if (double q[6]; pumaInverse(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q)) {
+				for (aris::Size i = 0; i < 6; ++i) {
+					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
 						s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
 						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 						imp_->parts[i + 1]->setPm(pm_prt_i);
 					}
-					else{
+					else {
 						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
 						s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
@@ -639,6 +517,156 @@ namespace aris::dynamic{
 	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
+
+	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
+
+		model->setName("PumaModel");
+
+		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a1, param.a2, param.d3, param.a3, param.d4 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_pe", aris::core::Matrix(1, 6, param.tool0_pe));
+		model->variablePool().add<aris::dynamic::StringVariable>("tool0_pe_type", param.tool0_pe_type.empty() ? std::string("321"): param.tool0_pe_type);
+		model->variablePool().add<aris::dynamic::MatrixVariable>("base_pe", aris::core::Matrix(1, 6, param.base2ref_pe));
+		model->variablePool().add<aris::dynamic::StringVariable>("base_pe_type", param.base2ref_pe_type.empty() ? std::string("321") : param.base2ref_pe_type);
+		model->variablePool().add<aris::dynamic::MatrixVariable>("axis_range", aris::core::Matrix(1, 6, param.axis_range));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
+
+		// 设置重力 //
+		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+		model->environment().setGravity(gravity);
+
+		// 这里的末端角度不对，和注释对不上 tbd//
+		// compute ee info //
+		const double axis_6_pe[]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3, 0.0, aris::PI / 2.0, 0.0 };
+		double axis_6_pm[16];
+		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
+		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+
+		s_pe2pm(axis_6_pe, axis_6_pm, "321");
+		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
+		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
+
+		// add part //
+		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
+		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 6 ? param.iv_vec[0].data() : default_iv);
+		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 6 ? param.iv_vec[1].data() : default_iv);
+		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
+		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 6 ? param.iv_vec[3].data() : default_iv);
+		auto &p5 = model->partPool().add<Part>("L5", param.iv_vec.size() == 6 ? param.iv_vec[4].data() : default_iv);
+		auto &p6 = model->partPool().add<Part>("EE", param.iv_vec.size() == 6 ? param.iv_vec[5].data() : default_iv, ee_i_pm);
+
+		// add joint //
+		const double j1_pos[3]{      0.0,                 0.0, param.d1 };
+		const double j2_pos[3]{ param.a1,                 0.0, param.d1 };
+		const double j3_pos[3]{ param.a1,                 0.0, param.d1 + param.a2 };
+		const double j4_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
+		const double j5_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
+		const double j6_pos[3]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3 };
+
+		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
+		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j3_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j4_axis[6]{ 1.0, 0.0, 0.0 };
+		const double j5_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j6_axis[6]{ 1.0, 0.0, 0.0 };
+
+		auto &j1 = model->addRevoluteJoint(p1, model->ground(), j1_pos, j1_axis);
+		auto &j2 = model->addRevoluteJoint(p2, p1, j2_pos, j2_axis);
+		auto &j3 = model->addRevoluteJoint(p3, p2, j3_pos, j3_axis);
+		auto &j4 = model->addRevoluteJoint(p4, p3, j4_pos, j4_axis);
+		auto &j5 = model->addRevoluteJoint(p5, p4, j5_pos, j5_axis);
+		auto &j6 = model->addRevoluteJoint(p6, p5, j6_pos, j6_axis);
+
+		// add actuation //
+		auto &m1 = model->addMotion(j1);
+		auto &m2 = model->addMotion(j2);
+		auto &m3 = model->addMotion(j3);
+		auto &m4 = model->addMotion(j4);
+		auto &m5 = model->addMotion(j5);
+		auto &m6 = model->addMotion(j6);
+
+		const double default_mot_frc[3]{0.0, 0.0, 0.0};
+
+		m1.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[0].data() : default_mot_frc);
+		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);
+		m3.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[2].data() : default_mot_frc);
+		m4.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[3].data() : default_mot_frc);
+		m5.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[4].data() : default_mot_frc);
+		m6.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[5].data() : default_mot_frc);
+
+		
+
+		// add ee general motion //
+		auto &makI = p6.addMarker("tool0");
+		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
+		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
+
+		// make install method //
+		double install_pm_relative[16];
+		switch (param.install_method) {
+		case 0:
+			s_eye(4, install_pm_relative);
+			break;
+		case 1:
+			s_eye(4, install_pm_relative);
+			s_rmx(aris::PI, install_pm_relative, 4);
+			break;
+		case 2:
+			s_eye(4, install_pm_relative);
+			s_rmy(aris::PI / 2, install_pm_relative, 4);
+			break;
+		case 3: {
+			double pe[6]{ 0,0,0,aris::PI , aris::PI / 2 , 0, };
+			s_pe2pm(pe, install_pm_relative, "321");
+			break;
+		}
+		default:
+			THROW_FILE_LINE("INVALID value for install method");
+		}
+		double install_pm[16];
+		s_pm_dot_pm(install_pm_relative, *j1.makJ()->prtPm(), install_pm);
+		j1.makJ()->setPrtPm(install_pm);
+
+
+		// change robot pose wrt ground //
+		double robot_pm[16];
+		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
+
+		p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
+		p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
+		p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
+		p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
+		p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
+		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
+		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
+		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
+
+		// add tools and wobj //
+		for (int i = 1; i < 17; ++i) {
+			p6.addMarker("tool" + std::to_string(i));
+		}
+		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+
+		// add solver
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
+		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
+
+		// make topology correct // 
+		for (auto &m : model->motionPool())m.activate(true);
+		for (auto &gm : model->generalMotionPool())gm.activate(false);
+		for (auto &f : model->forcePool())f.activate(false);
+
+		model->init();
+		return model;
+	}
+
+
+
+
+
+
 
 	ARIS_REGISTRATION{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
