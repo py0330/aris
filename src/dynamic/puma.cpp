@@ -611,13 +611,14 @@ namespace aris::dynamic{
 			s_eye(4, install_pm_relative);
 			s_rmx(aris::PI, install_pm_relative, 4);
 			break;
-		case 2:
+		case 2: {
+			double pe[6]{ 0,0,0,aris::PI , aris::PI / 2 , 0, };
+			s_pe2pm(pe, install_pm_relative, "123");
+			break;
+		}
+		case 3: {
 			s_eye(4, install_pm_relative);
 			s_rmy(aris::PI / 2, install_pm_relative, 4);
-			break;
-		case 3: {
-			double pe[6]{ 0,0,0,aris::PI , aris::PI / 2 , 0, };
-			s_pe2pm(pe, install_pm_relative, "321");
 			break;
 		}
 		default:

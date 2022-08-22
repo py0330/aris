@@ -35,7 +35,12 @@ int main(int argc, char *argv[]){
 	puma_param.a3 = 0.05;
 	puma_param.d3 = 0.0;
 	puma_param.d4 = 0.35;
-	puma_param.install_method = 3;
+	puma_param.install_method = 1;
+	// 安装方式
+	// 0, 正常安装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面 z 轴
+	// 1，顶部吊装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面-z 轴
+	// 2，侧装向上，零位时末端法兰盘朝向：地面 z 轴，零位时末端1轴朝向：地面 x 轴
+	// 3，侧装向下，零位时末端法兰盘朝向：地面-z 轴，零位时末端1轴朝向：地面 x 轴
 	auto& puma = aris::dynamic::createModelPuma(puma_param);
 
 	puma->forwardKinematics();
