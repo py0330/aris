@@ -1762,7 +1762,7 @@ namespace aris::server{
 
 		aris::core::class_<ScaraTransferModelController>("ScaraTransferModelController")
 			.inherit<TransferModelController>()
-			.prop("pitch", &ScaraTransferModelController::pitch_)
+			.prop("pitch", &ScaraTransferModelController::setPitch, &ScaraTransferModelController::pitch)
 			;
 	}
 }

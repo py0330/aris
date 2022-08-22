@@ -18,6 +18,22 @@
 #include "aris/dynamic/puma.hpp"
 
 namespace aris::dynamic{
+	class ARIS_API PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
+	public:
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPos()->int override;
+		auto setWhichRoot(int root_of_0_to_7)->void;
+		auto whichRoot()const->int;
+
+		virtual ~PumaInverseKinematicSolver();
+		explicit PumaInverseKinematicSolver();
+		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
@@ -135,6 +151,10 @@ namespace aris::dynamic{
 
 		return model;
 	}
+
+
+
+
 
 	struct PumaParamLocal{
 		// puma机器人构型：

@@ -314,14 +314,17 @@ int main(){
 	model.getInputPos(input);
 	aris::dynamic::dsp(1, 13, input);
 
-	double output[13]{0.0,0.28,0,0.63,0,aris::PI/2,0,0.28,0,0.63,0,aris::PI / 2,0 };
+	double output[13]{0.0,0.28,0,0.63,0,aris::PI/2,0,0.28,0,0.63,0,aris::PI / 3,0 };
 	model.setOutputPos(output);
 	model.inverseKinematics();
 	//double input[6];
 	model.getInputPos(input);
 	aris::dynamic::dsp(1, 13, input);
+	for(int i = 0;i < 13;++i)
+	std::cout << model.inputPosAt(i) << std::endl;
 
 
+	std::cout << "size:" << model.inputPosSize() << std::endl;
 	// 构造mvl ，调试一下
 	MoveL mvl;
 	mvl.setModelBase(&model);

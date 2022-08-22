@@ -31,8 +31,7 @@ namespace aris::dynamic{
 	//  --- *----> x  
 	//     O(wobj0)
 	//
-	struct ARIS_API PumaParam
-	{
+	struct ARIS_API PumaParam{
 		// DH PARAM //
 		double d1{ 0.0 };
 		double a1{ 0.0 };
@@ -60,22 +59,7 @@ namespace aris::dynamic{
 	};
 	auto ARIS_API createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class ARIS_API PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
-	{
-	public:
-		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->int override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
-		auto whichRoot()const->int;
 
-		virtual ~PumaInverseKinematicSolver();
-		explicit PumaInverseKinematicSolver();
-		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
 	///
 	/// @}
 }
