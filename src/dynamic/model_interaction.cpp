@@ -519,6 +519,27 @@ namespace aris::dynamic{
 		s_tmf(pm, dm);
 	}
 	auto XyztMotion::cptCv(double *cv)const noexcept->void {
+		//// 这里不能用 point motion 的计算方法，因为point motion 的转动不对移动产生作用（是被动转动）
+		//double mpe[6]{ imp_->mp_[0],imp_->mp_[1],imp_->mp_[2], imp_->mp_[3],0,0 };
+		//double mpm[16];
+		//s_pe2pm(mpe, mpm, "321");
+		//
+		//double mvs[6]{ 0,0,0,0,0, imp_->vp_[3] };
+
+
+		//s_vp2vs(imp_->mp_, imp_->vp_, mvs);
+		//
+		//double cv_local[6];
+
+
+
+		//s_inv_tv(mpm, mvs, cv_local);
+		////cv_local[0] = -cv_local[0];
+		//s_vc(3, cv_local, cv);
+		//cv[3] = cv_local[5];
+		////
+		////aris::dynamic::dsp(1, 4, cv);
+
 		// 点运动所添加的 cv //
 		double vp_in_makI[3], vp_in_ground[3];
 		s_pm_dot_v3(*makJ()->pm(), imp_->vp_, vp_in_ground);

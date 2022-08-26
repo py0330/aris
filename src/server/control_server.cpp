@@ -553,6 +553,9 @@ namespace aris::server{
 				break;
 			default:
 				fix_finished = cm.disable() || fix_finished;
+				cm.setTargetPos(0.0);
+				cm.setTargetVel(0.0);
+				cm.setTargetToq(0.0);
 			}
 
 			// store correct data

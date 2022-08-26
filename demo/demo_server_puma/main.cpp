@@ -36,6 +36,10 @@ int main(int argc, char *argv[]){
 	puma_param.d3 = 0.0;
 	puma_param.d4 = 0.35;
 	puma_param.install_method = 1;
+
+	puma_param.base2ref_pe[0] = 1;
+	puma_param.base2ref_pe[1] = 2;
+	puma_param.base2ref_pe[2] = 3;
 	// 安装方式
 	// 0, 正常安装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面 z 轴
 	// 1，顶部吊装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面-z 轴

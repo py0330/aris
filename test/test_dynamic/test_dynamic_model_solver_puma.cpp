@@ -117,7 +117,16 @@ void test_puma_inverse_solver(){
 			input_series[(i / 3125) % 5],
 		};
 		m->setInputPos(q);
-		if (m->forwardKinematics())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (m->forwardKinematics())
+			std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+
+		double result[6];
+		m->getInputPos(result);
+		if (!s_is_equal(6, result, q, 1e-9)){
+			std::cout << __FILE__ << __LINE__ << " failed inverse kinematics"  << std::endl;
+			dsp(1, 6, q);
+			dsp(1, 6, result);
+		}
 
 		double j_pos[6][3], j_axis[6][3], pe_ee_i[6], pe_ee_j[6];
 		for (int i = 0; i < 6; ++i){
@@ -206,69 +215,12 @@ void test_puma_vel() {
 	if (!s_is_equal(6, result, output_as, 1e-9))std::cout << "failed" << std::endl;
 }
 
-void test_model_solver_puma()
-{
+void test_model_solver_puma(){
 	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
 
-	//test_puma_forward_solver();
-	//test_puma_inverse_solver();
-	//test_puma_vel();
-
-	//double tem2[6];
-	//
-
-	//dsp(1, 6, tem2);
-
-	////////////////////////////////////////////////测试建模/////////////////////////////////////////////////
-	aris::dynamic::PumaParam param;
-	param.d1 = 0.3295;
-	param.a1 = 0.04;
-	param.a2 = 0.275;
-	param.d3 = 0.0;
-	param.a3 = 0.025;
-	param.d4 = 0.28;
-
-	param.tool0_pe[2] = 0.078;
-
-	param.iv_vec =
-	{
-		{ 0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.59026333537827,   0.00000000000000,   0.00000000000000,   0.00000000000000 },
-		{ 0.00000000000000, -0.02551872200978,   0.00000000000000,   3.05660683326413,   2.85905166943306,   0.00000000000000,   0.00000000000000, -0.00855352993039, -0.09946674483372, -0.00712210734359 },
-		{ 0.00000000000000,   0.00000000000000,   0.00000000000000,   0.02733022277747,   0.00000000000000,   0.37382629693302,   0.00000000000000,   0.00312006493276, -0.00578410451516,   0.00570606128540 },
-		{ 0.00000000000000,   1.06223330086669,   0.00000000000000,   0.00311748242960,   0.00000000000000,   0.24420385558544,   0.24970286555981,   0.00305759215246, -0.66644096559686,   0.00228253380852 },
-		{ 0.00000000000000,   0.05362286897910,   0.00528925153464, -0.00842588023014,   0.00128498153337, -0.00389810210572,   0.00000000000000, -0.00223677867576, -0.03365036368035, -0.00415647085627 },
-		{ 0.00000000000000,   0.00000000000000,   0.00066049870832,   0.00012563800445, -0.00085124094833,   0.04209529937135,   0.04102481443654, -0.00067596644891,   0.00017482449876, -0.00041025776053 },
-	};
-
-	param.mot_frc_vec =
-	{
-		{9.34994758321915, 7.80825641041495, 0.00000000000000},
-		{11.64080253106441, 13.26518528472506, 3.55567932576820},
-		{4.77014054273075, 7.85644357492508, 0.34445460269183},
-		{3.63141668516122, 3.35461524886318, 0.14824771620542},
-		{2.58310846982020, 1.41963212641879, 0.04855267273770},
-		{1.78373986219597, 0.31920640440152, 0.03381545544099},
-	};
-	auto m1 = aris::dynamic::createModelPuma(param);
-
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m1->generalMotionPool().at(0)).setMpe(std::array<double, 6>{0.38453, 0, 0.6294, 0.0001, 0 + aris::PI/2, 0}.data(), "321");
-	m1->solverPool().at(0).kinPos();
-
-	double input[6];
-	m1->inverseKinematics();
-	m1->getInputPos(input);
-	dsp(1, 6, input);
-
-	double part_pe[6]{0,0,0,0,0,aris::PI};
-	m1->ground().findMarker("wobj0")->setPrtPe(part_pe, "321");
-	m1->init();
-
-	m1->setInputPos(input);
-	m1->forwardKinematics();
-	double output[6];
-	m1->getOutputPos(output);
-	dsp(1, 6, output);
-
+	test_puma_forward_solver();
+	test_puma_inverse_solver();
+	test_puma_vel();
 
 	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;
 }

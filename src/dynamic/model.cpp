@@ -176,15 +176,6 @@ namespace aris::dynamic{
 		ARIS_DATA_DEFINATION(InputFce, inputFce, mf, setF)
 #undef ARIS_DATA_DEFINATION
 
-
-	//auto Model::setInputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].setP(mp + pos); }
-	//auto Model::getInputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].pSize(), ++i) motionPool()[i].getP(mp + pos); }
-	//auto Model::setInputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setV(mv + pos); }
-	//auto Model::getInputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getV(mv + pos); }
-	//auto Model::setInputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setA(ma + pos); }
-	//auto Model::getInputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getA(ma + pos); }
-	//auto Model::setInputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].setF(mf + pos); }
-	//auto Model::getInputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < motionPool().size(); pos += motionPool()[i].dim(), ++i) motionPool()[i].getF(mf + pos); }
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
 	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
 	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }

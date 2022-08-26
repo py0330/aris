@@ -65,8 +65,7 @@ namespace aris::dynamic
 			s_mi(6, dim(), cmI, cmJ);
 		}
 		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
-		{
+		auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void{
 			double pm[16];
 			makI()->getPm(relative_to_I, pm);
 			s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
@@ -75,8 +74,7 @@ namespace aris::dynamic
 			s_tf_n(dim(), -1.0, pm, locCmI(), dim(), cmJ, cmj_type);
 		}
 		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto cptCm(const Coordinate &relative_to, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
-		{
+		auto cptCm(const Coordinate &relative_to, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void{
 			double pm[16];
 			makI()->getPm(relative_to, pm);
 			s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
@@ -84,14 +82,12 @@ namespace aris::dynamic
 			s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 		}
 		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
-		{
+		auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void{
 			cptCm(makI()->fatherPart(), cmI, cmi_type, makJ()->fatherPart(), cmJ, cmj_type);
 		}
 		auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
 		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
-		{
+		auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void{
 			s_tf_n(dim(), *makI()->pm(), locCmI(), dim(), cmI, cmi_type);
 			s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 		}
