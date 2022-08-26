@@ -68,7 +68,6 @@ namespace aris::server{
 		};
 		struct ChanelData {
 			// 实时循环中的轨迹参数 //
-			
 			std::shared_ptr<InternalData> internal_data_queue_[CMD_POOL_SIZE];
 
 			// cmd系列参数
@@ -244,7 +243,8 @@ namespace aris::server{
 					else if (ret == 0) {
 						// print info //
 						if (!(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-							ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.count() << " counts\n";
+							plan.master()->mout() << "RT" << i << " " << plan.cmdId() << "---" 
+							<< "cmd finished, spend " << plan.count() << " counts\n";
 
 						// finish //
 						server_->master().resetRtStasticData(nullptr, false);
@@ -255,7 +255,8 @@ namespace aris::server{
 					else {
 						// print info //
 						if (plan.count() % 1000 == 0 && !(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-							ARIS_MOUT_PLAN((&plan)) << "execute cmd in count: " << plan.count() << "\n";
+							plan.master()->mout() << "RT" << i << " " << plan.cmdId() << "---" 
+							<< "execute cmd in count: " << plan.count() << "\n";
 					}
 				}
 			}
