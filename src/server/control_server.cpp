@@ -583,6 +583,9 @@ namespace aris::server{
 				break;
 			default:
 				fix_finished = cm.disable() || fix_finished;
+				cm.setTargetPos(0.0);
+				cm.setTargetVel(0.0);
+				cm.setTargetToq(0.0);
 			}
 
 			// store correct data
@@ -1824,7 +1827,7 @@ namespace aris::server{
 
 		aris::core::class_<ScaraTransferModelController>("ScaraTransferModelController")
 			.inherit<TransferModelController>()
-			.prop("pitch", &ScaraTransferModelController::pitch_)
+			.prop("pitch", &ScaraTransferModelController::setPitch, &ScaraTransferModelController::pitch)
 			;
 	}
 }

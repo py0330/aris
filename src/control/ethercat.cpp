@@ -608,7 +608,15 @@ namespace aris::control{
 		}
 	}
 	auto EthercatMotor::enable()->int {
-		if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x27;
+		if (imp_->slave_->isVirtual()) {
+			imp_->status_word_ = 0x27;
+			switch (modeOfDisplay()) {
+			case 0x08: setTargetPos(actualPos()); break;
+			case 0x09: setTargetVel(0.0); break;
+			case 0x10: setTargetToq(0.0); break;
+			default: setTargetPos(actualPos()); setTargetVel(0.0); setTargetToq(0.0);
+			}
+		}
 
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown

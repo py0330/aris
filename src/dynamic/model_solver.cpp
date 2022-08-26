@@ -1616,12 +1616,21 @@ namespace aris::dynamic{
 		}
 	};
 
-	struct ForwardKinematicSolver::Imp { std::vector<double> J_vec_, cf_vec_; };
+	struct ForwardKinematicSolver::Imp { 
+		std::vector<double> J_vec_, cf_vec_;
+		aris::Size mJf_{ 0 }, nJf_{ 0 };
+	};
 	auto ForwardKinematicSolver::allocateMemory()->void{
 		HelpResetRAII help_reset(this->model());
 		
+		imp_->mJf_ = 0;
+		imp_->nJf_ = model()->motionPool().size();
+
 		for (auto &m : model()->motionPool())m.activate(true);
-		for (auto &gm : model()->generalMotionPool())gm.activate(false);
+		for (auto& gm : model()->generalMotionPool()) {
+			gm.activate(false);
+			imp_->mJf_ += gm.dim();
+		}
 
 		imp_->J_vec_.resize(6 * model()->generalMotionPool().size() * model()->motionPool().size());
 		imp_->cf_vec_.resize(6 * model()->generalMotionPool().size());
@@ -1647,19 +1656,59 @@ namespace aris::dynamic{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比，找出加速度差，就是cfi
+		int pos = 0;
 		for (auto &gm : model()->generalMotionPool()){
 			for (auto &mot : model()->motionPool()){
-				double tem[6];
-				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
-				s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				// reserve data //
+				double vs_I_restore[6], vs_J_restore[6], as_I_restore[6], as_J_restore[6], mv_restore[6], ma_restore[6];
+				gm.makI()->fatherPart().getVs(vs_I_restore);
+				gm.makJ()->fatherPart().getVs(vs_J_restore);
+				gm.makI()->fatherPart().getAs(as_I_restore);
+				gm.makJ()->fatherPart().getAs(as_J_restore);
+				gm.getV(mv_restore);
+				gm.getA(ma_restore);
+				
+				// J //
+				double vs_I[6], vs_J[6];
+				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), vs_I, 1);
+				s_vc(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), vs_J, 1);
 
-				s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+				gm.makI()->fatherPart().setVs(vs_I);
+				gm.makJ()->fatherPart().setVs(vs_J);
+				gm.updV();
+				s_vc(gm.dim(), gm.v(), 1, imp_->J_vec_.data() + at(pos, mot.id(), nJf()), nJf());
 
+				// restore vs //
+				gm.makI()->fatherPart().setVs(vs_I_restore);
+				gm.makJ()->fatherPart().setVs(vs_J_restore);
+
+				// cf //
+				double as_I[6], as_J[6];
+				s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, as_I);
+				s_vc(6, cg() + gm.makJ()->fatherPart().id() * 6, as_J);
+				gm.makI()->fatherPart().setAs(as_I);
+				gm.makJ()->fatherPart().setAs(as_J);
+				gm.updA();
+				s_vc(gm.dim(), gm.a(), imp_->cf_vec_.data() + pos);
+				
+				// restore data //
+				gm.makI()->fatherPart().setAs(as_I_restore);
+				gm.makJ()->fatherPart().setAs(as_J_restore);
+				gm.setV(mv_restore);
+				gm.setA(ma_restore);
+
+				// old method //
+				//double tem[6];
+				//s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				//s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				//s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 				// 以下求cf //
-				s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
-				s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
-				s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+				//s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
+				//s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
+				//s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+
 			}
+			pos += gm.dim();
 		}
 	}
 	auto ForwardKinematicSolver::cptJacobiWrtEE()noexcept->void{
@@ -1685,23 +1734,32 @@ namespace aris::dynamic{
 			}
 		}
 	}
-	auto ForwardKinematicSolver::mJf()const noexcept->Size { return model()->generalMotionPool().size() * 6;  }
-	auto ForwardKinematicSolver::nJf()const noexcept->Size { return model()->motionPool().size(); }
+	auto ForwardKinematicSolver::mJf()const noexcept->Size { return imp_->mJf_;  }
+	auto ForwardKinematicSolver::nJf()const noexcept->Size { return imp_->nJf_; }
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto ForwardKinematicSolver::cf()const noexcept->const double * { return imp_->cf_vec_.data(); }
 	ForwardKinematicSolver::~ForwardKinematicSolver() = default;
 	ForwardKinematicSolver::ForwardKinematicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardKinematicSolver);
 
-	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
+	struct InverseKinematicSolver::Imp{
+		std::vector<double> J_vec_, ci_vec_;
+		aris::Size mJi_{ 0 }, nJi_{ 0 };
+	};
 	auto InverseKinematicSolver::allocateMemory()->void{
 		HelpResetRAII help_reset(this->model());
 		
-		for (auto &m : model()->motionPool())m.activate(false);
-		for (auto &gm : model()->generalMotionPool())gm.activate(true);
+		imp_->mJi_ = model()->motionPool().size();
+		imp_->nJi_ = 0;
 
-		imp_->J_vec_.resize(6 * model()->generalMotionPool().size() * model()->motionPool().size());
-		imp_->ci_vec_.resize(6 * model()->motionPool().size());
+		for (auto &m : model()->motionPool())m.activate(false);
+		for (auto& gm : model()->generalMotionPool()) {
+			gm.activate(true);
+			imp_->nJi_ += gm.dim();
+		}
+
+		imp_->J_vec_.resize(imp_->mJi_ * imp_->nJi_);
+		imp_->ci_vec_.resize(imp_->mJi_);
 
 		UniversalSolver::allocateMemory();
 	}
@@ -1724,15 +1782,16 @@ namespace aris::dynamic{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比
+		int pos = 0;
 		for (auto &gm : model()->generalMotionPool()){
 			for (auto &mot : model()->motionPool()){
-				for (Size i = 0; i < 6; ++i){
+				for (Size i = 0; i < gm.dim(); ++i) {
 					double tem[6], tem2[6];
 					s_vc(6, Jg() + at(mot.makI()->fatherPart().id() * 6, gm.id() * 6 + i, nJg()), nJg(), tem, 1);
 					s_vs(6, Jg() + at(mot.makJ()->fatherPart().id() * 6, gm.id() * 6 + i, nJg()), nJg(), tem, 1);
 
 					s_inv_tv(*mot.makI()->pm(), tem, tem2);
-					imp_->J_vec_[at(mot.id(), gm.id() * 6 + i, nJi())] = tem2[mot.axis()];
+					imp_->J_vec_[at(mot.id(), pos + i, nJi())] = tem2[mot.axis()];
 
 					// 以下求ci //
 					// 这一段相当于updMv //
@@ -1748,10 +1807,11 @@ namespace aris::dynamic{
 					imp_->ci_vec_[mot.id()] = tem2[mot.axis()];
 				}
 			}
+			pos += gm.dim();
 		}
 	}
-	auto InverseKinematicSolver::mJi()const noexcept->Size { return model()->motionPool().size();  }
-	auto InverseKinematicSolver::nJi()const noexcept->Size { return model()->generalMotionPool().size() * 6; }
+	auto InverseKinematicSolver::mJi()const noexcept->Size { return imp_->mJi_; }
+	auto InverseKinematicSolver::nJi()const noexcept->Size { return imp_->nJi_; }
 	auto InverseKinematicSolver::Ji()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto InverseKinematicSolver::ci()const noexcept->const double * { return imp_->ci_vec_.data(); }
 	InverseKinematicSolver::~InverseKinematicSolver() = default;

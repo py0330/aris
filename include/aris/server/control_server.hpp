@@ -16,8 +16,7 @@
 #include "aris/server/interface.hpp"
 #include "aris/server/middle_ware.hpp"
 
-namespace aris::server
-{
+namespace aris::server{
 	class ARIS_API CustomModule {
 	public:
 		CustomModule() = default;
@@ -94,6 +93,10 @@ namespace aris::server
 			pitch_ = pitch;
 		}
 
+		auto pitch()const noexcept->double { return pitch_; }
+		auto setPitch(double pitch)noexcept->void { pitch_ = pitch; }
+
+	private:
 		double pitch_;
 	};
 
