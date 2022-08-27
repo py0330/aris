@@ -489,8 +489,12 @@ namespace aris::core
 					break;
 				}
 				// 数字
-				if (std::stringstream(std::string(token.word)) >> token.num){
+				if (std::stringstream(std::string(token.word)) >> token.num || token.word == "nan" || token.word == "inf") {
 					token.type = Token::Type::NUMBER;
+					if (token.word == "nan")
+						token.num = std::numeric_limits<double>::quiet_NaN();
+					else if (token.word == "inf")
+						token.num = std::numeric_limits<double>::infinity();
 					break;
 				}
 				// 操作符
