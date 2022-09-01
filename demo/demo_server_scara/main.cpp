@@ -46,6 +46,13 @@ int main(int argc, char *argv[]){
 
 	scara->inverseKinematics();
 
+	aris::core::Matrix m1(1, 6, -std::numeric_limits<double>::infinity());
+	auto m1_str = aris::core::toXmlString(m1);
+	aris::core::Matrix m2;
+	aris::core::fromXmlString(m2, m1_str);
+
+	auto m2_str = aris::core::toXmlString(m2);
+
 	//scara->inverseKinematics();
 	//scara->getInputPos(input);
 	//aris::dynamic::dsp(1, 4, input);
