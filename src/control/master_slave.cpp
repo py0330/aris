@@ -12,7 +12,7 @@
 
 #include "aris/core/core.hpp"
 
-#define DEBUG_MASTER_TIME
+//#define DEBUG_MASTER_TIME
 
 namespace aris::control {
 	struct Slave::Imp {
