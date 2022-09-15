@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
 	scara_param.a = 0.2;
 	scara_param.b = 0.3;
 	scara_param.install_method = 0;
-	auto& scara = aris::dynamic::createModelScara(scara_param);
+	auto scara = aris::dynamic::createModelScara(scara_param);
 
 	double input[4]{ 0,0.000001,0.3,0 };
 	scara->setInputPos(input);
