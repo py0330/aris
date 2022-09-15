@@ -130,33 +130,34 @@ auto calibModelYuejiang()->std::unique_ptr<aris::dynamic::Model>
 auto calibFromControlServerXml() {
 	auto& cs = aris::server::ControlServer::instance();
 
-	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh_v1_local.xml");
+	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\calib\\kaanh.xml");
 	std::cout << "verify" << std::endl;
 
-	auto& model = dynamic_cast<aris::dynamic::Model&>(cs.model());
+	auto& multi = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
+	auto& model = dynamic_cast<aris::dynamic::Model&>(multi.subModels()[0]);
 
 	model.init();
 
 	auto& clb = model.calibratorPool()[0];
 
 	clb.clbFiles({
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par6_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
 		});
 
 	clb.setVerifyOutputFileDir("C:\\Users\\py033\\Desktop\\calib\\data_after");
 
 	clb.verifyFiles({
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5_.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par6_.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
+		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
 		});
 };
 
