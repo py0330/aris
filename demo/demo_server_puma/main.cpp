@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
 	// 1，顶部吊装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面-z 轴
 	// 2，侧装向上，零位时末端法兰盘朝向：地面 z 轴，零位时末端1轴朝向：地面 x 轴
 	// 3，侧装向下，零位时末端法兰盘朝向：地面-z 轴，零位时末端1轴朝向：地面 x 轴
-	auto& puma = aris::dynamic::createModelPuma(puma_param);
+	auto puma = aris::dynamic::createModelPuma(puma_param);
 
 	puma->forwardKinematics();
 	double pe[6];

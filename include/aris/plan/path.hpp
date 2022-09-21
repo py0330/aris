@@ -228,9 +228,9 @@ namespace aris::plan{
 			aris::dynamic::s_iv(4, q2);
 
 
-		////////////////////////  sin（theta0）= 0时 有问题 /////////
-		double theta0 = std::acos(q0[3]);
-		double theta2 = std::acos(q2[3]);
+		////////////////////////  sin（theta0）= 0时, v0 的计算似乎有问题 /////////
+		double theta0 = std::atan2(std::sqrt(q0[0] * q0[0] + q0[1] * q0[1] + q0[2] * q0[2]), q0[3]);
+		double theta2 = std::atan2(std::sqrt(q2[0] * q2[0] + q2[1] * q2[1] + q2[2] * q2[2]), q2[3]);
 		double v0[3],v2[3];
 		if (theta0 < 1e-7)
 			aris::dynamic::s_vc(3, q0, v0);

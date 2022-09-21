@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[]){
 	test_trajectory();
-	test_path();
+	//test_path();
 	
 	//test_function();
 

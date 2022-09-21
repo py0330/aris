@@ -10,7 +10,7 @@
 
 //#include <aris/core/core.hpp>
 //#include <aris/control/control.hpp>
-#include <aris/dynamic/dynamic.hpp>
+#include <aris/plan/scurve.hpp>
 
 /// \brief 轨迹规划命名空间
 /// \ingroup aris
@@ -18,106 +18,87 @@
 ///
 ///
 namespace aris::plan{
-	struct ARIS_API SCurveParam {
-		double pb_;     // 结束位置
-		double vc_max_; // 允许的最大速度
-		double vb_max_; // 允许的最大末端速度
-		double a_;      // 过程中最大加速度
-		double j_;      // 过程中最大加加速度
+	class ARIS_API TrajectoryGenerator {
+	public:
+		struct Node {
+			enum class MoveType {
+				Line,
+				Circle
+			};
+			MoveType motion_type_;
+			std::vector<double> ee_pos, mid_pos;
+			std::vector<double> vel, acc, jerk, zone;
+			std::vector<double> s1, s2, s3;
+			SCurveNode scurve;
 
-		double pa_;     // 起始位置
-		double va_;     // 起始速度
-		double T_;      // 总时长，T = Ta + Tb + Tc，Tc是匀速段时长
 
-		double vb_;     // 结束速度
-		double vc_;     // 匀速段速度
-		double Ta_;     // 起始段加速时长
-		double Tb_;     // 结束段加速时长
-		int    mode_;   // A or B 模式
+			std::list<SCurveNode>::iterator scurve_iter_;
+			std::atomic<Node*> next_node_;
 
-		double t0_;     // 开始的时间
+			~Node() = default;
+			Node() = default;
+			Node(const Node& other):
+				motion_type_(other.motion_type_),
+				ee_pos(other.ee_pos),
+				scurve_iter_(other.scurve_iter_),
+				next_node_(other.next_node_.load())
+			{
+			}
+		};
+		// 配置末端类型 //
+		auto setEeTypes(const std::vector<aris::dynamic::EEType>& ee_types)->void {
+			ee_types_ = ee_types;
+		}
+
+		// 设置时间间隔 //
+		auto setDt(double dt)->void {
+			dt_ = dt;
+		}
+
+		// 设置时间间隔 //
+		auto setTargetDs(double ds)->void {
+			ds_ = ds;
+		}
+
+		// 设置时间流逝的加速度
+		auto setTargetDds(double dds)->void {
+			dds_ = dds;
+		}
+
+		// 设置时间流逝的加加速度
+		auto setTargetDdds(double ddds)->void {
+			ddds_ = ddds;
+		}
+
+		// 获取末端数据，并移动dt //
+		auto getEePosAndMoveDt(double *ee_pos)->void;
+
+		// 插入新的数据，并重规划 //
+		auto insertLinePos(const double* ee_pos)->void {
+			
+		}
+		// 插入新的数据，并重规划 //
+		auto insertCirclePos(const double* ee_pos, const double *mid_pos)->void {
+			Node node;
+		}
+
+	private:
+		double dt_, ds_, dds_, ddds_;
+		std::vector<aris::dynamic::EEType> ee_types_;
+		std::list<Node> nodes_;
+		// 当前正在使用的节点 //
+		std::atomic<Node*> next_node_;
+
+
+		//std::list<Node>::iterator current_node_;
+		//// 下次所需重规划的节点 //
+		//std::list<Node>::iterator deceleration_node_;
+
+
+		//std::list<Node>::iterator current_node_;
 	};
 
-	struct ARIS_API SCurveNode {
-		std::vector<SCurveParam> params_;
-	};
 
-	struct ARIS_API SCurveStruct {
-		std::list<SCurveNode> nodes_;
-
-
-
-
-
-		// 应当处理每个节点的如下信息：
-		// - pb
-		// - vc_max_
-		// - vb_max_
-		// - a
-		// - j
-		//
-		// 以及首节点的如下信息：
-		// - pa
-		// - va
-		auto insertNodes(std::list<SCurveNode>& ins_nodes)->void;
-
-		// 循环计算每个节点：
-		auto compute()->void;
-
-	};
-
-	
-	// 给定时间，计算加加速段的终止速度
-	auto ARIS_API s_acc_vend(double va, double a, double j, double T)noexcept->double;
-	// 给定速度，计算加加速段的终止速度
-	auto ARIS_API s_acc_vend(double va, double a, double j, double vb)noexcept->double;
-
-
-	// 计算指定时间处的 p v a j
-	auto ARIS_API s_s_curve_at(const SCurveParam& param, double t, double* p = nullptr, double* v = nullptr, double* a = nullptr, double* j = nullptr)noexcept->void;
-
-	// 根据起始条件，终止位置，总时间来计算 S 曲线
-	//
-	// param 中的以下信息为输入：
-	// - pb
-	// - vc_max_
-	// - vb_max_
-	// - a
-	// - j
-	// - pa
-	// - va
-	// - T
-	// 
-	// 以下信息为输出：
-	// - vb_
-	// - vc_
-	// - Ta_
-	// - Tb_
-	// - mode_
-	auto ARIS_API s_compute_s_curve(SCurveParam& param)->void;
-
-	// 计算 S 曲线的最大最小时间
-	//
-	// param 中的以下为输入：
-	// - pb
-	// - vc_max_
-	// - vb_max_
-	// - a
-	// - j
-	// - pa
-	// - va
-	// 
-	// 以下不变：
-	// - vb_
-	// - vc_
-	// - Ta_
-	// - Tb_
-	// - mode_
-	// - T_
-	//
-	// 函数输出：
-	// Tmax, Tmin
-	auto ARIS_API s_compute_s_curve_Tmax_Tmin(const SCurveParam &param)->std::tuple<double,double>;
 }
 
 #endif
