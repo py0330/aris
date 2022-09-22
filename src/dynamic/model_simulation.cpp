@@ -453,7 +453,7 @@ namespace aris::dynamic{
 
 		//std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
-		double zero_check = 1e-4;
+		double zero_check = 1e-6;
 
 		s_nv(rows * n(), 1.0 / real_max, A.data());
 		s_nv(rows, 1.0 / real_max, b.data());

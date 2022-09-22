@@ -446,7 +446,7 @@ namespace aris::dynamic{
 		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 4 ? param.iv_vec[0].data() : default_iv);
 		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 4 ? param.iv_vec[1].data() : default_iv);
 		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 4 ? param.iv_vec[2].data() : default_iv);
-		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 4 ? param.iv_vec[0].data() : default_iv);
+		auto &p4 = model->partPool().add<Part>("L4", param.iv_vec.size() == 4 ? param.iv_vec[0].data() : default_iv, ee_i_pm);
 
 		// add geometry //
 
@@ -483,7 +483,7 @@ namespace aris::dynamic{
 		m4.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[3].data() : default_mot_frc);
 
 		////////////////////////////  EES  /////////////////////////////
-		auto &makI = p4.addMarker("tool0", ee_i_pm);
+		auto &makI = p4.addMarker("tool0");
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::XyztMotion>("ee", &makI, &makJ, false);
 
@@ -533,7 +533,7 @@ namespace aris::dynamic{
 
 		////////////////////////////  TOOLS WOBJS  /////////////////////////////
 		for (int i = 1; i < 17; ++i) 
-			p4.addMarker("tool" + std::to_string(i), ee_i_pm);
+			p4.addMarker("tool" + std::to_string(i), *ee.makI()->prtPm());
 		for (int i = 1; i < 33; ++i) 
 			model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *ee.makJ()->prtPm());
 

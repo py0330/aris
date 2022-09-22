@@ -616,7 +616,7 @@ namespace aris::dynamic{
 
 		////////////////////////////  TOOLS WOBJS  /////////////////////////////
 		for (int i = 1; i < 17; ++i)
-			p6.addMarker("tool" + std::to_string(i));
+			p6.addMarker("tool" + std::to_string(i), *ee.makI()->prtPm());
 		for (int i = 1; i < 33; ++i) 
 			model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *ee.makJ()->prtPm());
 
