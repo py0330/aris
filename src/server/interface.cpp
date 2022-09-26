@@ -793,7 +793,7 @@ namespace aris::server
 			.prop("socket", &ProgramWebInterface::resetSocket, &ProgramWebInterface::socket)
 			;
 
-		aris::core::class_<HttpInterface>("HttpInterfaceInterface")
+		aris::core::class_<HttpInterface>("HttpInterface")
 			.inherit<Interface>()
 			.prop("document_root", &HttpInterface::setDocumentRoot, &HttpInterface::documentRoot)
 			.prop("port", &HttpInterface::setPort, &HttpInterface::port)
