@@ -1300,9 +1300,19 @@ namespace aris::dynamic{
 		aris::core::class_<Geometry>("Geometry")
 			;
 
+		auto getFileGeometryPm = [](FileGeometry* fg)->aris::core::Matrix {
+			double pm[16];
+			s_vc(16, *fg->prtPm(), pm);
+			return aris::core::Matrix(4, 4, pm);
+		};
+		auto setFileGeometryPm = [](FileGeometry* fg, aris::core::Matrix pm)->void {
+			std::copy_n(pm.data(), 16, const_cast<double*>(*fg->prtPm()));
+		};
+
 		aris::core::class_<FileGeometry>("FileGeometry")
 			.inherit<Geometry>()
 			.prop("graphic_file_path", &FileGeometry::setFilePath, &FileGeometry::filePath)
+			.prop("pm", &setFileGeometryPm, &getFileGeometryPm)
 			;
 	}
 }
