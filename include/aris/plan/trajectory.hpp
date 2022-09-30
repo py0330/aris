@@ -336,20 +336,8 @@ namespace aris::plan{
 		}
 
 		// 插入新的数据，并重规划 //
-		auto insertPos(
-			std::int64_t id,
-			Node::MoveType move_type,
-			const double* ee_pos,
-			const double* mid_pos,
-			const double* vel,
-			const double* acc,
-			const double* jerk,
-			const double* zone)->void;
-
-		//auto setInitPos(const double* ee_pos)noexcept->void {
-		//	aris::dynamic::s_vc(begin_pos.size(), ee_pos, begin_pos.data());
-		//	outpos_to_internal_pos(ee_types_, begin_pos.data(), internal_begin_pos.data());
-		//}
+		auto insertPos(std::int64_t id, Node::MoveType move_type, 
+			const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void;
 
 	private:
 		// 时间参数 //

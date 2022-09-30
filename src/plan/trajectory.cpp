@@ -844,15 +844,8 @@ namespace aris::plan {
 		return current_node->id_;
 	}
 
-	auto TrajectoryGenerator::insertPos(
-		std::int64_t id,
-		Node::MoveType move_type,
-		const double* ee_pos,
-		const double* mid_pos,
-		const double* vel,
-		const double* acc,
-		const double* jerk,
-		const double* zone)->void
+	auto TrajectoryGenerator::insertPos(std::int64_t id, Node::MoveType move_type, const double* ee_pos, const double* mid_pos,
+		const double* vel, const double* acc, const double* jerk, const double* zone)->void
 	{
 		std::lock_guard<std::recursive_mutex> lck(mu_);
 

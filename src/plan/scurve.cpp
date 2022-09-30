@@ -1203,7 +1203,7 @@ namespace aris::plan {
     }
 
     // 循环计算每个节点：
-    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator& begin_iter, std::list<SCurveNode>::iterator& end_iter)noexcept->void {
+    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter)noexcept->void {
         // 设置正确的 pa
         for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
             // 设置正确的 pa
