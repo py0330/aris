@@ -61,7 +61,7 @@ namespace aris::plan{
 	};
 
 	// 计算指定时间处的 p v a j
-	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator& begin_iter, std::list<SCurveNode>::iterator& end_iter)noexcept->void;
+	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter)noexcept->void;
 
 	// 计算指定时间处的 p v a j
 	auto ARIS_API s_scurve_at(const SCurveParam& param, int t_count, double t, int* p_count = nullptr, double* p_out = nullptr, double* v_out = nullptr, double* a_out = nullptr, double* j_out = nullptr)noexcept->void;
