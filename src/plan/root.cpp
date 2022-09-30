@@ -1044,6 +1044,7 @@ namespace aris::plan{
 				p, v, a, mvj_param->total_count[i]);
 
 			model()->setInputPosAt(p, i);
+			model()->forwardKinematics();
 		}
 
 		return max_total_count == 0 ? 0 : static_cast<int>(max_total_count - count());
