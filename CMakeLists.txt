@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 2.3.2.220915 DESCRIPTION "fix scara bugs")
+project(aris VERSION 2.3.2.220930 DESCRIPTION "fix scara bugs")
 
 # version
 configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)
