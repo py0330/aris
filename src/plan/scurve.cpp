@@ -33,11 +33,6 @@ namespace aris::plan {
             double x_mid = x_below + (x_upper - x_below) / 2;
             double f_mid = f(x_mid);
 
-            double x1 = (x_mid * f_below - x_below * f_mid) / (f_below - f_mid);
-            double fx1 = f(x1);
-            double x2 = (x_mid * f_upper - x_upper * f_mid) / (f_upper - f_mid);
-            double fx2 = f(x2);
-
             if (aris::dynamic::s_sgn2(f_mid) == fsig) {
                 x_upper = x_mid;
                 f_upper = f_mid;
@@ -47,24 +42,34 @@ namespace aris::plan {
                 f_below = f_mid;
             }
 
-            if (aris::dynamic::s_sgn2(fx1) == fsig && xsig * x1 <= xsig * x_upper && xsig * x1 >= xsig * x_below) {
-                x_upper = x1;
-                f_upper = fx1;
+            double x1 = (x_mid * f_below - x_below * f_mid) / (f_below - f_mid);
+            if (xsig * x1 <= xsig * x_upper && xsig * x1 >= xsig * x_below) {
+                double fx1 = f(x1);
+                if (aris::dynamic::s_sgn2(fx1) == fsig) {
+                    x_upper = x1;
+                    f_upper = fx1;
+                }
+                else{
+                    x_below = x1;
+                    f_below = fx1;
+                }
             }
-            if (aris::dynamic::s_sgn2(fx2) == fsig && xsig * x2 <= xsig * x_upper && xsig * x2 >= xsig * x_below) {
-                x_upper = x2;
-                f_upper = fx2;
-            }
-            if (aris::dynamic::s_sgn2(fx1) != fsig && xsig * x1 >= xsig * x_below && xsig * x1 <= xsig * x_upper) {
-                x_below = x1;
-                f_below = fx1;
-            }
-            if (aris::dynamic::s_sgn2(fx2) != fsig && xsig * x2 >= xsig * x_below && xsig * x2 <= xsig * x_upper) {
-                x_below = x2;
-                f_below = fx2;
-            }
-            diff = std::abs(x_upper - x_below);
 
+            double x2 = (x_mid * f_upper - x_upper * f_mid) / (f_upper - f_mid);
+            if (xsig * x2 <= xsig * x_upper && xsig * x2 >= xsig * x_below) {
+                double fx2 = f(x2);
+                if (aris::dynamic::s_sgn2(fx2) == fsig) {
+                    x_upper = x2;
+                    f_upper = fx2;
+                }
+                else{
+                    x_below = x2;
+                    f_below = fx2;
+                }
+            
+            }
+            
+            diff = std::abs(x_upper - x_below);
         }
         return (x_below + x_upper) / 2;
     }
@@ -1248,7 +1253,7 @@ namespace aris::plan {
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
-            double T_below = Tmin_all;
+            double T_below = std::max(Tmin_all,0.001);
 
             if (T_upper == std::numeric_limits<double>::infinity()) {
                 T_upper = std::max(T_below, 1.0) * 2.0; // in case T_below == 0.0

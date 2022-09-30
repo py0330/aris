@@ -115,10 +115,11 @@ namespace aris::dynamic
 
 	auto inline s_q_to_theta_v(const double* q, const double* dq, const double* ddq,
 							   double &theta, double *v, double &dtheta, double *dv, double &d2theta, double *d2v)noexcept->void {
-		theta = std::acos(q[3]);
+		
 
 		auto c = q[3];
-		auto s = std::sin(theta);
+		auto s = aris::dynamic::s_norm(3, q);
+		theta = std::atan2(s, c);
 
 		if (theta > 1e-7) {
 			s_vc(3, 1.0 / s, q, v);
@@ -138,6 +139,8 @@ namespace aris::dynamic
 		}
 		else {
 			// not correct, tbd
+			dtheta = 0.0;
+			d2theta = 0.0;
 			v[0] = 0.0;
 			v[1] = 0.0;
 			v[2] = 0.0;
