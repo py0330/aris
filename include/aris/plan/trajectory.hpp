@@ -23,129 +23,6 @@
 namespace aris::plan{
 	class ARIS_API TrajectoryGenerator {
 	public:
-		static auto internal_pos_to_outpos(const std::vector<aris::dynamic::EEType> &ee_types, const double *internal_pos, double *out_pos) {
-			aris::Size internal_idx{ 0 }, out_idx{ 0 };
-			for (auto ee_type : ee_types) {
-				switch (ee_type) {
-				case aris::dynamic::EEType::PE313: {
-					aris::dynamic::s_pq2pe(internal_pos + internal_idx, out_pos + out_idx, "313");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PE321: {
-					aris::dynamic::s_pq2pe(internal_pos + internal_idx, out_pos + out_idx, "321");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PE123: {
-					aris::dynamic::s_pq2pe(internal_pos + internal_idx, out_pos + out_idx, "123");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PQ: {
-					aris::dynamic::s_vc(7, internal_pos + internal_idx, out_pos + out_idx);
-					internal_idx += 7;
-					out_idx += 7;
-					break;
-				}
-				case aris::dynamic::EEType::PM: {
-					aris::dynamic::s_pq2pm(internal_pos + internal_idx, out_pos + out_idx);
-					internal_idx += 7;
-					out_idx += 16;
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					break;
-				}
-				case aris::dynamic::EEType::XYT: {
-					break;
-				}
-				case aris::dynamic::EEType::XY: {
-					break;
-				}
-				case aris::dynamic::EEType::X: {
-					break;
-				}
-				case aris::dynamic::EEType::A: {
-					break;
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-					break;
-				default:
-					break;
-				}
-			}
-			
-			
-		}
-		static auto outpos_to_internal_pos(const std::vector<aris::dynamic::EEType>& ee_types, const double* out_pos, double* internal_pos) {
-			aris::Size internal_idx{ 0 }, out_idx{ 0 };
-			for (auto ee_type : ee_types) {
-				switch (ee_type) {
-				case aris::dynamic::EEType::PE313: {
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "313");
-					internal_idx += 7;
-					out_idx += 6;
-					continue;
-				}
-				case aris::dynamic::EEType::PE321: {
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "321");
-					internal_idx += 7;
-					out_idx += 6;
-					continue;
-				}
-				case aris::dynamic::EEType::PE123: {
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "123");
-					internal_idx += 7;
-					out_idx += 6;
-					continue;
-				}
-				case aris::dynamic::EEType::PQ: {
-					aris::dynamic::s_vc(7, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 7;
-					out_idx += 7;
-					continue;
-				}
-				case aris::dynamic::EEType::PM: {
-					aris::dynamic::s_pm2pq(out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 7;
-					out_idx += 16;
-					continue;
-				}
-				case aris::dynamic::EEType::XYZT: {
-
-				}
-				case aris::dynamic::EEType::XYZ: {
-
-				}
-				case aris::dynamic::EEType::XYT: {
-
-				}
-				case aris::dynamic::EEType::XY: {
-
-				}
-				case aris::dynamic::EEType::X: {
-
-				}
-				case aris::dynamic::EEType::A: {
-
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-				default:
-					;
-				}
-			}
-
-
-		}
-
-
 		struct Node {
 			enum class MoveType {
 				Line,
@@ -223,9 +100,6 @@ namespace aris::plan{
 				auto getInternalEndPos(Node::MoveType move_type, aris::dynamic::EEType ee_type, double* end_pos)const noexcept->void;
 			};
 			
-			static auto inline make_zone_x_line_line(EePlanData* last_p, EePlanData* this_p)->void;
-			static auto inline make_zone_a_line_line(EePlanData* last_p, EePlanData* this_p)->void;
-
 			static auto init_ee_plans(
 				Node::MoveType move_type,
 				const double* ee_pos,
@@ -234,7 +108,6 @@ namespace aris::plan{
 				const double* acc,
 				const double* jerk,
 				const double* zone,
-				const double* begin_pos,   // 为 nullptr 时，就用last_node
 				const Node* last_node,
 				const std::vector<aris::dynamic::EEType>& ee_types,
 				std::vector<EePlanData>& ee_plans)->void;
@@ -242,6 +115,8 @@ namespace aris::plan{
 			static auto make_ee_plan_path(Node* last_node, Node* node)->void;
 
 			std::int64_t id_;
+			double s_end_;
+			double s_end_count_;
 			std::vector<EePlanData> ee_plans_;
 			std::atomic<Node*>      next_node_;
 
@@ -328,18 +203,19 @@ namespace aris::plan{
 		// 获取末端数据，并移动dt //
 		auto getEePosAndMoveDt(double *ee_pos)->std::int64_t;
 
-		// 初始化数据 //
-		auto init(const double* ee_pos)->void {
-			std::lock_guard<std::recursive_mutex> lck(mu_);
-			nodes_.clear();
-			nodes_.emplace_back(ee_types_.size());
-		}
-
 		// 插入新的数据，并重规划 //
 		auto insertPos(std::int64_t id, Node::MoveType move_type, 
 			const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void;
 
+		~TrajectoryGenerator();
+		TrajectoryGenerator();
+		//TrajectoryGenerator(TrajectoryGenerator&&)noexcept;
+		//TrajectoryGenerator& operator=(TrajectoryGenerator&&)noexcept;
+
 	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+
 		// 时间参数 //
 		double max_ds_{ 1.0 }, max_dds_{ 10.0 }, max_ddds_{ 100.0 };
 		double dt_{ 0.001 };
@@ -349,7 +225,6 @@ namespace aris::plan{
 
 		// 规划节点
 		std::vector<aris::dynamic::EEType> ee_types_;
-		//std::vector<double> begin_pos, internal_begin_pos; // 前者可能是各种形式，后者只有 pq，不包括 pe313 等
 		aris::Size outpos_size_{ 0 }, internal_pos_size{ 0 };
 		
 		std::list<Node> nodes_;

@@ -64,8 +64,17 @@ void test_trajectory(){
 
 	
 	
-	for (int i = 0; i < PE_SIZE; ++i) {
-		tg.insertPos(i + 10, aris::plan::TrajectoryGenerator::Node::MoveType::Line, pqs[i%3], pqs[i % 3], vels[i % 3], accs[i % 3], jerks[i % 3], zones[i % 3]);
+	for (int i = 0; i < 3*PE_SIZE; ++i) {
+		tg.insertPos(i + 10, aris::plan::TrajectoryGenerator::Node::MoveType::Line, 
+			pqs[i% PE_SIZE], pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+	}
+
+	tg.insertPos(1, aris::plan::TrajectoryGenerator::Node::MoveType::ResetInitPos, init_pq, init_pq, init_vel, init_vel, init_vel, init_vel);
+
+
+	for (int i = 0; i < 3 * PE_SIZE; ++i) {
+		tg.insertPos(i + 30, aris::plan::TrajectoryGenerator::Node::MoveType::Line,
+			pqs[i % PE_SIZE], pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
 
 	double out_pe[14];
