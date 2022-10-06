@@ -17,59 +17,60 @@ double drand() {
 	return dis(gen);
 }
 
-void test_s_curve_vaj(const aris::plan::SCurveStruct &scurve) {
-	std::vector<double> last_last_last_p, last_last_p, last_p, p, v, a, j;
-	std::vector<int> last_last_last_p_count, last_last_p_count, last_p_count, p_count;
+void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
+	std::vector<LargeNum> last_last_last_p, last_last_p, last_p, p;
+	std::vector<double> v, a, j;
+	//std::vector<int> last_last_last_p_count, last_last_p_count, last_p_count, p_count;
 
-	last_last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	last_last_last_p.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	last_last_p.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	last_p.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	p.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	v.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	a.resize(scurve.nodes_.begin()->params_.size(), 0.0);
-	j.resize(scurve.nodes_.begin()->params_.size(), 0.0);
+	//last_last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
+	//last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
+	//last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
+	//p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
+	last_last_last_p.resize(scurve.begin()->params_.size(), 0.0);
+	last_last_p.resize(scurve.begin()->params_.size(), 0.0);
+	last_p.resize(scurve.begin()->params_.size(), 0.0);
+	p.resize(scurve.begin()->params_.size(), 0.0);
+	v.resize(scurve.begin()->params_.size(), 0.0);
+	a.resize(scurve.begin()->params_.size(), 0.0);
+	j.resize(scurve.begin()->params_.size(), 0.0);
 
-	for (int i = 0; i < scurve.nodes_.begin()->params_.size(); ++i) {
-		last_last_last_p[i] = scurve.nodes_.begin()->params_[i].pa_;
-		last_last_p[i] = scurve.nodes_.begin()->params_[i].pa_;
-		last_p[i] = scurve.nodes_.begin()->params_[i].pa_;
-		p[i] = scurve.nodes_.begin()->params_[i].pa_;
-		last_last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
+	for (int i = 0; i < scurve.begin()->params_.size(); ++i) {
+		last_last_last_p[i] = scurve.begin()->params_[i].pa_;
+		last_last_p[i] = scurve.begin()->params_[i].pa_;
+		last_p[i] = scurve.begin()->params_[i].pa_;
+		p[i] = scurve.begin()->params_[i].pa_;
+		//last_last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
+		//last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
+		//last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
+		//p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
 	}
 
 	const double dt = 0.01;
-	double t = scurve.nodes_.begin()->params_[0].t0_;
-	int    t_count = scurve.nodes_.begin()->params_[0].t0_count_;
-	auto iter = scurve.nodes_.begin();
+	LargeNum t = scurve.begin()->params_[0].t0_;
+	//int    t_count = scurve.nodes_.begin()->params_[0].t0_count_;
+	auto iter = scurve.begin();
 
-	while (iter != scurve.nodes_.end()) {
-		while (t > 1000.0) {
-			t_count++;
-			t -= 1000.0;
-		}
+	while (iter != scurve.end()) {
+		//while (t > 1000.0) {
+		//	t_count++;
+		//	t -= 1000.0;
+		//}
 			
 
 
 		// 测试间隔为 dt 的所有点 //
-		while (iter->params_[0].t0_ + (iter->params_[0].t0_count_ - t_count)*1000.0 + iter->params_[0].T_ > t) {
-			std::swap(last_last_last_p_count, last_last_p_count);
-			std::swap(last_last_p_count, last_p_count);
-			std::swap(last_p_count, p_count);
+		while (iter->params_[0].t0_ + iter->params_[0].T_ > t) {
+			//std::swap(last_last_last_p_count, last_last_p_count);
+			//std::swap(last_last_p_count, last_p_count);
+			//std::swap(last_p_count, p_count);
 			std::swap(last_last_last_p, last_last_p);
 			std::swap(last_last_p, last_p);
 			std::swap(last_p, p);
-			for (int i = 0; i < scurve.nodes_.begin()->params_.size(); ++i) {
+			for (int i = 0; i < scurve.begin()->params_.size(); ++i) {
 
 
 
-				aris::plan::s_scurve_at(iter->params_[i], t_count, t, &p_count[i], &p[i], &v[i], &a[i], &j[i]);
+				aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 
 				//static int count = 0;
 				//if (++count % 10000 == 0) {
@@ -81,12 +82,12 @@ void test_s_curve_vaj(const aris::plan::SCurveStruct &scurve) {
 				double max_a = iter->params_[i].a_;
 				double max_j = iter->params_[i].j_;
 
-				if (t - iter->params_[0].t0_ < 4 * dt && iter != scurve.nodes_.begin()) {
+				if (t - iter->params_[0].t0_ < 4 * dt && iter != scurve.begin()) {
 					max_v = std::max(std::prev(iter)->params_[i].vc_max_, max_v);
 					max_a = std::max(std::prev(iter)->params_[i].a_, max_a);
 					max_j = std::max(std::prev(iter)->params_[i].j_, max_j);
 				}
-				if (iter->params_[0].T_ - t < 4 * dt && std::next(iter) != scurve.nodes_.end()) {
+				if (iter->params_[0].T_ - t < 4 * dt && std::next(iter) != scurve.end()) {
 					max_v = std::max(std::next(iter)->params_[i].vc_max_, max_v);
 					max_a = std::max(std::next(iter)->params_[i].a_, max_a);
 					max_j = std::max(std::next(iter)->params_[i].j_, max_j);
@@ -97,14 +98,14 @@ void test_s_curve_vaj(const aris::plan::SCurveStruct &scurve) {
 				double p_last_last = last_last_p[i];
 				double p_last_last_last = last_last_last_p[i];
 
-				double p_current_count = p_count[i];
-				double p_last_count = last_p_count[i];
-				double p_last_last_count = last_last_p_count[i];
-				double p_last_last_last_count = last_last_last_p_count[i];
+				//double p_current_count = p_count[i];
+				//double p_last_count = last_p_count[i];
+				//double p_last_last_count = last_last_p_count[i];
+				//double p_last_last_last_count = last_last_last_p_count[i];
 
-				double v_current = (p_current - p_last + (p_current_count - p_last_count) * 1000.0) / dt;
-				double v_last = (p_last - p_last_last + (p_last_count - p_last_last_count) * 1000.0) / dt;
-				double v_last_last = (p_last_last - p_last_last_last + (p_last_last_count - p_last_last_last_count) * 1000.0) / dt;
+				double v_current = (p_current - p_last) / dt;
+				double v_last = (p_last - p_last_last) / dt;
+				double v_last_last = (p_last_last - p_last_last_last) / dt;
 
 				double a_current = (v_current - v_last) / dt;
 				double a_last = (v_last - v_last_last) / dt;
@@ -114,8 +115,8 @@ void test_s_curve_vaj(const aris::plan::SCurveStruct &scurve) {
 				if (v[i] > max_v + 1e-10 || std::abs(v_current) > max_v + 1e-9 * max_v) {
 
 					auto pr = std::prev(iter);
-					aris::plan::s_scurve_at(iter->params_[i], t_count, t - 0.01, &p_count[i], &last_p[i], &v[i], &a[i], &j[i]);
-					aris::plan::s_scurve_at(iter->params_[i], t_count, t, &p_count[i], &p[i], &v[i], &a[i], &j[i]);
+					aris::plan::s_scurve_at(iter->params_[i], t - 0.01, &last_p[i], &v[i], &a[i], &j[i]);
+					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 
 
 					THROW_FILE_LINE("check velocity failed");
@@ -130,17 +131,16 @@ void test_s_curve_vaj(const aris::plan::SCurveStruct &scurve) {
 				//	THROW_FILE_LINE("check velocity failed");
 				//}
 			}
-			t += dt;
+			t = t + dt;
 		}
 
 		// 测试结束点 是否满足 vb //
-		for (int i = 0; i < scurve.nodes_.begin()->params_.size(); ++i) {
-			double current_p, last_p;
-			int current_p_count, last_p_count;
-			aris::plan::s_scurve_at(iter->params_[i], iter->params_[i].t0_count_, iter->params_[i].t0_ + iter->params_[i].T_, &current_p_count, &current_p, &v[i], &a[i], &j[i]);
-			aris::plan::s_scurve_at(iter->params_[i], iter->params_[i].t0_count_, std::max(iter->params_[i].t0_, iter->params_[i].t0_ + iter->params_[i].T_ - dt), &last_p_count, &last_p, &v[i], &a[i], &j[i]);
+		for (int i = 0; i < scurve.begin()->params_.size(); ++i) {
+			LargeNum current_p, last_p;
+			aris::plan::s_scurve_at(iter->params_[i], iter->params_[i].t0_ + iter->params_[i].T_, &current_p, &v[i], &a[i], &j[i]);
+			aris::plan::s_scurve_at(iter->params_[i], std::max(iter->params_[i].t0_, iter->params_[i].t0_ + iter->params_[i].T_ - dt), &last_p, &v[i], &a[i], &j[i]);
 
-			if (std::abs(current_p - last_p + (current_p_count - last_p_count)*1000.0) / dt > iter->params_[i].vb_ + iter->params_[i].a_ * dt) {
+			if (std::abs(current_p - last_p) / dt > iter->params_[i].vb_ + iter->params_[i].a_ * dt) {
 				THROW_FILE_LINE("check velocity end failed");
 			}
 		}
@@ -215,15 +215,14 @@ void test_multi_s_curve(){
 	//aris::dynamic::dsp(m, n, a);
 	//aris::dynamic::dsp(m, n, j);
 
-	aris::plan::SCurveStruct scurve;
+	std::list<SCurveNode> scurve;
 	for (int i = 0; i < m; ++i) {
-		scurve.nodes_.push_back(SCurveNode{});
+		scurve.push_back(SCurveNode{});
 		for (int k = 0; k < n; ++k) {
-			scurve.nodes_.back().params_.push_back(SCurveParam{});
-			auto &vec = scurve.nodes_.back().params_.back();
+			scurve.back().params_.push_back(SCurveParam{});
+			auto &vec = scurve.back().params_.back();
 
-			vec.pb_ = std::fmod(pb[aris::dynamic::at(i, k, n)], 1000.0);
-			vec.pb_count_ = std::lround((pb[aris::dynamic::at(i, k, n)] - vec.pb_) / 1000.0);
+			vec.pb_ = pb[aris::dynamic::at(i, k, n)];
 			vec.vb_max_ = vb_max[aris::dynamic::at(i, k, n)];
 			vec.vc_max_ = vc_max[aris::dynamic::at(i, k, n)];
 			vec.a_ = a[aris::dynamic::at(i, k, n)];
@@ -235,7 +234,7 @@ void test_multi_s_curve(){
 	}
 
 	try {
-		s_compute_scurve(scurve.nodes_.begin(), scurve.nodes_.end());
+		s_compute_scurve(scurve.begin(), scurve.end());
 		test_s_curve_vaj(scurve);
 	}
 	catch (std::exception& e) {

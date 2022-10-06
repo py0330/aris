@@ -20,16 +20,16 @@ void test_trajectory(){
 	tg.setEeTypes({ aris::dynamic::EEType::PQ, aris::dynamic::EEType::PQ });
 	double init_pe[EE_NUM * 6]{ 0,0,0,0,0,0, 0,0,0,0,0,0 };
 	double init_pq[EE_NUM * 7];
-	double init_vel[4]{ 0,0,0,0 };
+	double init_vel[4]{ 1,1,1,1 };
 	for (int j = 0; j < EE_NUM; ++j) {
 		aris::dynamic::s_pe2pq(init_pe + 7 * j, init_pq + 7 * j, "321");
 	}
-	tg.insertPos(1, aris::plan::TrajectoryGenerator::Node::MoveType::ResetInitPos, init_pq, init_pq, init_vel, init_vel, init_vel, init_vel);
+	tg.insertLinePos(1, init_pq, init_vel, init_vel, init_vel, init_vel);
 
 	//  MAKE PQS ... //
 	double pes[PE_SIZE][6* EE_NUM]{
 		{ 0.10, 0.22, 0.35, 0.20, 0.23, 0.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
-		{ 0.15, 0.28, 0.38, 0.23, 0.53, 1.85,  0.10, 0.22, 0.35, 0.20, 0.23, 0.85},
+		{ 0.15, 0.28, 0.38, 0.23, 0.53, 1.85,  0.10, 0.3, 0.35, 0.20, 0.23, 0.85},
 		{-0.25, 0.12, 0.49, 0.85, 0.13, 3.85,  0.10, 0.22, 0.35, 0.20, 0.23, 0.85},
 	};
 	double pqs[PE_SIZE][7 * EE_NUM];
@@ -64,18 +64,20 @@ void test_trajectory(){
 
 	
 	
-	for (int i = 0; i < 3*PE_SIZE; ++i) {
-		tg.insertPos(i + 10, aris::plan::TrajectoryGenerator::Node::MoveType::Line, 
-			pqs[i% PE_SIZE], pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+	for (int i = 0; i < PE_SIZE; ++i) {
+		tg.insertLinePos(i + 10, pqs[i% PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
+	tg.insertCirclePos(50, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
+	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertCirclePos(102, init_pq, pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 
-	tg.insertPos(1, aris::plan::TrajectoryGenerator::Node::MoveType::ResetInitPos, init_pq, init_pq, init_vel, init_vel, init_vel, init_vel);
 
+	//tg.insertCirclePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 
-	for (int i = 0; i < 3 * PE_SIZE; ++i) {
-		tg.insertPos(i + 30, aris::plan::TrajectoryGenerator::Node::MoveType::Line,
-			pqs[i % PE_SIZE], pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
-	}
+	//for (int i = 0; i < 3 * PE_SIZE; ++i) {
+	//	tg.insertLinePos(i + 30, pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+	//}
 
 	double out_pe[14];
 	
