@@ -8,8 +8,6 @@
 #include <map>
 #include <any>
 
-//#include <aris/core/core.hpp>
-//#include <aris/control/control.hpp>
 #include <aris/plan/scurve.hpp>
 #include <aris/plan/path.hpp>
 
@@ -57,6 +55,11 @@ namespace aris::plan{
 		// 插入新的数据，并重规划 //
 		auto insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void;
 
+		// 删除已经不用的数据 //
+		auto clearUsedPos()->void;
+
+		// 删除全部数据 //
+		auto clearAllPos()->void;
 
 		~TrajectoryGenerator();
 		TrajectoryGenerator();
@@ -64,7 +67,7 @@ namespace aris::plan{
 
 	private:
 		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		std::unique_ptr<Imp> imp_;
 	};
 }
 
