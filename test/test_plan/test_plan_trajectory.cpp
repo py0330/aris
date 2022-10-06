@@ -64,6 +64,11 @@ void test_trajectory(){
 	for (int i = 0; i < PE_SIZE; ++i) {
 		tg.insertLinePos(i + 10, pqs[i% PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
+
+	double out_pe[14];
+	while (tg.getEePosAndMoveDt(out_pe));
+
+
 	tg.insertCirclePos(50, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
@@ -76,7 +81,7 @@ void test_trajectory(){
 	//	tg.insertLinePos(i + 30, pqs[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	//}
 
-	double out_pe[14];
+	
 	
 	std::vector<double> vec;
 	int m = 0;

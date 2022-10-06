@@ -480,7 +480,6 @@ namespace aris::plan {
 		ee_p.scurve_x_.j_ = jerk;
 		ee_p.scurve_x_.t0_ = 0.0;
 	}
-
 	auto init_ee_plan_a(const double* q0, const double* q1, double vel, double acc, double jerk, double zone, Node::EePlanData& ee_p) {
 		// moves //
 		aris::dynamic::s_vc(4, q0, ee_p.move_a_.quaternion_.q0_);
@@ -1070,8 +1069,9 @@ namespace aris::plan {
 			}
 		}
 	}
-	auto replan_scurve(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator begin, std::list<Node>::iterator end) {
+	auto replan_scurve(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end) {
 		std::list<SCurveNode> ins_scurve_list;
+		LargeNum t0;
 		for (auto iter = begin; iter != end; ++iter) {
 			ins_scurve_list.push_back(SCurveNode{});
 			auto& scurve_node = ins_scurve_list.back();
@@ -1085,33 +1085,42 @@ namespace aris::plan {
 				case aris::dynamic::EEType::PE123: [[fallthrough]];
 				case aris::dynamic::EEType::PM: [[fallthrough]];
 				case aris::dynamic::EEType::PQ: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
+					begin->ee_plans_[i].scurve_a_.t0_ = last->ee_plans_[i].scurve_a_.t0_ + last->ee_plans_[i].scurve_a_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					scurve_node.params_.push_back(ee_p.scurve_a_);
 					break;
 				}
 				case aris::dynamic::EEType::XYZT: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
+					begin->ee_plans_[i].scurve_a_.t0_ = last->ee_plans_[i].scurve_a_.t0_ + last->ee_plans_[i].scurve_a_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					scurve_node.params_.push_back(ee_p.scurve_a_);
 					break;
 				}
 				case aris::dynamic::EEType::XYZ: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					break;
 				}
 				case aris::dynamic::EEType::XYT: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					scurve_node.params_.push_back(ee_p.scurve_a_);
 					break;
 				}
 				case aris::dynamic::EEType::XY: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					break;
 				}
 				case aris::dynamic::EEType::X: {
+					begin->ee_plans_[i].scurve_x_.t0_ = last->ee_plans_[i].scurve_x_.t0_ + last->ee_plans_[i].scurve_x_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_x_);
 					break;
 				}
 				case aris::dynamic::EEType::A: {
+					begin->ee_plans_[i].scurve_a_.t0_ = last->ee_plans_[i].scurve_a_.t0_ + last->ee_plans_[i].scurve_a_.T_;
 					scurve_node.params_.push_back(ee_p.scurve_a_);
 					break;
 				}
@@ -1364,23 +1373,10 @@ namespace aris::plan {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
-		// 更新 ds //
-		aris::Size total_count;
-
-		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, imp_->target_ds_, 0.0, 0.0, 
-			imp_->max_dds_, imp_->max_ddds_, imp_->max_ddds_, imp_->dt_, 1e-10,
-			imp_->ds_, imp_->dds_, imp_->ddds_, total_count);
-
+		// 既然能进入本次规划，说明 s 一定合法 //
 		auto &s_ = imp_->s_;
-		s_ = s_ + currentDs() * dt();
-		
-		bool is_end = current_node == next_node && current_node->s_end_ - s_ < 0.0;
-		if (is_end) {
-			s_ = current_node->s_end_;
-		}
 
 		int idx = 0;
-		//for (auto& ee_p : current_node->ee_plans_) {
 		for (int i = 0; i < imp_->ee_types_.size();++i) {
 			auto& ee_p = current_node->ee_plans_[i];
 			switch (ee_p.move_type_){
@@ -1575,16 +1571,36 @@ namespace aris::plan {
 
 		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_.data(), ee_pos);
 
-		// check if is end //
-		if (is_end)
+		// 已经结束 //
+		if (current_node == next_node && s_ - current_node->s_end_ >= 0.0) {
+			s_ = current_node->s_end_;
+			imp_->ds_ = imp_->target_ds_;
+			imp_->dds_ = 0.0;
+			imp_->ddds_ = 0.0;
 			return 0;
-		
-		// check if need to switch //
-		if (current_node != next_node && current_node->s_end_ - s_ - currentDs() * dt() < 0.0) {
+		}
+
+		// 下次会结束 //
+		if (current_node == next_node && s_ + currentDs() * dt() - current_node->s_end_ >= 0.0) {
+			s_ = current_node->s_end_;
+			imp_->ds_ = imp_->target_ds_;
+			imp_->dds_ = 0.0;
+			imp_->ddds_ = 0.0;
+			return current_node->id_;
+		}
+
+		// 正常运行 //
+		s_ = s_ + currentDs() * dt();
+		aris::Size total_count;
+		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, imp_->target_ds_, 0.0, 0.0,
+			imp_->max_dds_, imp_->max_ddds_, imp_->max_ddds_, imp_->dt_, 1e-10,
+			imp_->ds_, imp_->dds_, imp_->ddds_, total_count);
+
+		// 需要切换
+		if (current_node->s_end_ - s_ < 0.0) {
 			auto next = current_node->next_node_.exchange(nullptr);
 			imp_->current_node_.store(next_node);
 		}
-
 		return current_node->id_;
 	}
 	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
@@ -1653,9 +1669,11 @@ namespace aris::plan {
 			}
 			replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
 
-			// 重规划 scurve
+
+
+			// 设置起始时间，并重规划 scurve
 			auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
-			replan_scurve((int)scurve_size, eeTypes(), replan_iter_end, nodes_.end());
+			replan_scurve((int)scurve_size, eeTypes(), std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
 			// 并发设置
 			insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
@@ -1714,7 +1732,7 @@ namespace aris::plan {
 
 			// 重规划 scurve
 			auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
-			replan_scurve((int)scurve_size, eeTypes(), replan_iter_end, nodes_.end());
+			replan_scurve((int)scurve_size, eeTypes(), std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
 			// 并发设置
 			insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
