@@ -332,8 +332,8 @@ namespace aris::dynamic{
 		auto setTime(double time)->void;
 		virtual ~Model();
 		explicit Model();
-		Model(Model&&);
-		Model& operator=(Model&&);
+		Model(Model&&)noexcept;
+		Model& operator=(Model&&)noexcept;
 
 	private:
 		struct Imp;
@@ -356,6 +356,83 @@ namespace aris::dynamic{
 		UNKNOWN,
 	};
 	
+	auto inline getEETypePosSize(EEType type)noexcept->aris::Size {
+		switch (type)
+		{
+		case EEType::PE313:
+			return 6;
+		case EEType::PE321:
+			return 6;
+		case EEType::PE123:
+			return 6;
+		case EEType::PQ:
+			return 7;
+		case EEType::PM:
+			return 16;
+		case EEType::XYZT:
+			return 4;
+		case EEType::XYZ:
+			return 3;
+		case EEType::XYT:
+			return 3;
+		case EEType::XY:
+			return 2;
+		case EEType::X:
+			return 1;
+		case EEType::A:
+			return 1;
+		case EEType::UNKNOWN:
+			return -1;
+		default:
+			return -1;
+		}
+	}
+	auto inline getEETypePosSize(const std::vector<EEType> &types)noexcept->aris::Size {
+		aris::Size size = 0;
+		for (auto type : types) {
+			size += getEETypePosSize(type);
+		}
+		return size;
+	}
+	auto inline getScurveSize(EEType type)noexcept->aris::Size {
+		switch (type)
+		{
+		case EEType::PE313:
+			return 2;
+		case EEType::PE321:
+			return 2;
+		case EEType::PE123:
+			return 2;
+		case EEType::PQ:
+			return 2;
+		case EEType::PM:
+			return 2;
+		case EEType::XYZT:
+			return 2;
+		case EEType::XYZ:
+			return 1;
+		case EEType::XYT:
+			return 2;
+		case EEType::XY:
+			return 1;
+		case EEType::X:
+			return 1;
+		case EEType::A:
+			return 1;
+		case EEType::UNKNOWN:
+			return -1;
+		default:
+			return -1;
+		}
+	}
+	auto inline getScurveSize(const std::vector<EEType>& types)noexcept->aris::Size {
+		aris::Size size = 0;
+		for (auto type : types) {
+			size += getScurveSize(type);
+		}
+		return size;
+	}
+
 	// 多轴模型，覆盖了ModelBase类的虚方法 //
 	// 本质是在将所有子模型的对应方法全部调用了一遍 //
 	class ARIS_API MultiModel :public aris::dynamic::ModelBase {
@@ -526,9 +603,6 @@ namespace aris::dynamic{
 		// 获取对应子模型中的电机id
 		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getMotionIds()->std::vector<Size>;
-
-		
-
 
 		virtual ~MultiModel();
 		explicit MultiModel();

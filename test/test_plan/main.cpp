@@ -4,10 +4,14 @@
 
 #include "test_plan_function.h"
 #include "test_plan_path.h"
+#include "test_plan_scurve.h"
+#include "test_plan_trajectory.h"
 
-int main(int argc, char *argv[])
-{
-	test_path();
+int main(int argc, char *argv[]){
+	test_trajectory();
+	
+	//test_scurve();
+	//test_path();
 	
 	//test_function();
 

@@ -15,7 +15,7 @@ void test_blend_bezier(){
 		double p2[3]{ 0.3, -0.5, 0.2 };
 
 		double p[3], dp[3], d2p[3];
-		aris::plan::s_blend_line_line_bezier3(0.56, p0, p1, p2, p, dp, d2p);
+		aris::plan::s_bezier3_blend_line_line(0.56, p0, p1, p2, p, dp, d2p);
 
 		const double p_[3]{
 				  -0.29136,
@@ -51,7 +51,7 @@ void test_blend_bezier(){
 		double p1[3]{ -1.5,2,-0.3 };
 
 		double p[3], dp[3], d2p[3];
-		aris::plan::s_blend_line_circle_bezier3(0.38, p0, p1, center, ax, theta, p, dp, d2p);
+		aris::plan::s_bezier3_blend_line_circle(0.38, p0, p1, center, ax, theta, p, dp, d2p);
 
 		const double p_[3]{
 			-0.381107335021726,
@@ -90,7 +90,7 @@ void test_blend_bezier(){
 		double theta2 = aris::PI * 2 / 3;
 		double p[3], dp[3], d2p[3];
 
-		aris::plan::s_blend_circle_circle_bezier3(0.68, p1,
+		aris::plan::s_bezier3_blend_circle_circle(0.68, p1,
 			c1, ax1, theta1,
 			c2, ax2, theta2,
 			p, dp, d2p);
@@ -135,7 +135,7 @@ void test_blend_bezier(){
 			 0.984807753012208 };
 
 		double q[4], dq[4], d2q[4];
-		aris::plan::s_blend_quaternion_bezier3(0.66, 
+		aris::plan::s_bezier3_blend_quaternion(0.66,
 			q0,	q1, q2,
 			q, dq, d2q);
 

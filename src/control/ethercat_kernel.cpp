@@ -323,7 +323,7 @@ namespace aris::control{
 				if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))THROW_FILE_LINE("failed to slave config pdos");
 
 				// Configure the slave's distributed clock
-				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), master->samplePeriodNs(), 500000, 0, 0);
+				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), master->samplePeriodNs(), slave.sync0ShiftNs(), 0, 0);
 
 				slave.ecHandle() = s_handle;
 			}
@@ -506,7 +506,9 @@ namespace aris::control{
 	auto aris_ecrt_master_send(EthercatMaster *master)->void {}
     auto aris_ecrt_master_queue(EthercatMaster *mst)->void{}
     auto aris_ecrt_master_sync(EthercatMaster *mst)->void{}
-	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState* master_state)->void {}
+	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState* master_state)->void {
+		master_state->link_up = true;
+	}
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {}
 
 	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void {}

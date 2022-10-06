@@ -385,8 +385,8 @@ namespace aris::dynamic{
 
 		imp_->ground_ = &partPool().add<Part>("ground");
 	}
-	Model::Model(Model&&) = default;
-	Model& Model::operator=(Model&&) = default;
+	Model::Model(Model&&)noexcept = default;
+	Model& Model::operator=(Model&&)noexcept = default;
 
 	auto trimLR(std::string_view input)->std::string {
 		std::string ret(input);
