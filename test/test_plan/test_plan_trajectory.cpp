@@ -69,7 +69,9 @@ void test_trajectory(){
 	while (tg.getEePosAndMoveDt(out_pe));
 
 
-	tg.insertCirclePos(50, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	aris::dynamic::dsp(1,6,out_pe);
+
+	tg.insertCirclePos(80, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertCirclePos(102, pqs[2], pqs[2], vels[0], accs[0], jerks[0], zones[0]);

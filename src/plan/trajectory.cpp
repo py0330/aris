@@ -900,7 +900,7 @@ namespace aris::plan {
 	}
 
 	// make nodes //
-	auto make_node(Node* this_node, Node* last_node, const std::vector<aris::dynamic::EEType>& ee_types,
+	auto make_node(aris::Size replan_num, Node* this_node, Node* last_node, const std::vector<aris::dynamic::EEType>& ee_types,
 		Node::MoveType move_type, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
 		// 更新本段轨迹的 move //
 		for (Size i{ 0 }, pos_idx{ 0 }, vel_idx{ 0 }; i < ee_types.size(); ++i) {
@@ -940,8 +940,10 @@ namespace aris::plan {
 						}
 
 						// 和上一段进行路径拼接
-						make_zone_and_scurve_line_line_x(last_p, this_p);
-						make_zone_and_scurve_quternion_a(last_p, this_p);
+						if (replan_num) {
+							make_zone_and_scurve_line_line_x(last_p, this_p);
+							make_zone_and_scurve_quternion_a(last_p, this_p);
+						}
 						break;
 					}
 					case aris::plan::Node::MoveType::Circle: {
@@ -962,8 +964,10 @@ namespace aris::plan {
 						}
 
 						// 和上一段进行路径拼接
-						make_zone_and_scurve_circle_line_x(last_p, this_p);
-						make_zone_and_scurve_quternion_a(last_p, this_p);
+						if (replan_num) {
+							make_zone_and_scurve_circle_line_x(last_p, this_p);
+							make_zone_and_scurve_quternion_a(last_p, this_p);
+						}
 						break;
 					}
 					default:
@@ -993,8 +997,10 @@ namespace aris::plan {
 						}
 
 						// 和上一段进行路径拼接，并只做 s 曲线
-						make_zone_and_scurve_line_circle_x(last_p, this_p);
-						make_zone_and_scurve_quternion_a(last_p, this_p);
+						if (replan_num) {
+							make_zone_and_scurve_line_circle_x(last_p, this_p);
+							make_zone_and_scurve_quternion_a(last_p, this_p);
+						}
 						break;
 					}
 					case aris::plan::Node::MoveType::Circle: {
@@ -1015,8 +1021,10 @@ namespace aris::plan {
 						}
 
 						// 和上一段进行路径拼接，并只做 s 曲线
-						make_zone_and_scurve_circle_circle_x(last_p, this_p);
-						make_zone_and_scurve_quternion_a(last_p, this_p);
+						if (replan_num) {
+							make_zone_and_scurve_circle_circle_x(last_p, this_p);
+							make_zone_and_scurve_quternion_a(last_p, this_p);
+						}
 						break;
 					}
 					default:
@@ -1618,7 +1626,7 @@ namespace aris::plan {
 		// 初始化节点 //
 		auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
 		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
-		make_node(&ins_node, nullptr, eeTypes(), Node::MoveType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
+		make_node(0, &ins_node, nullptr, eeTypes(), Node::MoveType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 current_node_ 或 之前node的下一个值 //
@@ -1646,8 +1654,7 @@ namespace aris::plan {
 			auto& last_node = *std::prev(nodes_.end());
 			auto& ins_node = nodes_.emplace_back(eeTypes().size());
 			ins_node.id_ = id;
-			make_node(&ins_node, &last_node, eeTypes(), Node::MoveType::Line,
-				ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+			
 
 			// 获得需要重新规划的起点，默认为5段轨迹
 			auto current_node = imp_->current_node_.load();
@@ -1667,6 +1674,9 @@ namespace aris::plan {
 				else
 					replan_num++;
 			}
+
+			make_node(replan_num,&ins_node, &last_node, eeTypes(), Node::MoveType::Line,
+				ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 			replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
 
 
@@ -1707,9 +1717,7 @@ namespace aris::plan {
 			// 插入最新节点 //
 			auto& last_node = *std::prev(nodes_.end());
 			auto& ins_node = nodes_.emplace_back(eeTypes().size());
-			ins_node.id_ = id;
-			make_node(&ins_node, &last_node, eeTypes(), Node::MoveType::Circle, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
-
+			
 			// 获得需要重新规划的起点，默认为5段轨迹
 			auto current_node = imp_->current_node_.load();
 			auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
@@ -1729,6 +1737,10 @@ namespace aris::plan {
 					replan_num++;
 			}
 			replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
+
+			ins_node.id_ = id;
+			make_node(replan_num, &ins_node, &last_node, eeTypes(), Node::MoveType::Circle, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+
 
 			// 重规划 scurve
 			auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
@@ -1765,5 +1777,14 @@ namespace aris::plan {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 		imp_->current_node_.store(nullptr);
 		imp_->nodes_.clear();
+	}
+	auto TrajectoryGenerator::unusedPosNum()->int {
+		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
+		auto current_node = imp_->current_node_.load();
+		auto current_iter = std::find_if(imp_->nodes_.begin(), imp_->nodes_.end(), [current_node](auto& node)->bool {
+			return &node == current_node;
+			});
+
+		return std::max((int)std::distance(current_iter, imp_->nodes_.end()) - 1, 0);
 	}
 }

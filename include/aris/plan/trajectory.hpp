@@ -61,6 +61,9 @@ namespace aris::plan{
 		// 删除全部数据 //
 		auto clearAllPos()->void;
 
+		// 当前还剩余的指令数 //
+		auto unusedPosNum()->int;
+
 		~TrajectoryGenerator();
 		TrajectoryGenerator();
 		ARIS_DELETE_BIG_FOUR(TrajectoryGenerator);
