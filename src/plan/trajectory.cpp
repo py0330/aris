@@ -1455,7 +1455,9 @@ namespace aris::plan {
 		imp_->max_ddds_ = max_ddds;
 	}
 	TrajectoryGenerator::~TrajectoryGenerator() = default;
-	TrajectoryGenerator::TrajectoryGenerator() :imp_(new Imp) {}
+	TrajectoryGenerator::TrajectoryGenerator() :imp_(new Imp) {
+		imp_->current_node_.store(nullptr);
+	}
 	auto TrajectoryGenerator::getEePosAndMoveDt(double* ee_pos)->std::int64_t {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
