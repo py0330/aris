@@ -12,6 +12,7 @@
 #include <ios>
 
 #include "aris/core/core.hpp"
+#include "aris/dynamic/seven_axis.hpp"
 #include "aris/dynamic/model.hpp"
 
 namespace aris::dynamic{
@@ -599,6 +600,9 @@ namespace aris::dynamic{
 						default:
 							ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
 						}
+					}
+					else if (auto arm_mot = dynamic_cast<aris::dynamic::ArmAngleMotion*>(&gm)) {
+						ee_types.push_back(aris::dynamic::EEType::A);
 					}
 					else {
 						ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
