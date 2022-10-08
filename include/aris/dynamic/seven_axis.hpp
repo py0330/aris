@@ -2,6 +2,8 @@
 #define ARIS_DYNAMIC_SEVEN_AXIS_H_
 
 #include <array>
+#include <aris/dynamic/model.hpp>
+#include <aris/dynamic/model_interaction.hpp>
 #include <aris/dynamic/model_solver.hpp>
 
 namespace aris::dynamic{

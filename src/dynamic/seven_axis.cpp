@@ -11,8 +11,6 @@
 #include <type_traits>
 #include <array>
 
-#include "aris/dynamic/model.hpp"
-#include "aris/dynamic/model_solver.hpp"
 #include "aris/dynamic/seven_axis.hpp"
 #include "aris/core/reflection.hpp"
 
