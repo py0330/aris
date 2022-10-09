@@ -1728,7 +1728,7 @@ namespace aris::plan {
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 current_node_ 或 之前node的下一个值 //
-		if(nodes_.size() == 1)
+		if (nodes_.size() == 1 || (current_node == &*std::prev(nodes_.end(), 2) && imp_->s_ == current_node->s_end_))
 			imp_->current_node_.store(&ins_node);
 		else
 			std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
