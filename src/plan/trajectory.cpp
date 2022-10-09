@@ -1727,8 +1727,9 @@ namespace aris::plan {
 		make_node(0, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, eeTypes(), Node::MoveType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
-		// 设置当前 current_node_ 或 之前node的下一个值 //
-		if (nodes_.size() == 1 || (current_node == &*std::prev(nodes_.end(), 2) && imp_->s_ == current_node->s_end_))
+		// 设置当前 node 为 current_node_ 或 将此node设置为之前node的下一个值 //
+		if (nodes_.size() <= 1 || (current_node && current_node == &*std::prev(nodes_.end(), 2) && imp_->s_ == current_node->s_end_))
+			// 只有当前node 或者 上次node已经运行结束
 			imp_->current_node_.store(&ins_node);
 		else
 			std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
@@ -1786,6 +1787,9 @@ namespace aris::plan {
 			// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
 			if (insert_success) {
 				nodes_.erase(replan_iter_begin, replan_iter_end);
+
+
+
 			}
 			else {
 				nodes_.erase(replan_iter_end, nodes_.end());
