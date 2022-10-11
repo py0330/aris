@@ -74,10 +74,6 @@ namespace aris::plan {
         return (x_below + x_upper) / 2;
     }
 
-    auto SCurveStruct::insertNodes(std::list<SCurveNode>& ins_nodes)->void {
-        std::swap(this->nodes_, ins_nodes);
-    }
-
     // 根据起始条件，终止位置，总时间来计算 S 曲线
     //
     // param 中的以下信息为输入：
@@ -102,7 +98,7 @@ namespace aris::plan {
         const double vc_max = param.vc_max_;
         const double a      = param.a_;
         const double j      = param.j_;
-        const double pt     = param.pb_ - param.pa_ + (param.pb_count_ - param.pa_count_) * 1000.0;
+        const double pt     = param.pb_ - param.pa_;
         const double T      = param.T_;
 
         const double Z1 = a*a/j;
@@ -113,6 +109,17 @@ namespace aris::plan {
 
         double T_va_to_max_v = s_acc_time(va, vc_max, a, j);
         double T_0_to_va = s_acc_time(va, 0, a, j);
+
+        if (pt < std::numeric_limits<double>::epsilon() * 100) {
+            param.vb_ = 0.0;
+            param.vc_ = 0.0;
+            param.mode_ = 1;
+            param.Ta_ = param.T_ / 2.0;
+            param.Tb_ = param.T_ / 2.0;
+            return;
+        }
+
+
 
         double& Ta = param.Ta_;
         double& Tb = param.Tb_;
@@ -882,16 +889,26 @@ namespace aris::plan {
         const double vc_max = param.vc_max_;
         const double a      = param.a_;
         const double j      = param.j_;
-        const double pt     = param.pb_ - param.pa_ + (param.pb_count_ - param.pa_count_) * 1000.0;
+        const double pt     = param.pb_ - param.pa_;
+        double Tmin_max = 1e-3;
+        if (pt < std::numeric_limits<double>::epsilon() * 100){
+            if (va > std::numeric_limits<double>::epsilon() * 100) {
+                return std::make_tuple<double, double>(-1.0, -1.0);
+            }
+            else {
+                return std::make_tuple(std::numeric_limits<double>::infinity(), Tmin_max);
+            }
+        }
 
+        
         double Tmax, Tmin, vb, l, v1, v2, v_upper, v_below;
 
         double Z1 = a * a / j;
         double T_va_to_vb = s_acc_time(va, vb_max, a, j);
         double l_va_to_vb = T_va_to_vb * (va + vb_max) / 2;
 
-        // failed
-        if (va > vb_max && l_va_to_vb > pt)
+        // failed //
+        if ((!std::isfinite(Z1)) || (!std::isfinite(T_va_to_vb)) || (!std::isfinite(l_va_to_vb)) || (va > vb_max && l_va_to_vb > pt))
             return std::make_tuple(-1, -1);
 
         double pacc = va - 1.5 * Z1 > 0 ? 0.5 * (Z1 / 2 + va) * (Z1 / 2 + va) / a : 4.0 / 3.0 * va * std::sqrt(2.0 / 3.0 * va / j);
@@ -1149,6 +1166,8 @@ namespace aris::plan {
             double T1 = (v - v1) / a + a / j;
             double T2 = (v - v2) / a + a / j;
             Tmin = T1 + T2;
+
+            Tmin = std::max(Tmin, Tmin_max);
             return std::make_tuple(Tmax,Tmin);
         }
 
@@ -1203,13 +1222,24 @@ namespace aris::plan {
     }
 
     // 循环计算每个节点：
-    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator& begin_iter, std::list<SCurveNode>::iterator& end_iter)noexcept->void {
-        // 设置正确的 pa
+    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter)noexcept->void {
+        // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性
         for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
             // 设置正确的 pa
             for (Size i = 0; i < iter->params_.size(); ++i) {
                 iter->params_[i].pa_ = std::prev(iter)->params_[i].pb_;
-                iter->params_[i].pa_count_ = std::prev(iter)->params_[i].pb_count_;
+                
+                if (iter->params_[i].pa_ > iter->params_[i].pb_)
+                    THROW_FILE_LINE("POS SET NOT CORRECT");
+
+                if (iter->params_[i].pb_ - iter->params_[i].pa_ >= 100 * std::numeric_limits<double>::epsilon()){
+                    if(iter->params_[i].vc_max_ < 1e-10)
+                        THROW_FILE_LINE("VEL SET NOT CORRECT");
+                    if (iter->params_[i].a_ < 1e-10)
+                        THROW_FILE_LINE("ACC SET NOT CORRECT");
+                    if (iter->params_[i].j_ < 1e-10)
+                        THROW_FILE_LINE("JERK SET NOT CORRECT");
+                }
             }
         }
 
@@ -1234,8 +1264,7 @@ namespace aris::plan {
             //std::cout << "trajectory count:" << count_ << std::endl;
             count_++;
 #endif
-            
-            
+
             // STEP 1 : 计算全部末端的最大最小时间
             std::vector<double> Tmaxs(iter->params_.size()), Tmins(iter->params_.size());
             for (Size i = 0; i < iter->params_.size(); ++i) {
@@ -1297,10 +1326,10 @@ namespace aris::plan {
                 s_compute_scurve_node(p);
 
                 if (iter != begin_iter) {
-                    double t0 = std::prev(iter)->params_[0].t0_ + std::prev(iter)->params_[0].T_;
+                    LargeNum t0 = std::prev(iter)->params_[0].t0_ + std::prev(iter)->params_[0].T_;
                     for (auto& p : iter->params_) {
-                        p.t0_ = std::fmod(t0, 1000.0);
-                        p.t0_count_ = std::prev(iter)->params_[0].t0_count_ + std::lround((t0 - std::fmod(t0, 1000.0))/1000.0);
+                        p.t0_ = t0;
+                        //p.t0_count_ = std::prev(iter)->params_[0].t0_count_ + std::lround((t0 - std::fmod(t0, 1000.0))/1000.0);
                     }
                 }
                 
@@ -1309,102 +1338,103 @@ namespace aris::plan {
     }
 
     // 计算指定时间处的 p v a j
-    auto ARIS_API s_scurve_at(const SCurveParam& param, int t_count, double t, int* p_count, double* p_out, double* v_out, double* a_out, double* j_out)noexcept->void {
+    auto ARIS_API s_scurve_at(const SCurveParam& param, LargeNum t, LargeNum* p_out, double* v_out, double* a_out, double* j_out)noexcept->void {
         const double va = std::max(param.va_, 0.0);
         const double vb_max = param.vb_max_;
         const double vc_max = param.vc_max_;
         const double a = param.a_;
         const double j = param.j_;
-        const double pt = param.pb_ - param.pa_ + (param.pb_count_ - param.pa_count_) * 1000.0;
+        const double pt = param.pb_ - param.pa_;
         const double T = param.T_;
         const double Ta = param.Ta_;
         const double Tb = param.Tb_;
-        const double pa = param.pa_;
-        const double pb = param.pa_ + pt;  // 注意，这里不能直接用 param.pb_，因为 count 有可能不对
+        const LargeNum pa = param.pa_;
+        const LargeNum pb = param.pa_ + pt;  // 注意，这里不能直接用 param.pb_，因为 count 有可能不对
         const double vb = param.vb_;
         const double vc = param.vc_;
         const int    mode = param.mode_;
 
-        t = t - param.t0_ + (t_count - param.t0_count_) * 1000.0;
+        double t_ = t - param.t0_;
 
-        double p_, v_, a_, j_;
+        LargeNum p_;
+        double v_, a_, j_;
         // %CASE B
         if (mode == 1) {
-            if (t < Ta) {
-                p_ = pa + va * t;
+            if (t_ < Ta) {
+                p_ = pa + va * t_;
             }
-            else if (t < T - Tb) {
+            else if (t_ < T - Tb) {
                 double Tacc = T - Ta - Tb;
                 double si = aris::dynamic::s_sgn2(vb - va);
-                t = t - Ta;
+                t_ = t_ - Ta;
                 if (Tacc >= 2.0 * a / j) {
-                    if (t < a / j) {
-                        p_ = pa + va * Ta + va * t + si / 6.0 * j * t * t * t;
+                    if (t_ < a / j) {
+                        p_ = pa + va * Ta + va * t_ + si / 6.0 * j * t_ * t_ * t_;
                     }
-                    else if (t < (Tacc - a / j)) {
-                        p_ = pa + va * Ta + va * a / j + si / 6.0 * a * a * a / j / j + (va + si / 2.0 * a * a / j) * (t - a / j) + si * a / 2.0 * (t - a / j) * (t - a / j);
+                    else if (t_ < (Tacc - a / j)) {
+                        p_ = pa + va * Ta + va * a / j + si / 6.0 * a * a * a / j / j + (va + si / 2.0 * a * a / j) * (t_ - a / j) + si * a / 2.0 * (t_ - a / j) * (t_ - a / j);
                     }
                     else {
-                        p_ = pa + va * Ta + (va + vb) / 2.0 * Tacc - (vb * (Tacc - t) - si / 6.0 * j * (Tacc - t) * (Tacc - t) * (Tacc - t));
+                        p_ = pa + va * Ta + (va + vb) / 2.0 * Tacc - (vb * (Tacc - t_) - si / 6.0 * j * (Tacc - t_) * (Tacc - t_) * (Tacc - t_));
                     }
                 }
                 else {
-                    if (t < Tacc / 2.0) {
-                        p_ = pa + va * Ta + va * t + si / 6.0 * j * t * t * t;
+                    if (t_ < Tacc / 2.0) {
+                        p_ = pa + va * Ta + va * t_ + si / 6.0 * j * t_ * t_ * t_;
                     }
                     else {
-                        p_ = pa + va * Ta + (va + vb) / 2.0 * Tacc - (vb * (Tacc - t) - si / 6.0 * j * (Tacc - t) * (Tacc - t) * (Tacc - t));
+                        p_ = pa + va * Ta + (va + vb) / 2.0 * Tacc - (vb * (Tacc - t_) - si / 6.0 * j * (Tacc - t_) * (Tacc - t_) * (Tacc - t_));
                     }
                 }
             }
             else {
-                p_ = pb - vb * (T - t);
+                p_ = pb - vb * (T - t_);
             }
         }
         else {
             //%CASE A
-            if (t < Ta) {
+            if (t_ < Ta) {
                 double si = aris::dynamic::s_sgn2(vc - va);
 
                 if (Ta >= 2.0 * a / j) {
-                    if (t < a / j)
-                        p_ = pa + va * t + si / 6.0 * j * t * t * t;
-                    else if (t < (Ta - a / j))
-                        p_ = pa + va * a / j + si / 6.0 * a * a * a / j / j + (va + si / 2.0 * a * a / j) * (t - a / j) + si * a / 2 * (t - a / j) * (t - a / j);
+                    if (t_ < a / j)
+                        p_ = pa + va * t_ + si / 6.0 * j * t_ * t_ * t_;
+                    else if (t_ < (Ta - a / j))
+                        p_ = pa + va * a / j + si / 6.0 * a * a * a / j / j + (va + si / 2.0 * a * a / j) * (t_ - a / j) + si * a / 2 * (t_ - a / j) * (t_ - a / j);
                     else
-                        p_ = pa + (va + vc) / 2.0 * Ta - (vc * (Ta - t) - si / 6.0 * j * (Ta - t) * (Ta - t) * (Ta - t));
+                        p_ = pa + (va + vc) / 2.0 * Ta - (vc * (Ta - t_) - si / 6.0 * j * (Ta - t_) * (Ta - t_) * (Ta - t_));
                 }
                 else {
-                    if (t < Ta / 2.0)
-                        p_ = pa + va * t + si / 6.0 * j * t * t * t;
+                    if (t_ < Ta / 2.0)
+                        p_ = pa + va * t_ + si / 6.0 * j * t_ * t_ * t_;
                     else
-                        p_ = pa + (va + vc) / 2.0 * Ta - (vc * (Ta - t) - si / 6.0 * j * (Ta - t) * (Ta - t) * (Ta - t));
+                        p_ = pa + (va + vc) / 2.0 * Ta - (vc * (Ta - t_) - si / 6.0 * j * (Ta - t_) * (Ta - t_) * (Ta - t_));
                 }
             }
-            else if (t < T - Tb) {
-                p_ = pa + (va + vc) / 2.0 * Ta + vc * (t - Ta);
+            else if (t_ < T - Tb) {
+                p_ = pa + (va + vc) / 2.0 * Ta + vc * (t_ - Ta);
             }
             else {
                 double si = aris::dynamic::s_sgn2(vb - vc);
                 if (Tb >= 2.0 * a / j) {
-                    if (T - t < a / j)
-                        p_ = pb - vb * (T - t) + si / 6.0 * j * (T - t) * (T - t) * (T - t);
-                    else if (T - t < (Tb - a / j))
-                        p_ = pb - vb * a / j + si / 6.0 * a * a * a / j / j - (vb - si / 2.0 * a * a / j) * (T - t - a / j) + si * a / 2.0 * (T - t - a / j) * (T - t - a / j);
+                    if (T - t_ < a / j)
+                        p_ = pb - vb * (T - t_) + si / 6.0 * j * (T - t_) * (T - t_) * (T - t_);
+                    else if (T - t_ < (Tb - a / j))
+                        p_ = pb - vb * a / j + si / 6.0 * a * a * a / j / j - (vb - si / 2.0 * a * a / j) * (T - t_ - a / j) + si * a / 2.0 * (T - t_ - a / j) * (T - t_ - a / j);
                     else
-                        p_ = pb - (vc + vb) / 2.0 * Tb + (vc * (Tb - T + t) + si / 6.0 * j * (Tb - T + t) * (Tb - T + t) * (Tb - T + t));
+                        p_ = pb - (vc + vb) / 2.0 * Tb + (vc * (Tb - T + t_) + si / 6.0 * j * (Tb - T + t_) * (Tb - T + t_) * (Tb - T + t_));
                 }
 
                 else {
-                    if (T - t < Tb / 2.0)
-                        p_ = pb - vb * (T - t) + si / 6.0 * j * (T - t) * (T - t) * (T - t);
+                    if (T - t_ < Tb / 2.0)
+                        p_ = pb - vb * (T - t_) + si / 6.0 * j * (T - t_) * (T - t_) * (T - t_);
                     else
-                        p_ = pb - (vc + vb) / 2.0 * Tb + vc * (Tb - T + t) + si / 6.0 * j * (Tb - T + t) * (Tb - T + t) * (Tb - T + t);
+                        p_ = pb - (vc + vb) / 2.0 * Tb + vc * (Tb - T + t_) + si / 6.0 * j * (Tb - T + t_) * (Tb - T + t_) * (Tb - T + t_);
                 }
             }
         }
 
-        if (p_count) *p_count = param.pa_count_ + std::lround((p_ - std::fmod(p_, 1000.0)) / 1000.0);
-        if (p_out) *p_out = std::fmod(p_, 1000.0);
+        //if (p_count) *p_count = param.pa_count_ + std::lround((p_ - std::fmod(p_, 1000.0)) / 1000.0);
+        if (p_out) *p_out = p_;
     }
 }

@@ -54,7 +54,7 @@ namespace aris::plan{
 		// dp_darc   = dp_ds * ds_darc
 		// d2p_darc2 = d2p_ds2 * ds_darc^2 + dp_ds * d2s_darc2
 		// 
-		// dp_dt   = dp_darc * da_dt
+		// dp_dt   = dp_darc * darc_dt
 		// d2p_dt2 = d2p_darc2 * darc_dt^2 + dp_darc * d2arc_dt2
 		//
 		// 因为 d2p_darc2 垂直与 dp_darc
@@ -82,7 +82,7 @@ namespace aris::plan{
 		double k2 = aris::dynamic::s_vv(dim, dp_darc, dp_darc);
 		
 
-		v = darc_ds < 1e-7? std::numeric_limits<double>::max() : std::sqrt(max_a / std::sqrt(k1));
+		v = darc_ds < 1e-7 ? 0.0 : std::sqrt(max_a / std::sqrt(k1));
 	}
 
 

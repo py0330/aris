@@ -332,8 +332,8 @@ namespace aris::dynamic{
 		auto setTime(double time)->void;
 		virtual ~Model();
 		explicit Model();
-		Model(Model&&);
-		Model& operator=(Model&&);
+		Model(Model&&)noexcept;
+		Model& operator=(Model&&)noexcept;
 
 	private:
 		struct Imp;
