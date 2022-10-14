@@ -10,11 +10,11 @@ namespace aris::plan {
 		};
 		struct Zone {
 			enum class ZoneType {
-				LL,
-				LC,
-				CL,
-				CC,
-				QQ,
+				LL, // Line Line
+				LC, // Line Circle
+				CL, // Circle Line
+				CC, // Circle Circle
+				QQ, // Quaternion Quaternion
 				OO,
 			};
 			struct Lines {
@@ -259,6 +259,7 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::UNKNOWN:
+				break;
 			default:
 				;
 			}
@@ -1217,6 +1218,7 @@ namespace aris::plan {
 					break;
 				}
 				case aris::dynamic::EEType::UNKNOWN:
+					break;
 				default:
 					;
 				}
@@ -1273,6 +1275,7 @@ namespace aris::plan {
 					break;
 				}
 				case aris::dynamic::EEType::UNKNOWN:
+					break;
 				default:
 					;
 				}
@@ -1333,7 +1336,220 @@ namespace aris::plan {
 			break;
 		}
 	}
+	auto get_ee_data(LargeNum s, const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, double* internal_pos, double* output_pos) {
+		int idx = 0;
+		for (int i = 0; i < ee_types.size(); ++i) {
+			auto& ee_p = current_node->ee_plans_[i];
+			switch (ee_p.move_type_) {
+			case Node::MoveType::ResetInitPos: {
+				switch (ee_types[i]) {
+				case aris::dynamic::EEType::PE313: [[fallthrough]];
+				case aris::dynamic::EEType::PE321: [[fallthrough]];
+				case aris::dynamic::EEType::PE123: [[fallthrough]];
+				case aris::dynamic::EEType::PM: [[fallthrough]];
+				case aris::dynamic::EEType::PQ: {
+					aris::dynamic::s_vc(3, ee_p.move_x_.line_.p1_, internal_pos + idx);
+					idx += 3;
+					aris::dynamic::s_vc(4, ee_p.move_a_.quaternion_.q1_, internal_pos + idx);
+					idx += 4;
+					break;
+				}
+				case aris::dynamic::EEType::XYZT: {
+					break;
+				}
+				case aris::dynamic::EEType::XYZ: {
+					break;
+				}
+				case aris::dynamic::EEType::XYT: {
+					break;
+				}
+				case aris::dynamic::EEType::XY: {
+					break;
+				}
+				case aris::dynamic::EEType::X: [[fallthrough]];
+				case aris::dynamic::EEType::A: {
+					aris::dynamic::s_vc(1, ee_p.move_x_.line_.p1_, internal_pos + idx);
+					idx += 1;
+					break;
+				}
+				case aris::dynamic::EEType::UNKNOWN:
+					break;
+				default:
+					;
+				}
 
+				break;
+			}
+			case Node::MoveType::Line: {
+				switch (ee_types[i]) {
+				case aris::dynamic::EEType::PE313: [[fallthrough]];
+				case aris::dynamic::EEType::PE321: [[fallthrough]];
+				case aris::dynamic::EEType::PE123: [[fallthrough]];
+				case aris::dynamic::EEType::PM: [[fallthrough]];
+				case aris::dynamic::EEType::PQ: {
+					// x //
+					{
+						LargeNum sp;
+						double sv, sa, sj;
+						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
+						double l = sp - ee_p.scurve_x_.pa_;
+						if (l < ee_p.zone_x1_.length_ / 2.0) {
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx);
+						}
+						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx);
+						}
+						else {
+							auto& line = ee_p.move_x_.line_;
+							s_compute_line_pos_at(l - ee_p.zone_x1_.length_ / 2.0, line.p0_, line.p1_, ee_p.move_x_.length_, internal_pos + idx);
+						}
+						idx += 3;
+					}
+
+					// a //
+					{
+						LargeNum sp;
+						double sv, sa, sj;
+						s_scurve_at(ee_p.scurve_a_, s, &sp, &sv, &sa, &sj);
+						double l = sp - ee_p.scurve_a_.pa_;
+						if (l < ee_p.zone_a1_.length_ / 2.0) {
+							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx);
+						}
+						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
+							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx);
+						}
+						else {
+							// in move //
+							auto& quternion = ee_p.move_a_.quaternion_;
+							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, internal_pos + idx);
+						}
+
+						idx += 4;
+					}
+
+					break;
+				}
+				case aris::dynamic::EEType::XYZT: {
+					break;
+				}
+				case aris::dynamic::EEType::XYZ: {
+					break;
+				}
+				case aris::dynamic::EEType::XYT: {
+					break;
+				}
+				case aris::dynamic::EEType::XY: {
+					break;
+				}
+				case aris::dynamic::EEType::X: [[fallthrough]];
+				case aris::dynamic::EEType::A: {
+					// x //
+					{
+						LargeNum sp;
+						double sv, sa, sj;
+						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
+						double l = sp - ee_p.scurve_x_.pa_;
+						if (l < ee_p.zone_x1_.length_ / 2.0) {
+							double p[3];
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, p);
+							internal_pos[idx] = p[0];
+						}
+						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
+							double p[3];
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, p);
+							internal_pos[idx] = p[0];
+						}
+						else {
+							double p[3];
+							auto& line = ee_p.move_x_.line_;
+							s_compute_line_pos_at(l - ee_p.zone_x1_.length_ / 2.0, line.p0_, line.p1_, ee_p.move_x_.length_, p);
+							internal_pos[idx] = p[0];
+						}
+						idx += 1;
+					}
+					break;
+				}
+				case aris::dynamic::EEType::UNKNOWN:
+					break;
+				default:
+					;
+				}
+
+				break;
+			}
+			case Node::MoveType::Circle: {
+				switch (ee_types[i]) {
+				case aris::dynamic::EEType::PE313: [[fallthrough]];
+				case aris::dynamic::EEType::PE321: [[fallthrough]];
+				case aris::dynamic::EEType::PE123: [[fallthrough]];
+				case aris::dynamic::EEType::PM: [[fallthrough]];
+				case aris::dynamic::EEType::PQ: {
+					// x //
+					{
+						LargeNum sp;
+						double sv, sa, sj;
+						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
+						double l = sp - ee_p.scurve_x_.pa_;
+						if (l < ee_p.zone_x1_.length_ / 2.0) {
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx);
+						}
+						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx);
+						}
+						else {
+							auto& c = ee_p.move_x_.circle_;
+							s_compute_circle_pos_at(l - ee_p.zone_x1_.length_ / 2.0, c.p0_, c.center_, c.axis_, c.radius_, ee_p.move_x_.length_, internal_pos + idx);
+						}
+						idx += 3;
+					}
+
+					// a //
+					{
+						LargeNum sp;
+						double sv, sa, sj;
+						s_scurve_at(ee_p.scurve_a_, s, &sp, &sv, &sa, &sj);
+						double l = sp - ee_p.scurve_a_.pa_;
+						if (l < ee_p.zone_a1_.length_ / 2.0) {
+							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx);
+						}
+						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
+							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx);
+						}
+						else {
+							// in move //
+							auto& quternion = ee_p.move_a_.quaternion_;
+							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, internal_pos + idx);
+						}
+
+						idx += 4;
+					}
+
+					break;
+				}
+				case aris::dynamic::EEType::XYZT: {
+					break;
+				}
+				case aris::dynamic::EEType::XYZ: {
+					break;
+				}
+				case aris::dynamic::EEType::XYT: {
+					break;
+				}
+				case aris::dynamic::EEType::XY: {
+					break;
+				}
+				default:
+					THROW_FILE_LINE("INVALID node when get data: only 6dof node support circle plan");
+				}
+
+				break;
+			}
+
+			}
+		}
+
+		internal_pos_to_outpos(ee_types, internal_pos, output_pos);
+	}
 
 	// 关于 tg 的并发：
 	//
@@ -1462,249 +1678,48 @@ namespace aris::plan {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
-		// 既然能进入本次规划，说明 s 一定合法 //
-		auto &s_ = imp_->s_;
-
-		int idx = 0;
-		for (int i = 0; i < imp_->ee_types_.size();++i) {
-			auto& ee_p = current_node->ee_plans_[i];
-			switch (ee_p.move_type_){
-			case Node::MoveType::ResetInitPos: {
-				s_ = 0.0;
-				imp_->ds_ = imp_->target_ds_;
-
-				switch (imp_->ee_types_[i]) {
-				case aris::dynamic::EEType::PE313: [[fallthrough]];
-				case aris::dynamic::EEType::PE321: [[fallthrough]];
-				case aris::dynamic::EEType::PE123: [[fallthrough]];
-				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: {
-					aris::dynamic::s_vc(3, ee_p.move_x_.line_.p1_, imp_->internal_pos_.data() + idx);
-					idx += 3;
-					aris::dynamic::s_vc(4, ee_p.move_a_.quaternion_.q1_, imp_->internal_pos_.data() + idx);
-					idx += 4;
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					break;
-				}
-				case aris::dynamic::EEType::XYT: {
-					break;
-				}
-				case aris::dynamic::EEType::XY: {
-					break;
-				}
-				case aris::dynamic::EEType::X: [[fallthrough]];
-				case aris::dynamic::EEType::A: {
-					aris::dynamic::s_vc(1, ee_p.move_x_.line_.p1_, imp_->internal_pos_.data() + idx);
-					idx += 1;
-					break;
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-				default:
-					;
-				}
-				break;
-			}
-			case Node::MoveType::Line: {
-				switch (imp_->ee_types_[i]) {
-				case aris::dynamic::EEType::PE313: [[fallthrough]];
-				case aris::dynamic::EEType::PE321: [[fallthrough]];
-				case aris::dynamic::EEType::PE123: [[fallthrough]];
-				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: {
-					// x //
-					{
-						LargeNum sp;
-						double sv, sa, sj;
-						s_scurve_at(ee_p.scurve_x_, s_, &sp, &sv, &sa, &sj);
-						double l = sp - ee_p.scurve_x_.pa_;
-						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, imp_->internal_pos_.data() + idx);
-						}
-						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, imp_->internal_pos_.data() + idx);
-						} 
-						else {
-							auto& line = ee_p.move_x_.line_;
-							s_compute_line_pos_at(l - ee_p.zone_x1_.length_ / 2.0, line.p0_, line.p1_, ee_p.move_x_.length_, imp_->internal_pos_.data() + idx);
-						}
-						idx += 3;
-					}
-
-					// a //
-					{
-						LargeNum sp;
-						double sv, sa, sj;
-						s_scurve_at(ee_p.scurve_a_, s_, &sp, &sv, &sa, &sj);
-						double l = sp - ee_p.scurve_a_.pa_;
-						if (l < ee_p.zone_a1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, imp_->internal_pos_.data() + idx);
-						}
-						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
-							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, imp_->internal_pos_.data() + idx);
-						}
-						else {
-							// in move //
-							auto& quternion = ee_p.move_a_.quaternion_;
-							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, imp_->internal_pos_.data() + idx);
-						}
-
-						idx += 4;
-					}
-					
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					break;
-				}
-				case aris::dynamic::EEType::XYT: {
-					break;
-				}
-				case aris::dynamic::EEType::XY: {
-					break;
-				}
-				case aris::dynamic::EEType::X: [[fallthrough]];
-				case aris::dynamic::EEType::A: {
-					// x //
-					{
-						LargeNum sp;
-						double sv, sa, sj;
-						s_scurve_at(ee_p.scurve_x_, s_, &sp, &sv, &sa, &sj);
-						double l = sp - ee_p.scurve_x_.pa_;
-						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							double p[3];
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, p);
-							imp_->internal_pos_.data()[idx] = p[0];
-						}
-						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							double p[3];
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, p);
-							imp_->internal_pos_.data()[idx] = p[0];
-						}
-						else {
-							double p[3];
-							auto& line = ee_p.move_x_.line_;
-							s_compute_line_pos_at(l - ee_p.zone_x1_.length_ / 2.0, line.p0_, line.p1_, ee_p.move_x_.length_, p);
-							imp_->internal_pos_.data()[idx] = p[0];
-						}
-						idx += 1;
-					}
-					break;
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-				default:
-					;
-				}
-				break;
-			}
-			case Node::MoveType::Circle: {
-				switch (imp_->ee_types_[i]) {
-				case aris::dynamic::EEType::PE313: [[fallthrough]];
-				case aris::dynamic::EEType::PE321: [[fallthrough]];
-				case aris::dynamic::EEType::PE123: [[fallthrough]];
-				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: {
-					// x //
-					{
-						LargeNum sp;
-						double sv, sa, sj;
-						s_scurve_at(ee_p.scurve_x_, s_, &sp, &sv, &sa, &sj);
-						double l = sp - ee_p.scurve_x_.pa_;
-						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, imp_->internal_pos_.data() + idx);
-						}
-						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, imp_->internal_pos_.data() + idx);
-						}
-						else {
-							auto& c = ee_p.move_x_.circle_;
-							s_compute_circle_pos_at(l - ee_p.zone_x1_.length_ / 2.0, c.p0_, c.center_, c.axis_, c.radius_, ee_p.move_x_.length_, imp_->internal_pos_.data() + idx);
-						}
-						idx += 3;
-					}
-
-					// a //
-					{
-						LargeNum sp;
-						double sv, sa, sj;
-						s_scurve_at(ee_p.scurve_a_, s_, &sp, &sv, &sa, &sj);
-						double l = sp - ee_p.scurve_a_.pa_;
-						if (l < ee_p.zone_a1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, imp_->internal_pos_.data() + idx);
-						}
-						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
-							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, imp_->internal_pos_.data() + idx);
-						}
-						else {
-							// in move //
-							auto& quternion = ee_p.move_a_.quaternion_;
-							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, imp_->internal_pos_.data() + idx);
-						}
-
-						idx += 4;
-					}
-
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					break;
-				}
-				case aris::dynamic::EEType::XYT: {
-					break;
-				}
-				case aris::dynamic::EEType::XY: {
-					break;
-				}
-				default:
-					THROW_FILE_LINE("INVALID node when get data: only 6dof node support circle plan");
-				}
-			}
-
-			}
-		}
-
-		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_.data(), ee_pos);
-
-		// 已经结束 //
-		if (current_node == next_node && s_ - current_node->s_end_ >= 0.0) {
-			s_ = current_node->s_end_;
-			imp_->ds_ = imp_->target_ds_;
-			imp_->dds_ = 0.0;
-			imp_->ddds_ = 0.0;
-			return 0;
-		}
-
-		// 下次会结束 //
-		if (current_node == next_node && s_ + currentDs() * dt() - current_node->s_end_ >= 0.0) {
-			s_ = current_node->s_end_;
-			imp_->ds_ = imp_->target_ds_;
-			imp_->dds_ = 0.0;
-			imp_->ddds_ = 0.0;
-			return current_node->id_;
-		}
-
 		// 正常运行 //
+		auto& s_ = imp_->s_;
 		s_ = s_ + currentDs() * dt();
 		aris::Size total_count;
 		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, imp_->target_ds_, 0.0, 0.0,
 			imp_->max_dds_, imp_->max_ddds_, imp_->max_ddds_, imp_->dt_, 1e-10,
 			imp_->ds_, imp_->dds_, imp_->ddds_, total_count);
 
-		// 需要切换
-		if (current_node->s_end_ - s_ < 0.0) {
-			auto next = current_node->next_node_.exchange(nullptr);
-			imp_->current_node_.store(next_node);
+		// 需要切换或结束
+		while (current_node->s_end_ - s_ < 0.0) {
+			// check 是否全局结束 
+			if (current_node == next_node) {
+				s_ = current_node->s_end_;
+				imp_->ds_ = imp_->target_ds_;
+				imp_->dds_ = 0.0;
+				imp_->ddds_ = 0.0;
+				get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
+				return 0;
+			}
+			// check 是否局部结束，即下一条指令是 init
+			else if (current_node->ee_plans_[0].move_type_ != Node::MoveType::ResetInitPos && next_node->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
+				s_ = current_node->s_end_;
+				imp_->ds_ = imp_->target_ds_;
+				imp_->dds_ = 0.0;
+				imp_->ddds_ = 0.0;
+				get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
+				
+				current_node = current_node->next_node_.exchange(nullptr);
+				imp_->current_node_.store(current_node);
+				next_node = current_node->next_node_.load();
+				imp_->ds_ = 0.0;
+				return current_node->id_;
+			}
+			// 下一条指令是运动指令，正常切换
+			else {
+				current_node = current_node->next_node_.exchange(nullptr);
+				imp_->current_node_.store(current_node);
+				next_node = current_node->next_node_.load();
+			}
 		}
+
+		get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
 		return current_node->id_;
 	}
 	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
@@ -1728,7 +1743,7 @@ namespace aris::plan {
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 node 为 current_node_ 或 将此node设置为之前node的下一个值 //
-		if (nodes_.size() <= 1 || (current_node && current_node == &*std::prev(nodes_.end(), 2) && imp_->s_ == current_node->s_end_))
+		if (nodes_.size() < 2)
 			// 只有当前node 或者 上次node已经运行结束
 			imp_->current_node_.store(&ins_node);
 		else
@@ -1787,9 +1802,6 @@ namespace aris::plan {
 			// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
 			if (insert_success) {
 				nodes_.erase(replan_iter_begin, replan_iter_end);
-
-
-
 			}
 			else {
 				nodes_.erase(replan_iter_end, nodes_.end());

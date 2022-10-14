@@ -16,7 +16,7 @@
 ///
 ///
 namespace aris::plan{
-	struct LargeNum {
+	struct ARIS_API LargeNum {
 		std::int64_t count_;
 		double value_;
 
@@ -87,23 +87,23 @@ namespace aris::plan{
 	};
 
 	struct ARIS_API SCurveParam {
-		LargeNum pb_;     // 结束位置
-		double vc_max_;   // 允许的最大速度
-		double vb_max_;   // 允许的最大末端速度
-		double a_;        // 过程中最大加速度
-		double j_;        // 过程中最大加加速度
+		LargeNum pb_{ 0.0 };     // 结束位置
+		double vc_max_{ 1.0 };   // 允许的最大速度
+		double vb_max_{ 1.0 };   // 允许的最大末端速度
+		double a_{ 1.0 };        // 过程中最大加速度
+		double j_{ 1.0 };        // 过程中最大加加速度
 
-		LargeNum pa_;     // 起始位置
-		double va_;       // 起始速度
-		double T_;        // 总时长，T = Ta + Tb + Tc，Tc是匀速段时长
+		LargeNum pa_{ 0.0 };     // 起始位置
+		double va_{ 0.0 };       // 起始速度
+		double T_{ 0.0 };        // 总时长，T = Ta + Tb + Tc，Tc是匀速段时长
 
-		double vb_;       // 结束速度
-		double vc_;       // 匀速段速度
-		double Ta_;       // 起始段加速时长
-		double Tb_;       // 结束段加速时长
-		int    mode_;     // A or B 模式
+		double vb_{ 0.0 };       // 结束速度
+		double vc_{ 0.0 };       // 匀速段速度
+		double Ta_{ 0.0 };       // 起始段加速时长
+		double Tb_{ 0.0 };       // 结束段加速时长
+		int    mode_{ 0 };       // A or B 模式
 
-		LargeNum t0_;     // 起始时间
+		LargeNum t0_{ 0.0 };     // 起始时间
 	};
 
 	struct ARIS_API SCurveNode {
@@ -111,12 +111,10 @@ namespace aris::plan{
 	};
 
 	// 计算指定时间处的 p v a j
-	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter)noexcept->void;
+	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->void;
 
 	// 计算指定时间处的 p v a j
 	auto ARIS_API s_scurve_at(const SCurveParam& param, LargeNum t, LargeNum *p_out, double* v_out = nullptr, double* a_out = nullptr, double* j_out = nullptr)noexcept->void;
-
-
 }
 
 #endif

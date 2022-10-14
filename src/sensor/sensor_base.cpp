@@ -94,7 +94,7 @@ namespace aris::sensor
 	//auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> & { return *imp_->sensor_pool_; }
 	SensorRoot::~SensorRoot() {}
 	SensorRoot::SensorRoot(const std::string &name)
-	{	
+	{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(SensorRoot);
 }
