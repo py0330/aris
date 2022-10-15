@@ -70,6 +70,8 @@ void test_trajectory(){
 		tg.insertLinePos(i + 10, pqs[i% PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
 
+	tg.insertInitPos(29, pqs[2]);
+
 	double out_pe[7 * EE_NUM + A_NUM];
 	while (tg.getEePosAndMoveDt(out_pe));
 
@@ -78,7 +80,8 @@ void test_trajectory(){
 	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertCirclePos(102, pqs[2], pqs[2], vels[0], accs[0], jerks[0], zones[0]);
-
+	tg.insertInitPos(31, pqs[2]);
+	tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 
 	//tg.insertCirclePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 

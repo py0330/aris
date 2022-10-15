@@ -70,6 +70,20 @@ int main(int argc, char *argv[]){
 	cs.resetModel(aris::robot::rokae::xb4::createModel().release());
 	cs.resetPlanRoot(aris::robot::rokae::xb4::createPlanRoot().release());
 
+	double mat[36]{
+		1,0,0,0,0,0,
+		0,1,0,0,0,0,
+		0,0,1,0,0,0,
+		0,0,0,1,0,0,
+		0,0,0,0,1,0,
+		0,0,0,0,0,1,
+	};
+
+	aris::server::GeneralTransferModelController transfer;
+	transfer.setMat(aris::core::Matrix(6, 6, mat));
+	cs.resetTransferModelController(new aris::server::GeneralTransferModelController(transfer));
+	
+
 	std::cout << aris::core::toXmlString(cs) << std::endl;
 
 	

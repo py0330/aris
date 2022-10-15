@@ -1829,5 +1829,10 @@ namespace aris::server{
 			.inherit<TransferModelController>()
 			.prop("pitch", &ScaraTransferModelController::setPitch, &ScaraTransferModelController::pitch)
 			;
+
+		aris::core::class_<GeneralTransferModelController>("GeneralTransferModelController")
+			.inherit<TransferModelController>()
+			.prop("mat", &GeneralTransferModelController::setMat, &GeneralTransferModelController::mat)
+			;
 	}
 }

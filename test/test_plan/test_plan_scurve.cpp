@@ -20,12 +20,7 @@ double drand() {
 void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 	std::vector<LargeNum> last_last_last_p, last_last_p, last_p, p;
 	std::vector<double> v, a, j;
-	//std::vector<int> last_last_last_p_count, last_last_p_count, last_p_count, p_count;
 
-	//last_last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	//last_last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	//last_p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
-	//p_count.resize(scurve.nodes_.begin()->params_.size(), 0);
 	last_last_last_p.resize(scurve.begin()->params_.size(), 0.0);
 	last_last_p.resize(scurve.begin()->params_.size(), 0.0);
 	last_p.resize(scurve.begin()->params_.size(), 0.0);
@@ -39,45 +34,21 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 		last_last_p[i] = scurve.begin()->params_[i].pa_;
 		last_p[i] = scurve.begin()->params_[i].pa_;
 		p[i] = scurve.begin()->params_[i].pa_;
-		//last_last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		//last_last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		//last_p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
-		//p_count[i] = scurve.nodes_.begin()->params_[i].pa_count_;
 	}
 
 	const double dt = 0.01;
 	LargeNum t = scurve.begin()->params_[0].t0_;
-	//int    t_count = scurve.nodes_.begin()->params_[0].t0_count_;
 	auto iter = scurve.begin();
 
 	while (iter != scurve.end()) {
-		//while (t > 1000.0) {
-		//	t_count++;
-		//	t -= 1000.0;
-		//}
-			
-
-
 		// 测试间隔为 dt 的所有点 //
 		while (iter->params_[0].t0_ + iter->params_[0].T_ > t) {
-			//std::swap(last_last_last_p_count, last_last_p_count);
-			//std::swap(last_last_p_count, last_p_count);
-			//std::swap(last_p_count, p_count);
 			std::swap(last_last_last_p, last_last_p);
 			std::swap(last_last_p, last_p);
 			std::swap(last_p, p);
 			for (int i = 0; i < scurve.begin()->params_.size(); ++i) {
-
-
-
 				aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 
-				//static int count = 0;
-				//if (++count % 10000 == 0) {
-				//	std::cout << "time:" << t << std::endl;
-				//}
-				//std::cout << "time: " << t << "    v: " << v[i] << "  " << std::abs(p[i] - last_p[i])/dt << "    a:" << a[i] << "  " << std::abs(p[i] + last_last_p[i] - 2 * last_p[i]) / dt/dt << std::endl;
-				
 				double max_v = iter->params_[i].vc_max_;
 				double max_a = iter->params_[i].a_;
 				double max_j = iter->params_[i].j_;
@@ -98,11 +69,6 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 				double p_last_last = last_last_p[i];
 				double p_last_last_last = last_last_last_p[i];
 
-				//double p_current_count = p_count[i];
-				//double p_last_count = last_p_count[i];
-				//double p_last_last_count = last_last_p_count[i];
-				//double p_last_last_last_count = last_last_last_p_count[i];
-
 				double v_current = (p_current - p_last) / dt;
 				double v_last = (p_last - p_last_last) / dt;
 				double v_last_last = (p_last_last - p_last_last_last) / dt;
@@ -112,24 +78,20 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 
 				double j_current = (a_current - a_last) / dt;
 
-				if (v[i] > max_v + 1e-10 || std::abs(v_current) > max_v + 1e-9 * max_v) {
-
-					auto pr = std::prev(iter);
+				if (v[i] > max_v + 1e-9 || std::abs(v[i] - v_current) > max_a * dt + 1e-9 || std::abs(v_current) > max_v + 1e-9 * max_v) {
+					//auto pr = std::prev(iter);
 					aris::plan::s_scurve_at(iter->params_[i], t - 0.01, &last_p[i], &v[i], &a[i], &j[i]);
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
-
-
 					THROW_FILE_LINE("check velocity failed");
 				}
-				if (a[i] > max_a + 1e-10 || std::abs(a_current) > max_a + 1e-6 * max_a) {
+				if (a[i] > max_a + 1e-6 || std::abs(a[i] - a_current) > max_j * dt + 1e-6 || std::abs(a_current) > max_a + 1e-6 * max_a) {
+					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check acceleration failed");
 				}
-				if (j[i] > max_j + 1e-10 || std::abs(j_current) > max_j + 1e-3 * max_j) {
+				if (j[i] > max_j + 1e-3 || std::abs(j_current) > max_j + 1e-3 * max_j) {
+					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check jerk failed");
 				}
-				//if (j[i] > max_j + 1e-10 || std::abs(p[i] - last_p[i]) / dt > max_v + 1e-10) {
-				//	THROW_FILE_LINE("check velocity failed");
-				//}
 			}
 			t = t + dt;
 		}
@@ -171,7 +133,6 @@ void test_multi_s_curve(){
 		value = drand() * j_v;
 		j[i] = std::max(value, 0.01);
 	}
-	//pb[aris::dynamic::at(7, 1, n)] = 0.0;
 	
 	for (int i = 1; i < m; ++i) {
 		for (int k = 0; k < n; ++k) {
