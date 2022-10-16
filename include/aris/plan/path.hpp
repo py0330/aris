@@ -80,11 +80,9 @@ namespace aris::plan{
 
 		double k1 = aris::dynamic::s_vv(dim, d2p_darc2, d2p_darc2);
 		double k2 = aris::dynamic::s_vv(dim, dp_darc, dp_darc);
-		
 
 		v = darc_ds < 1e-7 ? 0.0 : std::sqrt(max_a / std::sqrt(k1));
 	}
-
 
 	auto ARIS_API s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50,
 		double& a, double& b, double& c, double &d, double& e)noexcept->void;

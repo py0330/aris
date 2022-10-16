@@ -44,7 +44,7 @@ namespace aris::plan{
 		auto setMaxDdds(double max_ddds)->void;
 
 		// 获取末端数据，并移动dt //
-		auto getEePosAndMoveDt(double *ee_pos)->std::int64_t;
+		auto getEePosAndMoveDt(double *ee_pos = nullptr, double *ee_vel = nullptr, double *ee_acc = nullptr)->std::int64_t;
 
 		// 插入新的数据，并重规划 //
 		auto insertInitPos(std::int64_t id, const double* ee_pos)->void;

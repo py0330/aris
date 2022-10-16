@@ -15,7 +15,7 @@ namespace aris::plan {
 				CL, // Circle Line
 				CC, // Circle Circle
 				QQ, // Quaternion Quaternion
-				OO,
+				OO, // One dof One dof
 			};
 			struct Lines {
 				double p0_[3], p1_[3], p2_[3];
@@ -37,9 +37,9 @@ namespace aris::plan {
 			};
 			ZoneType type_{ ZoneType::LL };
 			double length_{ 0.0 }, zone_value_{ 0.0 }; // length 是融合后的弧长，zone_value是用户的zone的输入
-			double a_, b_, c_, d_, e_;
+			double a_{ 0.0 }, b_{ 0.0 }, c_{ 0.0 }, d_{ 0.0 }, e_{ 0.0 };
 			union {
-				Lines lines_;
+				Lines lines_{};
 				LineCircle line_circle_;
 				CircleLine circle_line_;
 				Circles circles_;
@@ -61,9 +61,9 @@ namespace aris::plan {
 				double p0_, p1_;
 			};
 
-			double length_;  // 对于 quaternion 来说，是指角度
+			double length_{ 0.0 };  // 对于 quaternion 来说，是指角度
 			union {
-				LineData line_;
+				LineData line_{};
 				CircleData circle_;
 				QuternionData quaternion_;
 				OneDof one_dof_;
@@ -261,7 +261,7 @@ namespace aris::plan {
 			case aris::dynamic::EEType::UNKNOWN:
 				break;
 			default:
-				;
+				break;
 			}
 		}
 
@@ -589,9 +589,9 @@ namespace aris::plan {
 
 		// STEP 3. 更新 last_p 和 this_p 的 move 部分
 		aris::dynamic::s_vc(3, p01, last_p->move_x_.line_.p1_);
-		s_make_line_data(last_p->move_x_.line_.p0_, last_p->move_x_.line_.p1_, last_p->move_x_.length_);
+		last_p->move_x_.length_ -= real_zone;
 		aris::dynamic::s_vc(3, p12, this_p->move_x_.line_.p0_);
-		s_make_line_data(this_p->move_x_.line_.p0_, this_p->move_x_.line_.p1_, this_p->move_x_.length_);
+		this_p->move_x_.length_ -= real_zone;
 
 		// STEP 4. 更新 last_p 和 this_p 的 zone 部分
 		auto& zone_x2 = last_p->zone_x2_;
@@ -667,7 +667,7 @@ namespace aris::plan {
 
 		// STEP 3. 更新 last_p 和 this_p 的 move 部分
 		aris::dynamic::s_vc(3, p01, last_p->move_x_.line_.p1_);
-		s_make_line_data(last_p->move_x_.line_.p0_, last_p->move_x_.line_.p1_, last_p->move_x_.length_);
+		last_p->move_x_.length_ -= real_zone;
 		aris::dynamic::s_vc(3, p12, this_p->move_x_.circle_.p0_);
 		this_p->move_x_.length_ -= real_zone;
 
@@ -741,7 +741,7 @@ namespace aris::plan {
 		// STEP 3. 更新 last_p 和 this_p 的 move 部分
 		last_p->move_x_.length_ -= real_zone;
 		aris::dynamic::s_vc(3, p12, this_p->move_x_.line_.p0_);
-		s_make_line_data(this_p->move_x_.line_.p0_, this_p->move_x_.line_.p1_, this_p->move_x_.length_);
+		this_p->move_x_.length_ -= real_zone;
 
 		// STEP 4. 更新 last_p 和 this_p 的 zone 部分
 		auto& zone_x2 = last_p->zone_x2_;
@@ -903,9 +903,9 @@ namespace aris::plan {
 
 		// STEP 3. 更新 last_p 和 this_p 的 move 部分
 		aris::dynamic::s_vc(4, q01, last_p->move_a_.quaternion_.q1_);
-		s_make_quaternion_data(last_p->move_a_.quaternion_.q0_, last_p->move_a_.quaternion_.q1_, last_p->move_a_.length_);
+		last_p->move_a_.length_ -= real_zone;
 		aris::dynamic::s_vc(4, q12, this_p->move_a_.quaternion_.q0_);
-		s_make_quaternion_data(this_p->move_a_.quaternion_.q0_, this_p->move_a_.quaternion_.q1_, this_p->move_a_.length_);
+		this_p->move_a_.length_ -= real_zone;
 
 		// STEP 4. 更新 last_p 和 this_p 的 zone 部分
 		auto& zone_a2 = last_p->zone_a2_;
@@ -947,7 +947,7 @@ namespace aris::plan {
 		double vb;
 		s_bezier3_blend_quaternion(0.5, last_p->zone_a2_.quaternions_.q0_, last_p->zone_a2_.quaternions_.q1_, last_p->zone_a2_.quaternions_.q2_,
 			p50, dp50, d2p50);
-		s_bezier3_max_v_at(4, dp50, d2p50, std::min(last_p->scurve_a_.a_, this_p->scurve_a_.a_), vb);
+		s_bezier3_max_v_at(4, dp50, d2p50, std::min(last_p->scurve_a_.a_ / 2.0, this_p->scurve_a_.a_ / 2.0), vb);
 		last_p->scurve_a_.vb_max_ = std::min({ vb * 2.0, last_p->scurve_a_.vc_max_, this_p->scurve_a_.vc_max_ });
 	}
 
@@ -1220,7 +1220,7 @@ namespace aris::plan {
 				case aris::dynamic::EEType::UNKNOWN:
 					break;
 				default:
-					;
+					break;
 				}
 			}
 		}
@@ -1277,7 +1277,7 @@ namespace aris::plan {
 				case aris::dynamic::EEType::UNKNOWN:
 					break;
 				default:
-					;
+					break;
 				}
 			}
 			ins_scurve_list.pop_front();
@@ -1286,57 +1286,49 @@ namespace aris::plan {
 	}
 
 	// get data //
-	auto get_zone_data(double arc, const Node::Zone &z, double *data)->void {
+	auto get_zone_data(double arc, const Node::Zone &z, double *p, double *dp, double *d2p)->void {
 		switch (z.type_){
 		case Node::Zone::ZoneType::LL: {
 			double s;
 			s_bezier3_arc2s(arc, z.a_, z.b_, z.c_, z.d_, z.e_, s);
-			double p[3], dp[3], d2p[3];
 			s_bezier3_blend_line_line(s, z.lines_.p0_, z.lines_.p1_, z.lines_.p2_, p, dp, d2p);
-			aris::dynamic::s_vc(3, p, data);
 			break;
 		}
 		case Node::Zone::ZoneType::LC: {
 			double s;
 			s_bezier3_arc2s(arc, z.a_, z.b_, z.c_, z.d_, z.e_, s);
-			double p[3], dp[3], d2p[3];
 			s_bezier3_blend_line_circle(s, z.line_circle_.p0_, z.line_circle_.p1_, z.line_circle_.center_, z.line_circle_.axis_, z.line_circle_.theta_
 				, p, dp, d2p);
-			aris::dynamic::s_vc(3, p, data);
 			break;
 		}
 		case Node::Zone::ZoneType::CL: {
 			double s;
 			s_bezier3_arc2s(z.length_ - arc, z.a_, z.b_, z.c_, z.d_, z.e_, s);
-			double p[3], dp[3], d2p[3];
 			s_bezier3_blend_line_circle(s, z.circle_line_.p2_, z.circle_line_.p1_, z.circle_line_.center_, z.circle_line_.axis_, z.circle_line_.theta_
 				, p, dp, d2p);
-			aris::dynamic::s_vc(3, p, data);
 			break;
 		}
 		case Node::Zone::ZoneType::CC: {
 			double s;
 			s_bezier3_arc2s(arc, z.a_, z.b_, z.c_, z.d_, z.e_, s);
-			double p[3], dp[3], d2p[3];
 			s_bezier3_blend_circle_circle(s, z.circles_.pcenter_, z.circles_.c1_, z.circles_.a1_, z.circles_.theta1_
 				, z.circles_.c2_, z.circles_.a2_, z.circles_.theta2_
 				, p, dp, d2p);
-			aris::dynamic::s_vc(3, p, data);
 			break;
 		}
 		case Node::Zone::ZoneType::QQ: {
 			double s;
 			s_bezier3_arc2s(arc, z.a_, z.b_, z.c_, z.d_, z.e_, s);
-			double p[4], dp[4], d2p[4];
 			s_bezier3_blend_quaternion(s, z.quaternions_.q0_, z.quaternions_.q1_, z.quaternions_.q2_, p, dp, d2p);
-			aris::dynamic::s_vc(4, p, data);
 			break;
 		}
 		default:
 			break;
 		}
 	}
-	auto get_ee_data(LargeNum s, const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, double* internal_pos, double* output_pos) {
+	auto get_ee_data(const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, LargeNum s, double ds, double dds, double ddds,
+		double* internal_pos, double* output_pos, double* internal_vel, double* internal_acc) 
+	{
 		int idx = 0;
 		for (int i = 0; i < ee_types.size(); ++i) {
 			auto& ee_p = current_node->ee_plans_[i];
@@ -1349,9 +1341,14 @@ namespace aris::plan {
 				case aris::dynamic::EEType::PM: [[fallthrough]];
 				case aris::dynamic::EEType::PQ: {
 					aris::dynamic::s_vc(3, ee_p.move_x_.line_.p1_, internal_pos + idx);
+					std::fill_n(internal_vel + idx, 3, 0.0);
+					std::fill_n(internal_acc + idx, 3, 0.0);
 					idx += 3;
 					aris::dynamic::s_vc(4, ee_p.move_a_.quaternion_.q1_, internal_pos + idx);
+					std::fill_n(internal_vel + idx, 4, 0.0);
+					std::fill_n(internal_acc + idx, 4, 0.0);
 					idx += 4;
+
 					break;
 				}
 				case aris::dynamic::EEType::XYZT: {
@@ -1369,13 +1366,15 @@ namespace aris::plan {
 				case aris::dynamic::EEType::X: [[fallthrough]];
 				case aris::dynamic::EEType::A: {
 					aris::dynamic::s_vc(1, ee_p.move_x_.line_.p1_, internal_pos + idx);
+					std::fill_n(internal_vel + idx, 1, 0.0);
+					std::fill_n(internal_acc + idx, 1, 0.0);
 					idx += 1;
 					break;
 				}
 				case aris::dynamic::EEType::UNKNOWN:
 					break;
 				default:
-					;
+					break;
 				}
 
 				break;
@@ -1394,10 +1393,10 @@ namespace aris::plan {
 						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
 						double l = sp - ee_p.scurve_x_.pa_;
 						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx);
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx);
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else {
 							auto& line = ee_p.move_x_.line_;
@@ -1413,10 +1412,10 @@ namespace aris::plan {
 						s_scurve_at(ee_p.scurve_a_, s, &sp, &sv, &sa, &sj);
 						double l = sp - ee_p.scurve_a_.pa_;
 						if (l < ee_p.zone_a1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx);
+							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
-							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx);
+							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else {
 							// in move //
@@ -1450,20 +1449,26 @@ namespace aris::plan {
 						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
 						double l = sp - ee_p.scurve_x_.pa_;
 						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							double p[3];
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, p);
+							double p[3], dp[3], ddp[3];
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, p, dp, ddp);
 							internal_pos[idx] = p[0];
+							internal_vel[idx] = dp[0];
+							internal_acc[idx] = ddp[0];
 						}
 						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							double p[3];
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, p);
+							double p[3], dp[3], ddp[3];
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, p, dp, ddp);
 							internal_pos[idx] = p[0];
+							internal_vel[idx] = dp[0];
+							internal_acc[idx] = ddp[0];
 						}
 						else {
-							double p[3];
+							double p[3], dp[3], ddp[3];
 							auto& line = ee_p.move_x_.line_;
 							s_compute_line_pos_at(l - ee_p.zone_x1_.length_ / 2.0, line.p0_, line.p1_, ee_p.move_x_.length_, p);
 							internal_pos[idx] = p[0];
+							//internal_vel[idx] = dp[0];
+							//internal_acc[idx] = ddp[0];
 						}
 						idx += 1;
 					}
@@ -1472,7 +1477,7 @@ namespace aris::plan {
 				case aris::dynamic::EEType::UNKNOWN:
 					break;
 				default:
-					;
+					break;
 				}
 
 				break;
@@ -1491,10 +1496,10 @@ namespace aris::plan {
 						s_scurve_at(ee_p.scurve_x_, s, &sp, &sv, &sa, &sj);
 						double l = sp - ee_p.scurve_x_.pa_;
 						if (l < ee_p.zone_x1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx);
+							get_zone_data(l + ee_p.zone_x1_.length_ / 2.0, ee_p.zone_x1_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else if (l > ee_p.zone_x1_.length_ / 2.0 + ee_p.move_x_.length_) {
-							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx);
+							get_zone_data(l - ee_p.zone_x1_.length_ / 2.0 - ee_p.move_x_.length_, ee_p.zone_x2_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else {
 							auto& c = ee_p.move_x_.circle_;
@@ -1510,10 +1515,10 @@ namespace aris::plan {
 						s_scurve_at(ee_p.scurve_a_, s, &sp, &sv, &sa, &sj);
 						double l = sp - ee_p.scurve_a_.pa_;
 						if (l < ee_p.zone_a1_.length_ / 2.0) {
-							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx);
+							get_zone_data(l + ee_p.zone_a1_.length_ / 2.0, ee_p.zone_a1_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else if (l > ee_p.zone_a1_.length_ / 2.0 + ee_p.move_a_.length_) {
-							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx);
+							get_zone_data(l - ee_p.zone_a1_.length_ / 2.0 - ee_p.move_a_.length_, ee_p.zone_a2_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 						}
 						else {
 							// in move //
@@ -1544,7 +1549,6 @@ namespace aris::plan {
 
 				break;
 			}
-
 			}
 		}
 
@@ -1586,8 +1590,9 @@ namespace aris::plan {
 
 		// 末端类型 //
 		std::vector<aris::dynamic::EEType> ee_types_;
-		aris::Size outpos_size_{ 0 }, internal_pos_size{ 0 };
-		std::vector<double> internal_pos_;
+		aris::Size outpos_size_{ 0 }, outvel_size_{ 0 }, internal_pos_size{ 0 };
+		double* internal_pos_, *internal_vel_, *internal_acc_;
+		std::vector<double> internal_vec_;
 
 		// 规划节点 //
 		std::list<Node> nodes_;
@@ -1604,6 +1609,7 @@ namespace aris::plan {
 		imp_->outpos_size_ = aris::dynamic::getEETypePosSize(ee_types);
 
 		auto &internal_pos_size = imp_->internal_pos_size;
+		auto& out_vel_size = imp_->outvel_size_;
 		for (auto type : ee_types) {
 			switch (type) {
 			case aris::dynamic::EEType::PE313: [[fallthrough]];
@@ -1612,24 +1618,31 @@ namespace aris::plan {
 			case aris::dynamic::EEType::PM: [[fallthrough]];
 			case aris::dynamic::EEType::PQ:
 				internal_pos_size += 7;
+				out_vel_size += 6;
 				break;
 			case aris::dynamic::EEType::XYZT:
 				internal_pos_size += 4;
+				out_vel_size += 4;
 				break;
 			case aris::dynamic::EEType::XYZ:
 				internal_pos_size += 3;
+				out_vel_size += 3;
 				break;
 			case aris::dynamic::EEType::XYT:
 				internal_pos_size += 3;
+				out_vel_size += 3;
 				break;
 			case aris::dynamic::EEType::XY:
 				internal_pos_size += 2;
+				out_vel_size += 2;
 				break;
 			case aris::dynamic::EEType::X:
 				internal_pos_size += 1;
+				out_vel_size += 1;
 				break;
 			case aris::dynamic::EEType::A:
 				internal_pos_size += 1;
+				out_vel_size += 1;
 				break;
 			case aris::dynamic::EEType::UNKNOWN:
 				break;
@@ -1638,7 +1651,10 @@ namespace aris::plan {
 			}
 		}
 
-		imp_->internal_pos_.resize(internal_pos_size);
+		imp_->internal_vec_.resize(3 * internal_pos_size);
+		imp_->internal_pos_ = imp_->internal_vec_.data() + 0 * internal_pos_size;
+		imp_->internal_vel_ = imp_->internal_vec_.data() + 1 * internal_pos_size;
+		imp_->internal_acc_ = imp_->internal_vec_.data() + 2 * internal_pos_size;
 	}
 	auto TrajectoryGenerator::dt()const->double {
 		return imp_->dt_;
@@ -1674,7 +1690,7 @@ namespace aris::plan {
 	TrajectoryGenerator::TrajectoryGenerator() :imp_(new Imp) {
 		imp_->current_node_.store(nullptr);
 	}
-	auto TrajectoryGenerator::getEePosAndMoveDt(double* ee_pos)->std::int64_t {
+	auto TrajectoryGenerator::getEePosAndMoveDt(double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
@@ -1694,7 +1710,7 @@ namespace aris::plan {
 				imp_->ds_ = imp_->target_ds_;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
-				get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
+				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
 				return 0;
 			}
 			// check 是否局部结束，即下一条指令是 init
@@ -1703,7 +1719,7 @@ namespace aris::plan {
 				imp_->ds_ = imp_->target_ds_;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
-				get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
+				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
 				
 				current_node = current_node->next_node_.exchange(nullptr);
 				imp_->current_node_.store(current_node);
@@ -1719,7 +1735,7 @@ namespace aris::plan {
 			}
 		}
 
-		get_ee_data(s_, eeTypes(), current_node, imp_->internal_pos_.data(), ee_pos);
+		get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
 		return current_node->id_;
 	}
 	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {

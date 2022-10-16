@@ -161,6 +161,36 @@ void test_blend_bezier(){
 			std::cout << "\"s_blend_quaternion_bezier3\" failed" << std::endl;
 	}
 
+	// test s_blend_quaternion_bezier3 //
+	{
+		double q0[4]{ std::sin(0.1), 0.0, 0.0, std::cos(0.1)};
+		double q1[4]{ 0,0,0,1 };
+		double q2[4]{ std::sin(0.1), 0.0, 0.0, std::cos(0.1) };
+
+		double q[4], dq[4], d2q[4];
+		aris::plan::s_bezier3_blend_quaternion(0.5, q0, q1, q2, q, dq, d2q);
+
+		const double q_[4]{ 0.095189031999334,
+			0.0783817543850458,
+			0.0307778043574334,
+			 0.991891161128824
+		};
+		const double dq_[4]{ -0.00596189256812635,
+		   -0.0559156109598799,
+			0.0112331920023273,
+		   0.00464218017226164
+		};
+		const double d2q_[4]{ 1.13118014727655,
+		 0.547101513143992,
+		0.0971962711225237,
+		-0.158142392813288
+		};
+
+		if (!(aris::dynamic::s_is_equal(4, q, q_, error)
+			&& aris::dynamic::s_is_equal(4, dq, dq_, error)
+			&& aris::dynamic::s_is_equal(4, d2q, d2q_, error)))
+			std::cout << "\"s_blend_quaternion_bezier3\" failed" << std::endl;
+	}
 }
 
 void test_path()
