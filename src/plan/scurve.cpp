@@ -1363,6 +1363,7 @@ namespace aris::plan {
                 p_ = pa + va * t_;
                 v_ = va;
                 a_ = 0.0;
+                j_ = 0.0;
             }
             else if (t_ < T - Tb) {
                 double Tacc = T - Ta - Tb;
@@ -1498,6 +1499,6 @@ namespace aris::plan {
         if (p_out) *p_out = p_;
         if (v_out) *v_out = v_;
         if (a_out) *a_out = a_;
-
+        if (j_out) *j_out = j_;
     }
 }
