@@ -89,7 +89,7 @@ namespace aris::plan{
 
 	auto ARIS_API s_bezier3_s2arc(double s, double a, double b, double c, double d, double e, double& arc, double& darc, double &d2arc)noexcept->void;
 
-	auto ARIS_API s_bezier3_arc2s(double arc, double a, double b, double c, double d, double e,	double& s)noexcept->void;
+	auto ARIS_API s_bezier3_arc2s(double arc, double darc, double d2arc, double a, double b, double c, double d, double e, double& s, double &ds, double &d2s)noexcept->void;
 }
 
 #endif

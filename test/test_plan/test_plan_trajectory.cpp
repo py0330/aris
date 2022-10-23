@@ -83,8 +83,8 @@ void test_trajectory(){
 	tg.insertLinePos(103, pqs[0], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertLinePos(104, pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertLinePos(105, pqs[2], vels[0], accs[0], jerks[0], zones[0]);
-	tg.insertInitPos(31, pqs[2]);
-	tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], init_pe);
+	//tg.insertInitPos(31, pqs[2]);
+	//tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], init_pe);
 
 	//double pes2[2][6 * EE_NUM]{
 	//	{ 0.10, 0.22, 0.35, 0.20, 0.23, 1.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
@@ -110,21 +110,28 @@ void test_trajectory(){
 
 	
 	
-	std::vector<double> vec;
+	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
-	while (tg.getEePosAndMoveDt(out_pe)) {
-		if (m > 2900)
-			std::cout << "debug" << std::endl;
-
-
+	double out_vel[16]{}, out_acc[16]{};
+	while (tg.getEePosAndMoveDt(out_pe, out_vel, out_acc)) {
+		//if (m > 2597)
+		//	std::cout << "debug" << std::endl;
+		
 		m++;
 		vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
+		v_vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
+		a_vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
 		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_pe, vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_vel, v_vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_acc, a_vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+
+		std::fill_n(out_vel, 16, 0.0);
+		std::fill_n(out_acc, 16, 0.0);
 	}
 	
 	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
-
-
+	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
+	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
 	
 	std::cout << "-----------------test trajectory finished------------" << std::endl << std::endl;
