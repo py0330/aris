@@ -37,7 +37,7 @@ namespace aris::plan {
 			};
 			ZoneType type_{ ZoneType::LL };
 			double length_{ 0.0 }, zone_value_{ 0.0 }; // length 是融合后的弧长，zone_value是用户的zone的输入
-			double a_{ 0.0 }, b_{ 0.0 }, c_{ 0.0 }, d_{ 0.0 }, e_{ 0.0 };
+			EstimateBezierArcParam bezier_param;
 			union {
 				Lines lines_{};
 				LineCircle line_circle_;
@@ -442,7 +442,7 @@ namespace aris::plan {
 		
 		length = 2.0 * std::atan2(s, std::abs(c));
 	}
-	auto s_compute_quaternion_at(double l, const double* q0, const double* q1, double total_length, double* q) {
+	auto s_compute_quaternion_at(const double* q0, const double* q1, double total_length, double l, double* q, double dl = 0.0, double* dq = nullptr, double d2l = 0.0, double* d2q = nullptr) {
 		l = std::min(l, total_length);
 		l = std::max(l, 0.0);
 
@@ -458,6 +458,24 @@ namespace aris::plan {
 			q[1] = s1 * q0[1] + s2 * q1[1];
 			q[2] = s1 * q0[2] + s2 * q1[2];
 			q[3] = s1 * q0[3] + s2 * q1[3];
+
+			if (dq) {
+				double ds1 = -dl / total_length;
+				double ds2 = dir * dl / total_length;
+				dq[0] = (ds1 * q0[0] + ds2 * q1[0]);
+				dq[1] = (ds1 * q0[1] + ds2 * q1[1]);
+				dq[2] = (ds1 * q0[2] + ds2 * q1[2]);
+				dq[3] = (ds1 * q0[3] + ds2 * q1[3]);
+			}
+
+			if (d2q) {
+				double d2s1 = -d2l / total_length;
+				double d2s2 = dir * d2l / total_length;
+				d2q[0] = (d2s1 * q0[0] + d2s2 * q1[0]);
+				d2q[1] = (d2s1 * q0[1] + d2s2 * q1[1]);
+				d2q[2] = (d2s1 * q0[2] + d2s2 * q1[2]);
+				d2q[3] = (d2s1 * q0[3] + d2s2 * q1[3]);
+			}
 		}
 		else {
 			double s1 = std::sin((total_length - l) / 2.0);
@@ -468,6 +486,25 @@ namespace aris::plan {
 			q[1] = (s1 * q0[1] + s2 * q1[1]) / s3;
 			q[2] = (s1 * q0[2] + s2 * q1[2]) / s3;
 			q[3] = (s1 * q0[3] + s2 * q1[3]) / s3;
+
+			if (dq) {
+				double ds1 = -0.5 * std::cos((total_length - l) / 2.0) * dl;
+				double ds2 = dir * 0.5 * std::cos(l / 2.0) * dl;
+				dq[0] = (ds1 * q0[0] + ds2 * q1[0]) / s3;
+				dq[1] = (ds1 * q0[1] + ds2 * q1[1]) / s3;
+				dq[2] = (ds1 * q0[2] + ds2 * q1[2]) / s3;
+				dq[3] = (ds1 * q0[3] + ds2 * q1[3]) / s3;
+			}
+
+			if (d2q) {
+				double d2s1 = -0.5 * std::cos((total_length - l) / 2.0) * d2l - 0.5 * std::sin((total_length - l) / 2.0) * dl * dl;
+				double d2s2 = dir * 0.5 * std::cos(l / 2.0) * d2l - dir * 0.5 * 0.5 * std::sin(l / 2.0) * dl * dl;
+				d2q[0] = (d2s1 * q0[0] + d2s2 * q1[0]) / s3;
+				d2q[1] = (d2s1 * q0[1] + d2s2 * q1[1]) / s3;
+				d2q[2] = (d2s1 * q0[2] + d2s2 * q1[2]) / s3;
+				d2q[3] = (d2s1 * q0[3] + d2s2 * q1[3]) / s3;
+			}
+
 		}
 	}
 
@@ -653,9 +690,9 @@ namespace aris::plan {
 		s_bezier3_darc_ds(3, dp, d2p, darc_ds_50, d2arc_ds2_50, ds_darc_50, d2s_darc2_50);
 
 		s_bezier3_estimate_arc_param(darc_ds_0, d2arc_ds2_0, darc_ds_1, d2arc_ds2_1, darc_ds_50
-			, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_);
+			, zone_x2.bezier_param);
 
-		s_bezier3_s2arc(1.0, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_, arc, darc, d2arc);
+		s_bezier3_s2arc(1.0, zone_x2.bezier_param, arc, darc, d2arc);
 		zone_x2.length_ = arc;
 
 		this_p->zone_x1_ = zone_x2;
@@ -731,9 +768,9 @@ namespace aris::plan {
 		s_bezier3_darc_ds(3, dp, d2p, darc_ds_50, d2arc_ds2_50, ds_darc_50, d2s_darc2_50);
 
 		s_bezier3_estimate_arc_param(darc_ds_0, d2arc_ds2_0, darc_ds_1, d2arc_ds2_1, darc_ds_50
-			, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_);
+			, zone_x2.bezier_param);
 
-		s_bezier3_s2arc(1.0, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_, arc, darc, d2arc);
+		s_bezier3_s2arc(1.0, zone_x2.bezier_param, arc, darc, d2arc);
 		zone_x2.length_ = arc;
 
 		this_p->zone_x1_ = zone_x2;
@@ -802,9 +839,9 @@ namespace aris::plan {
 		s_bezier3_darc_ds(3, dp, d2p, darc_ds_50, d2arc_ds2_50, ds_darc_50, d2s_darc2_50);
 
 		s_bezier3_estimate_arc_param(darc_ds_0, d2arc_ds2_0, darc_ds_1, d2arc_ds2_1, darc_ds_50
-			, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_);
+			, zone_x2.bezier_param);
 
-		s_bezier3_s2arc(1.0, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_, arc, darc, d2arc);
+		s_bezier3_s2arc(1.0, zone_x2.bezier_param, arc, darc, d2arc);
 		zone_x2.length_ = arc;
 
 		this_p->zone_x1_ = zone_x2;
@@ -891,9 +928,9 @@ namespace aris::plan {
 		s_bezier3_darc_ds(3, dp, d2p, darc_ds_50, d2arc_ds2_50, ds_darc_50, d2s_darc2_50);
 
 		s_bezier3_estimate_arc_param(darc_ds_0, d2arc_ds2_0, darc_ds_1, d2arc_ds2_1, darc_ds_50
-			, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_);
+			, zone_x2.bezier_param);
 
-		s_bezier3_s2arc(1.0, zone_x2.a_, zone_x2.b_, zone_x2.c_, zone_x2.d_, zone_x2.e_, arc, darc, d2arc);
+		s_bezier3_s2arc(1.0, zone_x2.bezier_param, arc, darc, d2arc);
 		zone_x2.length_ = arc;
 
 		this_p->zone_x1_ = zone_x2;
@@ -921,17 +958,17 @@ namespace aris::plan {
 		aris::dynamic::s_vc(4, last_p->move_a_.quaternion_.q1_, q1);
 
 		s_compute_quaternion_at(
-			last_p->move_a_.length_ - real_zone,
 			last_p->move_a_.quaternion_.q0_,
 			last_p->move_a_.quaternion_.q1_,
 			last_p->move_a_.length_,
+			last_p->move_a_.length_ - real_zone,
 			q01);
 
 		s_compute_quaternion_at(
-			real_zone,
 			this_p->move_a_.quaternion_.q0_,
 			this_p->move_a_.quaternion_.q1_,
 			this_p->move_a_.length_,
+			real_zone,
 			q12);
 
 		// STEP 3. 更新 last_p 和 this_p 的 move 部分
@@ -964,9 +1001,9 @@ namespace aris::plan {
 
 		// 弧度是四元数插值的模乘以2
 		s_bezier3_estimate_arc_param(2.0 * darc_ds_0, 2.0 * d2arc_ds2_0, 2.0 * darc_ds_1, 2.0 * d2arc_ds2_1, 2.0 * darc_ds_50
-			, zone_a2.a_, zone_a2.b_, zone_a2.c_, zone_a2.d_, zone_a2.e_);
+			, zone_a2.bezier_param);
 
-		s_bezier3_s2arc(1.0, zone_a2.a_, zone_a2.b_, zone_a2.c_, zone_a2.d_, zone_a2.e_, arc, darc, d2arc);
+		s_bezier3_s2arc(1.0, zone_a2.bezier_param, arc, darc, d2arc);
 		zone_a2.length_ = arc;
 
 		this_p->zone_a1_ = zone_a2;
@@ -1344,7 +1381,7 @@ namespace aris::plan {
 		
 		switch (z.type_){
 		case Node::Zone::ZoneType::LL: {
-			s_bezier3_arc2s(arc, darc, d2arc, z.a_, z.b_, z.c_, z.d_, z.e_, s, ds, d2s);
+			s_bezier3_arc2s(arc, darc, d2arc, z.bezier_param, s, ds, d2s);
 			s_bezier3_blend_line_line(s, z.lines_.p0_, z.lines_.p1_, z.lines_.p2_, p, dp, d2p);
 			
 			// d2p_dt2 = (dp_dt)' = (dp_ds * ds)' = d2p_ds2 * ds^2 + dp_ds * d2s
@@ -1356,7 +1393,7 @@ namespace aris::plan {
 			break;
 		}
 		case Node::Zone::ZoneType::LC: {
-			s_bezier3_arc2s(arc, darc, d2arc, z.a_, z.b_, z.c_, z.d_, z.e_, s, ds, d2s);
+			s_bezier3_arc2s(arc, darc, d2arc, z.bezier_param, s, ds, d2s);
 			s_bezier3_blend_line_circle(s, z.line_circle_.p0_, z.line_circle_.p1_, z.line_circle_.center_, z.line_circle_.axis_, z.line_circle_.theta_
 				, p, dp, d2p);
 			// d2p_dt2 = (dp_dt)' = (dp_ds * ds)' = d2p_ds2 * ds^2 + dp_ds * d2s
@@ -1368,7 +1405,7 @@ namespace aris::plan {
 			break;
 		}
 		case Node::Zone::ZoneType::CL: {
-			s_bezier3_arc2s(z.length_ - arc, -darc, -d2arc, z.a_, z.b_, z.c_, z.d_, z.e_, s, ds, d2s);
+			s_bezier3_arc2s(z.length_ - arc, -darc, -d2arc, z.bezier_param, s, ds, d2s);
 			s_bezier3_blend_line_circle(s, z.circle_line_.p2_, z.circle_line_.p1_, z.circle_line_.center_, z.circle_line_.axis_, z.circle_line_.theta_
 				, p, dp, d2p);
 			// d2p_dt2 = (dp_dt)' = (dp_ds * ds)' = d2p_ds2 * ds^2 + dp_ds * d2s
@@ -1380,7 +1417,7 @@ namespace aris::plan {
 			break;
 		}
 		case Node::Zone::ZoneType::CC: {
-			s_bezier3_arc2s(arc, darc, d2arc, z.a_, z.b_, z.c_, z.d_, z.e_, s, ds, d2s);
+			s_bezier3_arc2s(arc, darc, d2arc, z.bezier_param, s, ds, d2s);
 			s_bezier3_blend_circle_circle(s, z.circles_.pcenter_, z.circles_.c1_, z.circles_.a1_, z.circles_.theta1_
 				, z.circles_.c2_, z.circles_.a2_, z.circles_.theta2_
 				, p, dp, d2p);
@@ -1393,7 +1430,7 @@ namespace aris::plan {
 			break;
 		}
 		case Node::Zone::ZoneType::QQ: {
-			s_bezier3_arc2s(arc, darc, d2arc, z.a_, z.b_, z.c_, z.d_, z.e_, s, ds, d2s);
+			s_bezier3_arc2s(arc, darc, d2arc, z.bezier_param, s, ds, d2s);
 			s_bezier3_blend_quaternion(s, z.quaternions_.q0_, z.quaternions_.q1_, z.quaternions_.q2_, p, dp, d2p);
 			// d2p_dt2 = (dp_dt)' = (dp_ds * ds)' = d2p_ds2 * ds^2 + dp_ds * d2s
 			aris::dynamic::s_nv(4, ds * ds, d2p);
@@ -1500,7 +1537,7 @@ namespace aris::plan {
 						else {
 							// in move //
 							auto& quternion = ee_p.move_a_.quaternion_;
-							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, internal_pos + idx);
+							s_compute_quaternion_at(quternion.q0_, quternion.q1_, ee_p.move_a_.length_, l - ee_p.zone_a1_.length_ / 2.0, internal_pos + idx, sv, internal_vel + idx, sa, internal_acc + idx);
 						}
 
 						idx += 4;
@@ -1545,10 +1582,10 @@ namespace aris::plan {
 						else {
 							double p[3], dp[3], ddp[3];
 							auto& line = ee_p.move_x_.line_;
-							s_compute_line_at(line.p0_, line.dir_, l - ee_p.zone_x1_.length_ / 2.0, p);
+							s_compute_line_at(line.p0_, line.dir_, l - ee_p.zone_x1_.length_ / 2.0, p, sv, dp, sa, ddp);
 							internal_pos[idx] = p[0];
-							//internal_vel[idx] = dp[0];
-							//internal_acc[idx] = ddp[0];
+							internal_vel[idx] = dp[0];
+							internal_acc[idx] = ddp[0];
 						}
 						idx += 1;
 					}
@@ -1604,7 +1641,7 @@ namespace aris::plan {
 						else {
 							// in move //
 							auto& quternion = ee_p.move_a_.quaternion_;
-							s_compute_quaternion_at(l - ee_p.zone_a1_.length_ / 2.0, quternion.q0_, quternion.q1_, ee_p.move_a_.length_, internal_pos + idx);
+							s_compute_quaternion_at(quternion.q0_, quternion.q1_, ee_p.move_a_.length_, l - ee_p.zone_a1_.length_ / 2.0, internal_pos + idx, sv, internal_vel + idx, sa, internal_acc + idx);
 						}
 
 						idx += 4;

@@ -84,12 +84,16 @@ namespace aris::plan{
 		v = darc_ds < 1e-7 ? 0.0 : std::sqrt(max_a / std::sqrt(k1));
 	}
 
+	struct EstimateBezierArcParam {
+		double h;
+		double A, B, C, D, E, F, G, H, I, X, Y, Z;
+	};
 	auto ARIS_API s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50,
-		double& a, double& b, double& c, double &d, double& e)noexcept->void;
+		EstimateBezierArcParam &bezier_arc_param)noexcept->void;
 
-	auto ARIS_API s_bezier3_s2arc(double s, double a, double b, double c, double d, double e, double& arc, double& darc, double &d2arc)noexcept->void;
+	auto ARIS_API s_bezier3_s2arc(double s, const EstimateBezierArcParam& param, double& arc, double& darc, double &d2arc)noexcept->void;
 
-	auto ARIS_API s_bezier3_arc2s(double arc, double darc, double d2arc, double a, double b, double c, double d, double e, double& s, double &ds, double &d2s)noexcept->void;
+	auto ARIS_API s_bezier3_arc2s(double arc, double darc, double d2arc, const EstimateBezierArcParam& param, double& s, double &ds, double &d2s)noexcept->void;
 }
 
 #endif
