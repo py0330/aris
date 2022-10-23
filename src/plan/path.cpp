@@ -392,64 +392,114 @@ namespace aris::plan{
 		d2s_darc2 = -d2arc_ds2 / darc_ds / darc_ds / darc_ds;
 	}
 
-	auto s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50,
-		double& a, double& b, double& c, double& d, double& e)noexcept->void 
-	{
-		//  % UNTITLED 此处提供此函数的摘要
-		//	% 此处提供详细说明
+	auto s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50, EstimateBezierArcParam& param)noexcept->void{
+		//% 对于 theta 较大时，以下式子估算较为准确
+		//% 使用1元3次方程 a s^3 + b s^2 + c s + d  模拟在s=0和s=1处的dp
+		//% [ 0 0 0 1 ] [ a ] = [ darc0  ] 
+		//% | 1 1 1 1 | | b |   | darc1  |
+		//% | 0 0 1 0 | | c |   | d2arc0 |
+		//% [ 3 2 1 0 ] [ d ]   [ d2arc1 ]
+		//% 
+		//% 系数矩阵的逆为：
+		//% [  2 -2  1  1 ]
+		//% | -3  3 -2 -1 |
+		//% |  0  0  1  0 | 
+		//% [  1  0  0  0 ]
+		//%
+		//% 因而：
+		//% a =  2*darc0 - 2*darc1 +   d2arc0 + d2arc1;
+		//% b = -3*darc0 + 3*darc1 - 2*d2arc0 - d2arc1;
+		//% c =                        d2arc0         ;
+		//% d =    darc0                              ;
+		//%
+		//% 后续需要修正d，因此先计算前三项。
 
-		//	% 使用1元3次方程 a s ^ 3 + b s ^ 2 + c s + d  模拟在s = 0和s = 1处的dp
-		//	% [ 0 0 0 1 ] [ a ] = [ darc0  ]
-		//	% | 1 1 1 1 | | b |   | darc1  |
-		//	% | 0 0 1 0 | | c |   | d2arc0 |
-		//	% [ 3 2 1 0 ] [ d ]   [ d2arc1 ]
-		//	%
-		//	%系数矩阵的逆为：
-		//	% [  2 -2  1  1 ]
-		//	% | -3  3 -2 -1 |
-		//	% |  0  0  1  0 |
-		//	% [  1  0  0  0 ]
-		//	%
-		//	%因而：
-		//	% a = 2 * darc0 - 2 * darc1 + d2arc0 + d2arc1;
-		//  % b = -3 * darc0 + 3 * darc1 - 2 * d2arc0 - d2arc1;
-		//  % c = d2arc0;
-		//  % d = darc0;
-		//  %
-		//	% 后续需要修正d，因此先计算前三项。
+		double a =  2*darc0 - 2*darc1 +   d2arc0 + d2arc1;
+		double b = -3*darc0 + 3*darc1 - 2*d2arc0 - d2arc1;
+		double c =                        d2arc0         ;
+		double d =    darc0                              ;
 
-		a = 2 * darc0 - 2 * darc1 + d2arc0 + d2arc1;
-		b = -3 * darc0 + 3 * darc1 - 2 * d2arc0 - d2arc1;
-		c = d2arc0;
+		//% 对于theta较小时，以下式子估算较为准确
+		//% 用经验公式 atan2(x, h) *i 来模拟 d2arc, 其中 x = s - 0.5
+		//% 对其积分，可得：
+		//% darc = (x*atan2(x, h) - h/2*log(x*x + h*h))*i + j
+		//%      = x*d2darc - (h/2*log(x*x + h*h))*i + j;
+		//% 【参考】https://zh.m.wikipedia.org/zh-hant/%E5%8F%8D%E4%B8%89%E8%A7%92%E5%87%BD%E6%95%B0%E7%A7%AF%E5%88%86%E8%A1%A8
+		//%
+		//% 进一步积分，可得：
+		//% arc = i*( (x*x+h*h)/2*atan2(x, h)-h*x/2 - (x*log(x*x + h*h)+2*h*atan2(x,h)-2*x)*h/2 ) + k
+		//%     = k*( (x*x-h*h)*i*atan2(x, h))/2 + (h*i*x)/2 - (h*i*x*log(h^2 + x^2))/2
+		//% 【参考】https://www.symbolab.com/solver/step-by-step/%5Cint%20ln%5Cleft(x%5E%7B2%7D%2Bc%5E%7B2%7D%5Cright)%20dx?or=input
 
-		//  % 上述一元三次方程，无法保证s = 0.5时，darc的正确性，因此需修正
-		//	% 使用 cos 函数，在不改变0，1处的darc的前提下，将s = 0.5处的darc修正到正确值
-		//	% 修正函数为(1 - cos(2 pi s)) / 2 * darc_error_at_0.5
-		//	% 而 darc_error_at_0.5 = dp50 - 0.125.*a - 0.25.*b - 0.5.*c - darc0;
-		//  %
-		//	% 将上述等式化简，可得修正之后的一次项d，以及cos函数的系数 e：
-		d = 0.5 * darc50 - 0.0625 * a - 0.125 * b - 0.25 * c + 0.5 * darc0;
-		e = -0.5 * darc50 + 0.0625 * a + 0.125 * b + 0.25 * c + 0.5 * darc0;
+		double h = std::pow((darc50 / (std::max(darc0 + darc1, std::numeric_limits<double>::epsilon()))) * 4.0 * aris::PI, 1.5) * 0.05;   //% 经验公式
+		double i = (std::abs(d2arc1) + std::abs(d2arc0)) / 2.0 / std::atan2(1.0, 2.0 * h); //% 经验公式
+		double j = -(0.5 * std::atan2(0.5, h) - h / 2 * std::log(0.25 + h * h)) * i + darc0; //% darc的常数项
+		double k = -i * (h / 4.0 - (h * (1.0 + 2.0 * h * std::atan2(-0.25, h) - std::log(h * h + 0.25) / 2.0)) / 2.0 + std::atan2(-0.5, h) * (h * h / 2.0 + 0.125)) + 0.5 * j; //% arc 的常数项
+
+		//% 上述两方程，无法保证s = 0.5时，darc的正确性，因此需修正
+		//% 使用 cos 函数，在不改变0，1处的darc的前提下，将s=0.5处的darc修正到正确值
+		//% 修正函数为 (1-cos(2 pi s))/2 * darc_error_at_0.5
+		//% 而 darc_error_at_0.5 = dp50 - 0.125.*a - 0.25.*b - 0.5.*c - darc0;
+		//% 
+		//% 将上述等式化简，可得修正之后的一次项d，以及cos函数的系数 e：
+
+		double ratio = std::pow(4.0 * darc50 / (darc0 + darc1), 4);
+		ratio = std::isfinite(ratio) ? ratio : 0.5;
+		ratio = std::max(ratio, 0.0);
+		ratio = std::min(ratio, 1.0);
+
+		double lh = std::max(std::log(h), -100.0);
+
+		double darcA50 = 0.125 * a + 0.25 * b + 0.5 * c + d;
+		double darcB50 = -lh * h * i + j;
+		double darcE50 = darc50 - (ratio * darcA50 + (1.0 - ratio) * darcB50);
+
+		param.A = ((a * ratio) / 4.0);
+		param.B = ((b * ratio) / 3.0);
+		param.C = (c * ratio) / 2.0;
+		param.D = darc50 / 2.0 - (ratio - 1.0) * (j + (h * i) / 2.0) + d * ratio - (ratio * (a / 8.0 + b / 4.0 + c / 2.0 + d)) / 2.0 + ((j - h * i * lh) * (ratio - 1.0)) / 2.0;
+		param.E = h * i / 2.0 * (ratio - 1.0);
+		param.F = h * i / 2.0 * (1.0 - ratio) / 2.0;
+		param.G = i * (1.0 - ratio) / 2.0;
+		param.H = i * (h * h / 2.0 - 0.125) * (ratio - 1.0);
+		param.I = -(darc50 - ratio * (a / 8.0 + b / 4.0 + c / 2.0 + d) + (j - h * i * lh) * (ratio - 1.0)) / (4.0 * aris::PI);
+		param.h = h;
+
+		param.X = -(param.F * std::log(0.25 + h * h) + param.H * std::atan2(-0.5, h)); //% 将 s = 0 带入，arc应该为0
+		param.Y = param.D + (ratio - 1.0) * ((h * i) / 2.0);
+		param.Z = c * ratio;
 	}
 
-	auto s_bezier3_s2arc(double s, double a, double b, double c, double d, double e, 
-		double& arc, double& darc, double &d2arc)noexcept->void
-	{
-		arc = a * s * s * s * s / 4.0 + b * s * s * s / 3.0 + c * s * s / 2.0 + d * s + e * std::sin(2.0 * PI * s) / 2.0 / PI;
-		darc = a * s * s * s + b * s * s + c * s + d + e * std::cos(2 * PI * s);
-		d2arc = a * s * s * 3 + b * s * s * 2 + c - e * std::sin(2 * PI * s) * 2 * PI;
+	auto s_bezier3_s2arc(double s, const EstimateBezierArcParam& param,	double& arc, double& darc, double &d2arc)noexcept->void{
+		double lx = std::max(std::log((s - 0.5) * (s - 0.5) + param.h * param.h), -100.0);
+		double at = std::atan2(s - 0.5, param.h);
+		
+		arc = param.A * s * s * s * s + param.B * s * s * s + param.C * s * s + param.D * s + param.E * lx * s + param.F * lx + param.G * at * s * s - param.G * at * s + param.H * at + param.I * std::sin(2.0 * aris::PI * s) + param.X;
+		darc = 4 * param.A * s * s * s + 3 * param.B * s * s + 2 * param.C * s + 2 * param.G * at * s - param.G * at + param.E * lx + param.I * 2 * aris::PI * std::cos(2 * aris::PI * s) + param.Y;
+		d2arc = 12 * param.A * s * s + 6 * param.B * s + 2 * param.G * at + 4 * param.I * std::sin(2 * aris::PI * s) + param.Z;
 	}
 
 	
-	auto s_bezier3_arc2s(double arc, double a, double b, double c, double d, double e, double& s)noexcept->void {
-		double A = a / 4.0;
-		double B = b / 3.0;
-		double C = c / 2.0;
-		double E = e / 2.0/PI;
-		double two_pi = 2 * PI;
-
-		s = newton_raphson_binary_search([A,B,C,d,E,two_pi,arc](double s)->double {
-			return A * s * s * s * s + B * s * s * s + C * s * s + d * s + E * std::sin(two_pi * s) - arc;
+	auto s_bezier3_arc2s(double arc, double darc, double d2arc, const EstimateBezierArcParam& param, double& s, double& ds, double& d2s)noexcept->void {
+		s = newton_raphson_binary_search([&param,arc](double s)->double {
+			double lx = std::max(std::log((s - 0.5) * (s - 0.5) + param.h * param.h), -100.0);
+			double at = std::atan2(s - 0.5, param.h);
+			return param.A * s * s * s * s + param.B * s * s * s + param.C * s * s + param.D * s + param.E * lx * s + param.F * lx + param.G * at * s * s - param.G * at * s + param.H * at + param.I * std::sin(2.0 * aris::PI * s) + param.X - arc;
 			}, 0.0, 1.0);
+
+		double lx = std::max(std::log((s - 0.5) * (s - 0.5) + param.h * param.h), -100.0);
+		double at = std::atan2(s - 0.5, param.h);
+
+		double darc_ds = 4 * param.A * s * s * s + 3 * param.B * s * s + 2 * param.C * s + 2 * param.G * at * s - param.G * at + param.E * lx + param.I * 2 * aris::PI * std::cos(2 * aris::PI * s) + param.Y;
+		double d2arc_ds2 = 12 * param.A * s * s + 6 * param.B * s + 2 * param.G * at + 4 * param.I * std::sin(2 * aris::PI * s) + param.Z;
+		if (std::abs(darc_ds) < 1e-10) {
+			ds = 0.0;
+			d2s = 0.0;
+		}
+		else {
+			ds = darc / darc_ds;
+			d2s = (d2arc - d2arc_ds2 * ds * ds) / darc_ds;
+		}
+		
 	}
 }

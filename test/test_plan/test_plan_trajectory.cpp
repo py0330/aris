@@ -51,7 +51,7 @@ void test_trajectory(){
 		{ 0.1, 0.1, 1.0, 1.0, 1.0, 1.0 },
 	};
 	double accs[PE_SIZE][2 * EE_NUM + A_NUM]{
-		{ 0.1, 0.1, 5.0, 5.0, 5.0, 5.0 },
+		{ 0.1, 0.1, 5.0, 1.0, 5.0, 1.0 },
 		{ 0.1, 0.1, 5.0, 5.0, 5.0, 5.0 },
 		{ 0.1, 0.1, 5.0, 5.0, 5.0, 5.0 },
 	};
@@ -75,13 +75,32 @@ void test_trajectory(){
 	double out_pe[7 * EE_NUM + A_NUM];
 	while (tg.getEePosAndMoveDt(out_pe));
 
-	tg.insertInitPos(30, pqs[2]);
+	tg.insertInitPos(30, pqs[0]);
 	tg.insertCirclePos(50, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
 	tg.insertCirclePos(102, pqs[2], pqs[2], vels[0], accs[0], jerks[0], zones[0]);
-	tg.insertInitPos(31, pqs[2]);
-	tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(103, pqs[0], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(104, pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(105, pqs[2], vels[0], accs[0], jerks[0], zones[0]);
+	//tg.insertInitPos(31, pqs[2]);
+	//tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], init_pe);
+
+	//double pes2[2][6 * EE_NUM]{
+	//	{ 0.10, 0.22, 0.35, 0.20, 0.23, 1.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
+	//	{ 0.10, 0.22, 0.35, 0.20, 0.23, 3.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
+	//};
+	//double pqs2[2][7 * EE_NUM + A_NUM]{
+	//	{ 0.10, 0.22},
+	//	{ 0.21, 0.08},
+	//};
+	//for (int i = 0; i < 2; ++i) {
+	//	for (int j = 0; j < EE_NUM; ++j) {
+	//		aris::dynamic::s_pe2pq((double*)pes2[i] + 6 * j, (double*)pqs2[i] + 7 * j + A_NUM, "321");
+	//	}
+	//}
+	//tg.insertLinePos(103, pqs2[0], vels[0], accs[0], jerks[0], zones[0]);
+	//tg.insertLinePos(104, pqs2[1], vels[0], accs[0], jerks[0], zones[0]);
 
 	//tg.insertCirclePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
 
@@ -91,17 +110,28 @@ void test_trajectory(){
 
 	
 	
-	std::vector<double> vec;
+	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
-	while (tg.getEePosAndMoveDt(out_pe)) {
+	double out_vel[16]{}, out_acc[16]{};
+	while (tg.getEePosAndMoveDt(out_pe, out_vel, out_acc)) {
+		//if (m > 2597)
+		//	std::cout << "debug" << std::endl;
+		
 		m++;
 		vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
+		v_vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
+		a_vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
 		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_pe, vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_vel, v_vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+		aris::dynamic::s_vc((7 * EE_NUM + A_NUM), out_acc, a_vec.data() + (7 * EE_NUM + A_NUM) * (m - 1));
+
+		std::fill_n(out_vel, 16, 0.0);
+		std::fill_n(out_acc, 16, 0.0);
 	}
 	
 	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
-
-
+	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
+	aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
 	
 	std::cout << "-----------------test trajectory finished------------" << std::endl << std::endl;

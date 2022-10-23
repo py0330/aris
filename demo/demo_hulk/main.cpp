@@ -142,22 +142,22 @@ auto calibFromControlServerXml() {
 
 	clb.clbFiles({
 		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
 		});
 
 	clb.setVerifyOutputFileDir("C:\\Users\\py033\\Desktop\\calib\\data_after");
 
 	clb.verifyFiles({
 		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",
+		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
 		});
 };
 

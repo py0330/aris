@@ -161,13 +161,87 @@ void test_blend_bezier(){
 			std::cout << "\"s_blend_quaternion_bezier3\" failed" << std::endl;
 	}
 
+	// test s_blend_quaternion_bezier3 //
+	{
+		double q0[4]{ std::sin(0.1), 0.0, 0.0, std::cos(0.1)};
+		double q1[4]{ 0,0,0,1 };
+		double q2[4]{ std::sin(0.1), 0.0, 0.0, std::cos(0.1) };
+
+		double q[4], dq[4], d2q[4];
+		aris::plan::s_bezier3_blend_quaternion(0.5, q0, q1, q2, q, dq, d2q);
+
+		const double q_[4]{ 0.095189031999334,
+			0.0783817543850458,
+			0.0307778043574334,
+			 0.991891161128824
+		};
+		const double dq_[4]{ -0.00596189256812635,
+		   -0.0559156109598799,
+			0.0112331920023273,
+		   0.00464218017226164
+		};
+		const double d2q_[4]{ 1.13118014727655,
+		 0.547101513143992,
+		0.0971962711225237,
+		-0.158142392813288
+		};
+
+		if (!(aris::dynamic::s_is_equal(4, q, q_, error)
+			&& aris::dynamic::s_is_equal(4, dq, dq_, error)
+			&& aris::dynamic::s_is_equal(4, d2q, d2q_, error)))
+			std::cout << "\"s_blend_quaternion_bezier3\" failed" << std::endl;
+	}
+}
+
+void test_arc_estimate() {
+	double theta[12]{
+		0,0.285599332144527,0.571198664289053,0.85679799643358,1.14239732857811,
+		1.42799666072263,1.71359599286716,1.99919532501169,2.28479465715621,2.57039398930074,
+		2.85599332144527,3.14159265358979
+	};
+	double r = 2.0;
+	for (int i = 0; i < 12; ++i) {
+		double p0[3]{ r, 0, 0 };
+		double p1[3]{ 0, 0, 0 };
+		double p2[3]{ r * std::cos(theta[i]), r * std::sin(theta[i]), 0 };
+
+		double p[3], dp[3], d2p[3];
+		double darc0, d2arc0, darc1, d2arc1, darc50, d2arc50;
+		double ds_darc, d2s_darc2;
+
+		aris::plan::s_bezier3_blend_line_line(0.0, p0, p1, p2, p, dp, d2p);
+		aris::plan::s_bezier3_darc_ds(3, dp, d2p, darc0, d2arc0, ds_darc, d2s_darc2);
+		aris::plan::s_bezier3_blend_line_line(1.0, p0, p1, p2, p, dp, d2p);
+		aris::plan::s_bezier3_darc_ds(3, dp, d2p, darc1, d2arc1, ds_darc, d2s_darc2);
+		aris::plan::s_bezier3_blend_line_line(0.5, p0, p1, p2, p, dp, d2p);
+		aris::plan::s_bezier3_darc_ds(3, dp, d2p, darc50, d2arc50, ds_darc, d2s_darc2);
+
+		aris::plan::EstimateBezierArcParam param;
+		aris::plan::s_bezier3_estimate_arc_param(darc0, d2arc0, darc1, d2arc1, darc50, param);
+
+		std::cout << param.A << std::endl;
+		std::cout << param.B << std::endl;
+		std::cout << param.C << std::endl;
+		std::cout << param.D << std::endl;
+		std::cout << param.E << std::endl;
+		std::cout << param.F << std::endl;
+		std::cout << param.G << std::endl;
+		std::cout << param.H << std::endl;
+		std::cout << param.h << std::endl;
+		std::cout << param.X << std::endl;
+		std::cout << param.Y << std::endl;
+		std::cout << param.Z << std::endl;
+
+		std::cout << "--------------------------------" << std::endl;
+	}
 }
 
 void test_path()
 {
 	std::cout << std::endl << "-----------------test path---------------------" << std::endl;
 	//test_optimal();
-	test_blend_bezier();
+	//test_blend_bezier();
+	test_arc_estimate();
 	std::cout << "-----------------test path finished------------" << std::endl << std::endl;
 }
 
