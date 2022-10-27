@@ -602,7 +602,7 @@ namespace aris::plan {
 		ee_p.scurve_x_.pa_ = 0.0;
 		ee_p.scurve_x_.pb_ = p;
 		ee_p.scurve_x_.va_ = 0.0;
-		ee_p.scurve_x_.vc_max_ = vel;
+		ee_p.scurve_x_.vc_max_ = std::min(vel, std::sqrt(acc * ee_p.move_x_.circle_.radius_));
 		ee_p.scurve_x_.vb_max_ = 0.0;
 		ee_p.scurve_x_.a_ = acc;
 		ee_p.scurve_x_.j_ = jerk;
@@ -1829,6 +1829,9 @@ namespace aris::plan {
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
 				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
+				if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
+				if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+				
 				return 0;
 			}
 			// check 是否局部结束，即下一条指令是 init
@@ -1838,10 +1841,11 @@ namespace aris::plan {
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
 				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
-				
+				if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
+				if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+
 				current_node = current_node->next_node_.exchange(nullptr);
 				imp_->current_node_.store(current_node);
-				next_node = current_node->next_node_.load();
 				imp_->ds_ = 0.0;
 				return current_node->id_;
 			}
@@ -1849,17 +1853,12 @@ namespace aris::plan {
 			else {
 				current_node = current_node->next_node_.exchange(nullptr);
 				imp_->current_node_.store(current_node);
-				next_node = current_node->next_node_.load();
 			}
 		}
 
 		get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
-		
-		if (ee_vel)
-			aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
-
-		if (ee_acc)
-			aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+		if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
+		if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
 		
 		return current_node->id_;
 	}
