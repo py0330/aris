@@ -178,10 +178,14 @@ namespace aris::plan{
 
 		// 错误处理 //
 		auto setErrMsgRT(const char *msg)noexcept->void;
-		auto retCode()noexcept->std::int32_t;
-		auto setRetCode(std::int32_t code)noexcept->void;
-		auto retMsg()noexcept->char *;
-		auto setRetMsg(const char *)noexcept->void;
+		auto prepareRetCode()noexcept->std::int32_t;
+		auto setPrepareRetCode(std::int32_t code)noexcept->void;
+		auto prepareRetMsg()noexcept->char*;
+		auto setPrepareRetMsg(const char*)noexcept->void;
+		auto executeRetCode()noexcept->std::int32_t;
+		auto setExecuteRetCode(std::int32_t code)noexcept->void;
+		auto executeRetMsg()noexcept->char *;
+		auto setExecuteRetMsg(const char *)noexcept->void;
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");

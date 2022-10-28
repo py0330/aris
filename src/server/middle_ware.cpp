@@ -36,15 +36,15 @@ namespace aris::server {
 				// only copy if it is a str
 				if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 				{
-					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.executeRetCode()));
+					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.executeRetMsg())));
 					send_and_print(aris::server::parse_ret_value(*js));
 				}
 				else
 				{
 					std::vector<std::pair<std::string, std::any>> ret_js;
-					ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-					ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.executeRetCode()));
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.executeRetMsg())));
 					send_and_print(aris::server::parse_ret_value(ret_js));
 				}
 			});

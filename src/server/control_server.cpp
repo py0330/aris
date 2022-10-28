@@ -160,12 +160,12 @@ namespace aris::server{
 			// 清理掉所有当前在执行的plan //
 			if (cmd_now < cmd_end) {
 				auto& p = *internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
-				p.setRetCode(err.code);
-				p.setRetMsg(err_msg_);
+				p.setExecuteRetCode(err.code);
+				p.setExecuteRetMsg(err_msg_);
 				for (auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id) {
 					auto& p = *internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
-					p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-					p.setRetMsg("execute has been cancelled.");
+					p.setExecuteRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					p.setExecuteRetMsg("execute has been cancelled.");
 				}
 			}
 			cmd_now_.store(cmd_end);
@@ -201,17 +201,17 @@ namespace aris::server{
 
 				// finish //
 				if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
-					plan.setRetMsg(err_msg_);
-					plan.setRetCode(err.code);
+					plan.setExecuteRetMsg(err_msg_);
+					plan.setExecuteRetCode(err.code);
 				} 
 				else {
-					std::copy_n(plan.retMsg(), 1024, err_msg_);
-					plan.setRetCode(err.code);
+					std::copy_n(plan.executeRetMsg(), 1024, err_msg_);
+					plan.setExecuteRetCode(err.code);
 				}
 				for(auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id){
 					auto &p = *internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
-					p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-					p.setRetMsg("execute has been cancelled.");
+					p.setExecuteRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					p.setExecuteRetMsg("execute has been cancelled.");
 				}
 
 				server_->master().resetRtStasticData(nullptr, false);
@@ -698,26 +698,27 @@ namespace aris::server{
 				std::copy_n(imp_->global_mot_check_options_, plan->controller()->motorPool().size(), plan->motorOptions().data());
 				
 				plan->rtStastic() = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
-				plan->setRetCode(aris::plan::Plan::SUCCESS);
-				std::fill_n(plan->retMsg(), 1024, '\0');
+				plan->setPrepareRetCode(aris::plan::Plan::SUCCESS);
+				std::fill_n(plan->prepareRetMsg(), 1024, '\0');
+				plan->setExecuteRetCode(aris::plan::Plan::SUCCESS);
+				std::fill_n(plan->executeRetMsg(), 1024, '\0');
 
 				plan->command().init();
 				plan->parse(str); // may throw, set cmd_string cmd_name & cmd_params 
 			}
 			catch (std::exception &e){ // case 1.2 : exception
 				for (aris::Size j = 0; j < i; j++)
-					ret_plan[j]->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					ret_plan[j]->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				for (aris::Size j = i + 1; j < cmd_vec.size(); j++) {
 					internal_data[j] = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan), cmd_vec[j].second });
 					ret_plan[j] = internal_data[j]->plan_;
-					ret_plan[j]->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					ret_plan[j]->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				}
 				
 				internal_data[i]->plan_ =  std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				ret_plan[i] = internal_data[i]->plan_;
-				ret_plan[i]->setRetCode(aris::plan::Plan::PARSE_EXCEPTION);
-				std::fill_n(ret_plan[i]->retMsg(), 1024, '\0');
-				std::copy_n(e.what(), std::strlen(e.what()), ret_plan[i]->retMsg());
+				ret_plan[i]->setPrepareRetCode(aris::plan::Plan::PARSE_EXCEPTION);
+				std::copy_n(e.what(), std::strlen(e.what()), ret_plan[i]->prepareRetMsg());
 				return ret_plan;
 			}
 		}
@@ -732,10 +733,10 @@ namespace aris::server{
 				(*p)->has_prepared_ = true;
 
 				// false : case 2.1    true : case 2.2 
-				if (plan->retCode() < 0) { 
+				if (plan->prepareRetCode() < 0) { 
 					for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp) {
-						if (pp < p) (*pp)->plan_->setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-						if (pp > p) (*pp)->plan_->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+						if (pp < p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+						if (pp > p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 					}
 					prepare_error = true;
 					break;
@@ -743,11 +744,11 @@ namespace aris::server{
 			}
 			catch (std::exception &e){ // case 2.3
 				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp){
-					if (pp < p) (*pp)->plan_->setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-					if (pp > p) (*pp)->plan_->setRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					if (pp < p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+					if (pp > p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
 				}
-				plan->setRetCode(aris::plan::Plan::PREPARE_EXCEPTION);
-				std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
+				plan->setPrepareRetCode(aris::plan::Plan::PREPARE_EXCEPTION);
+				std::copy_n(e.what(), std::strlen(e.what()), plan->prepareRetMsg());
 				prepare_error = true;
 				break;
 			}
@@ -789,8 +790,8 @@ namespace aris::server{
 			// 检查 server 是否已经在运行 //
 			if (!imp_->is_running_) {
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setRetCode(aris::plan::Plan::SERVER_NOT_STARTED);
-					inter->plan_->setRetMsg("server not started, use cs_start to start");
+					inter->plan_->setPrepareRetCode(aris::plan::Plan::SERVER_NOT_STARTED);
+					inter->plan_->setPrepareRetMsg("server not started, use cs_start to start");
 				}
 				return ret_plan;
 			}
@@ -798,8 +799,8 @@ namespace aris::server{
 			// 检查 server 是否处于错误状态 //
 			if (auto err = this->errorCode()) {
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setRetCode(err);
-					inter->plan_->setRetMsg("server in error, use cl to clear");
+					inter->plan_->setPrepareRetCode(err);
+					inter->plan_->setPrepareRetMsg("server in error, use cl to clear");
 				}
 				return ret_plan;
 			}
@@ -808,8 +809,8 @@ namespace aris::server{
 			auto cmd_end = imp_->cmd_end_.load();
 			if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE) {//原子操作(cmd_now)
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setRetCode(aris::plan::Plan::COMMAND_POOL_IS_FULL);
-					inter->plan_->setRetMsg("command pool is full");
+					inter->plan_->setPrepareRetCode(aris::plan::Plan::COMMAND_POOL_IS_FULL);
+					inter->plan_->setPrepareRetMsg("command pool is full");
 				}
 				return ret_plan;
 			}
@@ -876,8 +877,11 @@ namespace aris::server{
 			p.motorOptions().resize(p.controller()->motorPool().size(), 0);
 
 			p.rtStastic() = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
-			p.setRetCode(aris::plan::Plan::SUCCESS);
-			std::fill_n(p.retMsg(), 1024, '\0');
+			p.setPrepareRetCode(aris::plan::Plan::SUCCESS);
+			std::fill_n(p.prepareRetMsg(), 1024, '\0');
+
+			p.setExecuteRetCode(aris::plan::Plan::SUCCESS);
+			std::fill_n(p.executeRetMsg(), 1024, '\0');
 		}
 
 		// 分配自身所需要的内存 //
@@ -1387,15 +1391,15 @@ namespace aris::server{
 							cs.waitForAllCollection();
 
 							// 如果因为其他轨迹出错而取消 //
-							if (ret->retCode() == aris::plan::Plan::PREPARE_CANCELLED || ret->retCode() == aris::plan::Plan::EXECUTE_CANCELLED)
+							if (ret->prepareRetCode() == aris::plan::Plan::PREPARE_CANCELLED || ret->executeRetCode() == aris::plan::Plan::EXECUTE_CANCELLED)
 							{
 								ARIS_PRO_COUT << current_line << "---" << ret->cmdId() << "---canceled" << std::endl;
 								//LOG_ERROR << "pro " << current_line << "---" << ret->cmdId() << "---canceled" << std::endl;
 							}
-							else if (ret->retCode() < 0)
+							else if (ret->executeRetCode() < 0)
 							{
-								imp_->last_error_code_ = ret->retCode();
-								imp_->last_error_ = ret->retMsg();
+								imp_->last_error_code_ = ret->executeRetCode();
+								imp_->last_error_ = ret->executeRetMsg();
 								imp_->last_error_line_ = current_line;
 								ARIS_PRO_COUT << imp_->last_error_line_ << "---" << ret->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 								//LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << ret->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
@@ -1468,15 +1472,15 @@ namespace aris::server{
 									for (int i = 0; i < plans.size(); ++i)
 									{
 										// 如果因为其他轨迹出错而取消 //
-										if (plans[i]->retCode() == aris::plan::Plan::PREPARE_CANCELLED || plans[i]->retCode() == aris::plan::Plan::EXECUTE_CANCELLED)
+										if (plans[i]->prepareRetCode() == aris::plan::Plan::PREPARE_CANCELLED || plans[i]->executeRetCode() == aris::plan::Plan::EXECUTE_CANCELLED)
 										{
 											ARIS_PRO_COUT << lines[i] << "---" << plans[i]->cmdId() << "---canceled" << std::endl;
 											//LOG_ERROR << "pro " << lines[i] << "---" << plans[i]->cmdId() << "---canceled" << std::endl;
 										}
-										else if (plans[i]->retCode() < 0)
+										else if (plans[i]->executeRetCode() < 0)
 										{
-											imp_->last_error_code_ = plans[i]->retCode();
-											imp_->last_error_ = plans[i]->retMsg();
+											imp_->last_error_code_ = plans[i]->executeRetCode();
+											imp_->last_error_ = plans[i]->executeRetMsg();
 											imp_->last_error_line_ = lines[i];
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---" << plans[i]->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											//LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << plans[i]->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
@@ -1686,15 +1690,15 @@ namespace aris::server{
 				// only copy if it is a str
 				if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 				{
-					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.executeRetCode()));
+					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.executeRetMsg())));
 					send_ret(aris::server::parse_ret_value(*js));
 				}
 				else
 				{
 					std::vector<std::pair<std::string, std::any>> ret_js;
-					ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-					ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.executeRetCode()));
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.executeRetMsg())));
 					send_ret(aris::server::parse_ret_value(ret_js));
 				}
 			});
