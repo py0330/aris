@@ -36,8 +36,8 @@ namespace aris::plan{
 
 		std::any param;
 		std::any ret;
-		std::int32_t ret_code{ 0 };
-		char ret_msg[1024]{};
+		std::int32_t ret_code{ 0 }, prepare_ret_code{0};
+		char ret_msg[1024]{}, prepare_ret_msg[1024]{};
 	};
 	auto Plan::name() const->const std::string& { return imp_->name_; }
 	auto Plan::setName(const std::string& name) ->void { imp_->name_ = name; }
@@ -97,10 +97,14 @@ namespace aris::plan{
 	auto Plan::param()noexcept->std::any& { return imp_->param; }
 	auto Plan::ret()noexcept->std::any& { return imp_->ret; }
 	auto Plan::setErrMsgRT(const char *msg)noexcept->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), const_cast<char*>(controlServer()->errorMsg())); }
-	auto Plan::retCode()noexcept->std::int32_t { return imp_->ret_code; }
-	auto Plan::retMsg()noexcept->char * { return imp_->ret_msg; }
-	auto Plan::setRetCode(std::int32_t code)noexcept->void { imp_->ret_code = code; }
-	auto Plan::setRetMsg(const char *msg)noexcept->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), imp_->ret_msg); }
+	auto Plan::prepareRetCode()noexcept->std::int32_t { return imp_->prepare_ret_code; }
+	auto Plan::setPrepareRetCode(std::int32_t code)noexcept->void { imp_->prepare_ret_code = code; }
+	auto Plan::prepareRetMsg()noexcept->char* { return imp_->prepare_ret_msg; }
+	auto Plan::setPrepareRetMsg(const char* msg)noexcept->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), imp_->prepare_ret_msg); }
+	auto Plan::executeRetCode()noexcept->std::int32_t { return imp_->ret_code; }
+	auto Plan::setExecuteRetCode(std::int32_t code)noexcept->void { imp_->ret_code = code; }
+	auto Plan::executeRetMsg()noexcept->char * { return imp_->ret_msg; }
+	auto Plan::setExecuteRetMsg(const char *msg)noexcept->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), imp_->ret_msg); }
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :imp_(new Imp) { setName(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);

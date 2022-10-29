@@ -139,10 +139,10 @@ void test_server_parse_exception(){
 
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd(cmd1);
-		if (!ret || ret->retCode() != aris::plan::Plan::SUCCESS) std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
+		if (!ret || ret->prepareRetCode() != aris::plan::Plan::SUCCESS) std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
 
 		ret = cs.executeCmd(cmd2);
-		if (!ret || ret->retCode() != aris::plan::Plan::PARSE_EXCEPTION) std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
+		if (!ret || ret->prepareRetCode() != aris::plan::Plan::PARSE_EXCEPTION) std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -150,17 +150,20 @@ void test_server_parse_exception(){
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd({ {cmd1, callback}, {cmd1, callback}, {cmd1, callback}, {cmd2, callback}, {cmd1, callback}, {cmd2, callback} });
 		if (ret.size() != 6 ||
-			ret[0]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
-			ret[1]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
-			ret[2]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
-			ret[3]->retCode() != aris::plan::Plan::PARSE_EXCEPTION ||
-			ret[4] ||
-			ret[5] ||
-			exe_count != (i + 1) * 6 || 
+			ret[0]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[1]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[2]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[3]->prepareRetCode() != aris::plan::Plan::PARSE_EXCEPTION ||
+			ret[4]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[5]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			exe_count != (i + 1) * 6 ||
 			prepare_num != 2 ||
 			execute_num != 2 ||
 			collect_num != 2
-			) std::cout << __FILE__ << " " << __LINE__ << ":test PARSE EXCEPTION failed" << std::endl;
+			) {
+			std::cout << __FILE__ << " " << __LINE__ << ":test PARSE EXCEPTION failed" << std::endl;
+		}
+
 	}
 
 	cs.stop();
@@ -212,12 +215,12 @@ void test_server_prepare_exception() {
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd(cmd1);
 		if (!ret || 
-			ret->retCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+			ret->executeRetCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
 
 		ret = cs.executeCmd(cmd2);
 		if (!ret || 
-			ret->retCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
-			ret->retMsg() != std::string("prepare exception")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+			ret->prepareRetCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
+			ret->prepareRetMsg() != std::string("prepare exception")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -225,17 +228,19 @@ void test_server_prepare_exception() {
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd({ {cmd1, callback}, {cmd1, callback}, {cmd1, callback}, {cmd2, callback}, {cmd1, callback}, {cmd2, callback} });
 		if (ret.size() != 6 ||
-			ret[0]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[1]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[2]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[3]->retCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
-			ret[4]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
-			ret[5]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[0]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[1]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[2]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[3]->prepareRetCode() != aris::plan::Plan::PREPARE_EXCEPTION ||
+			ret[4]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[5]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
 			exe_count != (i + 1) * 6 ||
 			prepare_num != 5 + 3 * i ||
 			execute_num != 2 ||
 			collect_num != 5 + 3 * i
-			) std::cout << __FILE__ << " " << __LINE__ << ":test PREPARE EXCEPTION failed" << std::endl;
+			) {
+			std::cout << __FILE__ << " " << __LINE__ << ":test PREPARE EXCEPTION failed" << std::endl;
+		}
 	}
 
 	cs.stop();
@@ -265,8 +270,8 @@ void test_server_prepare_ret_error() {
 	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void {
 			plan->option() = option;
 			++prepare_num;
-			plan->setRetCode(-1);
-			plan->setRetMsg("prepare failed");
+			plan->setPrepareRetCode(-1);
+			plan->setPrepareRetMsg("prepare failed");
 		}, [&](const aris::plan::Plan* plan)->int {
 			++execute_num;
 			return 0;
@@ -288,12 +293,12 @@ void test_server_prepare_ret_error() {
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd(cmd1);
 		if (!ret ||
-			ret->retCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+			ret->prepareRetCode() != aris::plan::Plan::SUCCESS)std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
 
 		ret = cs.executeCmd(cmd2);
 		if (!ret ||
-			ret->retCode() != -1 ||
-			ret->retMsg() != std::string("prepare failed")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
+			ret->prepareRetCode() != -1 ||
+			ret->prepareRetMsg() != std::string("prepare failed")) std::cout << __FILE__ << " " << __LINE__ << ":test prepare failed" << std::endl;
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -301,12 +306,12 @@ void test_server_prepare_ret_error() {
 	for (int i = 0; i < 2; ++i) {
 		auto ret = cs.executeCmd({ {cmd1, callback}, {cmd1, callback}, {cmd1, callback}, {cmd2, callback}, {cmd1, callback}, {cmd2, callback} });
 		if (ret.size() != 6 ||
-			ret[0]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[1]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[2]->retCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
-			ret[3]->retCode() != -1 ||
-			ret[4]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
-			ret[5]->retCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[0]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[1]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[2]->prepareRetCode() != aris::plan::Plan::EXECUTE_CANCELLED ||
+			ret[3]->prepareRetCode() != -1 ||
+			ret[4]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
+			ret[5]->prepareRetCode() != aris::plan::Plan::PREPARE_CANCELLED ||
 			exe_count != (i + 1) * 6 ||
 			prepare_num != 8 + 4 * i ||
 			execute_num != 2 ||
@@ -319,9 +324,9 @@ void test_server_prepare_ret_error() {
 }
 
 void test_control_server(){
-	//test_server_option();
-	//test_server_parse_exception();
-	//test_server_prepare_exception();
+	test_server_option();
+	test_server_parse_exception();
+	test_server_prepare_exception();
 	test_server_prepare_ret_error();
 }
 
