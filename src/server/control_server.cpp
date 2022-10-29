@@ -171,12 +171,12 @@ namespace aris::server{
 				// 清理掉所有当前在执行的plan //
 				if (cmd_now < cmd_end) {
 					auto& p = *chanel.internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
-					p.setRetCode(err.code);
-					p.setRetMsg(err_msg_);
+					p.setExecuteRetCode(err.code);
+					p.setExecuteRetMsg(err_msg_);
 					for (auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id) {
 						auto& p = *chanel.internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
-						p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-						p.setRetMsg("execute has been cancelled.");
+						p.setExecuteRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+						p.setExecuteRetMsg("execute has been cancelled.");
 					}
 				}
 				chanel.cmd_now_.store(cmd_end);
@@ -222,17 +222,17 @@ namespace aris::server{
 
 						// finish //
 						if (ret >= 0) { // 只有 plan 认为自己正确的时候，才更改其返回值 //
-							plan.setRetMsg(err_msg_);
-							plan.setRetCode(err.code);
+							plan.setExecuteRetMsg(err_msg_);
+							plan.setExecuteRetCode(err.code);
 						}
 						else {
-							std::copy_n(plan.retMsg(), 1024, err_msg_);
-							plan.setRetCode(err.code);
+							std::copy_n(plan.executeRetMsg(), 1024, err_msg_);
+							plan.setExecuteRetCode(err.code);
 						}
 						for (auto cmd_id = cmd_now + 1; cmd_id < cmd_end; ++cmd_id) {
 							auto& p = *chanel.internal_data_queue_[cmd_id % CMD_POOL_SIZE]->plan_;
-							p.setRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-							p.setRetMsg("execute has been cancelled.");
+							p.setExecuteRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
+							p.setExecuteRetMsg("execute has been cancelled.");
 						}
 
 						server_->master().resetRtStasticData(nullptr, false);
