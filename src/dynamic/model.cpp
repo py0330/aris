@@ -158,6 +158,15 @@ namespace aris::dynamic{
 	auto Model::forwardKinematicsAcc()noexcept->int { return solverPool()[1].dynAccAndFce(); }
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
+	
+	auto Model::inverseKinematics(const double* output, double* input)const noexcept->int {
+		return 0;
+	}
+	auto Model::forwardKinematics(const double* input, double* output)const noexcept->int {
+		return 0;
+	}
+
+	
 	auto Model::inputPosSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputVelSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputAccSize()const noexcept->Size { return motionPool().size(); }

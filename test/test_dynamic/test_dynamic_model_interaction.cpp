@@ -509,9 +509,8 @@ void test_constraint()
 
 
 		m3.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, m3.dim(), result1, 5, glb_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, glb_cmJ, m3.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
-
-		aris::dynamic::dsp(6, m3.dim(), result1, 5);
+		if (!s_is_equal(6, m3.dim(), result1, 5, glb_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, glb_cmJ, m3.dim(), error))
+			std::cout << __FILE__ << __LINE__ << "\"Motion:cptGlbCm\" failed" << std::endl;
 
 		m3.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, m3.dim(), result1, 6, prt_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, prt_cmJ, m3.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;

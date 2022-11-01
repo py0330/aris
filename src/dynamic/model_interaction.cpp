@@ -34,7 +34,13 @@ namespace aris::dynamic{
 	struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
 	auto Constraint::cf() const noexcept->const double* { return imp_->cf_; }
 	auto Constraint::setCf(const double *cf) noexcept->void { return s_vc(dim(), cf, imp_->cf_); }
-	auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
+	auto Joint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
+		double pm_j2i[16], ps_j2i[6];
+		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
+		s_pm2ps(pm_j2i, ps_j2i);
+		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
+	}
+	auto MotionBase::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
 		double pm_j2i[16], ps_j2i[6];
 		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
 		s_pm2ps(pm_j2i, ps_j2i);
@@ -72,21 +78,23 @@ namespace aris::dynamic{
 		double loc_cm_I[6]{ 0,0,0,0,0,1 };
 	};
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
-	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double *mp)const noexcept->void {
 		// // old method
 		//Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
 		//cp[0] += mp();  
 
+		double mp_internal = (mp[0] + imp_->mp_offset_) * imp_->mp_factor_;
+
 		if (axis() > 2) {//角度
 			double re[3]{ 0.0 }, rm[9], pm_i_should_be[16]{0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1};
-			re[axis() - 3] = mpInternal();
+			re[axis() - 3] = mp_internal;
 			s_re2rm(re, rm, "123");
 
 			s_vc(3, makJ_pm + 3, 4, pm_i_should_be + 3, 4);
 			s_mm(3, 3, 3, makJ_pm, 4, rm, 3, pm_i_should_be, 4);
 
 			// for pitch
-			s_va(3, pitch() * mpInternal() / 2 / PI, makJ_pm + axis() - 3, 4, pm_i_should_be + 3, 4);
+			s_va(3, pitch() * mp_internal / 2 / PI, makJ_pm + axis() - 3, 4, pm_i_should_be + 3, 4);
 			//pm_i_should_be[at(axis() - 3, 3, 4)] += pitch() * mpInternal() / 2 / PI;
 
 			double pm_j2i[16], ps_j2i[6];
@@ -105,7 +113,7 @@ namespace aris::dynamic{
 		else{
 			double pm_j_should_be[16];
 			s_vc(16, makJ_pm, pm_j_should_be);
-			s_va(3, mpInternal(), pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
+			s_va(3, mp_internal, pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
 
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
@@ -236,7 +244,7 @@ namespace aris::dynamic{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 		return loc_cm_I;
 	}
-	auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
+	auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void{
 		// Pi : mak I 的实际位置
 		// Pj : mak J 的实际位置
 		// Pit: mak I 应该达到的位置
@@ -251,8 +259,19 @@ namespace aris::dynamic{
 		// 于是：
 		// Pc = Pi^-1 * Pj * mpm
 
+		double mpm[16];
+
+		switch (poseType()) {
+		case GeneralMotion::PoseType::EULER123:s_pe2pm(mp, mpm, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pe2pm(mp, mpm, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pe2pm(mp, mpm, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(mp, mpm); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, mp, mpm); break;
+		}
+
+
 		double pm_it[16];
-		s_pm_dot_pm(makJ_pm, *mpm(), pm_it);
+		s_pm_dot_pm(makJ_pm, mpm, pm_it);
 
 		double pm_c[16], ps_c[6];
 		s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
@@ -406,13 +425,13 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto PointMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto PointMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double *mp)const noexcept->void {
 		double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
 		s_inv_pp2pp(makI_pm, pp_j, cp);
 		
 		// 把 mp 转到 marker I 坐标系下
 		double mp_in_ground[3], mp_in_I[3];
-		s_pm_dot_v3(makJ_pm, imp_->mp_, mp_in_ground);
+		s_pm_dot_v3(makJ_pm, mp, mp_in_ground);
 		s_inv_pm_dot_v3(makI_pm, mp_in_ground, mp_in_I);
 		
 		// 因为是 I 想到对于 J，实际上要减去J相对于I的，所以是加法
@@ -492,12 +511,12 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto XyztMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto XyztMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void {
 		// 类似general motion，但仅取其中4维
 		// 先生成mpm
 		double mpm[16];
-		s_rmz(imp_->mp_[3], mpm, 4);
-		s_pp2pm(imp_->mp_, mpm);
+		s_rmz(mp[3], mpm, 4);
+		s_pp2pm(mp, mpm);
 		s_fill(1, 3, 0.0, mpm + 12);
 		mpm[15] = 1.0;
 
@@ -623,12 +642,12 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto PlanarMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+	auto PlanarMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
 		// 类似general motion，但仅取其中3维
 		// 先生成mpm
 		double mpm[16];
-		s_rmz(imp_->mp_[2], mpm, 4);
-		s_pp2pm(imp_->mp_, mpm);
+		s_rmz(mp[2], mpm, 4);
+		s_pp2pm(mp, mpm);
 		s_fill(1, 3, 0.0, mpm + 12);
 		mpm[11] = 0.0; // z 为0 
 		mpm[15] = 1.0;
@@ -737,12 +756,12 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto XyMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+	auto XyMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
 		// 类似general motion，但仅取其中3维
 		// 先生成mpm
 		double mpm[16]{
-			1,0,0,imp_->mp_[0],
-			0,1,0,imp_->mp_[1],
+			1,0,0,mp[0],
+			0,1,0,mp[1],
 			0,0,1,0,
 			0,0,0,1
 		};

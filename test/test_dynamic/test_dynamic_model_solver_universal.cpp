@@ -7,8 +7,7 @@
 
 using namespace aris::dynamic;
 
-void test_single_body_universal()
-{
+void test_single_body_universal(){
 	std::cout << "test single body:" << std::endl;
 
 	aris::dynamic::Model m;
@@ -26,8 +25,7 @@ void test_single_body_universal()
 
 	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.id() << "::dynAccAndFce() failed in single body" << std::endl;
 }
-void test_servo_press_universal()
-{
+void test_servo_press_universal(){
 	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 	// 设置重力 //
@@ -81,8 +79,6 @@ void test_servo_press_universal()
 	//ee.setMvs(std::array<double, 6>{0, 0, 0.2, 0, 0, 0}.data());
 	//ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());
 	//if (universal_solver.kinPos())std::cout << "failed2" << std::endl;
-
-	
 	ee.setMpq(std::array<double, 7>{0.13, 0.54, 0.2, 0, 0, 0, 1}.data());
 	ee.setMvs(std::array<double, 6>{0, 0, 0.2, 0, 0, 0}.data());
 	ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());

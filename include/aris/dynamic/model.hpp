@@ -208,6 +208,7 @@ namespace aris::dynamic{
 	class ARIS_API Model:public ModelBase{
 	public:
 		/// @{
+		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
@@ -217,27 +218,43 @@ namespace aris::dynamic{
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
-#define ARIS_INPUT_DATA_DEFINATION(TYPE, VARIABLE)                                             \
-		auto virtual input##TYPE##Size()const noexcept->Size override;                         \
-		auto virtual input##TYPE##At(Size idx)const noexcept->double override;                 \
-		auto virtual setInput##TYPE##At(double VARIABLE, Size idx)noexcept->void override;     \
-		
-		ARIS_INPUT_DATA_DEFINATION(Pos, mp)
-		ARIS_INPUT_DATA_DEFINATION(Vel, mp)
-		ARIS_INPUT_DATA_DEFINATION(Acc, mp)
-		ARIS_INPUT_DATA_DEFINATION(Fce, mp)
-#undef ARIS_INPUTDATA_DEFINATION
+		// kinematics, not set state //
+		auto virtual inverseKinematics(const double* output, double* input)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output)const noexcept->int override;
 
-#define ARIS_OUTPUT_DATA_DEFINATION(TYPE, VARIABLE)                                             \
-		auto virtual output##TYPE##Size()const noexcept->Size override;                         \
-		auto virtual getOutput##TYPE(double *VARIABLE)const noexcept->void override;            \
-		auto virtual setOutput##TYPE(const double* VARIABLE)noexcept->void override;            \
+		// input variables //
+		auto virtual inputPosSize()const noexcept->Size override;                         
+		auto virtual inputPosAt(Size idx)const noexcept->double override;                 
+		auto virtual setInputPosAt(double p, Size idx)noexcept->void override;     
 
-		ARIS_OUTPUT_DATA_DEFINATION(Pos, mp)
-		ARIS_OUTPUT_DATA_DEFINATION(Vel, mv)
-		ARIS_OUTPUT_DATA_DEFINATION(Acc, ma)
-		ARIS_OUTPUT_DATA_DEFINATION(Fce, mf)
-#undef ARIS_INPUTDATA_DEFINATION
+		auto virtual inputVelSize()const noexcept->Size override;
+		auto virtual inputVelAt(Size idx)const noexcept->double override;
+		auto virtual setInputVelAt(double v, Size idx)noexcept->void override;
+
+		auto virtual inputAccSize()const noexcept->Size override;
+		auto virtual inputAccAt(Size idx)const noexcept->double override;
+		auto virtual setInputAccAt(double a, Size idx)noexcept->void override;
+
+		auto virtual inputFceSize()const noexcept->Size override;
+		auto virtual inputFceAt(Size idx)const noexcept->double override;
+		auto virtual setInputFceAt(double f, Size idx)noexcept->void override;
+
+		// output variables //
+		auto virtual outputPosSize()const noexcept->Size override;
+		auto virtual getOutputPos(double* pos)const noexcept->void override;
+		auto virtual setOutputPos(const double* pos)noexcept->void override;
+
+		auto virtual outputVelSize()const noexcept->Size override;
+		auto virtual getOutputVel(double* vel)const noexcept->void override;
+		auto virtual setOutputVel(const double* vel)noexcept->void override;
+
+		auto virtual outputAccSize()const noexcept->Size override;
+		auto virtual getOutputAcc(double* acc)const noexcept->void override;
+		auto virtual setOutputAcc(const double* acc)noexcept->void override;
+
+		auto virtual outputFceSize()const noexcept->Size override;
+		auto virtual getOutputFce(double* fce)const noexcept->void override;
+		auto virtual setOutputFce(const double* fce)noexcept->void override;
 		/// @}
 
 		auto virtual init()->void override;
