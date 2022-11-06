@@ -64,6 +64,9 @@ namespace aris::plan{
 		// 当前还剩余的指令数 //
 		auto unusedPosNum()->int;
 
+		// 返回当前所有的节点 id //
+		auto unusedNodeIds()const->std::vector<std::int64_t>;
+
 		~TrajectoryGenerator();
 		TrajectoryGenerator();
 		ARIS_DELETE_BIG_FOUR(TrajectoryGenerator);

@@ -2039,4 +2039,20 @@ namespace aris::plan {
 
 		return std::max((int)std::distance(current_iter, imp_->nodes_.end()) - 1, 0);
 	}
+	auto TrajectoryGenerator::unusedNodeIds()const->std::vector<std::int64_t> {
+		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
+
+		auto current_node = imp_->current_node_.load();
+		auto current_iter = std::find_if(imp_->nodes_.begin(), imp_->nodes_.end(), [current_node](auto& node)->bool {
+			return &node == current_node;
+			});
+
+		std::vector<std::int64_t> id_list_;
+
+		for (auto iter = current_iter; iter != imp_->nodes_.end(); iter++) {
+			id_list_.push_back(iter->id_);
+		}
+
+		return id_list_;
+	}
 }
