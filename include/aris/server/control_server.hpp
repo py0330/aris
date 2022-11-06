@@ -116,8 +116,8 @@ namespace aris::server{
 				controller_vel_[i] = cm.targetVel();
 			}
 
-			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), controller_pos_.data(), model_pos_.data());
-			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), controller_vel_.data(), model_vel_.data());
+			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_pos_.data(), model_pos_.data());
+			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_vel_.data(), model_vel_.data());
 			
 			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
 				auto& cm = controller->motorPool()[i];
