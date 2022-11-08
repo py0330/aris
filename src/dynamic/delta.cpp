@@ -38,7 +38,7 @@ namespace aris::dynamic {
 
 			auto d1 = std::sqrt(d * d - y * y);
 			auto k = x + e - a;
-			auto l = sqrt(k * k + z * z);
+			auto l = std::sqrt(k * k + z * z);
 
 			if (b + l < d1 || b + d1 < l || d1 + l < b)
 				return -2;
@@ -78,6 +78,7 @@ namespace aris::dynamic {
 		//   | k10 k11 k12 | * | y | = | s2 - t |
 		//   [ k20 k21 k22 ]   [ z ]   [ s3 - t ]
 		//
+		// 【CASE 1】：K矩阵不奇异
 		// 记做：
 		//   K * x = b - t
 		// 其中 x^T * x = t
@@ -101,7 +102,39 @@ namespace aris::dynamic {
 		//
 		// 进一步的，有：
 		// [x; y; z] = g + h * t
-
+		// 
+		// 
+		// 
+		// 【CASE 2】：K奇异
+		// 此时先对 K 做 svd 分解，有：
+		// U * S * V^T * x = s - t
+		// 
+		// 两侧同乘 QT：
+		// S * V^T * x = UT * (s - t)
+		// 
+		// 令 V^T * x = y 则有：
+		// S * y = UT * s - UT * [1;1;1] * t
+		// 
+		// 由于 K 奇异，因此将 R写成：
+		// [ d1      ]
+		// [    d2   ]
+		// [       0 ]
+		//
+		// 令 UT * s = b
+		//    UT * [1;1;1] = [u1;u2;u3]
+		// 
+		// 于是方程变为：
+		// [ d1     u1 ] * [ y1 ] = b
+		// [    d2  u2 ]   | y2 |
+		// [        u3 ]   [ t  ]
+		// 
+		// 其中 y3 = +- sqrt(t - y1*y1 - y2*y2) 
+		// 
+		// 根据 which_root 选择其符号，一般来说，在 which_root 为 0 时，希望原值 x3 为负，因此根据which_root 与 V[3,3]的符号共同确定
+		// 
+		// 
+		// 
+		
 		// 根据 p1 & p2 计算k
 		double p1[9], p2[9], k[9], s[3];
 		for (int i = 0; i < 3; ++i) {
@@ -130,53 +163,71 @@ namespace aris::dynamic {
 		// 随后k乘以2
 		s_nv(9, 2.0, k);
 
+		// 计算k的稚
+		double inv_k[9], u[9], tau[3], tau2[3];
+		aris::Size p[3], rank;
+		s_householder_utp(3, 3, k, u, tau, p, rank);
+
 		// 在所有的输入都为0的时候，k矩阵奇异，因此需要特殊处理：
-		if (std::abs(input[0] - 0.0) < 1e-5 && std::abs(input[1] - 0.0) < 1e-5 && std::abs(input[2] - 0.0) < 1e-5) {
-			k[2] = k[5] = k[8] = 1.0;
+		if (rank == 3) {
+			// 计算 k 的逆
+			s_householder_utp2pinv(3, 3, rank, u, tau, p, inv_k, tau2);
 			
-			double u[9], tau[3], x[3];
+			// 计算 g&h
+			double g[3], h[3]{ -inv_k[0] - inv_k[1] - inv_k[2], -inv_k[3] - inv_k[4] - inv_k[5], -inv_k[6] - inv_k[7] - inv_k[8], };
+			s_mm(3, 1, 3, inv_k, s, g);
+
+			// 计算 A,B,C
+			double A = h[0] * h[0] + h[1] * h[1] + h[2] * h[2];
+			double B = 2.0 * (h[0] * g[0] + h[1] * g[1] + h[2] * g[2]) - 1.0;
+			double C = g[0] * g[0] + g[1] * g[1] + g[2] * g[2];
+
+			// 此时有2个根 //
+			double t;
+			if (auto lambda = B * B - 4 * A * C; lambda < 0) return -1;
+			else {
+				// 这里用异或，找到z < 0的根
+				t = ((which_root == 0) != (h[2] < 0)) ? (-B - std::sqrt(lambda)) / (2 * A) : (-B + std::sqrt(lambda)) / (2 * A);
+				if (t < 0)return -2;
+			}
+
+			ee_xyza[0] = g[0] + h[0] * t;
+			ee_xyza[1] = g[1] + h[1] * t;
+			ee_xyza[2] = g[2] + h[2] * t;
+			ee_xyza[3] = input[3];
+			return 0;
+		}
+		else {
+			// 计算针对 y 的方程
+			double U[9], S[9], V[9];
+			s_svd(3, 3, k, U, S, V);
+
+			double ones[3]{ 1,1,1 }, b[3];
+			s_mm(3, 1, 3, U, T(3), ones, 1, S + 2, 3);
+			s_mm(3, 1, 3, U, T(3), s, 1, b, 1);
+
+			// 求解关于 y 的方程
+			double y[3], x[3];
 			aris::Size p[3], rank;
-			s_householder_utp(3, 3, k, u, tau, p, rank);
-			s_householder_utp_sov(3, 3, 1, rank, u, tau, p, s, x);
-			
-			
+
+			s_householder_utp(3, 3, S, u, tau, p, rank);
+			s_householder_utp_sov(3, 3, 1, rank, u, tau, p, b, y);
+
+			y[2] = ((which_root == 0) != (V[8] < 0) ? -1.0 : 1.0) * std::sqrt(y[2] - y[0] * y[0] - y[1] * y[1]);
+
+			// 求解 x
+			s_mm(3, 1, 3, V, 3, y, 1, x, 1);
+
 			ee_xyza[0] = x[0];
 			ee_xyza[1] = x[1];
-			ee_xyza[2] = -std::sqrt(x[2] - x[0] * x[0] - x[1] * x[1]);
+			ee_xyza[2] = x[2];
 			ee_xyza[3] = input[3];
 			return 0;
 		}
 
-		// 计算k的逆
-		double inv_k[9], u[9], tau[3], tau2[3];
-		aris::Size p[3], rank;
-		s_householder_utp(3, 3, k, u, tau, p, rank);
-		s_householder_utp2pinv(3, 3, rank, u, tau, p, inv_k, tau2);
 
-		// 计算 g&h
-		double g[3], h[3]{ -inv_k[0] - inv_k[1] - inv_k[2], -inv_k[3] - inv_k[4] - inv_k[5], -inv_k[6] - inv_k[7] - inv_k[8], };
-		s_mm(3, 1, 3, inv_k, s, g);
 
-		// 计算 A,B,C
-		double A = h[0] * h[0] + h[1] * h[1] + h[2] * h[2];
-		double B = 2.0*(h[0] * g[0] + h[1] * g[1] + h[2] * g[2]) - 1.0;
-		double C = g[0] * g[0] + g[1] * g[1] + g[2] * g[2];
 
-		// 此时有2个根 //
-		double t;
-		if (auto lambda = B * B - 4 * A*C; lambda < 0) return -1;
-		else {
-			// 这里用异或，找到z < 0的根
-			t = ((which_root == 0) ^ (h[2] < 0)) ? (-B - std::sqrt(lambda)) / (2 * A) : (-B + std::sqrt(lambda)) / (2 * A);
-			if (t < 0)return -2;
-		}
-
-		ee_xyza[0] = g[0] + h[0] * t;
-		ee_xyza[1] = g[1] + h[1] * t;
-		ee_xyza[2] = g[2] + h[2] * t;
-		ee_xyza[3] = input[3];
-
-		return 0;
 	}
 
 	class DeltaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {

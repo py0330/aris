@@ -80,6 +80,7 @@ auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const 
 
 	return model;
 }
+// 验证是否正解有解
 void test_puma_forward_solver(){
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 
