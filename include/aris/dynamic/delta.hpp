@@ -88,11 +88,11 @@ namespace aris::dynamic {
 			   b1    { 0.0 }, // 对应 keba b1
 			   c1    { 0.1 }, // 对应 keba c1
 			   d1    { 0.0 }, // 对应 keba d1
-			   ex1   { 0.0 }, // 对应 keba r1
-			   ey1   { 0.0 }, // keba 无该参数，设为 0
-			   ez1   { 0.0 }, // 对应 keba e1
+			   ex1   { 0.0 }, // 对应 keba ex
+			   ey1   { 0.0 }, // 对应 keba ey
+			   ez1   { 0.0 }, // 对应 keba ez
 			   theta1{ 0.0 }, // 对应 keba base link angle
-		       f1    { 0.1 };
+		       f1    { 0.1 }; // keba 无该参数，设为 0.1
 		
 		double ax2   { 0.0 }, 
 			   ay2   { 0.0 }, 
