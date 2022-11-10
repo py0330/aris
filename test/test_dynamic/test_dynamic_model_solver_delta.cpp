@@ -19,6 +19,11 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase &m, int linspace_num, co
 
 	std::vector<double> input(m.inputPosSize()), output(m.outputPosSize()), output_compare(m.outputPosSize());
 	for (int i = 0; i < std::pow(linspace_num, (int)m.inputPosSize()); ++i) {
+		//if (i == 2520)
+		//	std::cout << "check" << std::endl;
+		//else
+		//	continue;
+		
 		for (int j = 0; j < m.inputPosSize(); ++j) {
 			input[j] = input_series[j][(i / (int)std::pow(linspace_num, j)) % linspace_num];
 		}
@@ -53,7 +58,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase &m, int linspace_num, co
 		if (!aris::dynamic::s_is_finite(m.outputPosSize(), output.data()) 
 			|| !aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error)) 
 		{
-			m.setInputPos(input.data());
+			//m.setInputPos(input.data());
 			m.forwardKinematics();
 			
 			std::cout << __FILE__ << __LINE__ << " failed inverse & forward kinematics mismatch" << std::endl;
@@ -69,9 +74,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase &m, int linspace_num, co
 
 }
 
-
-
-void test_model_solver_delta()
+void test_model_solver_delta_reduced()
 {
 
 	////////////////////////////////////////////////测试建模/////////////////////////////////////////////////
@@ -83,11 +86,11 @@ void test_model_solver_delta()
 	param.e = 0.1;
 
 	auto model = aris::dynamic::createModelDelta(param);
-	auto &m1 = *model;
+	auto& m1 = *model;
 
 	double pos[4]{ -0.1, 0.1, -0.45, 0.3 };
 	m1.setOutputPos(pos);
-	if(m1.inverseKinematics())std::cout << "error!" << std::endl;
+	if (m1.inverseKinematics())std::cout << "error!" << std::endl;
 
 	double input[4];
 	m1.getInputPos(input);
@@ -117,13 +120,13 @@ void test_model_solver_delta()
 
 
 		auto model = aris::dynamic::createModelScara(param);
-		auto &m1 = *model;
+		auto& m1 = *model;
 
 		double pos[4]{ -0.2, 0.2, -0.45, 0.3 };
 		m1.setOutputPos(pos);
 		if (m1.inverseKinematics())std::cout << "error!" << std::endl;
 
-		auto &solver = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m1.solverPool()[1]);
+		auto& solver = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m1.solverPool()[1]);
 		solver.cptJacobi();
 
 
@@ -160,6 +163,48 @@ void test_model_solver_delta()
 	test_model_kinematics_pos(*model, 5, input_below, input_upper);
 
 
+
+
+
+
+	std::cout << "-----------------test model solver delta finished------------" << std::endl << std::endl;
+}
+void test_model_solver_delta_full() {
+	////////////////////////////////////////////////测试建模/////////////////////////////////////////////////
+	aris::dynamic::DeltaFullParam param;
+	double ratio = 1.0;
+	param.ax1 = 0.55 * ratio;
+	param.ay1 = 0.05 * ratio;
+	param.az1 = 0.01 * ratio;
+	param.b1 = 0.2 * ratio;
+	param.c1 = 0.1 * ratio;
+	param.d1 = 0.7 * ratio;
+	param.ex1 = 0.1 * ratio;
+	param.ey1 = 0.05 * ratio;
+
+	param.ax2 = 0.49 * ratio;
+	param.b2 = 0.21 * ratio;
+	param.c2 = 0.11 * ratio;
+	param.d2 = 0.69 * ratio;
+	param.ex2 = 0.09 * ratio;
+
+	param.ax3 = 0.5 * ratio;
+	param.b3 = 0.23 * ratio;
+	param.c3 = 0.09 * ratio;
+	param.d3 = 0.71 * ratio;
+	param.ex3 = 0.12 * ratio;
+
+	auto model = aris::dynamic::createModelDelta(param);
+
+	double input_below[5]{ 0,0,0,0 }, input_upper[4]{ 2 * aris::PI,2 * aris::PI, 2 * aris::PI, 2 * aris::PI, };
+	test_model_kinematics_pos(*model, 30, input_below, input_upper);
+
+	std::cout << "-----------------test model solver delta finished------------" << std::endl << std::endl;
+}
+void test_model_solver_delta()
+{
+
+	test_model_solver_delta_full();
 
 
 

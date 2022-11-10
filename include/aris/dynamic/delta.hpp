@@ -79,10 +79,38 @@ namespace aris::dynamic {
 	// 适用于每根支联尺寸不一样
 	struct ARIS_API DeltaFullParam {
 		// DH PARAM //
-		double a1{ 0.0 }, b1{ 0.0 }, c1{ 0.0 }, d1{ 0.0 }, e1{ 0.0 }, theta1{ 0.0 };
-		double a2{ 0.0 }, b2{ 0.0 }, c2{ 0.0 }, d2{ 0.0 }, e2{ 0.0 }, theta2{ aris::PI * 2 / 3 };
-		double a3{ 0.0 }, b3{ 0.0 }, c3{ 0.0 }, d3{ 0.0 }, e3{ 0.0 }, theta3{ -aris::PI * 2 / 3 };
+		double ax1   { 0.0 }, 
+			   ay1   { 0.0 }, 
+			   az1   { 0.0 }, 
+			   b1    { 0.0 }, 
+			   c1    { 0.0 }, 
+			   d1    { 0.0 }, 
+			   ex1   { 0.0 }, 
+			   ey1   { 0.0 },
+			   ez1   { 0.0 },
+			   theta1{ 0.0 };
+		
+		double ax2   { 0.0 }, 
+			   ay2   { 0.0 }, 
+			   az2   { 0.0 }, 
+			   b2    { 0.0 }, 
+			   c2    { 0.0 }, 
+			   d2    { 0.0 }, 
+			   ex2   { 0.0 }, 
+			   ey2   { 0.0 },
+			   ez2   { 0.0 },
+			   theta2{ aris::PI * 2 / 3 };
 
+		double ax3   { 0.0 }, 
+			   ay3   { 0.0 }, 
+			   az3   { 0.0 }, 
+			   b3    { 0.0 }, 
+			   c3    { 0.0 }, 
+			   d3    { 0.0 }, 
+			   ex3   { 0.0 }, 
+			   ey3   { 0.0 },
+			   ez3   { 0.0 },
+			   theta3{ -aris::PI * 2 / 3 };
 		// TOOL 0, by default is 321 type
 		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string tool0_pe_type;

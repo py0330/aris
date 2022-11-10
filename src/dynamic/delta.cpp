@@ -19,25 +19,31 @@
 
 namespace aris::dynamic {
 
+//#define ARIS_DEBUG_DELTA_SOLVER
+
 	auto deltaInverse(const double *param, const double *ee_xyza, int which_root, double *input)->int {
 		for (int i = 0; i < 3; ++i) {
 			// 尺寸 //
-			const double a = param[0 + i * 6];
-			const double b = param[1 + i * 6];
-			const double c = param[2 + i * 6];
-			const double d = param[3 + i * 6];
-			const double e = param[4 + i * 6];
-			const double theta = param[5 + i * 6];
+			const double& ax = param[0 + i * 10];
+			const double& ay = param[1 + i * 10];
+			const double& az = param[2 + i * 10];
+			const double& b = param[3 + i * 10];
+			const double& c = param[4 + i * 10];
+			const double& d = param[5 + i * 10];
+			const double& ex = param[6 + i * 10];
+			const double& ey = param[7 + i * 10];
+			const double& ez = param[8 + i * 10];
+			const double& theta = param[9 + i * 10];
 
 			// 此处将点转回到原x z平面，因此与构造delta的地方不太一样 //
 			auto x =  ee_xyza[0] * std::cos(theta) + ee_xyza[1] * std::sin(theta);
-			auto y = -ee_xyza[0] * std::sin(theta) + ee_xyza[1] * std::cos(theta);
-			auto z =  ee_xyza[2];
+			auto y = -ee_xyza[0] * std::sin(theta) + ee_xyza[1] * std::cos(theta) + ey - ay;
+			auto z =  ee_xyza[2] + ez - az;
 
 			if (std::abs(d) < std::abs(y)) return -1;
 
 			auto d1 = std::sqrt(d * d - y * y);
-			auto k = x + e - a;
+			auto k = x + ex - ax;
 			auto l = std::sqrt(k * k + z * z);
 
 			if (b + l < d1 || b + d1 < l || d1 + l < b)
@@ -78,7 +84,7 @@ namespace aris::dynamic {
 		//   | k10 k11 k12 | * | y | = | s2 - t |
 		//   [ k20 k21 k22 ]   [ z ]   [ s3 - t ]
 		//
-		// 【CASE 1】：K矩阵不奇异
+		// 【METHOD 1】：K矩阵不奇异
 		// 记做：
 		//   K * x = b - t
 		// 其中 x^T * x = t
@@ -105,52 +111,92 @@ namespace aris::dynamic {
 		// 
 		// 
 		// 
-		// 【CASE 2】：K奇异
-		// 此时先对 K 做 svd 分解，有：
-		// U * S * V^T * x = s - t
 		// 
-		// 两侧同乘 QT：
-		// S * V^T * x = UT * (s - t)
+		// 【METHOD 2】：
+		// 原方程化为：
+		//   [ k00 k01 k02 1.0 ]   [ x ]   [ s1 ]
+		//   | k10 k11 k12 1.0 | * | y | = | s2 |
+		//   [ k20 k21 k22 1.0 ]   | z |   [ s3 ]
+		//                         [ t ]
 		// 
-		// 令 V^T * x = y 则有：
-		// S * y = UT * s - UT * [1;1;1] * t
+		//       x^2 + y^2 + z^2         =   t              
 		// 
-		// 由于 K 奇异，因此将 R写成：
-		// [ d1      ]
-		// [    d2   ]
-		// [       0 ]
+		//  
+		// 进一步的：
+		//    Q * R * P^T * x  =  b
+		// 
+		// 考虑用未知数 y 替换 x：
+		//    y = P^T * x
+		// 
+		// 
+		// 进一步的：
+		//    [ R1 R2 ] * y    =  Q^T * b
+		// 
+		// 因为R1 维 3 x 3的矩阵，因此它应该满秩
+		// 
+		// 于是有：
+		//  [ y1 ]  =  R1^-1 * [ Q^T * b , R2 * y4]  = [ g1 + h1 * y4 ]
+		//  | y2 |                                     | g2 + h2 * y4 |
+		//  [ y3 ]                                     [ g3 + h3 * y4 ]
+		//  
+		// 若 p[4] == 4 则 y4 为 t，为 method 1 中的情况：
+		// 此时可以将 x^2 + y^2 + z^2         =   t    化为：
+		// 
+		//  A * y4^2 + B * y4 + C =0
+		// 
+		// 其中 ：
+		// 
+		// A = h1^2 + h2^2 + h3^2
+		// B = 2(h1 g1 + h2 g2 + h3 g3) - 1
+		// C = g1^2 + g2^2 + g3^2
+		// 
+		// 可求出 y4
+		// 
+		// 下面列出通用情况：
+		// 
+		// 令 g = [g1 g2 g3 0]^T
+		//    h = [h1 h2 h3 1]^T
 		//
-		// 令 UT * s = b
-		//    UT * [1;1;1] = [u1;u2;u3]
+		// 令 t 经 p 变化后的索引为 idx3，则：
 		// 
-		// 于是方程变为：
-		// [ d1     u1 ] * [ y1 ] = b
-		// [    d2  u2 ]   | y2 |
-		// [        u3 ]   [ t  ]
+		//    f = g, f[idx3] = -1
+		//    C = f^T * g;
+		//
+		//    f = 2 * g, f[idx3] = -1
+		//    B = f^T * h;
 		// 
-		// 其中 y3 = +- sqrt(t - y1*y1 - y2*y2) 
+		//    f = h, f[idx3] = 0
+		//    A = f^T * h;
 		// 
-		// 根据 which_root 选择其符号，一般来说，在 which_root 为 0 时，希望原值 x3 为负，因此根据which_root 与 V[3,3]的符号共同确定
+		// 求解该二次方程 A y4^2 + B y4 + C = 0, 可得y4
+		// 
+		// 之后可得y1 ~ y3
 		// 
 		// 
 		// 
-		
+
+
+
 		// 根据 p1 & p2 计算k
 		double p1[9], p2[9], k[9], s[3];
 		for (int i = 0; i < 3; ++i) {
-			const double &a = param[0 + i * 6];
-			const double &b = param[1 + i * 6];
-			const double &c = param[2 + i * 6];
-			const double &d = param[3 + i * 6];
-			const double &e = param[4 + i * 6];
-			const double &theta = param[5 + i * 6];
+			const double& ax = param[0 + i * 10];
+			const double& ay = param[1 + i * 10];
+			const double& az = param[2 + i * 10];
+			const double& b = param[3 + i * 10];
+			const double& c = param[4 + i * 10];
+			const double& d = param[5 + i * 10];
+			const double& ex = param[6 + i * 10];
+			const double& ey = param[7 + i * 10];
+			const double& ez = param[8 + i * 10];
+			const double& theta = param[9 + i * 10];
 
-			p1[0 + i * 3] = (a + std::cos(input[i]) * b) * std::cos(theta);
-			p1[1 + i * 3] = (a + std::cos(input[i]) * b) * std::sin(theta);
-			p1[2 + i * 3] = -std::sin(input[i]) * b;
+			p1[0 + i * 3] = (ax + std::cos(input[i]) * b) * std::cos(theta) - ay * std::sin(theta);
+			p1[1 + i * 3] = (ax + std::cos(input[i]) * b) * std::sin(theta) + ay * std::cos(theta);
+			p1[2 + i * 3] = -std::sin(input[i]) * b + az;
 
-			p2[0 + i * 3] = e * std::cos(theta);
-			p2[1 + i * 3] = e * std::sin(theta);
+			p2[0 + i * 3] = ex * std::cos(theta) - ey * std::sin(theta);
+			p2[1 + i * 3] = ex * std::sin(theta) + ey * std::cos(theta);
 			p2[2 + i * 3] = 0.0;
 
 			k[0 + i * 3] = p2[0 + i * 3] - p1[0 + i * 3];
@@ -163,71 +209,85 @@ namespace aris::dynamic {
 		// 随后k乘以2
 		s_nv(9, 2.0, k);
 
-		// 计算k的稚
-		double inv_k[9], u[9], tau[3], tau2[3];
-		aris::Size p[3], rank;
-		s_householder_utp(3, 3, k, u, tau, p, rank);
+		// 求解上述方程 //
+		{
+			double A_mat[12]{
+				k[0], k[1], k[2], 1.0,
+				k[3], k[4], k[5], 1.0,
+				k[6], k[7], k[8], 1.0
+			};
 
-		// 在所有的输入都为0的时候，k矩阵奇异，因此需要特殊处理：
-		if (rank == 3) {
-			// 计算 k 的逆
-			s_householder_utp2pinv(3, 3, rank, u, tau, p, inv_k, tau2);
+			double U[12], tau[4];
+			aris::Size p[4], rank;
+
+			s_householder_utp(3, 4, A_mat, U, tau, p, rank);
+
+			double b[6]{
+				s[0], -U[3],
+				s[1], -U[7],
+				s[2], -U[11],
+			};
+
+			// 注意，这里仅仅乘以 s
+			s_householder_ut_qt_dot(3, 4, 1, U, 4, tau, 1, b, 2, b, 2);
+			s_sov_um(3, 2, U, 4, b, 2, b, 2);
+
+			double g[4]{ b[0], b[2], b[4], 0.0 }, h[4]{ b[1], b[3], b[5], 1.0 }, f[4];
+
+			auto idx_3 = std::find(p, p + 4, 3) - p;
+
+			s_vc(4, g, f);
+			f[idx_3] = -1;
+			double C = s_vv(3, f, g);
 			
-			// 计算 g&h
-			double g[3], h[3]{ -inv_k[0] - inv_k[1] - inv_k[2], -inv_k[3] - inv_k[4] - inv_k[5], -inv_k[6] - inv_k[7] - inv_k[8], };
-			s_mm(3, 1, 3, inv_k, s, g);
+			s_vc(4, 2.0, g, f);
+			f[idx_3] = -1;
+			double B = s_vv(4, f, h);
 
-			// 计算 A,B,C
-			double A = h[0] * h[0] + h[1] * h[1] + h[2] * h[2];
-			double B = 2.0 * (h[0] * g[0] + h[1] * g[1] + h[2] * g[2]) - 1.0;
-			double C = g[0] * g[0] + g[1] * g[1] + g[2] * g[2];
+			s_vc(4, h, f);
+			f[idx_3] = 0.0;
+			double A = s_vv(4, f, h);
 
-			// 此时有2个根 //
-			double t;
-			if (auto lambda = B * B - 4 * A * C; lambda < 0) return -1;
-			else {
-				// 这里用异或，找到z < 0的根
-				t = ((which_root == 0) != (h[2] < 0)) ? (-B - std::sqrt(lambda)) / (2 * A) : (-B + std::sqrt(lambda)) / (2 * A);
-				if (t < 0)return -2;
+			double v1[4], v2[4];
+
+
+			v1[p[3]] = (-B - std::sqrt(B * B - 4 * A * C)) / 2.0 / A;
+			v1[p[0]] = b[0] + b[1] * v1[p[3]];
+			v1[p[1]] = b[2] + b[3] * v1[p[3]];
+			v1[p[2]] = b[4] + b[5] * v1[p[3]];
+
+			v2[p[3]] = (-B + std::sqrt(B * B - 4 * A * C)) / 2.0 / A;
+			v2[p[0]] = b[0] + b[1] * v2[p[3]];
+			v2[p[1]] = b[2] + b[3] * v2[p[3]];
+			v2[p[2]] = b[4] + b[5] * v2[p[3]];
+
+
+
+#ifdef ARIS_DEBUG_DELTA_SOLVER
+			std::cout << "A * v:" << std::endl;
+			{
+				double result[4], Q[9], R[12];
+				s_mm(3, 1, 4, A_mat, v, result);
+				dsp(1, 3, result);
 			}
+			std::cout << "x^2 + y^2 + z^2 - norm:" << v[0]* v[0] + v[1] * v[1] + v[2] * v[2] - v[3] << std::endl;
+#endif
 
-			ee_xyza[0] = g[0] + h[0] * t;
-			ee_xyza[1] = g[1] + h[1] * t;
-			ee_xyza[2] = g[2] + h[2] * t;
+			// 选择 z 轴较小的根
+			if (v2[2] < v1[2]) {
+				ee_xyza[0] = v2[0];
+				ee_xyza[1] = v2[1];
+				ee_xyza[2] = v2[2];
+			}
+			else {
+				ee_xyza[0] = v1[0];
+				ee_xyza[1] = v1[1];
+				ee_xyza[2] = v1[2];
+			}
 			ee_xyza[3] = input[3];
+
 			return 0;
 		}
-		else {
-			// 计算针对 y 的方程
-			double U[9], S[9], V[9];
-			s_svd(3, 3, k, U, S, V);
-
-			double ones[3]{ 1,1,1 }, b[3];
-			s_mm(3, 1, 3, U, T(3), ones, 1, S + 2, 3);
-			s_mm(3, 1, 3, U, T(3), s, 1, b, 1);
-
-			// 求解关于 y 的方程
-			double y[3], x[3];
-			aris::Size p[3], rank;
-
-			s_householder_utp(3, 3, S, u, tau, p, rank);
-			s_householder_utp_sov(3, 3, 1, rank, u, tau, p, b, y);
-
-			y[2] = ((which_root == 0) != (V[8] < 0) ? -1.0 : 1.0) * std::sqrt(y[2] - y[0] * y[0] - y[1] * y[1]);
-
-			// 求解 x
-			s_mm(3, 1, 3, V, 3, y, 1, x, 1);
-
-			ee_xyza[0] = x[0];
-			ee_xyza[1] = x[1];
-			ee_xyza[2] = x[2];
-			ee_xyza[3] = input[3];
-			return 0;
-		}
-
-
-
-
 	}
 
 	class DeltaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
@@ -365,11 +425,11 @@ namespace aris::dynamic {
 
 	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		DeltaFullParam full_param;
-		full_param.a1 = full_param.a2 = full_param.a3 = param.a;
+		full_param.ax1 = full_param.ax2 = full_param.ax3 = param.a;
 		full_param.b1 = full_param.b2 = full_param.b3 = param.b;
 		full_param.c1 = full_param.c2 = full_param.c3 = param.c;
 		full_param.d1 = full_param.d2 = full_param.d3 = param.d;
-		full_param.e1 = full_param.e2 = full_param.e3 = param.e;
+		full_param.ex1 = full_param.ex2 = full_param.ex3 = param.e;
 
 		full_param.theta1 = 0.0;
 		full_param.theta2 = aris::PI * 2 / 3;
@@ -391,9 +451,9 @@ namespace aris::dynamic {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ 
-			param.a1, param.b1, param.c1, param.d1, param.e1, param.theta1,
-			param.a2, param.b2, param.c2, param.d2, param.e2, param.theta2,
-			param.a3, param.b3, param.c3, param.d3, param.e3, param.theta3,
+			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1,
+			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2,
+			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3,
 		}));
 
 		// 设置重力 //
@@ -436,32 +496,51 @@ namespace aris::dynamic {
 		//p32.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\delta\\p2.xmt_txt", geo_rot_pm);
 		//p33.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\delta\\p2.xmt_txt", geo_local_pm);
 
+		// 正解计算起始时刻的末端位置 //
+		double dh_param[30]{ 
+			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1,
+			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2,
+			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3 
+		};
+		double init_zero[4]{ 0,0,0,0 };
+		double xyza[4], xyz1[3], xyz2[3], xyz3[3];
+		deltaForward(dh_param, init_zero, 0, xyza);
+
+		double rm1[9], rm2[9], rm3[9];
+		s_rmz(param.theta1, rm1);
+		s_rmz(param.theta2, rm2);
+		s_rmz(param.theta3, rm3);
+
+		s_mm(3, 1, 3, rm1, T(3), xyza, 1, xyz1, 1);
+		s_mm(3, 1, 3, rm2, T(3), xyza, 1, xyz2, 1);
+		s_mm(3, 1, 3, rm3, T(3), xyza, 1, xyz3, 1);
+
 		// add joint //
-		double r11_pos_1[3]{ param.a1           ,          0.0, 0.0 };
-		double s12_pos_1[3]{ param.a1 + param.b1,  param.c1 / 2, 0.0 };
-		double s13_pos_1[3]{ param.a1 + param.b1, -param.c1 / 2, 0.0 };
-		double s14_pos_1[3]{ param.e1           ,  param.c1 / 2, -std::sqrt(param.d1*param.d1 - (param.a1 + param.b1 - param.e1)*(param.a1 + param.b1 - param.e1)) };
-		double s15_pos_1[3]{ param.e1           , -param.c1 / 2, -std::sqrt(param.d1*param.d1 - (param.a1 + param.b1 - param.e1)*(param.a1 + param.b1 - param.e1)) };
+		double r11_pos_1[3]{ param.ax1           , param.ay1               , param.az1 };
+		double s12_pos_1[3]{ param.ax1 + param.b1, param.ay1 + param.c1 / 2, param.az1 };
+		double s13_pos_1[3]{ param.ax1 + param.b1, param.ay1 - param.c1 / 2, param.az1 };
+		double s14_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 + param.c1 / 2, xyz1[2] + param.ez1 };
+		double s15_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 - param.c1 / 2, xyz1[2] + param.ez1 };
 		
 		double r11_axis_1[6]{ 0.0, 1.0, 0.0 };
 		double u12_first_axis_1[3]{ 0.0, 1.0, 0.0 };
 		double u12_second_axis_1[3]{ s14_pos_1[2] - s12_pos_1[2], 0.0, -s14_pos_1[0] + s12_pos_1[0] };
 
-		double r21_pos_1[3]{ param.a2           ,           0.0, 0.0 };
-		double s22_pos_1[3]{ param.a2 + param.b2,  param.c2 / 2, 0.0 };
-		double s23_pos_1[3]{ param.a2 + param.b2, -param.c2 / 2, 0.0 };
-		double s24_pos_1[3]{ param.e2           ,  param.c2 / 2, -std::sqrt(param.d2*param.d2 - (param.a2 + param.b2 - param.e2)*(param.a2 + param.b2 - param.e2)) };
-		double s25_pos_1[3]{ param.e2           , -param.c2 / 2, -std::sqrt(param.d2*param.d2 - (param.a2 + param.b2 - param.e2)*(param.a2 + param.b2 - param.e2)) };
+		double r21_pos_1[3]{ param.ax2           , param.ay2               , param.az2 };
+		double s22_pos_1[3]{ param.ax2 + param.b2, param.ay2 + param.c2 / 2, param.az2 };
+		double s23_pos_1[3]{ param.ax2 + param.b2, param.ay2 - param.c2 / 2, param.az2 };
+		double s24_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 + param.c2 / 2, xyz2[2] + param.ez2 };
+		double s25_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 - param.c2 / 2, xyz2[2] + param.ez2 };
 
 		double r21_axis_1[6]{ 0.0, 1.0, 0.0 };
 		double u22_first_axis_1[3]{ 0.0, 1.0, 0.0 };
 		double u22_second_axis_1[3]{ s24_pos_1[2] - s22_pos_1[2], 0.0, -s24_pos_1[0] + s22_pos_1[0] };
 
-		double r31_pos_1[3]{ param.a3           ,          0.0, 0.0 };
-		double s32_pos_1[3]{ param.a3 + param.b3,  param.c3 / 2, 0.0 };
-		double s33_pos_1[3]{ param.a3 + param.b3, -param.c3 / 2, 0.0 };
-		double s34_pos_1[3]{ param.e3           ,  param.c3 / 2, -std::sqrt(param.d3*param.d3 - (param.a3 + param.b3 - param.e3)*(param.a3 + param.b3 - param.e3)) };
-		double s35_pos_1[3]{ param.e3           , -param.c3 / 2, -std::sqrt(param.d3*param.d3 - (param.a3 + param.b3 - param.e3)*(param.a3 + param.b3 - param.e3)) };
+		double r31_pos_1[3]{ param.ax3           , param.ay3               , param.az3 };
+		double s32_pos_1[3]{ param.ax3 + param.b3, param.ay3 + param.c3 / 2, param.az3 };
+		double s33_pos_1[3]{ param.ax3 + param.b3, param.ay3 - param.c3 / 2, param.az3 };
+		double s34_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 + param.c3 / 2, xyz3[2] + param.ez3 };
+		double s35_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 - param.c3 / 2, xyz3[2] + param.ez3 };
 
 		double r31_axis_1[6]{ 0.0, 1.0, 0.0 };
 		double u32_first_axis_1[3]{ 0.0, 1.0, 0.0 };
@@ -471,10 +550,7 @@ namespace aris::dynamic {
 		double r21_pos[3], s22_pos[3], s23_pos[3], s24_pos[3], s25_pos[3], r21_axis[3], u22_first_axis[3], u22_second_axis[3];
 		double r31_pos[3], s32_pos[3], s33_pos[3], s34_pos[3], s35_pos[3], r31_axis[3], u32_first_axis[3], u32_second_axis[3];
 
-		double rm1[9], rm2[9], rm3[9];
-		s_rmz(param.theta1, rm1);
-		s_rmz(param.theta2, rm2);
-		s_rmz(param.theta3, rm3);
+		
 
 		s_mm(3, 1, 3, rm1, r11_pos_1,         r11_pos);
 		s_mm(3, 1, 3, rm1, s12_pos_1,         s12_pos);
@@ -521,13 +597,8 @@ namespace aris::dynamic {
 		auto &s34 = model->addSphericalJoint(pup, p32, s34_pos);
 		auto &s35 = model->addSphericalJoint(pup, p33, s35_pos);
 
-		// 求正解计算末端位置 //
-		double input_0[4]{ 0,0,0,0 };
-		double output_0[4]{ 0,0,0,0 };
-		deltaForward(dynamic_cast<aris::dynamic::MatrixVariable&>(model->variablePool()[0]).data().data(), input_0, 0, output_0);
-
 		// 得到末端
-		double re_pos[3]{ output_0[0], output_0[1], output_0[2]};
+		double re_pos[3]{ xyza[0], xyza[1], xyza[2]};
 		double re_axis[3]{ 0,0,1 };
 		auto &re = model->addRevoluteJoint(pee, pup, re_pos, re_axis);
 		// add actuation //
@@ -544,9 +615,9 @@ namespace aris::dynamic {
 
 		// add ee general motion //
 		double ee_i_pm[16]{ 
-			1,0,0,output_0[0],
-			0,1,0,output_0[1],
-			0,0,1,output_0[2],
+			1,0,0,xyza[0],
+			0,1,0,xyza[1],
+			0,0,1,xyza[2],
 			0,0,0,1 };
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
