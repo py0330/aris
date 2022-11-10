@@ -24,16 +24,16 @@ namespace aris::dynamic {
 	auto deltaInverse(const double *param, const double *ee_xyza, int which_root, double *input)->int {
 		for (int i = 0; i < 3; ++i) {
 			// 尺寸 //
-			const double& ax = param[0 + i * 10];
-			const double& ay = param[1 + i * 10];
-			const double& az = param[2 + i * 10];
-			const double& b = param[3 + i * 10];
-			const double& c = param[4 + i * 10];
-			const double& d = param[5 + i * 10];
-			const double& ex = param[6 + i * 10];
-			const double& ey = param[7 + i * 10];
-			const double& ez = param[8 + i * 10];
-			const double& theta = param[9 + i * 10];
+			const double& ax = param[0 + i * 11];
+			const double& ay = param[1 + i * 11];
+			const double& az = param[2 + i * 11];
+			const double& b = param[3 + i * 11];
+			const double& c = param[4 + i * 11];
+			const double& d = param[5 + i * 11];
+			const double& ex = param[6 + i * 11];
+			const double& ey = param[7 + i * 11];
+			const double& ez = param[8 + i * 11];
+			const double& theta = param[9 + i * 11];
 
 			// 此处将点转回到原x z平面，因此与构造delta的地方不太一样 //
 			auto x =  ee_xyza[0] * std::cos(theta) + ee_xyza[1] * std::sin(theta);
@@ -46,13 +46,15 @@ namespace aris::dynamic {
 			auto k = x + ex - ax;
 			auto l = std::sqrt(k * k + z * z);
 
-			if (b + l < d1 || b + d1 < l || d1 + l < b)
+			auto bc = std::sqrt(b * b + c * c);
+
+			if (bc + l < d1 || bc + d1 < l || d1 + l < bc)
 				return -2;
 
 			input[i] =
 				((0x01 << i) & which_root) ?
-				-std::atan2(z, k) + std::acos((b * b + l * l - d1 * d1) / b / l / 2.0) :
-				-std::atan2(z, k) - std::acos((b * b + l * l - d1 * d1) / b / l / 2.0);
+				-std::atan2(z, k) + std::atan2(c, b) - std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0) :
+				-std::atan2(z, k) + std::atan2(c, b) + std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0);
 		}
 
 		input[3] = ee_xyza[3];
@@ -180,20 +182,20 @@ namespace aris::dynamic {
 		// 根据 p1 & p2 计算k
 		double p1[9], p2[9], k[9], s[3];
 		for (int i = 0; i < 3; ++i) {
-			const double& ax = param[0 + i * 10];
-			const double& ay = param[1 + i * 10];
-			const double& az = param[2 + i * 10];
-			const double& b = param[3 + i * 10];
-			const double& c = param[4 + i * 10];
-			const double& d = param[5 + i * 10];
-			const double& ex = param[6 + i * 10];
-			const double& ey = param[7 + i * 10];
-			const double& ez = param[8 + i * 10];
-			const double& theta = param[9 + i * 10];
+			const double& ax = param[0 + i * 11];
+			const double& ay = param[1 + i * 11];
+			const double& az = param[2 + i * 11];
+			const double& b = param[3 + i * 11];
+			const double& c = param[4 + i * 11];
+			const double& d = param[5 + i * 11];
+			const double& ex = param[6 + i * 11];
+			const double& ey = param[7 + i * 11];
+			const double& ez = param[8 + i * 11];
+			const double& theta = param[9 + i * 11];
 
-			p1[0 + i * 3] = (ax + std::cos(input[i]) * b) * std::cos(theta) - ay * std::sin(theta);
-			p1[1 + i * 3] = (ax + std::cos(input[i]) * b) * std::sin(theta) + ay * std::cos(theta);
-			p1[2 + i * 3] = -std::sin(input[i]) * b + az;
+			p1[0 + i * 3] = (ax + std::cos(input[i]) * b + std::sin(input[i]) * c) * std::cos(theta) - ay * std::sin(theta);
+			p1[1 + i * 3] = (ax + std::cos(input[i]) * b + std::sin(input[i]) * c) * std::sin(theta) + ay * std::cos(theta);
+			p1[2 + i * 3] = -std::sin(input[i]) * b + std::cos(input[i]) * c + az;
 
 			p2[0 + i * 3] = ex * std::cos(theta) - ey * std::sin(theta);
 			p2[1 + i * 3] = ex * std::sin(theta) + ey * std::cos(theta);
@@ -250,7 +252,6 @@ namespace aris::dynamic {
 
 			double v1[4], v2[4];
 
-
 			v1[p[3]] = (-B - std::sqrt(B * B - 4 * A * C)) / 2.0 / A;
 			v1[p[0]] = b[0] + b[1] * v1[p[3]];
 			v1[p[1]] = b[2] + b[3] * v1[p[3]];
@@ -273,16 +274,16 @@ namespace aris::dynamic {
 			std::cout << "x^2 + y^2 + z^2 - norm:" << v[0]* v[0] + v[1] * v[1] + v[2] * v[2] - v[3] << std::endl;
 #endif
 
-			// 选择 z 轴较小的根
-			if (v2[2] < v1[2]) {
-				ee_xyza[0] = v2[0];
-				ee_xyza[1] = v2[1];
-				ee_xyza[2] = v2[2];
-			}
-			else {
+			// 选择 z 轴较大的根，在 which_root 为 0 时
+			if ((v2[2] < v1[2]) == (which_root == 0)) {
 				ee_xyza[0] = v1[0];
 				ee_xyza[1] = v1[1];
 				ee_xyza[2] = v1[2];
+			}
+			else {
+				ee_xyza[0] = v2[0];
+				ee_xyza[1] = v2[1];
+				ee_xyza[2] = v2[2];
 			}
 			ee_xyza[3] = input[3];
 
@@ -451,9 +452,9 @@ namespace aris::dynamic {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ 
-			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1,
-			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2,
-			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3,
+			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1, param.f1,
+			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2, param.f2,
+			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3, param.f3, 
 		}));
 
 		// 设置重力 //
@@ -497,10 +498,10 @@ namespace aris::dynamic {
 		//p33.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\delta\\p2.xmt_txt", geo_local_pm);
 
 		// 正解计算起始时刻的末端位置 //
-		double dh_param[30]{ 
-			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1,
-			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2,
-			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3 
+		double dh_param[33]{ 
+			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1, param.f1,
+			param.ax2, param.ay2, param.az2, param.b2, param.c2, param.d2, param.ex2, param.ey2, param.ez2, param.theta2, param.f2,
+			param.ax3, param.ay3, param.az3, param.b3, param.c3, param.d3, param.ex3, param.ey3, param.ez3, param.theta3, param.f3,
 		};
 		double init_zero[4]{ 0,0,0,0 };
 		double xyza[4], xyz1[3], xyz2[3], xyz3[3];
@@ -516,35 +517,52 @@ namespace aris::dynamic {
 		s_mm(3, 1, 3, rm3, T(3), xyza, 1, xyz3, 1);
 
 		// add joint //
+		double y_axis[3]{ 0,1,0 };
+
 		double r11_pos_1[3]{ param.ax1           , param.ay1               , param.az1 };
-		double s12_pos_1[3]{ param.ax1 + param.b1, param.ay1 + param.c1 / 2, param.az1 };
-		double s13_pos_1[3]{ param.ax1 + param.b1, param.ay1 - param.c1 / 2, param.az1 };
-		double s14_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 + param.c1 / 2, xyz1[2] + param.ez1 };
-		double s15_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 - param.c1 / 2, xyz1[2] + param.ez1 };
+		double s12_pos_1[3]{ param.ax1 + param.b1, param.ay1 + param.f1 / 2, param.az1 + param.c1 };
+		double s13_pos_1[3]{ param.ax1 + param.b1, param.ay1 - param.f1 / 2, param.az1 + param.c1 };
+		double s14_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 + param.f1 / 2, xyz1[2] + param.ez1 };
+		double s15_pos_1[3]{ xyz1[0] + param.ex1 , xyz1[1] + param.ey1 - param.f1 / 2, xyz1[2] + param.ez1 };
 		
 		double r11_axis_1[6]{ 0.0, 1.0, 0.0 };
-		double u12_first_axis_1[3]{ 0.0, 1.0, 0.0 };
-		double u12_second_axis_1[3]{ s14_pos_1[2] - s12_pos_1[2], 0.0, -s14_pos_1[0] + s12_pos_1[0] };
+		
+		double s12_s14[3]{ s14_pos_1[0] - s12_pos_1[0], s14_pos_1[1] - s12_pos_1[1], s14_pos_1[2] - s12_pos_1[2]};
+		double u12_first_axis_1[3];
+		double u12_second_axis_1[3];
+		s_c3(s12_s14, y_axis, u12_second_axis_1);
+		s_nv(3, 1.0 / s_norm(3, u12_second_axis_1), u12_second_axis_1);
+		s_c3(s12_s14, u12_second_axis_1, u12_first_axis_1);
 
 		double r21_pos_1[3]{ param.ax2           , param.ay2               , param.az2 };
-		double s22_pos_1[3]{ param.ax2 + param.b2, param.ay2 + param.c2 / 2, param.az2 };
-		double s23_pos_1[3]{ param.ax2 + param.b2, param.ay2 - param.c2 / 2, param.az2 };
-		double s24_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 + param.c2 / 2, xyz2[2] + param.ez2 };
-		double s25_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 - param.c2 / 2, xyz2[2] + param.ez2 };
+		double s22_pos_1[3]{ param.ax2 + param.b2, param.ay2 + param.f2 / 2, param.az2 + param.c2 };
+		double s23_pos_1[3]{ param.ax2 + param.b2, param.ay2 - param.f2 / 2, param.az2 + param.c2 };
+		double s24_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 + param.f2 / 2, xyz2[2] + param.ez2 };
+		double s25_pos_1[3]{ xyz2[0] + param.ex2 , xyz2[1] + param.ey2 - param.f2 / 2, xyz2[2] + param.ez2 };
 
 		double r21_axis_1[6]{ 0.0, 1.0, 0.0 };
-		double u22_first_axis_1[3]{ 0.0, 1.0, 0.0 };
-		double u22_second_axis_1[3]{ s24_pos_1[2] - s22_pos_1[2], 0.0, -s24_pos_1[0] + s22_pos_1[0] };
+
+		double s22_s24[3]{ s24_pos_1[0] - s22_pos_1[0], s24_pos_1[1] - s22_pos_1[1], s24_pos_1[2] - s22_pos_1[2] };
+		double u22_first_axis_1[3];
+		double u22_second_axis_1[3];
+		s_c3(s22_s24, y_axis, u22_second_axis_1);
+		s_nv(3, 1.0 / s_norm(3, u22_second_axis_1), u22_second_axis_1);
+		s_c3(s22_s24, u22_second_axis_1, u22_first_axis_1);
 
 		double r31_pos_1[3]{ param.ax3           , param.ay3               , param.az3 };
-		double s32_pos_1[3]{ param.ax3 + param.b3, param.ay3 + param.c3 / 2, param.az3 };
-		double s33_pos_1[3]{ param.ax3 + param.b3, param.ay3 - param.c3 / 2, param.az3 };
-		double s34_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 + param.c3 / 2, xyz3[2] + param.ez3 };
-		double s35_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 - param.c3 / 2, xyz3[2] + param.ez3 };
+		double s32_pos_1[3]{ param.ax3 + param.b3, param.ay3 + param.f3 / 2, param.az3 + param.c3 };
+		double s33_pos_1[3]{ param.ax3 + param.b3, param.ay3 - param.f3 / 2, param.az3 + param.c3 };
+		double s34_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 + param.f3 / 2, xyz3[2] + param.ez3 };
+		double s35_pos_1[3]{ xyz3[0] + param.ex3 , xyz3[1] + param.ey3 - param.f3 / 2, xyz3[2] + param.ez3 };
 
 		double r31_axis_1[6]{ 0.0, 1.0, 0.0 };
-		double u32_first_axis_1[3]{ 0.0, 1.0, 0.0 };
-		double u32_second_axis_1[3]{ s34_pos_1[2] - s32_pos_1[2], 0.0, -s34_pos_1[0] + s32_pos_1[0] };
+
+		double s32_s34[3]{ s34_pos_1[0] - s32_pos_1[0], s34_pos_1[1] - s32_pos_1[1], s34_pos_1[2] - s32_pos_1[2] };
+		double u32_first_axis_1[3];
+		double u32_second_axis_1[3];
+		s_c3(s32_s34, y_axis, u32_second_axis_1);
+		s_nv(3, 1.0 / s_norm(3, u32_second_axis_1), u32_second_axis_1);
+		s_c3(s32_s34, u32_second_axis_1, u32_first_axis_1);
 		
 		double r11_pos[3], s12_pos[3], s13_pos[3], s14_pos[3], s15_pos[3], r11_axis[3], u12_first_axis[3], u12_second_axis[3];
 		double r21_pos[3], s22_pos[3], s23_pos[3], s24_pos[3], s25_pos[3], r21_axis[3], u22_first_axis[3], u22_second_axis[3];

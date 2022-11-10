@@ -3,6 +3,8 @@
 #include <array>
 #include <aris/dynamic/dynamic.hpp>
 
+#include <aris.hpp>
+
 #include<type_traits>
 
 using namespace aris::dynamic;
@@ -38,7 +40,6 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase &m, int linspace_num, co
 			
 		m.getOutputPos(output.data());
 
-
 		// 得到反解的值 //
 		if (m.inverseKinematics()) {
 			std::cout << __FILE__ << __LINE__ << " failed inverse kinematics" << std::endl;
@@ -58,7 +59,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase &m, int linspace_num, co
 		if (!aris::dynamic::s_is_finite(m.outputPosSize(), output.data()) 
 			|| !aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error)) 
 		{
-			//m.setInputPos(input.data());
+			m.setInputPos(input.data());
 			m.forwardKinematics();
 			
 			std::cout << __FILE__ << __LINE__ << " failed inverse & forward kinematics mismatch" << std::endl;
@@ -171,30 +172,68 @@ void test_model_solver_delta_reduced()
 }
 void test_model_solver_delta_full() {
 	////////////////////////////////////////////////测试建模/////////////////////////////////////////////////
+	double h = 0.1;
+	
 	aris::dynamic::DeltaFullParam param;
 	double ratio = 1.0;
 	param.ax1 = 0.55 * ratio;
 	param.ay1 = 0.05 * ratio;
 	param.az1 = 0.01 * ratio;
 	param.b1 = 0.2 * ratio;
-	param.c1 = 0.1 * ratio;
+	param.c1 = (h+0.01) * ratio;
 	param.d1 = 0.7 * ratio;
 	param.ex1 = 0.1 * ratio;
 	param.ey1 = 0.05 * ratio;
 
 	param.ax2 = 0.49 * ratio;
 	param.b2 = 0.21 * ratio;
-	param.c2 = 0.11 * ratio;
+	param.c2 = h * ratio;
 	param.d2 = 0.69 * ratio;
 	param.ex2 = 0.09 * ratio;
 
 	param.ax3 = 0.5 * ratio;
 	param.b3 = 0.23 * ratio;
-	param.c3 = 0.09 * ratio;
+	param.c3 = h * ratio;
 	param.d3 = 0.71 * ratio;
 	param.ex3 = 0.12 * ratio;
 
+	//param.ax1 = 0.5 * ratio;
+	//param.ay1 = 0.0 * ratio;
+	//param.az1 = 0.0 * ratio;
+	//param.b1 = 0.2 * ratio;
+	//param.c1 = (h+0.0) * ratio;
+	//param.d1 = 0.7 * ratio;
+	//param.ex1 = 0.1 * ratio;
+	//param.ey1 = 0.05* ratio;
+
+	//param.ax2 = 0.5 * ratio;
+	//param.b2 = 0.2 * ratio;
+	//param.c2 = h * ratio;
+	//param.d2 = 0.7 * ratio;
+	//param.ex2 = 0.1* ratio;
+
+	//param.ax3 = 0.5 * ratio;
+	//param.b3 = 0.2 * ratio;
+	//param.c3 = h * ratio;
+	//param.d3 = 0.7 * ratio;
+	//param.ex3 = 0.1* ratio;
+
 	auto model = aris::dynamic::createModelDelta(param);
+
+	double input[4]{0.1,0.2,0.3,0.4};
+	model->setInputPos(input);
+	model->forwardKinematics();
+	double p[4];
+	model->getOutputPos(p);
+	dsp(1, 4, p);
+
+	//model->inverseKinematics();
+	//model->getInputPos(p);
+	//dsp(1, 4, p);
+
+	auto &adams = model->simulatorPool().add<aris::dynamic::AdamsSimulator>();
+	model->init();
+	adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
 
 	double input_below[5]{ 0,0,0,0 }, input_upper[4]{ 2 * aris::PI,2 * aris::PI, 2 * aris::PI, 2 * aris::PI, };
 	test_model_kinematics_pos(*model, 30, input_below, input_upper);
