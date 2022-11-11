@@ -185,9 +185,8 @@ namespace aris::dynamic
 		return true;
 	}
 
-	struct UrInverseKinematicSolver::Imp
-	{
-		int which_root_{ 0 };
+	struct UrInverseKinematicSolver::Imp{
+		int which_root_{ 8 };
 		UrParamLocal puma_param;
 		union{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
@@ -201,7 +200,7 @@ namespace aris::dynamic
 			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6; };
 			Motion* motions[6]{ nullptr };
 		};
-		GeneralMotion *ee{ nullptr };
+		GeneralMotion *EE{ nullptr };
 	};
 	auto UrInverseKinematicSolver::allocateMemory()->void {
 		InverseKinematicSolver::allocateMemory();
@@ -229,7 +228,7 @@ namespace aris::dynamic
 		imp_->M5 = &model()->motionPool().at(4);
 		imp_->M6 = &model()->motionPool().at(5);
 
-		imp_->ee = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
+		imp_->EE = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
 
 		auto R1_mak_on_GR = &imp_->R1->makI()->fatherPart() == imp_->GR ? imp_->R1->makI() : imp_->R1->makJ();
 		auto R1_mak_on_L1 = &imp_->R1->makI()->fatherPart() == imp_->L1 ? imp_->R1->makI() : imp_->R1->makJ();
@@ -243,8 +242,8 @@ namespace aris::dynamic
 		auto R5_mak_on_L5 = &imp_->R5->makI()->fatherPart() == imp_->L5 ? imp_->R5->makI() : imp_->R5->makJ();
 		auto R6_mak_on_L5 = &imp_->R6->makI()->fatherPart() == imp_->L5 ? imp_->R6->makI() : imp_->R6->makJ();
 		auto R6_mak_on_L6 = &imp_->R6->makI()->fatherPart() == imp_->L6 ? imp_->R6->makI() : imp_->R6->makJ();
-		auto ee_mak_on_GR = &imp_->ee->makI()->fatherPart() == imp_->GR ? imp_->ee->makI() : imp_->ee->makJ();
-		auto ee_mak_on_L6 = &imp_->ee->makI()->fatherPart() == imp_->L6 ? imp_->ee->makI() : imp_->ee->makJ();
+		auto ee_mak_on_GR = &imp_->EE->makI()->fatherPart() == imp_->GR ? imp_->EE->makI() : imp_->EE->makJ();
+		auto ee_mak_on_L6 = &imp_->EE->makI()->fatherPart() == imp_->L6 ? imp_->EE->makI() : imp_->EE->makJ();
 
 		auto &param = imp_->puma_param;
 
@@ -430,11 +429,15 @@ namespace aris::dynamic
 			double diff_norm[8];
 
 			for (int i = 0; i < 8; ++i) {
-				if (inverseUr(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num])) {
+				if (inverseUr(imp_->puma_param, *imp_->EE->mpm(), i, diff_q[solution_num])) {
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 6; ++j) {
-						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
+						if (!std::isfinite(imp_->motions[j]->mpInternal())) {
+							imp_->motions[j]->setMpInternal(0.0);
+						}
+						diff_q[solution_num][j] = std::fmod(diff_q[solution_num][j] - imp_->motions[j]->mpInternal(), 2 * PI);
 
+						// 如果是8 的话，忽略轴的范围，选择最近的可达解 //
 						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
 						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
 
@@ -471,7 +474,7 @@ namespace aris::dynamic
 			return 0;
 		}
 		else {
-			if (double q[6]; inverseUr(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q)) {
+			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), imp_->which_root_, q)) {
 				for (aris::Size i = 0; i < 6; ++i) {
 					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
@@ -490,9 +493,7 @@ namespace aris::dynamic
 
 					double last_mp = imp_->motions[i]->mpInternal();
 					imp_->motions[i]->updP();
-
-					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
-					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
+					imp_->motions[i]->setMpInternal(q[i]);
 				}
 
 				return 0;
