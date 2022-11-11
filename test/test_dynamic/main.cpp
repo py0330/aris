@@ -20,6 +20,7 @@
 int main(int argc, char *argv[])
 {
 	test_matrix();
+<<<<<<< HEAD
 	test_screw();
 	test_spline();
 	test_plan();
@@ -34,6 +35,22 @@ int main(int argc, char *argv[])
 	test_model_solver_delta();
 	test_model_solver_seven_axis();
 	test_model_solver_stewart();
+=======
+	//test_screw();
+	//test_spline();
+	//test_plan();
+	//test_model();
+	//test_model_coordinate();
+	//test_model_interaction();
+	//test_model_solver();
+	//test_model_solver_universal();
+	//test_model_solver_scara();
+	//test_model_solver_puma();
+	//test_model_solver_ur();
+	test_model_solver_delta();
+	//test_model_solver_seven_axis();
+	//test_model_solver_stewart();
+>>>>>>> dev
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;
 	std::cin.get();
