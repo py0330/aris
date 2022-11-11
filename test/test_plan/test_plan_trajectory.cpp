@@ -117,6 +117,11 @@ void test_trajectory(){
 		//if (m > 2597)
 		//	std::cout << "debug" << std::endl;
 		
+		if (m > 10000)
+			tg.setTargetDs(0.1);
+		if (m > 15000)
+			tg.setTargetDs(1.0);
+
 		m++;
 		vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
 		v_vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
