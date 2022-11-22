@@ -1820,7 +1820,7 @@ namespace aris::plan {
 
 		// 需要切换或结束
 		while (current_node->s_end_ - s_ < 0.0) {
-			// check 是否全局结束 
+			// check 是否全局结束，即所有指令都已执行完
 			if (current_node == next_node) {
 				s_ = current_node->s_end_;
 				imp_->ds_ = imp_->target_ds_;
@@ -1863,6 +1863,17 @@ namespace aris::plan {
 				imp_->current_node_.store(current_node);
 				imp_->ds_ = 0.0;
 				return current_node->id_;
+			}
+			// check 是否仅存一条 init 指令
+			else if (current_node->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
+				imp_->s_ = imp_->target_ds_ * dt();
+				imp_->ds_ = imp_->target_ds_;
+				imp_->dds_ = 0.0;
+				imp_->ddds_ = 0.0;
+				
+				current_node = current_node->next_node_.exchange(nullptr);
+				next_node = current_node->next_node_.load();
+				imp_->current_node_.store(current_node);
 			}
 			// 下一条指令是运动指令，正常切换
 			else {
