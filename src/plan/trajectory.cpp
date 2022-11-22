@@ -1445,7 +1445,7 @@ namespace aris::plan {
 		}
 	}
 	auto get_ee_data(const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, LargeNum s, double ds, double dds, double ddds,
-		double* internal_pos, double* output_pos, double* internal_vel, double* internal_acc) 
+		double* internal_pos, double* internal_vel, double* internal_acc) 
 	{
 		int idx = 0;
 		for (int i = 0; i < ee_types.size(); ++i) {
@@ -1669,8 +1669,6 @@ namespace aris::plan {
 			}
 			}
 		}
-
-		internal_pos_to_outpos(ee_types, internal_pos, output_pos);
 	}
 
 	// 关于 tg 的并发：
@@ -1822,15 +1820,23 @@ namespace aris::plan {
 
 		// 需要切换或结束
 		while (current_node->s_end_ - s_ < 0.0) {
-			// check 是否全局结束 
+			// check 是否全局结束，即所有指令都已执行完
 			if (current_node == next_node) {
 				s_ = current_node->s_end_;
 				imp_->ds_ = imp_->target_ds_;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
-				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
-				if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
-				if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+				internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
+				if (ee_acc) {
+					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
+					aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
+					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
+				}
+				if (ee_vel) {
+					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
+					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
+				}
 				
 				return 0;
 			}
@@ -1840,25 +1846,55 @@ namespace aris::plan {
 				imp_->ds_ = imp_->target_ds_;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
-				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
-				if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
-				if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+				get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+				internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
+				if (ee_acc) {
+					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
+					aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
+					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
+				}
+				if (ee_vel) {
+					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
+					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
+				}
 
 				current_node = current_node->next_node_.exchange(nullptr);
+				next_node = current_node->next_node_.load();
 				imp_->current_node_.store(current_node);
 				imp_->ds_ = 0.0;
 				return current_node->id_;
 			}
+			// check 是否仅存一条 init 指令
+			else if (current_node->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
+				imp_->s_ = imp_->target_ds_ * dt();
+				imp_->ds_ = imp_->target_ds_;
+				imp_->dds_ = 0.0;
+				imp_->ddds_ = 0.0;
+				
+				current_node = current_node->next_node_.exchange(nullptr);
+				next_node = current_node->next_node_.load();
+				imp_->current_node_.store(current_node);
+			}
 			// 下一条指令是运动指令，正常切换
 			else {
 				current_node = current_node->next_node_.exchange(nullptr);
+				next_node = current_node->next_node_.load();
 				imp_->current_node_.store(current_node);
 			}
 		}
 
-		get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, ee_pos, imp_->internal_vel_, imp_->internal_acc_);
-		if (ee_vel) aris::dynamic::s_vc(16, imp_->internal_vel_, ee_vel);
-		if (ee_acc) aris::dynamic::s_vc(16, imp_->internal_acc_, ee_acc);
+		get_ee_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
+		if (ee_acc) {
+			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
+			aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
+			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
+		}
+		if (ee_vel) {
+			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
+			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
+		}
+		
 		
 		return current_node->id_;
 	}
