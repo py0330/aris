@@ -74,6 +74,10 @@ namespace aris::plan {
         return (x_below + x_upper) / 2;
     }
 
+    auto inline safe_sqrt(double v)->double {
+        return v > 0.0 ? std::sqrt(v) : 0.0;
+    }
+
     // 根据起始条件，终止位置，总时间来计算 S 曲线
     //
     // param 中的以下信息为输入：
@@ -230,11 +234,11 @@ namespace aris::plan {
             //%   = la + T*v - Ta*v -Tb*v/2
             param.Ta_ = newton_raphson_binary_search([va, j, pt, T](double Ta)->double {
                 return T * va - (Ta * Ta * Ta * j) / 8
-                    - (va / 2 + Ta * Ta * j / 8) * std::sqrt(Ta * Ta + 4 * va / j)
+                    - (va / 2 + Ta * Ta * j / 8) * safe_sqrt(Ta * Ta + 4 * va / j)
                     + (T * Ta*Ta * j) / 4 - pt;
                 }
             , 0, std::min(std::min(s_acc_time(va, vc, a, j), T / 2.0), T - T_0_to_va));
-            param.Tb_ = std::sqrt(4.0 * va / j + Ta * Ta); 
+            param.Tb_ = safe_sqrt(4.0 * va / j + Ta * Ta);
             param.vc_  = va + j*Ta*Ta/4.0;
             param.vb_ = 0;
             param.mode_ = 0;
@@ -258,10 +262,8 @@ namespace aris::plan {
 
                 param.Ta_ = newton_raphson_binary_search([va, j, pt, T](double Ta)->double {
                     return T * va - (Ta * Ta * Ta * j) / 8
-                        - (va / 2 + Ta * Ta * j / 8) * std::sqrt(Ta * Ta + 4 * va / j)
+                        - (va / 2 + Ta * Ta * j / 8) * safe_sqrt(Ta * Ta + 4 * va / j)
                         + (T * Ta * Ta * j) / 4 - pt;
-                    //return T * va - (Ta * Ta * Ta * j) / 8 - (va * std::sqrt(Ta * Ta + (4 * va) / j)) / 2
-                    //    - (Ta * Ta * j * std::sqrt(Ta * Ta + (4 * va) / j)) / 8 + (T * Ta * Ta * j) / 4 - pt;
                     }
                 , 0, std::min(std::min(s_acc_time(va, vc, a, j), T / 2.0), T - T_0_to_va));
 
@@ -300,7 +302,7 @@ namespace aris::plan {
         {
             double k1 = 2 * (T * a + Z1);
             double k0 = -a * a * ((4 * va) / j + T * T + Z1 / j - (2 * T * a) / j);
-            double x1 = (k1 - std::sqrt(k1 * k1 + 4 * k0)) / 2; // k0为 - 1
+            double x1 = (k1 - safe_sqrt(k1 * k1 + 4 * k0)) / 2; // k0为 - 1
 
             v_upper = std::min(std::min(std::min(x1, va + Z1), vc_max), T * a - Z1);
             v_below = std::max(Z1, va);
@@ -378,7 +380,7 @@ namespace aris::plan {
             //%
             //% 因此可用 newton_raphson 方法搜索 [0,r1] 内的取值
             double Ta_below = 0;
-            double Ta_upper = (-3.0*a + std::sqrt(a*a + T*j*a*16.0 - j*va*16.0))/(2.0*j);
+            double Ta_upper = (-3.0*a + safe_sqrt(a*a + T*j*a*16.0 - j*va*16.0))/(2.0*j);
             param.Ta_ = newton_raphson_binary_search([k4,k3,k2,k0](double x)->double {return x*x*(x*(x*k4 + k3) + k2) + k0; }, Ta_below, Ta_upper);
             param.vc_ = va + j * Ta * Ta / 4.0;
             param.Tb_ = (vc + Z1) / a;
@@ -459,7 +461,7 @@ namespace aris::plan {
             double k1 = (a*T - va + Z1);
             double k0 = (va - Z1)*(T - va/a/2)- pt;
     
-            param.Ta_ = (-k1 + std::sqrt(k1*k1 - 4*k0*k2))/(2*k2);
+            param.Ta_ = (-k1 + safe_sqrt(k1*k1 - 4*k0*k2))/(2*k2);
             param.vc_ = va + Ta*a - Z1;
             param.vb_ = 0;
             param.Tb_ = (vc + Z1)/a;
@@ -492,7 +494,7 @@ namespace aris::plan {
         //% 条件 B.3 可得 Ta <= T_va_to_max_v
         //% 条件 B.4 可得 Ta >= 0  (包含在B.2中)
         double Ta_upper = std::min(std::min(T_va_to_max_v, 2.0*a/j), T - 2.0*a/j);
-        double Ta_below = 2.0*std::sqrt(std::max(0.0, Z1 - va)/j);
+        double Ta_below = 2.0* safe_sqrt((Z1 - va)/j);
         if (Ta_upper >= Ta_below) {
             Ta = Ta_upper;
             vc = va + j * Ta * Ta / 4.0;
@@ -575,8 +577,8 @@ namespace aris::plan {
         //
         //% ------------------ l8 -------------------- 
         //% vb不为0，达不到max_v，a段可达到最大加速度，b段可达到最大加速度
-        Ta_upper = std::min(T_va_to_max_v, T - 2*a/j);
-        Ta_below = 2*a/j;
+        Ta_upper = std::min(T_va_to_max_v, T - 2.0 * a / j);
+        Ta_below = 2.0 * a / j;
         l=-1;
         if (Ta_upper >= Ta_below) {
             Ta = Ta_upper;
@@ -612,7 +614,7 @@ namespace aris::plan {
             //    % r = k1 / (2*k2) = T
             //    % 应有 Ta < T
             //    % 故而选其较小的根
-            param.Ta_ = (-k1 + std::sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
+            param.Ta_ = (-k1 + safe_sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
             param.vc_ = va + Ta * a - Z1;
             param.Tb_ = T - Ta;
             param.vb_ = s_acc_vend(vc, -a, -j, Tb);
@@ -651,7 +653,7 @@ namespace aris::plan {
             double B = -a / j;
             double C = -(2.0 * la - 2.0 * pt + 2.0 * vc_max * (T - T_va_to_max_v)) / a;
 
-            param.Tb_ = std::max((-B + std::sqrt(B*B - 4.0 * C)) / 2.0, 0.0);
+            param.Tb_ = std::max((-B + safe_sqrt(B*B - 4.0 * C)) / 2.0, 0.0);
             param.Ta_ = s_acc_time(va, vc_max, a, j);
             param.vb_ = vc_max - Tb * a + Z1;
             param.vc_ = vc_max;
@@ -672,20 +674,20 @@ namespace aris::plan {
         }
 
         //% ------------------ l7 --------------------- 
-//% vb不为0，达不到max_v，a段达不到最大加速度，b段达不到最大加速度
-//%
-//% 此时需要满足3个条件：
-//% A. Ta + Tb =  T
-//% B. v - va  <= a^2/j && v - vb <= a^2/j && v <= max_v && v >= va
-//% C. pt <= l
-//%
-//% 条件 A   可得 Ta =  T-Tb
-//%            => Ta >= T - 2*a/j   (因为Tb < 2*a/j)
-//%
-//% 条件 B.1 可得 Ta <= 2*a/j
-//% 条件 B.2 无法得到有效等式，因为vb可以为为任意值
-//% 条件 B.3 可得 Ta <= T_va_to_max_v
-//% 条件 B.4 可得 Ta >= 0
+        //% vb不为0，达不到max_v，a段达不到最大加速度，b段达不到最大加速度
+        //%
+        //% 此时需要满足3个条件：
+        //% A. Ta + Tb =  T
+        //% B. v - va  <= a^2/j && v - vb <= a^2/j && v <= max_v && v >= va
+        //% C. pt <= l
+        //%
+        //% 条件 A   可得 Ta =  T-Tb
+        //%            => Ta >= T - 2*a/j   (因为Tb < 2*a/j)
+        //%
+        //% 条件 B.1 可得 Ta <= 2*a/j
+        //% 条件 B.2 无法得到有效等式，因为vb可以为为任意值
+        //% 条件 B.3 可得 Ta <= T_va_to_max_v
+        //% 条件 B.4 可得 Ta >= 0
         Ta_upper = std::min(std::min(T, T_va_to_max_v), 2.0 * a / j);
         Ta_below = std::max(0.0, T - 2.0 * a / j);
         l = -1;
@@ -722,7 +724,7 @@ namespace aris::plan {
             //% 选根
             //% 其极值为(k1) / (2 * k2) = (3 * T) / 2
             //% 因此需选其较小的根
-            param.Ta_ = (-k1 - std::sqrt(k1 * k1 - 4.0 * k0 * k2)) / 2.0 / k2;
+            param.Ta_ = (-k1 - safe_sqrt(k1 * k1 - 4.0 * k0 * k2)) / 2.0 / k2;
 
             // adjust //
             param.Ta_ = std::max(param.Ta_, 0.0);
@@ -911,7 +913,7 @@ namespace aris::plan {
         if ((!std::isfinite(Z1)) || (!std::isfinite(T_va_to_vb)) || (!std::isfinite(l_va_to_vb)) || (va > vb_max && l_va_to_vb > pt))
             return std::make_tuple(-1, -1);
 
-        double pacc = va - 1.5 * Z1 > 0 ? 0.5 * (Z1 / 2 + va) * (Z1 / 2 + va) / a : 4.0 / 3.0 * va * std::sqrt(2.0 / 3.0 * va / j);
+        double pacc = va - 1.5 * Z1 > 0 ? 0.5 * (Z1 / 2 + va) * (Z1 / 2 + va) / a : 4.0 / 3.0 * va * safe_sqrt(2.0 / 3.0 * va / j);
         if (pacc <= pt)
             Tmax = std::numeric_limits<double>::infinity();
         else {
@@ -932,7 +934,7 @@ namespace aris::plan {
                 //% vb 的范围取自 【va/3，va】,
                 //% 因为T的极值为 sqrt(va*8/3/j)，此时带入vb的公式，可得
 
-                double vb = newton_raphson_binary_search([va, j, pt](double x) {return std::sqrt((va - x) / j) * (va + x) - pt; }
+                double vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((va - x) / j) * (va + x) - pt; }
                 , va / 3, va);
                 Tmax = s_acc_time(va, vb, a, j);
             }
@@ -951,7 +953,7 @@ namespace aris::plan {
                 //% 对于根来说，应当取大值，这是因为Tmax应该尽可能的小
                 double B = -Z1;
                 double C = 2 * pt * a - va * Z1 - va * va;
-                double vb = (-B + std::sqrt(B * B - 4 * C)) / 2;
+                double vb = (-B + safe_sqrt(B * B - 4 * C)) / 2;
                 Tmax = s_acc_time(va, vb, a, j);
             }
         }
@@ -1003,7 +1005,7 @@ namespace aris::plan {
 
             //%%%%%%%%%%%%%%%%% METHOD2 %%%%%%%%%%%%%%%%% 
             //% newton raphson %
-            vb = newton_raphson_binary_search([va, j, pt](double x) {return std::sqrt((x - va) / j) * (va + x) - pt; }
+            vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((x - va) / j) * (va + x) - pt; }
             , va, vb_max);
             Tmin = s_acc_time(va, vb, a, j);
             return std::make_tuple(Tmax, Tmin);
@@ -1031,7 +1033,7 @@ namespace aris::plan {
             double k0 = (va * (a / j - va / a)) / 2 - pt;
 
             //% 选根 %
-            vb = (-k1 + std::sqrt(k1 * k1 - 4 * k2 * k0)) / (k2 * 2);
+            vb = (-k1 + safe_sqrt(k1 * k1 - 4 * k2 * k0)) / (k2 * 2);
             Tmin = s_acc_time(va, vb, a, j);
             return std::make_tuple(Tmax, Tmin);
         }
@@ -1064,12 +1066,12 @@ namespace aris::plan {
             //  ，sqrt(x - v1)精度不够
             // 
             double v_minus_v1 = newton_raphson_binary_search([v1,v2,j,pt](double x) {
-                return std::sqrt(x / j) * (2.0*v1 + x) + std::sqrt((v1 - v2 + x) / j) * (v1 + v2 + x) - pt;
+                return safe_sqrt(x / j) * (2.0*v1 + x) + safe_sqrt((v1 - v2 + x) / j) * (v1 + v2 + x) - pt;
                 }
                 , 0.0, v_upper - v_below);
 
-            double T1 = 2 * std::sqrt(v_minus_v1 / j);
-            double T2 = 2 * std::sqrt((v1 - v2 + v_minus_v1) / j);
+            double T1 = 2 * safe_sqrt(v_minus_v1 / j);
+            double T2 = 2 * safe_sqrt((v1 - v2 + v_minus_v1) / j);
             Tmin = T1 + T2;
             return std::make_tuple(Tmax, Tmin);
         }
@@ -1109,11 +1111,11 @@ namespace aris::plan {
             //  ，sqrt(x - v1)精度不够
             // 
             double v_minus_v1 = newton_raphson_binary_search([v1, v2, a, j, pt](double x)->double {
-                return std::sqrt(x / j) * x + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
+                return safe_sqrt(x / j) * x + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
                 }
                 , v_below, v_upper);
 
-            double T1 = 2 * std::sqrt(v_minus_v1 / j);
+            double T1 = 2 * safe_sqrt(v_minus_v1 / j);
             double T2 = (v1 - v2 + v_minus_v1) / a + a / j;
             Tmin = T1 + T2;
             return std::make_tuple(Tmax, Tmin);
@@ -1160,7 +1162,7 @@ namespace aris::plan {
             double k1 = a / j;
             double k0 = (v1 * (a / j - v1 / a)) / 2 - pt + (v2 * (a / j - v2 / a)) / 2;
 
-            double v = (-k1 + std::sqrt(k1 * k1 - 4 * k0 * k2)) / (2 * k2);
+            double v = (-k1 + safe_sqrt(k1 * k1 - 4 * k0 * k2)) / (2 * k2);
 
             double T1 = (v - v1) / a + a / j;
             double T2 = (v - v2) / a + a / j;
@@ -1182,6 +1184,26 @@ namespace aris::plan {
         Tmin = T1 + T2 + T3;
         return std::make_tuple(Tmax, Tmin);
 	}
+
+    auto s_compute_scurve_vc(double T, double va, double vb, double vc_max, double a, double j, double l)->double {
+        double Ta = s_acc_time(va, vc_max, a, j);
+        double Tb = s_acc_time(vb, vc_max, a, j);
+
+        // CASE 1:
+        return 0;
+    }
+
+
+    // 针对相连接的 node_1 和 node_2 来优化连接处的速度和加速度
+    // 1. 连接处的速度  vb1 = va2 < vc1 AND vb1 = va2 < vc2 AND vb1 = va2 < vb1_max
+    //    此时需要提速，提高结束点的速度
+    auto s_optimize_ajacent_nodes(SCurveParam& param1, SCurveParam& param2)->void {
+        //STEP 1. 计算 param1 允许的最大的 vb 
+
+
+
+    }
+
 
     // 以最大时间测试是否可能达到终止条件，即：
     // cond A: 所有末端速度均减为0
@@ -1331,6 +1353,14 @@ namespace aris::plan {
                         //p.t0_count_ = std::prev(iter)->params_[0].t0_count_ + std::lround((t0 - std::fmod(t0, 1000.0))/1000.0);
                     }
                 }
+                
+            }
+        }
+
+        // 针对特定的 CASE 来优化
+        for (auto iter = begin_iter; iter != end_iter && iter != std::prev(end_iter); ++iter) {
+            // 设置正确的 vb_max
+            for (Size i = 0; i < iter->params_.size(); ++i) {
                 
             }
         }

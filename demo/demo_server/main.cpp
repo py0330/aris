@@ -43,6 +43,28 @@ auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynami
 
 int main(int argc, char *argv[]){
 	aris::core::setLanguage(1);
+	aris::control::EthercatMaster ec_mst;
+
+	ec_mst.setEsiDirs({ "C:\\Users\\py033\\Desktop\\esi" });
+
+
+	ec_mst.updateDeviceList();
+
+	std::cout << ec_mst.getDeviceList() << std::endl;
+
+
+	std::cout << ec_mst.getPdoList(0x0a62, 0x0121, 0x020001) << std::endl;
+
+
+
+
+
+
+
+
+
+
+
 
 	auto& cs = aris::server::ControlServer::instance();
 	try {
