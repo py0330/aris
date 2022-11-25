@@ -892,7 +892,7 @@ namespace aris::plan {
         const double a      = param.a_;
         const double j      = param.j_;
         const double pt     = param.pb_ - param.pa_;
-        double Tmin_max = T_min_set;
+        const double Tmin_max = T_min_set;
         if (pt < std::numeric_limits<double>::epsilon() * 100){
             if (va > std::numeric_limits<double>::epsilon() * 100) {
                 return std::make_tuple<double, double>(-1.0, -1.0);
@@ -957,6 +957,9 @@ namespace aris::plan {
                 Tmax = s_acc_time(va, vb, a, j);
             }
         }
+
+        if(Tmax < Tmin_max)
+            return std::make_tuple(-1.0, -1.0);
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 计算Tmin：%%%%%%
 
@@ -1303,7 +1306,7 @@ namespace aris::plan {
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
-            double T_below = std::max(Tmin_all,0.001);
+            double T_below = std::max(Tmin_all, T_min);
 
             if (T_upper == std::numeric_limits<double>::infinity()) {
                 T_upper = std::max(T_below, 1.0) * 2.0; // in case T_below == 0.0

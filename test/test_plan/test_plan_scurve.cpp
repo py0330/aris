@@ -53,11 +53,18 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 				double max_a = iter->params_[i].a_;
 				double max_j = iter->params_[i].j_;
 
-				if (t - iter->params_[0].t0_ < 4 * dt && iter != scurve.begin()) {
-					max_v = std::max(std::prev(iter)->params_[i].vc_max_, max_v);
-					max_a = std::max(std::prev(iter)->params_[i].a_, max_a);
-					max_j = std::max(std::prev(iter)->params_[i].j_, max_j);
+				for (auto it = iter; it != scurve.begin(); it = std::prev(it)) {
+					if (t - it->params_[0].t0_ < 4 * dt) {
+						max_v = std::max(std::prev(it)->params_[i].vc_max_, max_v);
+						max_a = std::max(std::prev(it)->params_[i].a_, max_a);
+						max_j = std::max(std::prev(it)->params_[i].j_, max_j);
+					}
+					else {
+						break;
+					}
 				}
+
+				
 				if (iter->params_[0].T_ - t < 4 * dt && std::next(iter) != scurve.end()) {
 					max_v = std::max(std::next(iter)->params_[i].vc_max_, max_v);
 					max_a = std::max(std::next(iter)->params_[i].a_, max_a);
@@ -78,13 +85,16 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 
 				double j_current = (a_current - a_last) / dt;
 
-				if (v[i] > max_v + 1e-9 || std::abs(v[i] - v_current) > max_a * dt + 1e-9 || std::abs(v_current) > max_v + 1e-9 * max_v) {
+				if (v[i] > max_v + 1e-8 || std::abs(v[i] - v_current) > max_a * dt + 1e-8 || std::abs(v_current) > max_v + 1e-8 * max_v) {
 					//auto pr = std::prev(iter);
 					aris::plan::s_scurve_at(iter->params_[i], t - 0.01, &last_p[i], &v[i], &a[i], &j[i]);
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check velocity failed");
 				}
 				if (a[i] > max_a + 1e-6 || std::abs(a[i] - a_current) > max_j * dt + 1e-6 || std::abs(a_current) > max_a + 1e-6 * max_a) {
+					auto prev_iter = std::prev(iter);
+					auto pprev_iter = std::prev(prev_iter);
+					
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check acceleration failed");
 				}
