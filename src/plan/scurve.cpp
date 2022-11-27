@@ -1246,7 +1246,7 @@ namespace aris::plan {
     }
 
     // 循环计算每个节点：
-    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->void {
+    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
         // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性
         for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
             // 设置正确的 pa
@@ -1303,6 +1303,10 @@ namespace aris::plan {
             
             double Tmin_all = *std::max_element(Tmins.begin(), Tmins.end());
             double Tmax_all = *std::min_element(Tmaxs.begin(), Tmaxs.end());
+
+            // 若起始速度过大，有可能无法规划成功 //
+            if (Tmin_all > Tmax_all)
+                return -1;
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
@@ -1367,6 +1371,8 @@ namespace aris::plan {
                 
             }
         }
+
+        return 0;
     }
 
     // 计算指定时间处的 p v a j

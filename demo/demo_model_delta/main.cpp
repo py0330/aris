@@ -54,25 +54,25 @@ int main(){
 
 
 	aris::dynamic::DeltaFullParam param;
-	param.a1 = 0.53;
+	//param.a1 = 0.53;
 	param.b1 = 0.21;
 	param.c1 = 0.1;
 	param.d1 = 0.67;
-	param.e1 = 0.08;
+	//param.e1 = 0.08;
 	param.theta1 = 0.1;
 
-	param.a2 = 0.49;
+	//param.a2 = 0.49;
 	param.b2 = 0.205;
 	param.c2 = 0.11;
 	param.d2 = 0.71;
-	param.e2 = 0.1;
+	//param.e2 = 0.1;
 	param.theta2 = aris::PI * 2 / 3 - 0.01;
 
-	param.a3 = 0.5;
+	//param.a3 = 0.5;
 	param.b3 = 0.2;
 	param.c3 = 0.12;
 	param.d3 = 0.73;
-	param.e3 = 0.09;
+	//param.e3 = 0.09;
 	param.theta3 = -aris::PI * 2 / 3 +0.05;
 	auto m1 = aris::dynamic::createModelDelta(param);
 

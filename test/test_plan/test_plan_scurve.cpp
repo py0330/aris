@@ -215,6 +215,30 @@ void test_multi_s_curve(){
 }
 
 void test_scurve(){
+	
+	aris::plan::SCurveParam p;
+	p.T_ = 0.012630497258906562;
+	p.a_ = 2.5;
+	p.j_ = 10.0;
+	p.pa_ = 0.0010698079978823678;
+	p.pb_ = 0.0013024434732263595;
+	p.t0_ = 4.721714800746539;
+	p.va_ = 0.0;
+	p.vb_max_ = 0.005037742931539781;
+	p.vc_max_ = 3.141592653589793;
+
+	//aris::plan::s_compute_scurve_node(p);
+	//auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(p, 0.001);
+	//
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	std::cout << std::endl << "-----------------test scurve---------------------" << std::endl;
 	for (int i=0;;++i) {
 		std::cout << i << std::endl;
