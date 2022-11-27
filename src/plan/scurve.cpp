@@ -892,7 +892,7 @@ namespace aris::plan {
         const double a      = param.a_;
         const double j      = param.j_;
         const double pt     = param.pb_ - param.pa_;
-        double Tmin_max = T_min_set;
+        const double Tmin_max = T_min_set;
         if (pt < std::numeric_limits<double>::epsilon() * 100){
             if (va > std::numeric_limits<double>::epsilon() * 100) {
                 return std::make_tuple<double, double>(-1.0, -1.0);
@@ -957,6 +957,9 @@ namespace aris::plan {
                 Tmax = s_acc_time(va, vb, a, j);
             }
         }
+
+        if(Tmax < Tmin_max)
+            return std::make_tuple(-1.0, -1.0);
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 计算Tmin：%%%%%%
 
@@ -1243,7 +1246,7 @@ namespace aris::plan {
     }
 
     // 循环计算每个节点：
-    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->void {
+    auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
         // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性
         for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
             // 设置正确的 pa
@@ -1301,9 +1304,13 @@ namespace aris::plan {
             double Tmin_all = *std::max_element(Tmins.begin(), Tmins.end());
             double Tmax_all = *std::min_element(Tmaxs.begin(), Tmaxs.end());
 
+            // 若起始速度过大，有可能无法规划成功 //
+            if (Tmin_all > Tmax_all)
+                return -1;
+
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
-            double T_below = std::max(Tmin_all,0.001);
+            double T_below = std::max(Tmin_all, T_min);
 
             if (T_upper == std::numeric_limits<double>::infinity()) {
                 T_upper = std::max(T_below, 1.0) * 2.0; // in case T_below == 0.0
@@ -1364,6 +1371,8 @@ namespace aris::plan {
                 
             }
         }
+
+        return 0;
     }
 
     // 计算指定时间处的 p v a j

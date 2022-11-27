@@ -8,9 +8,9 @@
 #include "test_plan_trajectory.h"
 
 int main(int argc, char *argv[]){
-	//test_trajectory();
+	test_trajectory();
 	
-	test_scurve();
+	//test_scurve();
 	//test_path();
 	
 	//test_function();
