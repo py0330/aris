@@ -1257,13 +1257,14 @@ namespace aris::plan {
 		}
 	}
 	auto replan_scurve(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end) {
+		// 构造 scurve list //
 		std::list<SCurveNode> ins_scurve_list;
 		LargeNum t0;
 		for (auto iter = begin; iter != end; ++iter) {
 			ins_scurve_list.push_back(SCurveNode{});
 			auto& scurve_node = ins_scurve_list.back();
 			scurve_node.params_.reserve(scurve_size);
-			//for (auto& ee_p : iter->ee_plans_) {
+
 			for (int i = 0; i < ee_types.size();++i) {
 				auto& ee_p = iter->ee_plans_[i];
 				switch (ee_types[i]) {
@@ -1315,8 +1316,11 @@ namespace aris::plan {
 			}
 		}
 
-		s_compute_scurve(ins_scurve_list.begin(), ins_scurve_list.end());
+		// 进行规划 //
+		if(s_compute_scurve(ins_scurve_list.begin(), ins_scurve_list.end()) != 0)
+			return -1;
 
+		// 将规划好的 scurve 返回到 nodes 中 //
 		for (auto iter = begin; iter != end; ++iter) {
 			auto& scurve_node = ins_scurve_list.front();
 			iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
@@ -1373,6 +1377,8 @@ namespace aris::plan {
 			ins_scurve_list.pop_front();
 			iter->next_node_.store(std::next(iter) == end ? &*iter : &*std::next(iter));
 		}
+
+		return 0;
 	}
 
 	// get data //
@@ -1707,7 +1713,7 @@ namespace aris::plan {
 		// 末端类型 //
 		std::vector<aris::dynamic::EEType> ee_types_;
 		aris::Size outpos_size_{ 0 }, outvel_size_{ 0 }, internal_pos_size{ 0 };
-		double* internal_pos_, *internal_vel_, *internal_acc_;
+		double* internal_pos_{ nullptr }, * internal_vel_{ nullptr }, * internal_acc_{ nullptr };
 		std::vector<double> internal_vec_;
 
 		// 规划节点 //
@@ -1716,6 +1722,72 @@ namespace aris::plan {
 
 		// 互斥区，保护访问
 		std::recursive_mutex mu_;
+
+		auto insert_node(Node::MoveType move_type, std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
+			std::lock_guard<std::recursive_mutex> lck(mu_);
+
+			// 转化 pos 表达 //
+			std::vector<double> ee_pos_internal(internal_pos_size), mid_pos_internal(internal_pos_size);
+			outpos_to_internal_pos(ee_types_, ee_pos, ee_pos_internal.data());
+			outpos_to_internal_pos(ee_types_, mid_pos, mid_pos_internal.data());
+
+			// 插入节点，循环确保成功 //
+			bool insert_success = false;
+			do {
+				// 插入最新节点 //
+				auto& last_node = *std::prev(nodes_.end());
+				auto& ins_node = nodes_.emplace_back(ee_types_.size());
+
+				// 获得需要重新规划的起点，默认为5段轨迹
+				auto current_node = current_node_.load();
+				auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
+					return &node == current_node;
+					});
+				auto replan_iter_begin = std::next(current_iter);
+				auto replan_iter_end = std::next(current_iter);
+				aris::Size replan_num = 0;
+				for (; std::next(replan_iter_end) != nodes_.end(); replan_iter_end++) {
+					if (replan_iter_end->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
+						replan_iter_begin = std::next(replan_iter_end);
+						replan_num = 0;
+					}
+					else if (replan_num > 4)
+						replan_iter_begin++;
+					else
+						replan_num++;
+				}
+				replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
+
+				// 初始化最新的节点 //
+				ins_node.id_ = id;
+				make_node(replan_num, &ins_node, &*std::prev(nodes_.end(), 2), ee_types_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+
+				// 重规划 scurve
+				auto scurve_size = aris::dynamic::getScurveSize(ee_types_);
+				auto replan_ret = replan_scurve((int)scurve_size, ee_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
+
+				// 查看是否冲规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。
+				if (replan_ret != 0) {
+					nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
+					make_node(0, &ins_node, &*std::prev(nodes_.end(), 2), ee_types_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+					replan_scurve((int)scurve_size, ee_types_, std::prev(nodes_.end(), 2), std::prev(nodes_.end(), 1), nodes_.end());
+					std::prev(nodes_.end(), 2)->next_node_.exchange(&ins_node);
+					insert_success = true;
+				}
+				else {
+					// 并发设置
+					insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
+
+					// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
+					if (insert_success) {
+						nodes_.erase(replan_iter_begin, replan_iter_end);
+					}
+					else {
+						nodes_.erase(replan_iter_end, nodes_.end());
+					}
+				}
+			} while (!insert_success);
+		}
 	};
 	auto TrajectoryGenerator::eeTypes()const-> const std::vector<aris::dynamic::EEType>& {
 		return imp_->ee_types_;
@@ -1928,125 +2000,22 @@ namespace aris::plan {
 	auto TrajectoryGenerator::insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void{
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
-		// 转化 pos 表达 //
-		std::vector<double> ee_pos_internal(imp_->internal_pos_size), mid_pos_internal(imp_->internal_pos_size);
-		outpos_to_internal_pos(eeTypes(), ee_pos, ee_pos_internal.data());
-
 		// 如果当前指令队列为空，那么会Z=插入ResetInitPos指令 //
 		auto& nodes_ = imp_->nodes_;
 		if (nodes_.empty())
 			insertInitPos(id, ee_pos);
 
-		// 插入节点，循环确保成功 //
-		bool insert_success = false;
-		do {
-			// 插入最新节点 //
-			auto& last_node = *std::prev(nodes_.end());
-			auto& ins_node = nodes_.emplace_back(eeTypes().size());
-
-			// 获得需要重新规划的起点，默认为5段轨迹
-			auto current_node = imp_->current_node_.load();
-			auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
-				return &node == current_node;
-				});
-			auto replan_iter_begin = std::next(current_iter);
-			auto replan_iter_end = std::next(current_iter);
-			aris::Size replan_num = 0;
-			for (; std::next(replan_iter_end) != nodes_.end(); replan_iter_end++) {
-				if (replan_iter_end->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
-					replan_iter_begin = std::next(replan_iter_end);
-					replan_num = 0;
-				}
-				else if (replan_num > 4)
-					replan_iter_begin++;
-				else
-					replan_num++;
-			}
-			replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
-
-			// 初始化最新的节点 //
-			ins_node.id_ = id;
-			make_node(replan_num, &ins_node, &*std::prev(nodes_.end(), 2), eeTypes(), Node::MoveType::Line, ee_pos_internal.data(), ee_pos_internal.data(), vel, acc, jerk, zone);
-
-			// 重规划 scurve
-			auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
-			replan_scurve((int)scurve_size, eeTypes(), std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
-
-			// 并发设置
-			insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
-
-			// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
-			if (insert_success) {
-				nodes_.erase(replan_iter_begin, replan_iter_end);
-			}
-			else {
-				nodes_.erase(replan_iter_end, nodes_.end());
-			}
-
-		} while (!insert_success);
+		imp_->insert_node(Node::MoveType::Line, id, ee_pos, ee_pos, vel, acc, jerk, zone);
 	}
 	auto TrajectoryGenerator::insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
-		// 转化 pos 表达 //
-		std::vector<double> ee_pos_internal(imp_->internal_pos_size), mid_pos_internal(imp_->internal_pos_size);
-		outpos_to_internal_pos(eeTypes(), ee_pos, ee_pos_internal.data());
-		outpos_to_internal_pos(eeTypes(), mid_pos, mid_pos_internal.data());
-
 		// 如果当前指令队列为空，那么会Z=插入ResetInitPos指令 //
 		auto& nodes_ = imp_->nodes_;
 		if (nodes_.empty())
 			insertInitPos(id, ee_pos);
 
-		// 插入节点，循环确保成功 //
-		bool insert_success = false;
-		do {
-			// 插入最新节点 //
-			auto& last_node = *std::prev(nodes_.end());
-			auto& ins_node = nodes_.emplace_back(eeTypes().size());
-			
-			// 获得需要重新规划的起点，默认为5段轨迹
-			auto current_node = imp_->current_node_.load();
-			auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
-				return &node == current_node;
-				});
-			auto replan_iter_begin = std::next(current_iter);
-			auto replan_iter_end = std::next(current_iter);
-			aris::Size replan_num = 0;
-			for (; std::next(replan_iter_end) != nodes_.end(); replan_iter_end++) {
-				if (replan_iter_end->ee_plans_[0].move_type_ == Node::MoveType::ResetInitPos) {
-					replan_iter_begin = std::next(replan_iter_end);
-					replan_num = 0;
-				}
-				else if (replan_num > 4)
-					replan_iter_begin++;
-				else
-					replan_num++;
-			}
-			replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
-
-			// 初始化最新的节点 //
-			ins_node.id_ = id;
-			make_node(replan_num, &ins_node, &*std::prev(nodes_.end(), 2), eeTypes(), Node::MoveType::Circle, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
-
-
-			// 重规划 scurve
-			auto scurve_size = aris::dynamic::getScurveSize(eeTypes());
-			replan_scurve((int)scurve_size, eeTypes(), std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
-
-			// 并发设置
-			insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
-
-			// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
-			if (insert_success) {
-				nodes_.erase(replan_iter_begin, replan_iter_end);
-			}
-			else {
-				nodes_.erase(replan_iter_end, nodes_.end());
-			}
-
-		} while (!insert_success);
-	
+		imp_->insert_node(Node::MoveType::Circle, id, ee_pos, mid_pos, vel, acc, jerk, zone);
 	
 	}
 	auto TrajectoryGenerator::clearUsedPos()->void {
