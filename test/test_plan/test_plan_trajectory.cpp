@@ -209,6 +209,11 @@ auto test_trajectory_2()->void {
 //		aris::dynamic::dsp(1, 6, out_pe)
 		;
 
+	tg.insertLinePos(8, pes[1], speed, acc, jerk, zone);
+	tg.insertLinePos(9, pes[2], speed, acc, jerk, zone);
+
+	tg.insertLinePos(10, pes[3], speed, acc, jerk, zone);
+
 	while (move_and_copy_data() <= 4)
 //		aris::dynamic::dsp(1, 6, out_pe)
 		;

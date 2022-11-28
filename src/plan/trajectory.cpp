@@ -647,7 +647,6 @@ namespace aris::plan {
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double p1[3], p01[3], p12[3];
-		//aris::dynamic::s_vc(3, last_p->move_x_.line_.p1_, p1);
 		s_compute_line_at(last_p->move_x_.line_.p0_, last_p->move_x_.line_.dir_, last_p->move_x_.length_, p1);
 
 		s_compute_line_at(
@@ -1080,10 +1079,16 @@ namespace aris::plan {
 							aris::dynamic::s_nv(4, -1.0, this_p->zone_a2_.quaternions_.q1_);
 						}
 
-						// 和上一段进行路径拼接
+						// 和上一段进行路径拼接，否则只更新 scurve 的初值
 						if (replan_num) {
 							make_zone_and_scurve_line_line_x(last_p, this_p);
 							make_zone_and_scurve_quternion_a(last_p, this_p);
+						}
+						else if (last_p) {
+							this_p->scurve_x_.pb_ = last_p->scurve_x_.pb_ + this_p->scurve_x_.pb_;
+							this_p->scurve_x_.pa_ = last_p->scurve_x_.pb_;
+							this_p->scurve_a_.pb_ = last_p->scurve_a_.pb_ + this_p->scurve_a_.pb_;
+							this_p->scurve_a_.pa_ = last_p->scurve_a_.pb_;
 						}
 						break;
 					}
@@ -1108,6 +1113,11 @@ namespace aris::plan {
 						if (replan_num) {
 							make_zone_and_scurve_circle_line_x(last_p, this_p);
 							make_zone_and_scurve_quternion_a(last_p, this_p);
+						} else if (last_p) {
+							this_p->scurve_x_.pb_ = last_p->scurve_x_.pb_ + this_p->scurve_x_.pb_;
+							this_p->scurve_x_.pa_ = last_p->scurve_x_.pb_;
+							this_p->scurve_a_.pb_ = last_p->scurve_a_.pb_ + this_p->scurve_a_.pb_;
+							this_p->scurve_a_.pa_ = last_p->scurve_a_.pb_;
 						}
 						break;
 					}
@@ -1234,6 +1244,9 @@ namespace aris::plan {
 						// 和上一段进行路径拼接
 						if (replan_num) {
 							make_zone_and_scurve_line_line_x(last_p, this_p);
+						} else if (last_p) {
+							this_p->scurve_x_.pb_ = last_p->scurve_x_.pb_ + this_p->scurve_x_.pb_;
+							this_p->scurve_x_.pa_ = last_p->scurve_x_.pb_;
 						}
 						break;
 					}
