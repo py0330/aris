@@ -1,6 +1,6 @@
 ﻿#include"aris/plan/scurve.hpp"
 
-//#define DEBUG_ARIS_PLAN_TRAJECTORY
+#define DEBUG_ARIS_PLAN_TRAJECTORY
 
 
 namespace aris::plan {
@@ -77,6 +77,9 @@ namespace aris::plan {
     auto inline safe_sqrt(double v)->double {
         return v > 0.0 ? std::sqrt(v) : 0.0;
     }
+
+    auto s_compute_scurve_Tmax_Tmin(const SCurveParam& param, double T_min_set)->std::tuple<double, double>;
+
 
     // 根据起始条件，终止位置，总时间来计算 S 曲线
     //
@@ -394,7 +397,6 @@ namespace aris::plan {
                 double ratio = T / (param.Ta_ + param.Tb_);
                 param.Ta_ *= ratio;
                 param.Tb_ *= ratio;
-            
             }
 
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
@@ -403,7 +405,24 @@ namespace aris::plan {
                 || std::abs(Ta * (va + vc) / 2 + Tb * vc / 2 + (T - Ta - Tb) * vc - pt) > l_cons
                 ) {
                 double l = k4 * Ta * Ta * Ta * Ta + k3 * Ta * Ta * Ta + k2 * Ta * Ta + k0;
-                auto [Tmax, Tmin] = s_compute_s_curve_Tmax_Tmin(param);
+
+                std::cout << "debug -----------------------------" << std::setprecision(15) << std::endl;
+                auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(param, 0.001);
+                std::cout << "Tmax:" << Tmax << std::endl;
+                std::cout << "Tmin:" << Tmin << std::endl;
+
+
+                std::cout << "Ta:" << Ta << std::endl;
+                std::cout << "Tb:" << Tb << std::endl;
+                std::cout << "T :" << T << std::endl;
+                std::cout << "T - Ta - Tb:" << T - Ta - Tb << std::endl;
+                std::cout << "l :" << l << std::endl;
+                std::cout << "pt:" << pt << std::endl;
+                std::cout << "l-pt:" << l - pt << std::endl;
+                std::cout << "vb:" << vb << std::endl;
+                std::cout << "vb max:" << param.vb_max_ << std::endl;
+
+
                 THROW_FILE_LINE("ERROR l4");
             }
 #endif
@@ -567,7 +586,7 @@ namespace aris::plan {
                 || std::abs(Ta * (va + vc) / 2 + Tb * (vb + vc) / 2 + (T - Ta - Tb)*vc - pt) > l_cons
                 || (vb - param.vb_max_) > std::max(param.vb_max_ * 1e-10, 1e-10)
                 ) {
-                auto [Tmax, Tmin] = s_compute_s_curve_Tmax_Tmin(param);
+                auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(param, 0.001);
                 THROW_FILE_LINE("ERROR l6");
             }
 #endif
@@ -728,6 +747,7 @@ namespace aris::plan {
 
             // adjust //
             param.Ta_ = std::max(param.Ta_, 0.0);
+            param.Ta_ = std::min(param.Ta_, param.T_);
             // adjust finished //
 
             param.vc_ = va + j * Ta * Ta / 4.0;
@@ -741,8 +761,24 @@ namespace aris::plan {
                 || (vb - param.vb_max_) > std::max(param.vb_max_ * 1e-10, 1e-10)
                 ) {
                 //double l = k2 * Ta * Ta + k1 * Ta + k0;
-                std::cout << "debug -----------------------------" << std::endl;
-                auto [Tmax, Tmin] = s_compute_s_curve_Tmax_Tmin(param);
+                std::cout << "debug -----------------------------" << std::setprecision(15) << std::endl;
+                auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(param, 0.001);
+                std::cout << "Tmax:" << Tmax << std::endl;
+                std::cout << "Tmin:" << Tmin << std::endl;
+
+
+                std::cout << "Ta:" << Ta << std::endl;
+                std::cout << "Tb:" << Tb << std::endl;
+                std::cout << "T :" << T << std::endl;
+                std::cout << "T - Ta - Tb:" << T - Ta - Tb << std::endl;
+                std::cout << "l :" << Ta * (va + vc) / 2 + Tb * (vb + vc) / 2 + (T - Ta - Tb) * vc << std::endl;
+                std::cout << "pt:" << pt << std::endl;
+                std::cout << "l-pt:" << l-pt << std::endl;
+                std::cout << "vb:" << vb << std::endl;
+                std::cout << "vb max:" << param.vb_max_ << std::endl;
+
+
+
                 THROW_FILE_LINE("ERROR l7");
             }
 #endif
@@ -854,6 +890,24 @@ namespace aris::plan {
             || std::abs(Ta * (va + vc) / 2 + Tb * (vb + vc) / 2 + (T - Ta - Tb) * vc - pt) > l_cons
             || (vb - param.vb_max_) > std::max(param.vb_max_ * 1e-10, 1e-10)
             ) {
+            std::cout << "debug -----------------------------" << std::setprecision(15) << std::endl;
+            auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(param, 0.001);
+            std::cout << "Tmax:" << Tmax << std::endl;
+            std::cout << "Tmin:" << Tmin << std::endl;
+
+
+            std::cout << "Ta:" << Ta << std::endl;
+            std::cout << "Tb:" << Tb << std::endl;
+            std::cout << "T :" << T << std::endl;
+            std::cout << "T - Ta - Tb:" << T - Ta - Tb << std::endl;
+            std::cout << "l :" << Ta * (va + vc) / 2 + Tb * (vb + vc) / 2 + (T - Ta - Tb) * vc << std::endl;
+            std::cout << "pt:" << pt << std::endl;
+            std::cout << "l-pt:" << l - pt << std::endl;
+            std::cout << "vb:" << vb << std::endl;
+            std::cout << "vb max:" << param.vb_max_ << std::endl;
+
+
+
             THROW_FILE_LINE("ERROR l11");
         }
 #endif
@@ -1214,12 +1268,22 @@ namespace aris::plan {
         //       a.2.1 va * T < l
         //             Ta = 2*sqrt((vb-va)/j)
 
-        if (param1.mode_ == 0 && param2.mode_ == 0 && param1.vc_ > param1.vb_ && param2.vc_ > param2.va_) {
+        if (((param1.mode_ == 0 && param1.vc_ > param1.vb_) || (param1.mode_ == 1 && param1.va_ > param1.vb_))
+            && 
+            ((param2.mode_ == 0 && param2.vc_ > param2.va_) || (param2.mode_ == 1 && param2.va_ < param2.vb_))) {
+#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
             auto p1 = param1;
             auto p2 = param2;
+#endif
             
-            
-            auto vb_upper = std::min({ param1.vb_max_, param1.vc_, param2.vc_, s_acc_vend(param1.va_, param1.a_, param1.j_, param1.T_), s_acc_vend(param2.vb_, param2.a_, param2.j_, param2.T_) });
+            auto vb_upper = std::min({ 
+                param1.vb_max_, 
+                param1.mode_ == 0 ? param1.vc_ : param1.va_,
+                param2.mode_ == 0 ? param2.vc_ : param2.vb_,
+                s_acc_vend(param1.va_, param1.a_, param1.j_, param1.T_), 
+                s_acc_vend(param2.vb_, param2.a_, param2.j_, param2.T_) 
+                });
+
             auto vb_lower = param1.vb_;
 
             double l1 = param1.pb_ - param1.pa_;
@@ -1250,7 +1314,7 @@ namespace aris::plan {
                         double Ta = s_acc_time(param1.va_, vc, param1.a_, param1.j_);
                         double Tb = s_acc_time(param1.vb_, vc, param1.a_, param1.j_);
                         return Ta * (param1.va_ + vc) / 2 + Tb * (param1.vb_ + vc) / 2 + (param1.T_ - Ta - Tb) * vc - l1;
-                        }, vb1, param1.vc_);
+                        }, std::max(vb1, param1.va_), param1.vc_);
 
                     param1.vc_ = vc1;
                     param1.Ta_ = s_acc_time(param1.va_, vc1, param1.a_, param1.j_);
@@ -1263,22 +1327,12 @@ namespace aris::plan {
 
                     double Tc = s_acc_time(param1.va_, param1.vb_, param1.a_, param1.j_);
                     double va = vb1;
-                    double v_avg = (param1.T_ - Tc) > 1e-10 ? (l1 - Tc * (param1.va_ + param1.vb_) / 2) / (param1.T_ - Tc) : (param1.va_ + param1.vb_) / 2;
-                    param1.Ta_ = std::abs(param1.va_ - param1.vb_) > 1e-10 ? std::abs((v_avg - param1.vb_) / (param1.va_ - param1.vb_)) * (param1.T_ - Tc) : (param1.T_ - Tc) / 2;
+                    double v_avg = (param1.T_ - Tc) > 1e-12 ? (l1 - Tc * (param1.va_ + param1.vb_) / 2) / (param1.T_ - Tc) : (param1.va_ + param1.vb_) / 2;
+                    param1.Ta_ = std::abs(param1.va_ - param1.vb_) > 1e-12 ? std::abs((v_avg - param1.vb_) / (param1.va_ - param1.vb_)) * (param1.T_ - Tc) : (param1.T_ - Tc) / 2;
                     param1.Tb_ = param1.T_ - param1.Ta_ - Tc;
                     param1.vc_ = v_avg;
                 }
             }
-
-            //param1.vb_ = vb1;
-            //auto vc1 = newton_raphson_binary_search([&param1, l1](double vc)->double {
-            //    double Ta = s_acc_time(param1.va_, vc, param1.a_, param1.j_);
-            //    double Tb = s_acc_time(param1.vb_, vc, param1.a_, param1.j_);
-            //    return Ta * (param1.va_ + vc) / 2 + Tb * (param1.vb_ + vc) / 2 + (param1.T_ - Ta - Tb) * vc - l1;
-            //    }, vb1, param1.vc_);
-            //param1.vc_ = vc1;
-            //param1.Ta_ = s_acc_time(param1.va_, vc1, param1.a_, param1.j_);
-            //param1.Tb_ = s_acc_time(param1.vb_, vc1, param1.a_, param1.j_);
 
             // param2 //
             {
@@ -1304,8 +1358,8 @@ namespace aris::plan {
 
                     double Tc = s_acc_time(param2.va_, param2.vb_, param2.a_, param2.j_);
                     double va = vb1;
-                    double v_avg = (param2.T_ - Tc) > 1e-10 ? (l2 - Tc * (param2.va_ + param2.vb_) / 2) / (param2.T_ - Tc) : (param2.va_ + param2.vb_) / 2;
-                    param2.Ta_ = std::abs(param2.va_ - param2.vb_) > 1e-10 ? std::abs((v_avg - param2.vb_) / (param2.va_ - param2.vb_)) * (param2.T_ - Tc) : (param2.T_ - Tc) / 2;
+                    double v_avg = (param2.T_ - Tc) > 1e-12 ? (l2 - Tc * (param2.va_ + param2.vb_) / 2) / (param2.T_ - Tc) : (param2.va_ + param2.vb_) / 2;
+                    param2.Ta_ = std::abs(param2.va_ - param2.vb_) > 1e-12 ? std::abs((v_avg - param2.vb_) / (param2.va_ - param2.vb_)) * (param2.T_ - Tc) : (param2.T_ - Tc) / 2;
                     param2.Tb_ = param2.T_ - param2.Ta_ - Tc;
                     param2.vc_ = v_avg;
                 }
@@ -1313,10 +1367,30 @@ namespace aris::plan {
 
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
 
-            if (param1.Ta_ + param1.Tb_ > param1.T_ + 1e-4) {
-                std::cout << "time error" << std::endl;
+            if (param1.Ta_ + param1.Tb_ > param1.T_ + 1e-9) {
+                //THROW_FILE_LINE("TIME ERROR");
+                
+                std::cout << "error" << __LINE__ << std::setprecision(15) << std::endl;
+                std::cout << "l :" << l1 << std::endl;
+                std::cout << "Ta:" << param1.Ta_ << std::endl;
+                std::cout << "Tb:" << param1.Tb_ << std::endl;
+                std::cout << "T :" << param1.T_ << std::endl;
+                std::cout << "va:" << param1.va_ << std::endl;
+                std::cout << "vb:" << param1.vb_ << std::endl;
+                std::cout << "vc:" << param1.vc_ << std::endl;
+                std::cout << "md:" << param1.mode_ << std::endl;
+                std::cout << "-----------------------------------------" << std::endl;
+                std::cout << "Ta:" << p1.Ta_ << std::endl;
+                std::cout << "Tb:" << p1.Tb_ << std::endl;
+                std::cout << "T :" << p1.T_ << std::endl;
+                std::cout << "va:" << p1.va_ << std::endl;
+                std::cout << "vb:" << p1.vb_ << std::endl;
+                std::cout << "vc:" << p1.vc_ << std::endl;
+                std::cout << "md:" << p1.mode_ << std::endl;
+                std::cout << "----------------------------------------------------" << std::endl;
+
             }
-            if (param2.Ta_ + param2.Tb_ > param2.T_ + 1e-4) {
+            if (param2.Ta_ + param2.Tb_ > param2.T_ + 1e-9) {
                 std::cout << param2.Ta_ * (param2.va_ + param2.vc_) / 2 + param2.Tb_ * (param2.vb_ + param2.vc_) / 2 + std::abs(param2.T_ - param2.Ta_ - param2.Tb_) * param2.vc_ << std::endl;
                 std::cout << l2 << std::endl;
 
@@ -1327,16 +1401,33 @@ namespace aris::plan {
                     }, vb1, param2.vc_);
 
 
-                std::cout << "time error" << std::endl;
+                std::cout << "error" << __LINE__ << std::setprecision(15) << std::endl;
+                std::cout << "l :" << l2 << std::endl;
+                std::cout << "Ta:" << param2.Ta_ << std::endl;
+                std::cout << "Tb:" << param2.Tb_ << std::endl;
+                std::cout << "T :" << param2.T_ << std::endl;
+                std::cout << "va:" << param2.va_ << std::endl;
+                std::cout << "vb:" << param2.vb_ << std::endl;
+                std::cout << "vc:" << param2.vc_ << std::endl;
+                std::cout << "md:" << param2.mode_ << std::endl;
+                std::cout << "-----------------------------------------" << std::endl;
+                std::cout << "Ta:" << p2.Ta_ << std::endl;
+                std::cout << "Tb:" << p2.Tb_ << std::endl;
+                std::cout << "T :" << p2.T_ << std::endl;
+                std::cout << "va:" << p2.va_ << std::endl;
+                std::cout << "vb:" << p2.vb_ << std::endl;
+                std::cout << "vc:" << p2.vc_ << std::endl;
+                std::cout << "md:" << p2.mode_ << std::endl;
+                std::cout << "----------------------------------------------------" << std::endl;
             }
 
             //if (std::abs(param2.Ta_ * (param2.va_ + param2.vc_) / 2 + param2.Tb_ * (param2.vb_ + param2.vc_) / 2 + (param2.T_ - param2.Ta_ - param2.Tb_) * param2.vc_ - l2) > 1e-12) {
             LargeNum p_out;
             aris::plan::s_scurve_at(param2, param2.T_ + param2.t0_, &p_out);
             p_out = p_out - param2.pa_;
-            if(std::abs(p_out - l2) > 1e-4){
+            if(std::abs(p_out - l2) > 1e-10){
                 std::cout << param2.Ta_ * (param2.va_ + param2.vc_) / 2 + param2.Tb_ * (param2.vb_ + param2.vc_) / 2 + (param2.T_ - param2.Ta_ - param2.Tb_) * param2.vc_ << std::endl;
-                std::cout << "error" << std::endl;
+                std::cout << "error" << __LINE__ << std::endl;
                 
                 aris::plan::s_scurve_at(param2, param2.T_ + param2.t0_, &p_out);
                 
@@ -1401,12 +1492,30 @@ namespace aris::plan {
             }
             aris::plan::s_scurve_at(param1, param1.T_ + param1.t0_, &p_out);
             p_out = p_out - param1.pa_;
-            if (std::abs(p_out - l1) > 1e-4) {
-                std::cout << "error" << std::endl;
+            if (std::abs(p_out - l1) > 1e-9) {
+                std::cout << "error" << __LINE__ << std::setprecision(15) << std::endl;
+                std::cout << "l :" << l1 << std::endl;
+                std::cout << "p_out:" << p_out << std::endl;
+                std::cout << "Ta:" << param1.Ta_ << std::endl;
+                std::cout << "Tb:" << param1.Tb_ << std::endl;
+                std::cout << "T :" << param1.T_ << std::endl;
+                std::cout << "va:" << param1.va_ << std::endl;
+                std::cout << "vb:" << param1.vb_ << std::endl;
+                std::cout << "vc:" << param1.vc_ << std::endl;
+                std::cout << "md:" << param1.mode_ << std::endl;
+                std::cout << "-----------------------------------------" << std::endl;
+                std::cout << "Ta:" << p1.Ta_ << std::endl;
+                std::cout << "Tb:" << p1.Tb_ << std::endl;
+                std::cout << "T :" << p1.T_ << std::endl;
+                std::cout << "va:" << p1.va_ << std::endl;
+                std::cout << "vb:" << p1.vb_ << std::endl;
+                std::cout << "vc:" << p1.vc_ << std::endl;
+                std::cout << "md:" << p1.mode_ << std::endl;
+                std::cout << "----------------------------------------------------" << std::endl;
             }
 
             aris::plan::s_scurve_at(param2, param2.t0_, &p_out);
-            if (std::abs(p_out - param2.pa_) > 1e-4) {
+            if (std::abs(p_out - param2.pa_) > 1e-10) {
                 aris::plan::s_scurve_at(param2, param2.t0_, &p_out);
 
                 // mode 1
@@ -1420,14 +1529,25 @@ namespace aris::plan {
                 param2.Tb_ = param2.T_ - param2.Ta_;
                 param2.vc_ = v_avg;
 
-                std::cout << "error" << std::endl;
+                std::cout << "error" << __LINE__ << std::endl;
             }
 
             aris::plan::s_scurve_at(param2, param2.t0_, &p_out);
             p_out = (param2.T_ - param2.Ta_ - param2.Tb_) * (param2.va_ + param2.vb_) / 2
                 + param2.va_ * param2.Ta_ + param2.Tb_ * param2.vb_;
-            if (param2.mode_ == 1 && std::abs(p_out - l2) > 1e-4) {
+            if (param2.mode_ == 1 && std::abs(p_out - l2) > 1e-10) {
                 aris::plan::s_scurve_at(param2, param2.t0_, &p_out);
+
+                std::cout << std::setprecision(15);
+
+                std::cout << param2.Ta_ << std::endl;
+                std::cout << param2.Tb_ << std::endl;
+                std::cout << param2.T_ << std::endl;
+                std::cout << param2.va_ << std::endl;
+                std::cout << param2.vb_ << std::endl;
+                std::cout << param2.vc_ << std::endl;
+                std::cout << l2 << std::endl;
+                std::cout << param2.mode_ << std::endl;
 
                 // mode 1
                 param2.mode_ = 1;
@@ -1442,12 +1562,12 @@ namespace aris::plan {
                 param2.Tb_ = param2.T_ - param2.Ta_;
                 param2.vc_ = v_avg;
 
-                std::cout << "error" << std::endl;
+                std::cout << "error" << __LINE__ << std::endl;
             }
 
             aris::plan::s_scurve_at(param1, param1.t0_, &p_out);
-            if (std::abs(p_out - param1.pa_) > 1e-4) {
-                std::cout << "error" << std::endl;
+            if (std::abs(p_out - param1.pa_) > 1e-10) {
+                std::cout << "error" << __LINE__ << std::endl;
             }
 #endif
         }
