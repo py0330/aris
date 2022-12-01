@@ -36,7 +36,9 @@ namespace aris::plan {
 				double p0_, p1_, p2_;
 			};
 			ZoneType type_{ ZoneType::LL };
-			double length_{ 0.0 }, zone_value_{ 0.0 }; // length 是融合后的弧长，zone_value是用户的zone的输入
+			// length 是融合后的弧长，zone_value是用户的zone的输入。
+			// 对于四元数，length是角度差，四元数的差异。两者相差2倍
+			double length_{ 0.0 }, zone_value_{ 0.0 }; 
 			EstimateBezierArcParam bezier_param;
 			union {
 				Lines lines_{};
@@ -950,7 +952,7 @@ namespace aris::plan {
 	}
 	auto make_zone_and_scurve_quternion_a(Node::EePlanData* last_p, Node::EePlanData* this_p)->void {
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_p->move_a_.length_, last_p->zone_a2_.zone_value_, this_p->move_a_.length_ });
+		double real_zone = std::min({ last_p->move_a_.length_, last_p->zone_a2_.zone_value_, this_p->move_a_.length_*0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double q1[4], q01[4], q12[4];

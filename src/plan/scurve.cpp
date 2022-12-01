@@ -1170,7 +1170,7 @@ namespace aris::plan {
             double v_minus_v1 = newton_raphson_binary_search([v1, v2, a, j, pt](double x)->double {
                 return safe_sqrt(x / j) * x + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
                 }
-                , v_below, v_upper);
+                , v_below - v1, v_upper - v1);
 
             double T1 = 2 * safe_sqrt(v_minus_v1 / j);
             double T2 = (v1 - v2 + v_minus_v1) / a + a / j;
