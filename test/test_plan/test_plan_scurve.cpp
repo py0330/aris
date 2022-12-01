@@ -95,6 +95,17 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 					auto prev_iter = std::prev(iter);
 					auto pprev_iter = std::prev(prev_iter);
 					
+					auto param2 = iter->params_[i];
+					std::cout << std::setprecision(15) << param2.Ta_ * (param2.va_ + param2.vc_) / 2 + param2.Tb_ * (param2.vb_ + param2.vc_) / 2 + (param2.T_ - param2.Ta_ - param2.Tb_) * param2.vc_ << std::endl;
+					std::cout << param2.pb_ - param2.pa_ << std::endl;
+
+					auto s_acc_time = [](double va, double vb, double a, double j)noexcept->double {
+						double v_diff = std::abs(vb - va);
+						return v_diff > a * a / j ? v_diff / a + a / j : 2 * std::sqrt(v_diff / j);
+					};
+
+					std::cout << s_acc_time(param2.va_, param2.vc_, param2.a_, param2.j_);
+
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check acceleration failed");
 				}
