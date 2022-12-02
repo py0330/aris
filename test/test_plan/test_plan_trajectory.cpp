@@ -136,11 +136,9 @@ auto test_trajectory_1()->void {
 
 }
 auto test_trajectory_2()->void {
-	aris::plan::TrajectoryGenerator tg;
 
 	const int PE_SIZE = 6;
 	const int EE_NUM = 1;
-
 
 	//RobotTarget p12 = { -43.718148,501.616394,440.393091,252.502610,-0.005295,179.999803,0,0 }
 	//RobotTarget p3 = { -1.912937,501.617792,440.392672,252.495922,-0.005124,179.999365,0,0 }
@@ -162,36 +160,41 @@ auto test_trajectory_2()->void {
 	//	{ 134.201286,501.621105,440.382326,220.481454,-0.006547,179.997985 }
 	//};
 
-	//	double pes_raw[PE_SIZE][6 * EE_NUM]{
-	//	{ -80.971772,501.599143,440.288021,252.579374,-1.845274,174.240407 },
-	//	{  -80.971772,501.599143,440.288021,253.012596,-4.388165,166.036425},
-	//	{ -80.971772,501.599143,440.288021,253.571205,-6.178004,160.041630},
-	//	{ -80.971772,501.599143,440.288021,252.836917,-3.560856,168.715727},
-	//	{-80.971772,501.599143,440.288021,252.635497,2.323645,187.466237},
-	//	{ -80.971772,501.599143,440.288021,253.444152,5.802127,198.860889 }
-	//};
-
 	double pes_raw[PE_SIZE][6 * EE_NUM]{
-		{ -80.971772,501.599143,440.288021,0,-0,0 },
-		{  -80.971772,501.599143,440.288021,0,-0,10},
-		{ -80.971772,501.599143,440.288021,0,-0,20},
-		{ -80.971772,501.599143,440.288021,0,-0,30},
-		{-80.971772,501.599143,440.288021,0,0,40},
-		{ -80.971772,501.599143,440.288021,0,0,50 }
+		{ -80.971772,501.599143,440.288021,252.579374,-1.845274,174.240407 },
+		{  -80.971772,501.599143,440.288021,253.012596,-4.388165,166.036425},
+		{ -80.971772,501.599143,440.288021,253.571205,-6.178004,160.041630},
+		{ -80.971772,501.599143,440.288021,252.836917,-3.560856,168.715727},
+		{-80.971772,501.599143,440.288021,252.635497,2.323645,187.466237},
+		{ -80.971772,501.599143,440.288021,253.444152,5.802127,198.860889 }
 	};
 
+	//double pes_raw[PE_SIZE][6 * EE_NUM]{
+	//	{ -80.971772,501.599143,440.288021,0,-0,0 },
+	//	{  -80.971772,501.599143,440.288021,0,-0,10},
+	//	{ -80.971772,501.599143,440.288021,0,-0,20},
+	//	{ -80.971772,501.599143,440.288021,0,-0,30},
+	//	{-80.971772,501.599143,440.288021,0,0,40},
+	//	{ -80.971772,501.599143,440.288021,0,0,50 }
+	//};
 
+	// 构造规划器 //
+	aris::plan::TrajectoryGenerator tg;
+	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+	
+	// 构造数据 //
 	double pes[PE_SIZE][6 * EE_NUM];
 	double speed[EE_NUM * 2]{ 1.0, aris::PI };
-	double acc[EE_NUM * 2]{ 2.5, 0.2 };
-	double jerk[EE_NUM * 2]{ 10.0, 10};
-	double zone[EE_NUM * 2]{ 0.01, 10* aris::PI / 180.0 };
+	double acc[EE_NUM * 2]{ 2.5, 2.5 };
+	double jerk[EE_NUM * 2]{ 10.0, 10 };
+	double zone[EE_NUM * 2]{ 0.01, 10 * aris::PI / 180.0 };
 
 	for (int i = 0; i < PE_SIZE; ++i) {
 		aris::dynamic::s_vc(3, 0.001, pes_raw[i], pes[i]);
-		aris::dynamic::s_vc(3, aris::PI/180.0, pes_raw[i] + 3, pes[i] + 3);
+		aris::dynamic::s_vc(3, aris::PI / 180.0, pes_raw[i] + 3, pes[i] + 3);
 	}
 
+	// 运行得到数据，便于后续打印 //
 	std::vector<double> vec, v_vec, a_vec;
 	double out_pe[6];
 	auto move_and_copy_data = [&]() ->int {
@@ -201,16 +204,9 @@ auto test_trajectory_2()->void {
 		return ret;
 	};
 
-
-
-	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
-	
-	
-	
-
+	// 插入点位
 	tg.insertLinePos(1, pes[0], speed, acc, jerk, zone);
-	//tg.getEePosAndMoveDt(out_pe);
-	move_and_copy_data();
+	move_and_copy_data(); // 运行一次 //
 
 	tg.insertLinePos(2, pes[1], speed, acc, jerk, zone);
 	tg.insertLinePos(3, pes[2], speed, acc, jerk, zone);
@@ -224,13 +220,6 @@ auto test_trajectory_2()->void {
 		
 		;
 	while (move_and_copy_data() <= 3) {
-		
-		if (vec.size() > 2400 * 6) {
-			std::cout << "debug" << std::endl;
-		}
-		//aris::dynamic::dsp(1, 6, out_pe);
-
-	
 	}
 
 	tg.insertLinePos(7, pes[0], speed, acc, jerk, zone);
@@ -244,17 +233,16 @@ auto test_trajectory_2()->void {
 	tg.insertLinePos(10, pes[3], speed, acc, jerk, zone);
 
 	while (move_and_copy_data() <= 4)
-//		aris::dynamic::dsp(1, 6, out_pe)
 		;
 	while (move_and_copy_data() <= 5)
-//		aris::dynamic::dsp(1, 6, out_pe)
 		;
 	while (move_and_copy_data() <= 6)
-//		aris::dynamic::dsp(1, 6, out_pe)
 		;
 
-	while (move_and_copy_data());
+	while (move_and_copy_data())
+		;
 
+	// 打印结果 //
 	aris::dynamic::dlmwrite(vec.size()/6, 6, vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
 }
 void test_trajectory(){

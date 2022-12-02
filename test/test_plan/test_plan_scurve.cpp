@@ -161,7 +161,7 @@ void test_multi_s_curve(){
 		}
 	}
 
-#define DEBUG_ERROR
+//#define DEBUG_ERROR
 
 #ifdef DEBUG_ERROR
 	auto data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\pb.txt");

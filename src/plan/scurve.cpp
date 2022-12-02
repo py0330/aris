@@ -411,7 +411,6 @@ namespace aris::plan {
                 std::cout << "Tmax:" << Tmax << std::endl;
                 std::cout << "Tmin:" << Tmin << std::endl;
 
-
                 std::cout << "Ta:" << Ta << std::endl;
                 std::cout << "Tb:" << Tb << std::endl;
                 std::cout << "T :" << T << std::endl;
@@ -419,7 +418,21 @@ namespace aris::plan {
                 std::cout << "l :" << l << std::endl;
                 std::cout << "pt:" << pt << std::endl;
                 std::cout << "l-pt:" << l - pt << std::endl;
-                std::cout << "vb:" << vb << std::endl;
+
+                std::cout << "Ta_below:" << Ta_below << std::endl;
+                std::cout << "Ta_upper:" << Ta_upper << std::endl;
+
+                std::cout << "k0:" << k0 << std::endl;
+                std::cout << "k2:" << k2 << std::endl;
+                std::cout << "k3:" << k3 << std::endl;
+                std::cout << "k3:" << k4 << std::endl;
+                std::cout << "a :" << param.a_ << std::endl;
+                std::cout << "j :" << param.j_ << std::endl;
+                std::cout << "va:" << param.va_ << std::endl;
+                std::cout << "vc:" << param.vc_ << std::endl;
+                
+                std::cout << "vb:" << param.vb_ << std::endl;
+                std::cout << "vc max:" << param.vc_max_ << std::endl;
                 std::cout << "vb max:" << param.vb_max_ << std::endl;
 
 
