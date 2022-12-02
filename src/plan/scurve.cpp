@@ -1181,7 +1181,7 @@ namespace aris::plan {
             //  ，sqrt(x - v1)精度不够
             // 
             double v_minus_v1 = newton_raphson_binary_search([v1, v2, a, j, pt](double x)->double {
-                return safe_sqrt(x / j) * x + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
+                return safe_sqrt(x / j) * (x + 2.0*v1) + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
                 }
                 , v_below - v1, v_upper - v1);
 

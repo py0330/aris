@@ -164,6 +164,8 @@ void test_multi_s_curve(){
 //#define DEBUG_ERROR
 
 #ifdef DEBUG_ERROR
+	std::cout << "[WARNING!] debuging old data..." << std::endl;
+
 	auto data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\pb.txt");
 	aris::dynamic::s_vc(m * n, data.data(), pb.data());
 	data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\vb_max.txt");
