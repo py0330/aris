@@ -1337,10 +1337,10 @@ namespace aris::plan {
 
                         std::tie(Tmax, Tmin) = s_compute_scurve_Tmax_Tmin(param2, 0.0);
                         if (Tmin <= param2.T_ && param2.T_ <= Tmax) {
-                            va_upper = param2.va_;
+                            va_below = param2.va_;
                         }
                         else {
-                            va_below = param2.va_;
+                            va_upper = param2.va_;
                         }
                         diff_last = diff;
                         diff = va_below - va_upper;
