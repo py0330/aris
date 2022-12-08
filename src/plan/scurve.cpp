@@ -406,7 +406,7 @@ namespace aris::plan {
                 ) {
                 double l = k4 * Ta * Ta * Ta * Ta + k3 * Ta * Ta * Ta + k2 * Ta * Ta + k0;
 
-                std::cout << "debug -----------------------------" << std::setprecision(15) << std::endl;
+                std::cout << "debug -----------------------------" << std::setprecision(18) << std::endl;
                 auto [Tmax, Tmin] = s_compute_scurve_Tmax_Tmin(param, 0.001);
                 std::cout << "Tmax:" << Tmax << std::endl;
                 std::cout << "Tmin:" << Tmin << std::endl;
@@ -861,7 +861,7 @@ namespace aris::plan {
             //% error %
             if (Ta < -t_cons || Tb < -t_cons || T - Ta - Tb < -t_cons
                 || std::abs(Ta * (va + vc) / 2 + Tb * (vb + vc) / 2 + (T - Ta - Tb) * vc - pt) > l_cons
-                || (vb - param.vb_max_) > std::max(param.vb_max_ * 1e-10, 1e-10)
+                || (vb - param.vb_max_) > std::max(param.vb_max_ * 1e-9, 1e-9)
                 ) {
                 double l = Ta * (Ta * (k3 * Ta + k2) + k1) + k0;
                 param.Ta_ = newton_raphson_binary_search([k0, k1, k2, k3](double x) ->double {
@@ -1314,6 +1314,42 @@ namespace aris::plan {
 
             auto vb1 = std::min(vb1_max, va2_max);
 
+            // 以上理论值没错，但考虑到重规划需要保证一定能成功，还需确保Tmax > Tmin
+            {
+                double previous_va = param2.va_;
+
+                param2.va_ = vb1;
+
+                double Tmax, Tmin;
+                std::tie(Tmax, Tmin) = s_compute_scurve_Tmax_Tmin(param2, 0.0);
+                if (Tmax < Tmin) {
+                    double va_below = previous_va;
+                    double va_upper = vb1;
+
+                    double cons = std::max(vb1, 1e-10) * 1e-10;
+                    
+                    // 二分法寻找最接近 vb1 的可行 va
+                    double diff = va_below - va_upper;
+                    double diff_last;
+
+                    do {
+                        param2.va_ = (va_below + va_upper) / 2.0;
+
+                        std::tie(Tmax, Tmin) = s_compute_scurve_Tmax_Tmin(param2, 0.0);
+                        if (Tmin <= param2.T_ && param2.T_ <= Tmax) {
+                            va_upper = param2.va_;
+                        }
+                        else {
+                            va_below = param2.va_;
+                        }
+                        diff_last = diff;
+                        diff = va_below - va_upper;
+
+                    } while (diff < diff_last);
+
+                    vb1 = va_below;
+                }
+            }
 
             // param1 //
             {
