@@ -110,13 +110,13 @@ auto test_trajectory_1()->void {
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{};
 	while (tg.getEePosAndMoveDt(out_pe, out_vel, out_acc)) {
-		//if (m > 2597)
+		//if (m > 29970)
 		//	std::cout << "debug" << std::endl;
 
-		if (m > 10000)
-			tg.setTargetDs(0.1);
-		if (m > 15000)
-			tg.setTargetDs(1.0);
+		//if (m > 10000)
+		//	tg.setTargetDs(0.1);
+		//if (m > 15000)
+		//	tg.setTargetDs(1.0);
 
 		m++;
 		vec.resize(m * (7 * EE_NUM + A_NUM), 0.0);
@@ -245,11 +245,153 @@ auto test_trajectory_2()->void {
 	// 打印结果 //
 	aris::dynamic::dlmwrite(vec.size()/6, 6, vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
 }
+auto test_trajectory_3()->void {
+	aris::plan::TrajectoryGenerator tg;
+
+	const int POINT_SIZE = 3;
+	
+	const int A_NUM = 2;
+	const int XYZT_NUM = 1;
+	const int PQ_NUM = 2;
+	
+
+	const int P_SIZE = PQ_NUM * 7 + 4 * XYZT_NUM + A_NUM;
+	const int V_SIZE = PQ_NUM * 2 + 2 * XYZT_NUM + A_NUM;
+
+	//  INIT TG //
+	tg.setEeTypes({ 
+		aris::dynamic::EEType::X,
+		aris::dynamic::EEType::X,
+		aris::dynamic::EEType::XYZT,
+		aris::dynamic::EEType::PQ, 
+		aris::dynamic::EEType::PQ,
+		});
+	double init_pe[PQ_NUM * 6]{ 0,0,0,0,0,0, 0,0,0,0,0,0 };
+	double init_pq[P_SIZE]{ 0,0,0,0,0,0 };
+	double init_vel[V_SIZE]{ 1,1,1,1,1,1,1,1 };
+	for (int j = 0; j < PQ_NUM; ++j) {
+		aris::dynamic::s_pe2pq(init_pe + 6 * j, init_pq + 7 * j + A_NUM + XYZT_NUM * 4, "321");
+	}
+	tg.insertLinePos(1, init_pq, init_vel, init_vel, init_vel, init_vel);
+
+	//  MAKE PQS ... //
+	double pes[POINT_SIZE][6 * PQ_NUM]{
+		{ 0.10, 0.22, 0.35, 0.20, 0.23, 0.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
+		{ 0.15, 0.28, 0.38, 0.23, 0.53, 1.85,  0.10, 0.3, 0.35, 0.20, 0.23, 0.85},
+		{-0.25, 0.12, 0.49, 0.85, 0.13, 3.85,  0.10, 0.22, 0.35, 0.20, 0.23, 0.85},
+	};
+	double pqs[POINT_SIZE][P_SIZE]{
+		{ 0.10, 0.22, 0.1, 0.2, 0.3, 0.4},
+		{ 0.21, 0.08, 0.8, 0.3 ,0.3, 0.7},
+		{-0.14, 0.12, 0.4, 0.4, 0.2, 0.6},
+	};
+	for (int i = 0; i < POINT_SIZE; ++i) {
+		for (int j = 0; j < PQ_NUM; ++j) {
+			aris::dynamic::s_pe2pq((double*)pes[i] + 6 * j, (double*)pqs[i] + 7 * j + A_NUM + XYZT_NUM*4, "321");
+		}
+	}
+
+	//  MAKE VELS ACCS JERKS ZONES ... //
+	double vels[POINT_SIZE][V_SIZE]{
+		{ 0.1, 0.1, 0.8, 0.6, 1.0, 1.0, 1.0, 1.0 },
+		{ 0.1, 0.1, 0.8, 0.6, 1.0, 1.0, 1.0, 1.0 },
+		{ 0.1, 0.1, 0.8, 0.6, 1.0, 1.0, 1.0, 1.0 },
+	};
+	double accs[POINT_SIZE][V_SIZE]{
+		{ 0.1, 0.1, 5.0, 10.0, 5.0, 1.0, 5.0, 1.0 },
+		{ 0.1, 0.1, 5.0, 10.0, 5.0, 5.0, 5.0, 5.0 },
+		{ 0.1, 0.1, 5.0, 10.0, 5.0, 5.0, 5.0, 5.0 },
+	};
+	double jerks[POINT_SIZE][V_SIZE]{
+		{ 1.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0 },
+		{ 1.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0 },
+		{ 1.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0 },
+	};
+	double zones[POINT_SIZE][V_SIZE]{
+		{ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2 },
+		{ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2 },
+		{ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2 },
+	};
+
+	for (int i = 0; i < POINT_SIZE; ++i) {
+		tg.insertLinePos(i + 10, pqs[i % POINT_SIZE], vels[i % POINT_SIZE], accs[i % POINT_SIZE], jerks[i % POINT_SIZE], zones[i % POINT_SIZE]);
+	}
+
+	tg.insertInitPos(29, pqs[2]);
+
+	double out_pe[P_SIZE];
+	while (tg.getEePosAndMoveDt(out_pe));
+
+	tg.insertInitPos(30, pqs[0]);
+	tg.insertCirclePos(50, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
+	tg.insertCirclePos(101, pqs[0], pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertCirclePos(102, pqs[2], pqs[2], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(103, pqs[0], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(104, pqs[1], vels[0], accs[0], jerks[0], zones[0]);
+	tg.insertLinePos(105, pqs[2], vels[0], accs[0], jerks[0], zones[0]);
+	//tg.insertInitPos(31, pqs[2]);
+	//tg.insertCirclePos(51, pqs[0], pqs[1], vels[0], accs[0], jerks[0], init_pe);
+
+	//double pes2[2][6 * EE_NUM]{
+	//	{ 0.10, 0.22, 0.35, 0.20, 0.23, 1.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
+	//	{ 0.10, 0.22, 0.35, 0.20, 0.23, 3.85,  -0.10, -0.22, -0.35, 0.20, 0.23, 0.85},
+	//};
+	//double pqs2[2][7 * EE_NUM + A_NUM]{
+	//	{ 0.10, 0.22},
+	//	{ 0.21, 0.08},
+	//};
+	//for (int i = 0; i < 2; ++i) {
+	//	for (int j = 0; j < EE_NUM; ++j) {
+	//		aris::dynamic::s_pe2pq((double*)pes2[i] + 6 * j, (double*)pqs2[i] + 7 * j + A_NUM, "321");
+	//	}
+	//}
+	//tg.insertLinePos(103, pqs2[0], vels[0], accs[0], jerks[0], zones[0]);
+	//tg.insertLinePos(104, pqs2[1], vels[0], accs[0], jerks[0], zones[0]);
+
+	//tg.insertCirclePos(100, init_pq, init_vel, init_vel, init_vel, init_vel);
+
+	//for (int i = 0; i < 3 * POINT_SIZE; ++i) {
+	//	tg.insertLinePos(i + 30, pqs[i % POINT_SIZE], vels[i % POINT_SIZE], accs[i % POINT_SIZE], jerks[i % POINT_SIZE], zones[i % POINT_SIZE]);
+	//}
+
+
+
+	std::vector<double> vec, v_vec, a_vec;
+	int m = 0;
+	double out_vel[P_SIZE]{}, out_acc[P_SIZE]{};
+	while (tg.getEePosAndMoveDt(out_pe, out_vel, out_acc)) {
+		//if (m > 29970)
+		//	std::cout << "debug" << std::endl;
+
+		//if (m > 10000)
+		//	tg.setTargetDs(0.1);
+		//if (m > 15000)
+		//	tg.setTargetDs(1.0);
+
+		m++;
+		vec.resize(m * P_SIZE, 0.0);
+		v_vec.resize(m * P_SIZE, 0.0);
+		a_vec.resize(m * P_SIZE, 0.0);
+		aris::dynamic::s_vc(P_SIZE, out_pe, vec.data() + (P_SIZE) * (m - 1));
+		aris::dynamic::s_vc(P_SIZE, out_vel, v_vec.data() + (P_SIZE) * (m - 1));
+		aris::dynamic::s_vc(P_SIZE, out_acc, a_vec.data() + (P_SIZE) * (m - 1));
+
+		std::fill_n(out_vel, P_SIZE, 0.0);
+		std::fill_n(out_acc, P_SIZE, 0.0);
+	}
+
+	aris::dynamic::dlmwrite(m, (P_SIZE), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
+	aris::dynamic::dlmwrite(m, (P_SIZE), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
+	aris::dynamic::dlmwrite(m, (P_SIZE), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
+
+}
 void test_trajectory(){
 	std::cout << std::endl << "-----------------test trajectory---------------------" << std::endl;
-
-	test_trajectory_2();
+	
 	//test_trajectory_1();
+	//test_trajectory_2();
+	test_trajectory_3();
 	
 	std::cout << "-----------------test trajectory finished------------" << std::endl << std::endl;
 }
