@@ -293,8 +293,12 @@ namespace aris::core{
 	auto ffs(float* v, std::string_view str)->void { *v = (float)std::stod(std::string(str)); }
 	auto d2s(double* v)->std::string {
 		char buf[100]{ 0 };
-		std::sprintf(buf, "%.17g", *v);
-		return buf;
+        std::sprintf(buf, "%.17f", *v);
+        std::string ret = buf;
+        auto dotpos = ret.find(".");
+        if (dotpos == std::string::npos) return ret;
+        auto nzpos = ret.find_last_not_of("0");
+        return nzpos<=dotpos? ret.substr(0, dotpos) : ret.substr(0, nzpos+1);
 	}
 	auto dfs(double* v, std::string_view str)->void { *v = std::stod(std::string(str)); }
 
