@@ -661,6 +661,11 @@ namespace aris::server{
 	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
+		auto setRetCodeAndOption = [](const std::shared_ptr<aris::plan::Plan> &plan, std::int32_t code)->void {
+			plan->setPrepareRetCode(code);
+			plan->option() |= aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
+		};
+
 		// step 1.  parse //
 		std::vector<std::shared_ptr<Imp::InternalData>> internal_data(cmd_vec.size());
 		std::vector<std::shared_ptr<aris::plan::Plan>> ret_plan(cmd_vec.size());
@@ -708,16 +713,16 @@ namespace aris::server{
 			}
 			catch (std::exception &e){ // case 1.2 : exception
 				for (aris::Size j = 0; j < i; j++)
-					ret_plan[j]->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					setRetCodeAndOption(ret_plan[j], aris::plan::Plan::PREPARE_CANCELLED);
 				for (aris::Size j = i + 1; j < cmd_vec.size(); j++) {
 					internal_data[j] = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan), cmd_vec[j].second });
 					ret_plan[j] = internal_data[j]->plan_;
-					ret_plan[j]->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					setRetCodeAndOption(ret_plan[j], aris::plan::Plan::PREPARE_CANCELLED);
 				}
 				
 				internal_data[i]->plan_ =  std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				ret_plan[i] = internal_data[i]->plan_;
-				ret_plan[i]->setPrepareRetCode(aris::plan::Plan::PARSE_EXCEPTION);
+				setRetCodeAndOption(ret_plan[i], aris::plan::Plan::PREPARE_CANCELLED);
 				std::copy_n(e.what(), std::strlen(e.what()), ret_plan[i]->prepareRetMsg());
 				return ret_plan;
 			}
@@ -735,19 +740,20 @@ namespace aris::server{
 				// false : case 2.1    true : case 2.2 
 				if (plan->prepareRetCode() < 0) { 
 					for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp) {
-						if (pp < p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-						if (pp > p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+						if (pp < p) setRetCodeAndOption((*pp)->plan_, aris::plan::Plan::EXECUTE_CANCELLED);
+						if (pp > p) setRetCodeAndOption((*pp)->plan_, aris::plan::Plan::PREPARE_CANCELLED);
 					}
+					plan->option() |= aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 					prepare_error = true;
 					break;
 				}
 			}
 			catch (std::exception &e){ // case 2.3
 				for (auto pp = internal_data.begin(); pp < internal_data.end(); ++pp){
-					if (pp < p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::EXECUTE_CANCELLED);
-					if (pp > p) (*pp)->plan_->setPrepareRetCode(aris::plan::Plan::PREPARE_CANCELLED);
+					if (pp < p) setRetCodeAndOption((*pp)->plan_, aris::plan::Plan::EXECUTE_CANCELLED);
+					if (pp > p) setRetCodeAndOption((*pp)->plan_, aris::plan::Plan::PREPARE_CANCELLED);
 				}
-				plan->setPrepareRetCode(aris::plan::Plan::PREPARE_EXCEPTION);
+				setRetCodeAndOption(plan, aris::plan::Plan::PREPARE_EXCEPTION);
 				std::copy_n(e.what(), std::strlen(e.what()), plan->prepareRetMsg());
 				prepare_error = true;
 				break;
@@ -790,7 +796,7 @@ namespace aris::server{
 			// 检查 server 是否已经在运行 //
 			if (!imp_->is_running_) {
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setPrepareRetCode(aris::plan::Plan::SERVER_NOT_STARTED);
+					setRetCodeAndOption(inter->plan_, aris::plan::Plan::SERVER_NOT_STARTED);
 					inter->plan_->setPrepareRetMsg("server not started, use cs_start to start");
 				}
 				return ret_plan;
@@ -799,7 +805,7 @@ namespace aris::server{
 			// 检查 server 是否处于错误状态 //
 			if (auto err = this->errorCode()) {
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setPrepareRetCode(err);
+					setRetCodeAndOption(inter->plan_, err);
 					inter->plan_->setPrepareRetMsg("server in error, use cl to clear");
 				}
 				return ret_plan;
@@ -809,7 +815,7 @@ namespace aris::server{
 			auto cmd_end = imp_->cmd_end_.load();
 			if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE) {//原子操作(cmd_now)
 				for (auto& inter : need_run_internal) {
-					inter->plan_->setPrepareRetCode(aris::plan::Plan::COMMAND_POOL_IS_FULL);
+					setRetCodeAndOption(inter->plan_, aris::plan::Plan::COMMAND_POOL_IS_FULL);
 					inter->plan_->setPrepareRetMsg("command pool is full");
 				}
 				return ret_plan;
