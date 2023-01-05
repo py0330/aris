@@ -39,6 +39,30 @@ namespace aris::plan{
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
+
+	class ARIS_API TrajectoryModelAdapter {
+	public:
+		auto checkIfBeyondMaxVel()->int;
+		auto setModelPosAndMoveDt()->int;
+
+		auto setModel(aris::dynamic::ModelBase& model)->void;
+		auto setTrajectoryGenerator(TrajectoryGenerator& tg)->void;
+		auto setMaxVels(const std::vector<double> max_vels)->void;
+		auto setMaxAccs(const std::vector<double> max_accs)->void;
+
+
+		~TrajectoryModelAdapter();
+		TrajectoryModelAdapter();
+		ARIS_DELETE_BIG_FOUR(TrajectoryModelAdapter);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	};
+
+
+
+
 }
 
 #endif

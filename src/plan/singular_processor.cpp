@@ -21,8 +21,6 @@ namespace aris::plan {
 
 		bool is_in_singular{ false };
 	};
-
-
 	auto SingularProcessor::setMaxVels(const std::vector<double> max_vels)->void {
 		imp_->max_vels_ = max_vels;
 	}
@@ -76,9 +74,12 @@ namespace aris::plan {
 
 
 
-				
+				return ret;
+
 			}
 		}
+
+		return 0;
 	}
 
 
@@ -86,4 +87,62 @@ namespace aris::plan {
 	SingularProcessor::SingularProcessor() :imp_(new Imp) {
 
 	}
+
+	
+
+	struct TrajectoryModelAdapter::Imp {
+		std::vector<double> max_vels_, 
+			                max_accs_, 
+			                input_pos_begin_,
+			                input_pos_end_,
+							input_pos_last_,
+							input_pos_this_,
+							input_pos_diff_,
+			                output_pos_begin_,
+			                output_pos_end_;
+
+		aris::Size input_pos_size_;
+
+		double T;
+		double check_rate_{ 0.99 };
+		aris::dynamic::ModelBase* model_{nullptr};
+		aris::plan::TrajectoryGenerator* tg_{nullptr};
+
+		bool is_in_singular{ false };
+	};
+	auto TrajectoryModelAdapter::setMaxVels(const std::vector<double> max_vels)->void {
+		imp_->max_vels_ = max_vels;
+	}
+	auto TrajectoryModelAdapter::setMaxAccs(const std::vector<double> max_accs)->void {
+		imp_->max_accs_ = max_accs;
+	}
+	auto TrajectoryModelAdapter::setModel(aris::dynamic::ModelBase& model)->void {
+		imp_->model_ = &model;
+		imp_->input_pos_begin_.resize(model.inputPosSize());
+		imp_->input_pos_end_.resize(model.inputPosSize());
+		imp_->output_pos_begin_.resize(model.outputPosSize());
+		imp_->output_pos_end_.resize(model.outputPosSize());
+		imp_->input_pos_size_ = model.inputPosSize();
+	}
+	auto TrajectoryModelAdapter::setTrajectoryGenerator(TrajectoryGenerator& tg)->void {
+		imp_->tg_ = &tg;
+	}
+	auto TrajectoryModelAdapter::setModelPosAndMoveDt()->int {
+		// check if singular //
+		
+		
+
+
+
+		return 0;
+	}
+	TrajectoryModelAdapter::~TrajectoryModelAdapter() = default;
+	TrajectoryModelAdapter::TrajectoryModelAdapter() :imp_(new Imp) {
+
+	}
+
+
+
+
+
 }
