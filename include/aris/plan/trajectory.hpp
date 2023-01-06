@@ -43,6 +43,10 @@ namespace aris::plan{
 		auto maxDdds()const->double;
 		auto setMaxDdds(double max_ddds)->void;
 
+		// 剩余的时间长度
+		auto leftNodeS()const->double;
+		auto leftTotalS()const->double;
+
 		// 获取末端数据，并移动dt //
 		auto getEePosAndMoveDt(double *ee_pos = nullptr, double *ee_vel = nullptr, double *ee_acc = nullptr)->std::int64_t;
 

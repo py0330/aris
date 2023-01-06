@@ -1647,7 +1647,7 @@ namespace aris::plan {
 		LargeNum s_{ 0.0 };
 		double ds_{ 1.0 }, dds_{ 0.0 }, ddds_{ 0.0 };
 		double max_ds_{ 1.0 }, max_dds_{ 10.0 }, max_ddds_{ 100.0 };
-		double target_ds_{ 1.0 };
+		std::atomic<double> target_ds_{ 1.0 };
 
 		// 末端类型 //
 		std::vector<aris::dynamic::EEType> ee_types_;
@@ -1813,6 +1813,13 @@ namespace aris::plan {
 	auto TrajectoryGenerator::setMaxDdds(double max_ddds)->void {
 		imp_->max_ddds_ = max_ddds;
 	}
+	auto TrajectoryGenerator::leftNodeS()const->double {
+		auto current_node = imp_->current_node_.load();
+		return current_node->s_end_ - imp_->s_;
+	}
+	auto TrajectoryGenerator::leftTotalS()const->double {
+		return imp_->nodes_.back().s_end_ - imp_->s_;
+	}
 	TrajectoryGenerator::~TrajectoryGenerator() = default;
 	TrajectoryGenerator::TrajectoryGenerator() :imp_(new Imp) {
 		imp_->current_node_.store(nullptr);
@@ -1821,11 +1828,13 @@ namespace aris::plan {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
+		auto target_ds = imp_->target_ds_.load();
+
 		// 正常运行 //
 		auto& s_ = imp_->s_;
 		s_ = s_ + currentDs() * dt();
 		aris::Size total_count;
-		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, imp_->target_ds_, 0.0, 0.0,
+		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, target_ds, 0.0, 0.0,
 			imp_->max_dds_, imp_->max_ddds_, imp_->max_ddds_, imp_->dt_, 1e-10,
 			imp_->ds_, imp_->dds_, imp_->ddds_, total_count);
 
@@ -1834,7 +1843,7 @@ namespace aris::plan {
 			// check 是否全局结束，即所有指令都已执行完
 			if (current_node == next_node) {
 				s_ = current_node->s_end_;
-				imp_->ds_ = imp_->target_ds_;
+				imp_->ds_ = target_ds;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
 				get_node_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
@@ -1854,7 +1863,7 @@ namespace aris::plan {
 			// check 是否局部结束，即下一条指令是 init
 			else if (current_node->type_ != Node::NodeType::ResetInitPos && next_node->type_ == Node::NodeType::ResetInitPos) {
 				s_ = current_node->s_end_;
-				imp_->ds_ = imp_->target_ds_;
+				imp_->ds_ = target_ds;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
 				get_node_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
@@ -1877,8 +1886,8 @@ namespace aris::plan {
 			}
 			// check 是否仅存一条 init 指令
 			else if (current_node->type_ == Node::NodeType::ResetInitPos) {
-				imp_->s_ = imp_->target_ds_ * dt();
-				imp_->ds_ = imp_->target_ds_;
+				imp_->s_ = target_ds * dt();
+				imp_->ds_ = target_ds;
 				imp_->dds_ = 0.0;
 				imp_->ddds_ = 0.0;
 				
