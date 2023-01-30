@@ -616,11 +616,11 @@ namespace aris::plan {
 		unit.zone2_.zone_value_ = zone;
 		unit.zone2_.length_ = 0.0;
 		std::fill_n(unit.zone2_.lines_.p0_, 3, 0.0);
-		aris::dynamic::s_vc(3, p1, unit.zone2_.lines_.p0_);
+		aris::dynamic::s_vc(3, p2, unit.zone2_.lines_.p0_);
 		std::fill_n(unit.zone2_.lines_.p1_, 3, 0.0);
-		aris::dynamic::s_vc(3, p1, unit.zone2_.lines_.p1_);
+		aris::dynamic::s_vc(3, p2, unit.zone2_.lines_.p1_);
 		std::fill_n(unit.zone2_.lines_.p2_, 3, 0.0);
-		aris::dynamic::s_vc(3, p1, unit.zone2_.lines_.p2_);
+		aris::dynamic::s_vc(3, p2, unit.zone2_.lines_.p2_);
 
 		// scurves //
 		double p = unit.zone1_.length_ / 2.0 + unit.zone2_.length_ / 2.0 + unit.move_.length_;

@@ -176,7 +176,6 @@ void test_ur_vel() {
 	m->forwardKinematics();
 	double loc_pm[16];
 	m->getOutputPos(loc_pm);
-	dsp(4, 4, loc_pm);
 
 
 	// 计算正解 //
@@ -196,8 +195,6 @@ void test_ur_vel() {
 	m->getOutputPos(output_pm);
 	m->getOutputVel(output_vs);
 	m->getOutputAcc(output_as);
-
-	dsp(4, 4, output_pm);
 
 	// 将输入都设置为零，方便后续验证 //
 	double zeros[6]{ 0,0,0,0,0,0 };
@@ -245,8 +242,8 @@ void test_model_solver_ur()
 
 
 
-	//test_ur_forward_solver();
-	//test_ur_inverse_solver();
+	test_ur_forward_solver();
+	test_ur_inverse_solver();
 	test_ur_vel();
 
 	//auto m = createUrModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
