@@ -6,6 +6,8 @@
 #include <random>
 using namespace aris::plan;
 
+
+
 auto test_trajectory_1()->void {
 	aris::plan::TrajectoryGenerator tg;
 
@@ -386,12 +388,183 @@ auto test_trajectory_3()->void {
 	aris::dynamic::dlmwrite(m, (P_SIZE), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
 }
+auto test_trajectory_4()->void {
+	const int PE_SIZE = 28;
+	const int EE_NUM = 1;
+
+	std::cout << "-----------------test trajectory start---------------" << std::endl;
+
+	int insert_pe_id = 0;
+	std::vector<int> prepare_id, cur_exe_id, cur_exe_count, cmd_type;
+	auto read_insert_id = [&]()
+	{
+		std::cout << std::endl << "-----------------read insert id start---------------------" << std::endl;
+		std::fstream insert_file;
+
+
+		prepare_id.resize(PE_SIZE); cur_exe_id.resize(PE_SIZE); cur_exe_count.resize(PE_SIZE); cmd_type.resize(PE_SIZE);
+		insert_file.open("C:/Users/py033/Desktop/test_aris_plan/matlab/insert_id_data.txt", std::ios::in);
+		if (!insert_file.is_open())
+		{
+			std::cout << "打开失败" << std::endl;
+		}
+		else
+		{
+			std::string a, b, c, d;
+			insert_file >> a >> b >> c >> d;
+			std::cout << a << "\t" << b << "\t" << c << "\t" << d << std::endl;
+			for (size_t i = 0; i < PE_SIZE; i++)
+			{
+				insert_file >> prepare_id[i] >> cur_exe_id[i] >> cur_exe_count[i] >> cmd_type[i];
+				std::cout << prepare_id[i] << "\t" << cur_exe_id[i] << "\t" << cur_exe_count[i] << "\t" << cmd_type[i] << std::endl;
+			}
+		}
+
+		std::cout << std::endl << "-----------------read insert id finish---------------------" << std::endl;
+	};
+
+	read_insert_id();
+
+
+	// 目标点
+	double pes_raw[PE_SIZE][6 * EE_NUM]{
+		{-28.557000,18.248000,-14.542000,82.251000,48.042000,3.974000},
+		{-28.641000,18.030000,-13.328000,83.013000,44.276000,4.639000},
+		{-28.752000,17.746000,-12.039000,83.797000,40.287000,5.290000},
+		{-28.818000,17.541000,-10.604000,84.384000,35.789000,5.922000},
+		{-28.922000,17.176000,-9.152000,85.023000,31.255000,6.534000},
+		{-28.984000,16.776000,-7.686000,85.466000,26.683000,7.140000},
+		{-29.001000,16.225000,-6.501000,85.697000,23.161000,7.731000},
+		{-29.070000,15.411000,-5.597000,86.073000,20.747000,8.348000},
+		{-29.146000,14.578000,-4.558000,86.495000,17.774000,9.034000},
+		{-29.254000,13.599000,-3.538000,87.064000,14.883000,9.760000},
+		{-29.356000,12.495000,-2.797000,87.631000,13.176000,10.487000},
+		{-29.371000,11.553000,-2.048000,87.831000,11.214000,11.182000},
+		{-29.340000,10.693000,-1.318000,87.795000,9.014000,11.809000},
+		{-29.298000,9.823000,-0.728000,87.682000,7.291000,12.374000},
+		{-29.231000,9.008000,-0.243000,87.406000,5.969000,12.902000},
+		{-29.184000,8.114000,0.144000,87.246000,5.021000,13.373000},
+		{-29.154000,7.167000,0.467000,87.167000,4.235000,13.787000},
+		{-29.152000,6.090000,0.772000,87.330000,3.484000,14.200000},
+		{-29.143000,5.264000,1.021000,87.420000,2.915000,14.563000},
+		{-29.110000,4.584000,1.209000,87.215000,2.450000,14.832000},
+		{-29.106000,3.587000,1.285000,87.215000,2.450000,14.832000},
+		{-29.096000,2.604000,1.461000,87.215000,2.450000,14.832000},
+		{-29.079000,1.642000,1.733000,87.215000,2.450000,14.832000},
+		{-29.055000,0.713000,2.100000,87.215000,2.450000,14.832000},
+		{-29.025000,-0.175000,2.557000,87.215000,2.450000,14.832000},
+		{-28.988000,-1.012000,3.101000,87.215000,2.450000,14.832000},
+		{-28.949000,-1.737000,3.678000,87.215000,2.450000,14.832000},
+		{-28.906000,-2.406000,4.319000,87.215000,2.450000,14.832000}
+	};
+	double pes[PE_SIZE][6 * EE_NUM];
+	for (int i = 0; i < PE_SIZE; ++i) {
+		aris::dynamic::s_vc(3, 0.001, pes_raw[i], pes[i]);
+		aris::dynamic::s_vc(3, aris::PI / 180.0, pes_raw[i] + 3, pes[i] + 3);
+	}
+
+	// 构造规划器 //
+	aris::plan::TrajectoryGenerator tg;
+	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+
+
+
+	// 构造数据 //
+	double speed[EE_NUM * 2]{ 0.1, aris::PI };
+	double acc[EE_NUM * 2]{ 2 * 2.5, aris::PI * 2 * 2.5 };
+	double jerk[EE_NUM * 2]{ 10.0 * acc[0], 10 * acc[1] };
+	double zone[EE_NUM * 2]{ 0.02, 0.02 };
+
+	// 显示数据
+	std::cout << "vel:" << speed[0] << "\t" << speed[1] << std::endl;
+	std::cout << "acc:" << acc[0] << "\t" << acc[1] << std::endl;
+	std::cout << "jerk:" << jerk[0] << "\t" << jerk[1] << std::endl;
+	std::cout << "zone:" << zone[0] << "\t" << zone[1] << std::endl;
+	for (size_t i = 0; i < PE_SIZE; i++)
+	{
+		aris::dynamic::dsp(1, 6, pes[i]);
+	}
+
+
+	// 运行得到数据，便于后续打印 //
+	std::vector<double> vec;
+	double out_pe[6];
+	int cmd_id{ 0 }, cmd_count{ 0 }, last_ret{ 0 }, ret{ 0 };
+
+
+	// 回调函数
+	auto move_and_copy_data = [&]() ->int
+	{
+
+		ret = tg.getEePosAndMoveDt(out_pe);
+
+		if (ret != last_ret) // 执行完一条，count清零
+		{
+			cmd_count = 0;
+		}
+
+		last_ret = ret;
+		cmd_count++;
+
+		static int total_count = 0;
+		total_count++;
+
+		if (total_count > 3230)
+			std::cout << "debug" << std::endl;
+
+		if (insert_pe_id < PE_SIZE)
+		{
+
+			if (ret == cur_exe_id[insert_pe_id] && cmd_count == cur_exe_count[insert_pe_id])
+			{
+				if (cmd_id >= 10)
+					std::cout << "debug" << std::endl;
+				cmd_id++;
+				tg.insertLinePos(cmd_id, pes[insert_pe_id], speed, acc, jerk, zone);
+				std::cout << "cmd_id=" << cmd_id << "\t" << "insert_pe_id=" << insert_pe_id << "\t" << "cur_exe_id=" << cur_exe_id[insert_pe_id] << "\t" << "count=" << cmd_count << std::endl;
+				insert_pe_id++;
+			}
+		}
+
+
+		vec.resize(vec.size() + 6, 0.0);
+		aris::dynamic::s_vc(6, out_pe, vec.data() + vec.size() - 6);
+
+		return ret;
+	};
+
+	{
+		// 插入初始点位
+		double init_pe[6];
+		double init_pes_raw[6] = { -29.091000, 17.520000, -15.596000, 83.478000 ,51.402000, 3.401000 };
+
+		aris::dynamic::s_vc(3, 0.001, init_pes_raw, init_pe);
+		aris::dynamic::s_vc(3, aris::PI / 180.0, init_pes_raw + 3, init_pe + 3);
+		tg.insertInitPos(10000, init_pe);
+
+		// 插入第一个目标点
+		tg.setTargetDs(30 / 100.0);
+		cmd_id = 1;
+		tg.insertLinePos(cmd_id, pes[insert_pe_id], speed, acc, jerk, zone);
+		insert_pe_id++;
+
+		while (move_and_copy_data()) {}
+	}
+
+	// 打印结果 //
+	aris::dynamic::dlmwrite(vec.size() / 6, 6, vec.data(), "C:/Users/py033/Desktop/test_aris_plan/matlab/pes.txt");
+
+
+	std::cout << "-----------------test trajectory finished------------" << std::endl;
+}
+
 void test_trajectory(){
 	std::cout << std::endl << "-----------------test trajectory---------------------" << std::endl;
 	
 	//test_trajectory_1();
 	//test_trajectory_2();
-	test_trajectory_3();
+	//test_trajectory_3();
+	test_trajectory_4();
 	
 	std::cout << "-----------------test trajectory finished------------" << std::endl << std::endl;
 }

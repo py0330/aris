@@ -81,9 +81,12 @@ auto test_singular_processor_1()->void {
 
 	SingularProcessor sp;
 
-	sp.setMaxVels({ 3.14,3.14,3.14,3.14,3.14,3.14 });
-	sp.setMaxAccs({ 3.14,3.14,3.14,3.14,3.14,3.14 });
+	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
+	std::vector<double> max_accs{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
+
 	sp.setModel(*puma);
+	sp.setMaxVels(max_vels.data());
+	sp.setMaxAccs(max_accs.data());
 	sp.setTrajectoryGenerator(tg);
 
 	std::vector<double> vec, v_vec, a_vec;
@@ -103,6 +106,10 @@ auto test_singular_processor_1()->void {
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
 }
+
+
+
+
 void test_singular_processor(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 

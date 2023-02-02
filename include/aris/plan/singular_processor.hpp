@@ -27,9 +27,8 @@ namespace aris::plan{
 
 		auto setModel(aris::dynamic::ModelBase& model)->void;
 		auto setTrajectoryGenerator(TrajectoryGenerator& tg)->void;
-		auto setMaxVels(const std::vector<double> max_vels)->void;
-		auto setMaxAccs(const std::vector<double> max_accs)->void;
-		
+		auto setMaxVels(const double* max_vels)->void;
+		auto setMaxAccs(const double* max_accs)->void;
 
 		~SingularProcessor();
 		SingularProcessor();

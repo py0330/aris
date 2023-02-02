@@ -77,6 +77,38 @@ namespace aris::plan {
     auto inline safe_sqrt(double v)->double {
         return v > 0.0 ? std::sqrt(v) : 0.0;
     }
+    auto s_scurve_plan_eliminate_optimization(double vb1, SCurveParam& param1)->void
+    {
+        double T_va_to_vb = s_acc_time(vb1, param1.va_, param1.a_, param1.j_);
+        double l1 = param1.pb_ - param1.pa_;
+        if (l1 > (param1.T_ - T_va_to_vb) * std::max(vb1, param1.va_) + T_va_to_vb * (vb1 + param1.va_) / 2) {
+            // mode 0 
+            param1.mode_ = 0;
+            param1.vb_ = vb1;
+
+            auto vc1 = newton_raphson_binary_search([&param1, l1](double vc)->double {
+                double Ta = s_acc_time(param1.va_, vc, param1.a_, param1.j_);
+                double Tb = s_acc_time(param1.vb_, vc, param1.a_, param1.j_);
+                return Ta * (param1.va_ + vc) / 2 + Tb * (param1.vb_ + vc) / 2 + (param1.T_ - Ta - Tb) * vc - l1;
+                }, std::max(vb1, param1.va_), param1.vc_);
+
+            param1.vc_ = vc1;
+            param1.Ta_ = s_acc_time(param1.va_, vc1, param1.a_, param1.j_);
+            param1.Tb_ = s_acc_time(param1.vb_, vc1, param1.a_, param1.j_);
+        }
+        else {
+            // mode 1
+            param1.mode_ = 1;
+            param1.vb_ = vb1;
+
+            double Tc = s_acc_time(param1.va_, param1.vb_, param1.a_, param1.j_);
+            double va = vb1;
+            double v_avg = (param1.T_ - Tc) > 1e-12 ? (l1 - Tc * (param1.va_ + param1.vb_) / 2) / (param1.T_ - Tc) : (param1.va_ + param1.vb_) / 2;
+            param1.Ta_ = std::abs(param1.va_ - param1.vb_) > 1e-12 ? std::abs((v_avg - param1.vb_) / (param1.va_ - param1.vb_)) * (param1.T_ - Tc) : (param1.T_ - Tc) / 2;
+            param1.Tb_ = param1.T_ - param1.Ta_ - Tc;
+            param1.vc_ = v_avg;
+        }
+    }
 
     auto s_compute_scurve_Tmax_Tmin(const SCurveParam& param, double T_min_set)->std::tuple<double, double>;
 
@@ -1314,7 +1346,7 @@ namespace aris::plan {
 
             auto vb1 = std::min(vb1_max, va2_max);
 
-            // 以上理论值没错，但考虑到重规划需要保证一定能成功，还需确保Tmax > Tmin
+            // 以上理论值没错，但考虑到重规划需要保证一定能成功，还需确保 Tmin < T < Tmax
             {
                 double previous_va = param2.va_;
 
@@ -1322,7 +1354,7 @@ namespace aris::plan {
 
                 double Tmax, Tmin;
                 std::tie(Tmax, Tmin) = s_compute_scurve_Tmax_Tmin(param2, 0.0);
-                if (Tmax < Tmin) {
+                if (param2.T_ < Tmin || param2.T_ > Tmax) {
                     double va_below = previous_va;
                     double va_upper = vb1;
 
@@ -1782,6 +1814,11 @@ namespace aris::plan {
             }
         }
 
+        return 0;
+    }
+
+    // 平滑优化scurve
+    auto ARIS_API s_optimize_scurve_adjacent_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
         // 针对特定的 CASE 来优化
         for (auto iter = begin_iter; iter != end_iter && iter != std::prev(end_iter); ++iter) {
             // 设置正确的 vb_max
