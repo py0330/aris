@@ -334,7 +334,7 @@ namespace aris::dynamic
 	auto SevenAxisInverseKinematicSolver2::kinPos()->int
 	{
 		// 求解轴角 //
-		auto arm_pos = *this->model()->motionPool()[2].p();
+		auto arm_pos = *this->model()->generalMotionPool()[1].p();
 		
 		
 		// 求解 //
