@@ -93,6 +93,7 @@ namespace aris::dynamic
 		auto &makI = p7.addMarker("tool0", ee_i_pm);
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
+		auto &arm_mot = model->generalMotionPool().add<aris::dynamic::Motion>("arm_mot", m3.makI(), m3.makJ(), 5);
 
 		// change robot pose wrt ground //
 		double robot_pm[16];
@@ -123,7 +124,6 @@ namespace aris::dynamic
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 
 		inverse_kinematic.setWhichRoot(8);
-		inverse_kinematic.setAxisAngle(0.0);
 		
 		model->init();
 		// make topology correct // 
@@ -251,10 +251,8 @@ namespace aris::dynamic
 
 		return true;
 	}
-	struct SevenAxisInverseKinematicSolver2::Imp
-	{
+	struct SevenAxisInverseKinematicSolver2::Imp{
 		int which_root_{ 0 };
-		double axis_angle{ 0.0 };
 		SevenAxisParam2 seven_axis_param;
 		union
 		{
@@ -336,10 +334,7 @@ namespace aris::dynamic
 	auto SevenAxisInverseKinematicSolver2::kinPos()->int
 	{
 		// 求解轴角 //
-		{
-			this->setAxisAngle(*this->model()->motionPool()[2].p());
-		}
-
+		auto arm_pos = *this->model()->motionPool()[2].p();
 		
 		
 		// 求解 //
@@ -351,7 +346,7 @@ namespace aris::dynamic
 
 			for (int i = 0; i < 8; ++i)
 			{
-				if (sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), imp_->axis_angle, i, diff_q[solution_num]))
+				if (sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), arm_pos, i, diff_q[solution_num]))
 				{
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 7; ++j)
@@ -398,7 +393,7 @@ namespace aris::dynamic
 		}
 		else
 		{
-			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), imp_->axis_angle, imp_->which_root_, q))
+			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), arm_pos, imp_->which_root_, q))
 			{
 				for (aris::Size i = 0; i < 7; ++i)
 				{
@@ -432,7 +427,6 @@ namespace aris::dynamic
 	}
 	auto SevenAxisInverseKinematicSolver2::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto SevenAxisInverseKinematicSolver2::whichRoot()->int { return imp_->which_root_; }
-	auto SevenAxisInverseKinematicSolver2::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
 	SevenAxisInverseKinematicSolver2::~SevenAxisInverseKinematicSolver2() = default;
 	SevenAxisInverseKinematicSolver2::SevenAxisInverseKinematicSolver2() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver2);
