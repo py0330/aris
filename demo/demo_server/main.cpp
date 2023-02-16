@@ -133,6 +133,10 @@ int main(int argc, char *argv[]){
 
 		//std::cout << aris::core::toXmlString(cs) << std::endl;
 
+
+		cs.executeCmd("sl --count=3000", nullptr, 0);
+		cs.executeCmd("sl --count=3000", nullptr, 1);
+
 		cs.runCmdLine();
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 		//aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
