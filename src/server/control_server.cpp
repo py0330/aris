@@ -698,6 +698,11 @@ namespace aris::server{
 	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec, int chanel)->std::vector<std::shared_ptr<aris::plan::Plan>>{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
+		auto setRetCodeAndOption = [](const std::shared_ptr<aris::plan::Plan>& plan, std::int32_t code)->void {
+			plan->setPrepareRetCode(code);
+			plan->option() |= aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
+		};
+
 		// pre process //
 		chanel = chanel == -1 ? defaultChanel() : chanel;
 
