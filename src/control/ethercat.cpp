@@ -793,6 +793,9 @@ namespace aris::control{
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
+	auto EthercatMotor::isEnable()const->bool {
+		return ((statusWord() & 0x6F) == 0x27) && (imp_->waiting_count_left<=0);
+	}
 	auto EthercatMotor::enableWaitingCount()noexcept->int {
 		return imp_->enable_waiting_count_;
 	}

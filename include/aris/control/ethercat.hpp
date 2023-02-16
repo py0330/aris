@@ -226,6 +226,8 @@ namespace aris::control{
 		// require pdo 0x6060 0x6061 //
 		auto virtual mode(std::uint8_t md)->int override;
 
+		auto virtual isEnable()const->bool override;
+
 		auto virtual hasRtOutputIo()noexcept->bool override;
 		auto virtual setOutputIoRt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
 		auto virtual setOutputIoNrt(std::uint8_t sub_idx, std::uint32_t value)noexcept->void override;
