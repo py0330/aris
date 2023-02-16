@@ -331,7 +331,7 @@ namespace aris::server{
 			}
 
 			// 使能时才检查 //
-			if ((cm.statusWord() & 0x6f) == 0x27){
+			if (cm.isEnabled()){
 				switch (cm.modeOfOperation()){
 				case 6:break;
 				case 8:{
