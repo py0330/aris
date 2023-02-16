@@ -64,7 +64,7 @@ namespace aris::control{
 		auto virtual home()->int = 0;
 		auto virtual mode(std::uint8_t md)->int = 0;
 
-		auto virtual isEnable()const->bool = 0;
+		auto virtual isEnabled()const->bool = 0;
 
 		// manipulate output io //
 		auto virtual hasRtOutputIo()noexcept->bool = 0;
