@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 	//test_model_solver_scara();
 	//test_model_solver_puma();
 	//test_model_solver_ur();
-	test_model_solver_delta();
-	//test_model_solver_seven_axis();
+	//test_model_solver_delta();
+	test_model_solver_seven_axis();
 	//test_model_solver_stewart();
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;

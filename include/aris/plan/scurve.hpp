@@ -110,8 +110,14 @@ namespace aris::plan{
 		std::vector<SCurveParam> params_;
 	};
 
-	// 计算指定时间处的 p v a j
+	// to be hide //
+	auto s_scurve_plan_eliminate_optimization(double vb1, SCurveParam& param1)->void;
+
+	// 构造scurve
 	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->int;
+
+	// 平滑优化scurve
+	auto ARIS_API s_optimize_scurve_adjacent_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->int;
 
 	// 计算指定时间处的 p v a j
 	auto ARIS_API s_scurve_at(const SCurveParam& param, LargeNum t, LargeNum *p_out, double* v_out = nullptr, double* a_out = nullptr, double* j_out = nullptr)noexcept->void;

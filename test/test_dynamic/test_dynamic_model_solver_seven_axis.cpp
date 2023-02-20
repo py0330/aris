@@ -41,7 +41,7 @@ void test_seven_axis_inverse_solver(){
 
 	auto m = aris::dynamic::createModelSevenAxis(param);
 	
-	std::cout << aris::core::toXmlString(*m) << std::endl;
+	//std::cout << aris::core::toXmlString(*m) << std::endl;
 
 	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
 	double result[7];
@@ -105,6 +105,7 @@ void test_seven_axis_inverse_solver2()
 
 	auto m = aris::dynamic::createModelSevenAxis2(param);
 	auto &gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
+	auto& arm_mot = dynamic_cast<aris::dynamic::Motion&>(m->generalMotionPool()[1]);
 	m->init();
 
 	//double pe1[]{ 0.4707, 0.206, 0.6817, 3.49, 0.8636, 3.3637 };
@@ -120,7 +121,8 @@ void test_seven_axis_inverse_solver2()
 	gm.updP();
 	gm.getMpe(pe);
 
-	aris::dynamic::dsp(4, 4, *gm.mpm());
+	std::cout << "init pe:";
+	aris::dynamic::dsp(1, 6, pe);
 	
 	//m->generalMotionPool()[0].setMpe(pe, "321");
 
@@ -131,22 +133,17 @@ void test_seven_axis_inverse_solver2()
 	for (int i = 0; i < 9; ++i)
 	{
 		dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver2&>(m->solverPool()[0]).setWhichRoot(i);
-		dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver2&>(m->solverPool()[0]).setAxisAngle(0.3);
-		std::cout << "ret:" << m->solverPool()[0].kinPos() << std::endl;
-		//m->solverPool()[1].kinPos();
+		arm_mot.setMp(0.1*i);
 
-		double result[6];
-		gm.updP();
-		gm.getMpe(result, "321");
-		dsp(1, 6, result);
+		double result[7];
 
+		std::cout << "inverse ret:" << m->inverseKinematics() << std::endl;
+		m->getInputPos(result);
+		dsp(1, 7, result);
 
-
-
-		for (int j = 0; j < 7; ++j)
-		{
-			std::cout << m->motionPool()[j].mp() << "  ";
-		}
+		std::cout << "forward ret:" << m->forwardKinematics() << std::endl;
+		m->getOutputPos(result);
+		dsp(1, 7, result);
 
 		std::cout << std::endl << "---------------------" << std::endl;
 	}
@@ -223,7 +220,7 @@ void test_seven_axis_inverse_solver3()
 void test_model_solver_seven_axis()
 {
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
-	test_seven_axis_inverse_solver();
+	test_seven_axis_inverse_solver2();
 	//test_seven_axis_inverse_solver3();
 
 
@@ -238,14 +235,14 @@ void test_model_solver_seven_axis()
 	aris::dynamic::dsp(1, 7, result);
 
 	try {
-		std::cout << aris::core::toXmlString(*m) << std::endl;
+		//std::cout << aris::core::toXmlString(*m) << std::endl;
 		auto str = aris::core::toXmlString(*m);
 
 
 		aris::dynamic::MultiModel m2;
 		aris::core::fromXmlString(m2, str);
 		m2.init();
-		std::cout << aris::core::toXmlString(m2) << std::endl;
+		//std::cout << aris::core::toXmlString(m2) << std::endl;
 
 	}
 	catch (std::exception& e)
