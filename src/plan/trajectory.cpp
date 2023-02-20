@@ -1250,22 +1250,24 @@ namespace aris::plan {
 			break;
 		}
 		case aris::plan::Node::UnitType::Line1: {
-			double p_[3];
+			double p_[3], v_[3], a_[3];
 			LargeNum sp;
 			double sv, sa, sj;
 			s_scurve_at(u.scurve_, arc, &sp, &sv, &sa, &sj);
 			double l = sp - u.scurve_.pa_;
 			if (l < u.zone1_.length_ / 2.0) {
-				get_zone_data(l + u.zone1_.length_ / 2.0, sv, sa, u.zone1_, p_, dp_darc, d2p_darc2);
+				get_zone_data(l + u.zone1_.length_ / 2.0, sv, sa, u.zone1_, p_, v_, a_);
 			}
 			else if (l > u.zone1_.length_ / 2.0 + u.move_.length_) {
-				get_zone_data(l - u.zone1_.length_ / 2.0 - u.move_.length_, sv, sa, u.zone2_, p_, dp_darc, d2p_darc2);
+				get_zone_data(l - u.zone1_.length_ / 2.0 - u.move_.length_, sv, sa, u.zone2_, p_, v_, a_);
 			}
 			else {
 				auto& line = u.move_.line_;
-				s_compute_line3_at(line.p0_, line.dir_, l - u.zone1_.length_ / 2.0, p_, sv, dp_darc, sa, d2p_darc2);
+				s_compute_line3_at(line.p0_, line.dir_, l - u.zone1_.length_ / 2.0, p_, sv, v_, sa, a_);
 			}
 			p[0] = p_[0];
+			dp_darc[0] = v_[0];
+			d2p_darc2[0] = a_[0];
 			break;
 		}
 		default:
