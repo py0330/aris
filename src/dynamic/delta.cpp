@@ -52,7 +52,7 @@ namespace aris::dynamic {
 				return -2;
 
 			input[i] =
-				((0x01 << i) & which_root) ?
+				0x01 << which_root ?
 				-std::atan2(z, k) + std::atan2(c, b) - std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0) :
 				-std::atan2(z, k) + std::atan2(c, b) + std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0);
 		}
@@ -274,16 +274,16 @@ namespace aris::dynamic {
 			std::cout << "x^2 + y^2 + z^2 - norm:" << v[0]* v[0] + v[1] * v[1] + v[2] * v[2] - v[3] << std::endl;
 #endif
 
-			// 选择 z 轴较大的根，在 which_root 为 0 时
+			// 选择 z 轴较小的根，在 which_root 为 0 时
 			if ((v2[2] < v1[2]) == (which_root == 0)) {
-				ee_xyza[0] = v1[0];
-				ee_xyza[1] = v1[1];
-				ee_xyza[2] = v1[2];
-			}
-			else {
 				ee_xyza[0] = v2[0];
 				ee_xyza[1] = v2[1];
 				ee_xyza[2] = v2[2];
+			}
+			else {
+				ee_xyza[0] = v1[0];
+				ee_xyza[1] = v1[1];
+				ee_xyza[2] = v1[2];
 			}
 			ee_xyza[3] = input[3];
 

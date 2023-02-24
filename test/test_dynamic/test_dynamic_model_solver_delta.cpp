@@ -112,27 +112,27 @@ void test_model_solver_delta_full() {
 	double h = 0.1;
 	
 	aris::dynamic::DeltaFullParam param;
-	double ratio = 1.0;
-	param.ax1 = 0.55 * ratio;
-	param.ay1 = 0.05 * ratio;
-	param.az1 = 0.01 * ratio;
-	param.b1 = 0.2 * ratio;
-	param.c1 = (h+0.01) * ratio;
-	param.d1 = 0.7 * ratio;
-	param.ex1 = 0.1 * ratio;
-	param.ey1 = 0.05 * ratio;
+	//double ratio = 1.0;
+	//param.ax1 = 0.55 * ratio;
+	//param.ay1 = 0.05 * ratio;
+	//param.az1 = 0.01 * ratio;
+	//param.b1 = 0.2 * ratio;
+	//param.c1 = (h+0.01) * ratio;
+	//param.d1 = 0.7 * ratio;
+	//param.ex1 = 0.1 * ratio;
+	//param.ey1 = 0.05 * ratio;
 
-	param.ax2 = 0.49 * ratio;
-	param.b2 = 0.21 * ratio;
-	param.c2 = h * ratio;
-	param.d2 = 0.69 * ratio;
-	param.ex2 = 0.09 * ratio;
+	//param.ax2 = 0.49 * ratio;
+	//param.b2 = 0.21 * ratio;
+	//param.c2 = h * ratio;
+	//param.d2 = 0.69 * ratio;
+	//param.ex2 = 0.09 * ratio;
 
-	param.ax3 = 0.5 * ratio;
-	param.b3 = 0.23 * ratio;
-	param.c3 = h * ratio;
-	param.d3 = 0.71 * ratio;
-	param.ex3 = 0.12 * ratio;
+	//param.ax3 = 0.5 * ratio;
+	//param.b3 = 0.23 * ratio;
+	//param.c3 = h * ratio;
+	//param.d3 = 0.71 * ratio;
+	//param.ex3 = 0.12 * ratio;
 
 	//param.ax1 = 0.5 * ratio;
 	//param.ay1 = 0.0 * ratio;
@@ -155,6 +155,42 @@ void test_model_solver_delta_full() {
 	//param.d3 = 0.7 * ratio;
 	//param.ex3 = 0.1* ratio;
 
+	param.ax1 = 0.11;
+	param.ay1 = 0.0;
+	param.az1 = 0.0;
+	param.b1 = 0.26;
+	param.c1 = 0.0;
+	param.d1 = 0.7;
+	param.ex1 = 0.06;
+	param.ey1 = 0.0;
+	param.ez1 = 0.0;
+	param.theta1 = 0.0;
+	param.f1 = 0.0;
+
+	param.ax2 = 0.11;
+	param.ay2 = 0.0;
+	param.az2 = 0.0;
+	param.b2 = 0.26;
+	param.c2 = 0.0;
+	param.d2 = 0.7;
+	param.ex2 = 0.06;
+	param.ey2 = 0.0;
+	param.ez2 = 0.0;
+	param.theta2 = aris::PI*2/3;
+	param.f2 = 0.0;
+
+	param.ax3 = 0.11;
+	param.ay3 = 0.0;
+	param.az3 = 0.0;
+	param.b3 = 0.26;
+	param.c3 = 0.0;
+	param.d3 = 0.7;
+	param.ex3 = 0.06;
+	param.ey3 = 0.0;
+	param.ez3 = 0.0;
+	param.theta3 = -aris::PI * 2 / 3;
+	param.f3 = 0.0;
+
 	auto model = aris::dynamic::createModelDelta(param);
 
 	double input[4]{0.1,0.2,0.3,0.4};
@@ -162,6 +198,10 @@ void test_model_solver_delta_full() {
 	model->forwardKinematics();
 	double p[4];
 	model->getOutputPos(p);
+	dsp(1, 4, p);
+
+	model->inverseKinematics();
+	model->getInputPos(p);
 	dsp(1, 4, p);
 
 	//model->inverseKinematics();
