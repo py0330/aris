@@ -491,12 +491,12 @@ namespace aris::control{
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->int
 	{
-		return ecrt_master_sdo_upload(std::any_cast<MasterHandle&>(master).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
+		return ecrt_master_sdo_upload(std::any_cast<MasterHandle&>(std::any_cast<EthercatMaster&>(master).ecHandle()).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
 	}
 	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code)->int
 	{
-		return ecrt_master_sdo_download(std::any_cast<MasterHandle&>(master).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
+		return ecrt_master_sdo_download(std::any_cast<MasterHandle&>(std::any_cast<EthercatMaster&>(master).ecHandle()).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
 	}
 #else
 	auto aris_ecrt_scan(EthercatMaster *master)->int { return 0; }
