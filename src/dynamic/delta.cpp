@@ -630,6 +630,7 @@ namespace aris::dynamic {
 		m2.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[1].data() : default_mot_frc);
 		m3.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[2].data() : default_mot_frc);
 		m4.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[3].data() : default_mot_frc);
+		m4.setRotateRange(std::numeric_limits<double>::quiet_NaN());
 
 		// add ee general motion //
 		double ee_i_pm[16]{ 
