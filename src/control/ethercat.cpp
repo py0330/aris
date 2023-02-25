@@ -1071,6 +1071,11 @@ namespace aris::control{
 	EthercatDigitalIo::~EthercatDigitalIo() = default;
 	EthercatDigitalIo::EthercatDigitalIo(std::uint16_t num_of_di, std::uint16_t num_of_do) :DigitalIo(num_of_di, num_of_do) {}
 
+	auto EthercatAnalogIo::slave()->EthercatSlave* { return slave_; }
+	auto EthercatAnalogIo::setSlave(EthercatSlave* slave)->void { slave_ = slave; }
+	EthercatAnalogIo::~EthercatAnalogIo() = default;
+	EthercatAnalogIo::EthercatAnalogIo(std::uint16_t num_of_ai, std::uint16_t num_of_ao) :AnalogIo(num_of_ai, num_of_ao) {}
+
 	ARIS_REGISTRATION{
 		aris::core::class_<PdoEntry>("PdoEntry")
 			.inherit<aris::core::NamedObject>()
@@ -1244,6 +1249,17 @@ namespace aris::control{
 		aris::core::class_<EthercatDigitalIo>("EthercatDigitalIo")
 			.inherit<DigitalIo>()
 			.prop("slave", &setDigitalIoSlave, &getDigitalIoSlave)
+			;
+
+		auto setAnalogIoSlave = [](EthercatAnalogIo* ec_analog_io, int id) {
+			ec_analog_io->setSlave(&dynamic_cast<EthercatSlave&>(aris::server::ControlServer::instance().master().slavePool().at(id)));
+		};
+		auto getAnalogIoSlave = [](EthercatAnalogIo* ec_analog_io)->int {
+			return ec_analog_io->slave()->id();
+		};
+		aris::core::class_<EthercatAnalogIo>("EthercatAnalogIo")
+			.inherit<AnalogIo>()
+			.prop("slave", &setAnalogIoSlave, &getAnalogIoSlave)
 			;
 
 		// espect: setProp(C *obj, T v)->void  

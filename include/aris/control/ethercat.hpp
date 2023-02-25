@@ -377,6 +377,22 @@ namespace aris::control{
 	private:
 		EthercatSlave *slave_{ nullptr };
 	};
+	class ARIS_API EthercatAnalogIo : public AnalogIo{
+	public:
+		auto slave()->EthercatSlave*;
+		auto slave() const->const EthercatSlave* { return const_cast<std::decay_t<decltype(*this)> *>(this)->slave(); }
+		auto setSlave(EthercatSlave*)->void;
+
+		virtual ~EthercatAnalogIo();
+		EthercatAnalogIo(std::uint16_t num_of_ai = 8, std::uint16_t num_of_ao = 8);
+		EthercatAnalogIo(const EthercatAnalogIo &other) = delete;
+		EthercatAnalogIo(EthercatAnalogIo &&other) = delete;
+		EthercatAnalogIo& operator=(const EthercatAnalogIo &other) = delete;
+		EthercatAnalogIo& operator=(EthercatAnalogIo &&other) = delete;
+
+	private:
+		EthercatSlave *slave_{ nullptr };
+	};
 	class ARIS_API EthercatFtSensor : public FtSensor {
 	public:
 		auto slave()->EthercatSlave* { return slave_; }
