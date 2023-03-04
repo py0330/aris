@@ -1889,6 +1889,9 @@ namespace aris::plan {
 	auto TrajectoryGenerator::currentDs()const->double {
 		return imp_->ds_;
 	}
+	auto TrajectoryGenerator::setCurrentDs(double ds)->void {
+		imp_->ds_ = ds;
+	}
 	auto TrajectoryGenerator::targetDs()const->double {
 		return imp_->target_ds_;
 	}
@@ -1897,6 +1900,9 @@ namespace aris::plan {
 	}
 	auto TrajectoryGenerator::currentDds()const->double {
 		return imp_->dds_;
+	}
+	auto TrajectoryGenerator::setCurrentDds(double dds)->void {
+		imp_->dds_ = dds;
 	}
 	auto TrajectoryGenerator::maxDds()const->double {
 		return imp_->max_dds_;
