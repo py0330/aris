@@ -1746,6 +1746,7 @@ namespace aris::dynamic{
 				// restore vs //
 				gm.makI()->fatherPart().setVs(vs_I_restore);
 				gm.makJ()->fatherPart().setVs(vs_J_restore);
+				gm.setV(mv_restore);
 
 				// cf //
 				double as_I[6], as_J[6];

@@ -125,17 +125,20 @@ namespace aris::dynamic
 		auto virtual updP() noexcept->void {}
 		auto virtual setP(const double *p) noexcept->void {}
 		auto virtual getP(double *p)const noexcept->void { s_vc(pSize(), this->p(), p); }
+		auto virtual vSize()const noexcept->Size { return dim(); }
 		auto virtual v()const noexcept->const double* { return nullptr; }
 		auto virtual updV() noexcept->void {}
 		auto virtual setV(const double *v) noexcept->void {}
-		auto virtual getV(double *v)const noexcept->void { s_vc(dim(), this->v(), v); }
+		auto virtual getV(double *v)const noexcept->void { s_vc(vSize(), this->v(), v); }
+		auto virtual aSize()const noexcept->Size { return dim(); }
 		auto virtual a()const noexcept->const double* { return nullptr; }
 		auto virtual updA() noexcept->void {}
 		auto virtual setA(const double *a) noexcept->void {}
-		auto virtual getA(double *a)const noexcept->void { s_vc(dim(), this->a(), a); }
+		auto virtual getA(double *a)const noexcept->void { s_vc(aSize(), this->a(), a); }
+		auto virtual fSize()const noexcept->Size { return dim(); }
 		auto virtual f()const noexcept->const double* { return nullptr; }
 		auto virtual setF(const double *f) noexcept->void {}
-		auto virtual getF(double *f)const noexcept->void { s_vc(dim(), this->f(), f); }
+		auto virtual getF(double *f)const noexcept->void { s_vc(fSize(), this->f(), f); }
 
 		virtual ~MotionBase() = default;
 		explicit MotionBase(const std::string &name = "motion_base", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) 
@@ -324,14 +327,31 @@ namespace aris::dynamic
 			QUATERNION,
 			POSE_MATRIX,
 		};
+		enum class VelType {
+			VEL,
+			VEL_SCREW,
+		};
+		enum class AccType {
+			ACC,
+			ACC_SCREW,
+		};
+		enum class FceType {
+			FCE,
+			FCE_SCREW,
+		};
 
 		auto setPoseType(PoseType type)->void;
 		auto poseType()const->PoseType;
+		auto setVelType(VelType type)->void;
+		auto velType()const->VelType;
+		auto setAccType(AccType type)->void;
+		auto accType()const->AccType;
+		auto setFceType(FceType type)->void;
+		auto fceType()const->FceType;
 
 		static auto Dim()->Size { return 6; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		//auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
@@ -341,14 +361,16 @@ namespace aris::dynamic
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;
 		auto virtual getP(double* mp)const noexcept->void override;
+		auto virtual vSize()const noexcept->Size override;
 		auto virtual v()const noexcept->const double* override;
 		auto virtual updV() noexcept->void override;
-		auto virtual setV(const double *mv) noexcept->void override { setMvs(mv); }
-		auto virtual getV(double *mv)const noexcept->void override { getMvs(mv); }
+		auto virtual setV(const double* mv) noexcept->void override;
+		auto virtual getV(double* mv)const noexcept->void override;
+		auto virtual aSize()const noexcept->Size override;
 		auto virtual a()const noexcept->const double* override;
 		auto virtual updA() noexcept->void override;
-		auto virtual setA(const double *ma) noexcept->void override { setMas(ma); }
-		auto virtual getA(double *ma)const noexcept->void override { getMas(ma); }
+		auto virtual setA(const double* ma) noexcept->void override;
+		auto virtual getA(double* ma)const noexcept->void override;
 		auto virtual f()const noexcept->const double* override { return mfs(); }
 		auto virtual setF(const double *mf) noexcept->void override { setMfs(mf); }
 

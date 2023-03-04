@@ -168,9 +168,9 @@ void test_puma_vel() {
 	m->setInputVel(input_vel);
 	m->setInputAcc(input_acc);
 	
-	if (m->forwardKinematics())std::cout << "failed" << std::endl;
-	if (m->forwardKinematicsVel())std::cout << "failed" << std::endl;
-	if (m->forwardKinematicsAcc())std::cout << "failed" << std::endl;
+	if (m->forwardKinematics())std::cout << __LINE__ << "failed" << std::endl;
+	if (m->forwardKinematicsVel())std::cout << __LINE__ << "failed" << std::endl;
+	if (m->forwardKinematicsAcc())std::cout << __LINE__ << "failed" << std::endl;
 
 	m->getOutputPos(output_pm);
 	m->getOutputVel(output_vs);
@@ -183,17 +183,17 @@ void test_puma_vel() {
 	m->setInputAcc(zeros);
 
 	// 计算反解，看看是否能够计算正确 //
-	if (m->inverseKinematics())std::cout << "failed" << std::endl;
-	if (m->inverseKinematicsVel())std::cout << "failed" << std::endl;
-	if (m->inverseKinematicsAcc())std::cout << "failed" << std::endl;
+	if (m->inverseKinematics())std::cout << __LINE__ << "failed" << std::endl;
+	if (m->inverseKinematicsVel())std::cout << __LINE__ << "failed" << std::endl;
+	if (m->inverseKinematicsAcc())std::cout << __LINE__ << "failed" << std::endl;
 
 	double result[6];
 	m->getInputPos(result);
-	if (!s_is_equal(6, result, input_pos, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, input_pos, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 	m->getInputVel(result);
-	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 	m->getInputAcc(result);
-	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 
 	// 验证雅可比 //
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
@@ -201,19 +201,19 @@ void test_puma_vel() {
 
 	inv.cptJacobi();
 	s_mm(6, 1, 6, inv.Ji(), output_vs, result);
-	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, input_vel, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 
 	s_vc(6, inv.ci(), result);
 	s_mma(6, 1, 6, inv.Ji(), output_as, result);
-	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, input_acc, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 
 	fwd.cptJacobi();
 	s_mm(6, 1, 6, fwd.Jf(), input_vel, result);
-	if (!s_is_equal(6, result, output_vs, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, output_vs, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 
 	s_vc(6, fwd.cf(), result);
 	s_mma(6, 1, 6, fwd.Jf(), input_acc, result);
-	if (!s_is_equal(6, result, output_as, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(6, result, output_as, 1e-9))std::cout << __LINE__ << "failed" << std::endl;
 }
 
 void test_model_solver_puma(){

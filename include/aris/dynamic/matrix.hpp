@@ -14,6 +14,211 @@
 #include <aris/core/basic_type.hpp>
 
 namespace aris::dynamic{
+	/// 向量算法 \n
+	/// 
+
+
+	///
+	/// 矩阵算法: \n
+	/// 
+	/// 
+	/// # 一、矩阵表示：\n
+	/// 
+	/// 
+	/// 矩阵需要连续分布在内存中，例如矩阵 A 为 m x n 维：
+	/// [ a11 a12 ... a1n ]
+	/// | a21 a22 ... a2n |
+	/// | ... ...     ... |
+	/// [ am1 am2 ... amn ]
+	/// 
+	/// 在内存中可以沿着行来排列：
+	/// 内存位置：      1   2       n  n+1 n+2     2*n 2*n+1        m*n
+	/// 内存数据：   [ a11 a12 ... a1n a21 a22 ... a2n  a31 ... ... amn ]
+	/// 
+	/// 也可以沿着列来排列：
+	/// 内存位置：      1   2       m  m+1 m+2     2*m 2*m+1        m*n
+	/// 内存数据：   [ a11 a21 ... am1 a12 a22 ... am2  a13 ... ... amn ]
+	/// 
+	/// 延行排列的，叫做【行主元】，延列排列的，叫做【列主元】
+	/// 
+	/// 行主元用 RowMajor 类型表示，内含一个 Size 类型的成员 r_ld，它表示每一行共计有多少元素。上述矩阵的
+	/// 行主元数为 n，即 r_ld = n。一般来说，r_ld 可以大于 n，此时 A 仅仅为一个更大矩阵的子阵： \n
+	///    1   2       n    n+1 ... r_ld \n
+	/// [ a11 a12 ... a1n |  *  ...  *   ] \n
+	/// | a21 a22 ... a2n |  *  ...  *   | \n
+	/// | ... ...     ... |  *  ...  *   | \n
+	/// [ am1 am2 ... amn |  *  ...  *   ]
+	///  
+	/// 【注】：上述表达中 * 表示这里占据内存，但不是矩阵 A 中的数据
+	/// 
+	/// 列主元同上，只不过内存沿着列方向分布。
+	/// 
+	/// 除行、列主元外，还可以有 【Stride】 分布，它的元素依次沿着 r_ld 和 c_ld 方向分布，例如
+	/// 某矩阵 A 为 3 x 4 维，在内存中按照 Stride{r_ld = 2, c_ld = 8} 分布：\n
+	/// 
+	///            内存顺序 --->
+	/// [ a11  *  a12  *  a13  *  a14  * ] \n
+	/// | a21  *  a22  *  a23  *  a24  * | \n
+	/// [ a21  *  a22  *  a23  *  a24  * ] \n
+	/// 
+	/// 【Stride】中的 r_ld 表示 下一行元素距离当前位置的内存距离，c_ld 表示 下一列元素距离当前位置的内存距离。
+	/// 
+	/// aris中默认用【行主元】，此时也可以用整数来表示内存分布，例如 5 等同于 RowMajor(5)
+	/// 
+	/// 
+	/// # 二、单矩阵操作：\n
+	/// 
+	/// 
+	/// 对于 m x n 维矩阵 A，排列方式 t，(t可以是 Size，RowMajor, ColMajor 或 Stride)，可进行以下操作：
+	/// 
+	/// ## 1. 矩阵转置：T(t)
+	/// 
+	/// 矩阵的转置仅需修改矩阵内存分布顺序，A 的转置为 n x m 维，排列为 T(type)。例如：\n
+	/// 
+	/// T(5) 和 T(RowMajor(5))  的结果均为： ColMajor(5) \n
+	/// 
+	/// ## 2. 索引元素：at(i,j,type)
+	/// 
+	/// A 在 i 行 j 列的元素为：A[at(i,j,type)]，其内存地址为：A + at(i,j,type)
+	/// 
+	/// ## 3. 子矩阵：
+	/// 
+	/// 例如求 A 在 i,j 位置处，k,l维的矩阵 B \n
+	/// B 的表示如下：\n
+	/// B = A + at(i,j,type)，k x l 维，排列方式为 type
+	/// 
+	/// ## 4. 数乘：s_nm
+	/// 
+	/// number dot matrix \n
+	/// A = alpha * A：\n
+	/// s_nm(m,n,A,a_t) \n
+	/// 可省略参数 a_t，默认为 n（下同）
+	/// 
+	/// ## 5. 对所有元素取负号：s_im
+	/// 
+	/// inverse matrix elements \n
+	/// A = -A \n
+	/// s_im(m,n,A,a_t) \n
+	/// 
+	/// 
+	/// # 三、矩阵加减、复制：\n
+	/// 
+	/// 
+	/// ## 1. 复制：s_mc
+	/// 
+	/// matrix copy \n
+	/// 将 m x n 维 a_t 排列的矩阵 A，复制到 b_t 排列的 B 处：\n
+	/// s_mc(m,n,A,a_t,B,b_t)
+	/// 
+	/// 可省略参数 a_t b_t，默认均为 n（下同）
+	/// 
+	/// ## 2. 数乘复制：s_mc
+	/// 
+	/// matrix copy \n
+	/// 将 m x n 维 a_t 排列的矩阵 A，乘以数 alpha 后复制到 b_t 排列的 B 处：\n
+	/// s_mc(m,n,alpha,A,a_t,B,b_t)
+	/// 
+	/// ## 3. 取负复制：s_mi
+	/// 
+	/// matrix elements inverse copy \n
+	/// B = -A \n
+	/// s_mi(m,n,A,a_t,B,b_t)
+	/// 
+	/// ## 4. 矩阵加法：s_ma
+	/// 
+	/// matrix add \n
+	/// B = B+A \n
+	/// s_ma(m,n,A,a_t,B,b_t)
+	/// 
+	/// ## 5. 矩阵数乘加法：s_ma
+	/// 
+	/// matrix add \n
+	/// B = B + alpha * A \n
+	/// s_ma(m,n,alpha,A,a_t,B,b_t)
+	/// 
+	/// ## 6. 矩阵减法：s_ms
+	/// 
+	/// matrix subtract \n
+	/// B = B - A \n
+	/// s_ma(m,n,alpha,A,a_t,B,b_t)
+	/// 
+	/// # 四、矩阵乘法：\n
+	/// 
+	/// ## 1. 矩阵相乘：s_mm
+	/// 
+	/// matrix dot matrix  \n
+	/// C_mn = A_mk * B_kn \n
+	/// s_mm(m,n,k,A,a_t,B,b_t,C,c_t)
+	/// 
+	/// 可省略参数 a_t b_t c_t，a_t 默认为 k，b_t c_t 默认为 n，下同
+	/// 
+	/// ## 2. 矩阵相乘并数乘：s_mm
+	/// 
+	/// matrix dot matrix  \n
+	/// C_mn = alpha * A_mk * B_kn \n
+	/// s_mm(m,n,k,alpha,A,a_t,B,b_t,C,c_t)
+	/// 
+	/// ## 3. 矩阵相乘并相加：s_mma
+	/// 
+	/// matrix dot matrix add  \n
+	/// C_mn += A_mk * B_kn \n
+	/// s_mma(m,n,k,A,a_t,B,b_t,C,c_t)
+	///
+	/// ## 4. 矩阵相乘并数乘相加：s_mma
+	/// 
+	/// matrix dot matrix add  \n
+	/// C_mn += alpha * A_mk * B_kn \n
+	/// s_mma(m,n,k,alpha,A,a_t,B,b_t,C,c_t)
+	/// 
+	/// ## 5. 矩阵相乘并取负：s_mmi
+	/// 
+	/// matrix dot matrix add  \n
+	/// C_mn = -A_mk * B_kn \n
+	/// s_mmi(m,n,k,A,a_t,B,b_t,C,c_t)
+	/// 
+	/// ## 6. 矩阵相乘并相减：s_mms
+	/// 
+	/// matrix dot matrix add  \n
+	/// C_mn -= A_mk * B_kn \n
+	/// s_mms(m,n,k,A,a_t,B,b_t,C,c_t)
+	/// 
+	/// 
+	/// # 五、矩阵分解
+	/// 
+	/// ## 1. SVD分解
+	/// 
+	/// A = U * S * V^T \n
+	/// s_svd(m, n, A, a_t, U, u_t, S, s_t, V, v_t, zero_check)
+	/// 
+	/// 可省略参数 a_t u_t s_t v_t，a_t s_t v_t 默认为 n，u_t 默认为 m
+	/// 
+	/// zero_check 为认为0 的值，默认为 1e-10 ，下同
+	/// 
+	/// ## 2. QR分解
+	/// 
+	/// ### 2.1 形成 qr 的 紧凑形式
+	/// 
+	/// A * P = Q * R \n
+	/// U 中存储了 Q 和 R 的信息，P为整数阵列，用于做列交换 \n
+	/// s_householder_up(m, n, A, a_t, U, u_t, p, Size &rank, zero_check)
+	/// 
+	/// ### 2.2 利用 U 和 P 求解 A * x = b
+	/// 
+	/// s_householder_up_sov(m, n, rhs, rank, U, u_t, p, b, b_t, x, x_t, zero_check)
+	/// 
+	/// ### 2.3 利用 U 和 P 求解 A 的广义逆
+	/// 
+	/// s_householder_up2pinv(m, n, rank, U, u_t, tau, tau_t, p, x, x_t, tau2, t_t, zero_check)
+	/// 
+	/// 
+
+
+
+
+
+
+
+
 	struct ARIS_API RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_)noexcept :r_ld(r_ld_) {}; };
 	struct ARIS_API ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_)noexcept :c_ld(c_ld_) {}; };
 	struct ARIS_API Stride { Size r_ld, c_ld; Stride()noexcept = default; constexpr Stride(Size r_ld_, Size c_ld_)noexcept :r_ld(r_ld_), c_ld(c_ld_) {}; };

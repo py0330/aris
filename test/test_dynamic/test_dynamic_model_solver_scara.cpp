@@ -201,12 +201,12 @@ void test_scara_vel() {
 }
 
 void test_model_solver_scara(){
-	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
+	std::cout << std::endl << "-----------------test model solver scara---------------------" << std::endl;
 
 	test_scara_forward_solver();
 	test_scara_inverse_solver();
 	test_scara_vel();
 
-	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;
+	std::cout << "-----------------test model solver scara finished------------" << std::endl << std::endl;
 }
 

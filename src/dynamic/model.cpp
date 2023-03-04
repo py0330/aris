@@ -36,7 +36,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::core::PointerArray<SimResult, Element>> sim_result_pool_;
 		std::unique_ptr<aris::core::PointerArray<Calibrator, Element>> calibrator_pool_;
 
-		Size end_effector_pos_size_{ 0 }, end_effector_dim_{ 0 };
+		Size end_effector_pos_size_{ 0 }, end_effector_vel_size_{ 0 }, end_effector_acc_size_{ 0 }, end_effector_fce_size_{ 0 };
 
 		Part* ground_{ nullptr };
 	};
@@ -129,10 +129,15 @@ namespace aris::dynamic{
 		}
 
 		imp_->end_effector_pos_size_ = 0;
-		imp_->end_effector_dim_ = 0;
+		imp_->end_effector_vel_size_ = 0;
+		imp_->end_effector_acc_size_ = 0;
+		imp_->end_effector_fce_size_ = 0;
+
 		for (auto &m : generalMotionPool()) {
 			imp_->end_effector_pos_size_ += m.pSize();
-			imp_->end_effector_dim_ += m.dim();
+			imp_->end_effector_vel_size_ += m.vSize();
+			imp_->end_effector_acc_size_ += m.aSize();
+			imp_->end_effector_fce_size_ += m.fSize();
 		}
 
 		// alloc mem for solvers //
@@ -187,17 +192,17 @@ namespace aris::dynamic{
 #undef ARIS_DATA_DEFINATION
 
 	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
-	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_dim_; }
-	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_dim_; }
-	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_dim_; }
+	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_vel_size_; }
+	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_acc_size_; }
+	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_fce_size_; }
 	auto Model::setOutputPos(const double *mp)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].setP(mp + pos);	}
 	auto Model::getOutputPos(double *mp)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].pSize(), ++i) generalMotionPool()[i].getP(mp + pos); }
-	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setV(mv + pos); }
-	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getV(mv + pos); }
-	auto Model::setOutputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setA(ma + pos); }
-	auto Model::getOutputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getA(ma + pos); }
-	auto Model::setOutputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].setF(mf + pos); }
-	auto Model::getOutputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].dim(), ++i) generalMotionPool()[i].getF(mf + pos); }
+	auto Model::setOutputVel(const double *mv)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].vSize(), ++i) generalMotionPool()[i].setV(mv + pos); }
+	auto Model::getOutputVel(double *mv)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].vSize(), ++i) generalMotionPool()[i].getV(mv + pos); }
+	auto Model::setOutputAcc(const double *ma)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].aSize(), ++i) generalMotionPool()[i].setA(ma + pos); }
+	auto Model::getOutputAcc(double *ma)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].aSize(), ++i) generalMotionPool()[i].getA(ma + pos); }
+	auto Model::setOutputFce(const double *mf)noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].fSize(), ++i) generalMotionPool()[i].setF(mf + pos); }
+	auto Model::getOutputFce(double *mf)const noexcept->void { for (Size i = 0, pos = 0; i < generalMotionPool().size(); pos += generalMotionPool()[i].fSize(), ++i) generalMotionPool()[i].getF(mf + pos); }
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }

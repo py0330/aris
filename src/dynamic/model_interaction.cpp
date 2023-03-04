@@ -231,14 +231,35 @@ namespace aris::dynamic{
 
 	struct GeneralMotion::Imp {
 		double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
-		mutable double p_[16];
+		mutable double p_[16], v_[6], a_[6];
 		PoseType pose_type_{PoseType::EULER321};
+		VelType vel_type_{ VelType::VEL };
+		AccType acc_type_{ AccType::ACC };
+		FceType fce_type_{ FceType::FCE };
 	};
 	auto GeneralMotion::setPoseType(PoseType type)->void {
 		imp_->pose_type_ = type;
 	}
 	auto GeneralMotion::poseType()const->PoseType {
 		return imp_->pose_type_;
+	}
+	auto GeneralMotion::setVelType(VelType type)->void {
+		imp_->vel_type_ = type;
+	}
+	auto GeneralMotion::velType()const->VelType {
+		return imp_->vel_type_;
+	}
+	auto GeneralMotion::setAccType(AccType type)->void {
+		imp_->acc_type_ = type;
+	}
+	auto GeneralMotion::accType()const->AccType {
+		return imp_->acc_type_;
+	}
+	auto GeneralMotion::setFceType(FceType type)->void {
+		imp_->fce_type_ = type;
+	}
+	auto GeneralMotion::fceType()const->FceType {
+		return imp_->fce_type_;
 	}
 	auto GeneralMotion::locCmI() const noexcept->const double*{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
@@ -319,10 +340,60 @@ namespace aris::dynamic{
 		}
 	}
 	auto GeneralMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
-	auto GeneralMotion::v()const noexcept->const double* { return imp_->mvs_; }
+	auto GeneralMotion::vSize()const noexcept->Size {
+		switch (velType()) {
+		case GeneralMotion::VelType::VEL:return 6;
+		case GeneralMotion::VelType::VEL_SCREW:return 6;
+		default:return 6;
+		}
+	}
+	auto GeneralMotion::v()const noexcept->const double* { 
+		switch (velType()) {
+		case GeneralMotion::VelType::VEL: getMva(imp_->v_);	break;
+		case GeneralMotion::VelType::VEL_SCREW:s_vc(6, imp_->mvs_, imp_->v_); break;
+		}
+		return imp_->v_;
+	}
 	auto GeneralMotion::updV() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
-	auto GeneralMotion::a()const noexcept->const double* { return imp_->mas_; }
+	auto GeneralMotion::setV(const double* mv) noexcept->void { 
+		switch (velType()) {
+		case GeneralMotion::VelType::VEL: setMva(mv);break;
+		case GeneralMotion::VelType::VEL_SCREW:setMvs(mv); break;
+		}
+	}
+	auto GeneralMotion::getV(double* mv)const noexcept->void {
+		switch (velType()) {
+		case GeneralMotion::VelType::VEL: getMva(mv); break;
+		case GeneralMotion::VelType::VEL_SCREW:getMvs(mv); break;
+		}
+	}
+	auto GeneralMotion::aSize()const noexcept->Size {
+		switch (accType()) {
+		case GeneralMotion::AccType::ACC:return 6;
+		case GeneralMotion::AccType::ACC_SCREW:return 6;
+		default:return 6;
+		}
+	}
+	auto GeneralMotion::a()const noexcept->const double* { 
+		switch (accType()) {
+		case GeneralMotion::AccType::ACC: getMaa(imp_->a_);	break;
+		case GeneralMotion::AccType::ACC_SCREW:s_vc(6, imp_->mas_, imp_->a_); break;
+		}
+		return imp_->a_;
+	}
 	auto GeneralMotion::updA() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
+	auto GeneralMotion::setA(const double* ma) noexcept->void {
+		switch (accType()) {
+		case GeneralMotion::AccType::ACC: setMaa(ma); break;
+		case GeneralMotion::AccType::ACC_SCREW:setMas(ma); break;
+		}
+	}
+	auto GeneralMotion::getA(double* ma)const noexcept->void {
+		switch (accType()) {
+		case GeneralMotion::AccType::ACC: getMaa(ma); break;
+		case GeneralMotion::AccType::ACC_SCREW:getMas(ma); break;
+		}
+	}
 	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
 	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
 	auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
@@ -1191,9 +1262,37 @@ namespace aris::dynamic{
 				})
 			;
 
+		aris::core::class_<GeneralMotion::VelType>("GENERAL_MOTION_VEL_TYPE")
+			.textMethod([](GeneralMotion::VelType*type)->std::string {
+					switch (*type) {
+					case GeneralMotion::VelType::VEL:return "VEL";
+					case GeneralMotion::VelType::VEL_SCREW:return "VEL_SCREW";
+					default:return "VEL";
+					}
+				}, [](GeneralMotion::VelType* type, std::string_view name)->void {
+					if (name == "VEL")*type = GeneralMotion::VelType::VEL;
+					if (name == "VEL_SCREW")*type = GeneralMotion::VelType::VEL_SCREW;
+				})
+			;
+
+		aris::core::class_<GeneralMotion::AccType>("GENERAL_MOTION_ACC_TYPE")
+			.textMethod([](GeneralMotion::AccType*type)->std::string {
+					switch (*type) {
+					case GeneralMotion::AccType::ACC:return "ACC";
+					case GeneralMotion::AccType::ACC_SCREW:return "ACC_SCREW";
+					default:return "ACC";
+					}
+				}, [](GeneralMotion::AccType* type, std::string_view name)->void {
+					if (name == "ACC")*type = GeneralMotion::AccType::ACC;
+					if (name == "ACC_SCREW")*type = GeneralMotion::AccType::ACC_SCREW;
+				})
+			;
+
 		aris::core::class_<GeneralMotion>("GeneralMotion")
 			.inherit<aris::dynamic::MotionBase>()
 			.prop("pose_type", &GeneralMotion::setPoseType, &GeneralMotion::poseType)
+			.prop("vel_type", &GeneralMotion::setVelType, &GeneralMotion::velType)
+			.prop("acc_type", &GeneralMotion::setAccType, &GeneralMotion::accType)
 			;
 
 		aris::core::class_<PointMotion>("PointMotion")

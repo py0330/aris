@@ -650,21 +650,19 @@ namespace aris::dynamic{
 			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
 			auto& motion = m->addMotion(joint);
 			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 5);
-
-			for (int i = 1; i < 8; ++i) {
-				platform.addMarker("tool" + std::to_string(i), *joint.makI()->prtPm());
-				m->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *joint.makJ()->prtPm());
-			}
 		}
 		else{
 			auto& joint = m->addPrismaticJoint(platform, m->ground(), pos, axis);
 			auto& motion = m->addMotion(joint);
 			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 2);
+		}
 
-			for (int i = 1; i < 8; ++i) {
-				platform.addMarker("tool" + std::to_string(i), *joint.makI()->prtPm());
-				m->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *joint.makJ()->prtPm());
-			}
+		// add tool & wobj
+		for (int i = 1; i < 8; ++i) {
+			// 把 tool 的pe 默认设置到转台位置处
+			double tool_pe[6]{ pos[0], pos[1], pos[2], 0.0,0.0,0.0 };
+			platform.addMarker("tool" + std::to_string(i)).setPrtPe(tool_pe);
+			m->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i));
 		}
 
 		// add solver
