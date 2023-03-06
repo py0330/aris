@@ -116,6 +116,31 @@ namespace aris::control{
 
 		friend class Controller;
 	};
+	class ARIS_API AnalogIo {
+	public:
+		auto numOfAi() const->std::uint16_t;
+		auto setNumOfAi(std::uint16_t num_of_ai)->void;
+
+		auto numOfAo() const->std::uint16_t;
+		auto setNumOfAo(std::uint16_t num_of_ao)->void;
+
+		virtual auto getAi(const std::uint16_t index) const->float = 0;
+		virtual auto getAo(const std::uint16_t index) const->float = 0;
+		virtual auto setAo(const std::uint16_t index, const float val)->void = 0;
+
+		virtual ~AnalogIo();
+		explicit AnalogIo(std::uint16_t num_of_ai = 8, std::uint16_t num_of_ao = 8);
+		AnalogIo(const AnalogIo &other);
+		AnalogIo(AnalogIo &&other) = delete;
+		AnalogIo& operator=(const AnalogIo &other);
+		AnalogIo& operator=(AnalogIo &&other) = delete;
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+
+		friend class Controller;
+	};
 	class ARIS_API FtSensor {
 	public:
 		virtual auto getFtData(double *data_address)->void = 0;
@@ -132,6 +157,10 @@ namespace aris::control{
 		auto resetDigitalIoPool(aris::core::PointerArray<DigitalIo> *pool);
 		auto digitalIoPool()->aris::core::PointerArray<DigitalIo>&;
 		auto digitalIoPool()const->const aris::core::PointerArray<DigitalIo>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->digitalIoPool(); }
+
+		auto resetAnalogIoPool(aris::core::PointerArray<AnalogIo> *pool);
+		auto analogIoPool()->aris::core::PointerArray<AnalogIo>&;
+		auto analogIoPool()const->const aris::core::PointerArray<AnalogIo>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->analogIoPool(); }
 
 		auto resetFtSensorPool(aris::core::PointerArray<FtSensor> *pool);
 		auto ftSensorPool()->aris::core::PointerArray<FtSensor>&;

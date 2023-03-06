@@ -86,15 +86,41 @@ namespace aris::control{
 	DigitalIo::DigitalIo(const DigitalIo &other) = default;
 	DigitalIo& DigitalIo::operator=(const DigitalIo &other) = default;
 
+	struct AnalogIo::Imp{
+		std::uint16_t num_of_ai_, num_of_ao_;
+	};
+	auto AnalogIo::numOfAi() const->std::uint16_t {
+		return imp_->num_of_ai_;
+	}
+	auto AnalogIo::setNumOfAi(std::uint16_t num_of_ai)->void {
+		imp_->num_of_ai_ = num_of_ai;
+	}
+	auto AnalogIo::numOfAo() const->std::uint16_t {
+		return imp_->num_of_ao_;
+	}
+	auto AnalogIo::setNumOfAo(std::uint16_t num_of_ao)->void {
+		imp_->num_of_ao_ = num_of_ao;
+	}
+	AnalogIo::~AnalogIo() = default;
+	AnalogIo::AnalogIo(std::uint16_t num_of_ai, std::uint16_t num_of_ao){
+		imp_->num_of_ai_ = num_of_ai;
+		imp_->num_of_ao_ = num_of_ao;
+	}
+	AnalogIo::AnalogIo(const AnalogIo &other) = default;
+	AnalogIo& AnalogIo::operator=(const AnalogIo &other) = default;
+
 	struct Controller::Imp { 
 		std::unique_ptr<aris::core::PointerArray<Motor>> motor_pool_{ new aris::core::PointerArray<Motor> };
 		std::unique_ptr<aris::core::PointerArray<DigitalIo>> digital_io_pool_{ new aris::core::PointerArray<DigitalIo> };
+		std::unique_ptr<aris::core::PointerArray<AnalogIo>> analog_io_pool_{ new aris::core::PointerArray<AnalogIo> };
 		std::unique_ptr<aris::core::PointerArray<FtSensor>> ft_sensor_pool_{ new aris::core::PointerArray<FtSensor> };
 	};
 	auto Controller::resetMotorPool(aris::core::PointerArray<Motor> *pool) { imp_->motor_pool_.reset(pool); }
 	auto Controller::motorPool()->aris::core::PointerArray<Motor>& { return *imp_->motor_pool_; }
 	auto Controller::resetDigitalIoPool(aris::core::PointerArray<DigitalIo> *pool) { imp_->digital_io_pool_.reset(pool); }
 	auto Controller::digitalIoPool()->aris::core::PointerArray<DigitalIo>& { return *imp_->digital_io_pool_; }
+	auto Controller::resetAnalogIoPool(aris::core::PointerArray<AnalogIo> *pool) { imp_->analog_io_pool_.reset(pool); }
+	auto Controller::analogIoPool()->aris::core::PointerArray<AnalogIo>& { return *imp_->analog_io_pool_; }
 	auto Controller::resetFtSensorPool(aris::core::PointerArray<FtSensor> *pool) { imp_->ft_sensor_pool_.reset(pool); }
 	auto Controller::ftSensorPool()->aris::core::PointerArray<FtSensor>& { return *imp_->ft_sensor_pool_; }
 	auto Controller::init()->void{}
@@ -122,6 +148,11 @@ namespace aris::control{
 			.prop("num_of_do", &DigitalIo::setNumOfDo, &DigitalIo::numOfDo)
 			;
 
+		aris::core::class_<AnalogIo>("AnalogIo")
+			.prop("num_of_ai", &AnalogIo::setNumOfAi, &AnalogIo::numOfAi)
+			.prop("num_of_ao", &AnalogIo::setNumOfAo, &AnalogIo::numOfAo)
+			;
+
 		aris::core::class_<FtSensor>("FtSensor")
 			;
 
@@ -131,15 +162,20 @@ namespace aris::control{
 		aris::core::class_<aris::core::PointerArray<DigitalIo>>("DigitalIoPoolObject")
 			.asRefArray();
 
+		aris::core::class_<aris::core::PointerArray<AnalogIo>>("AnalogIoPoolObject")
+			.asRefArray();
+
 		aris::core::class_<aris::core::PointerArray<FtSensor>>("FtSensorPoolObject")
 			.asRefArray();
 
 		typedef aris::core::PointerArray<Motor>&(Controller::*MotorPoolFunc)();
 		typedef aris::core::PointerArray<DigitalIo>&(Controller::*DigitalIoPoolFunc)();
+		typedef aris::core::PointerArray<AnalogIo>&(Controller::*AnalogIoPoolFunc)();
 		typedef aris::core::PointerArray<FtSensor>&(Controller::*FtSensorPoolFunc)();
 		aris::core::class_<Controller>("Controller")
 			.prop("motor_pool", &Controller::resetMotorPool, MotorPoolFunc(&Controller::motorPool))
 			.prop("digital_io_pool", &Controller::resetDigitalIoPool, DigitalIoPoolFunc(&Controller::digitalIoPool))
+			.prop("analog_io_pool", &Controller::resetAnalogIoPool, AnalogIoPoolFunc(&Controller::analogIoPool))
 			.prop("ft_sensor_pool", &Controller::resetFtSensorPool, FtSensorPoolFunc(&Controller::ftSensorPool))
 			;
 	}
