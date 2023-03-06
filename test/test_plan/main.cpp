@@ -9,8 +9,8 @@
 #include "test_plan_singular_processor.h"
 
 int main(int argc, char *argv[]){
-	//test_singular_processor();
-	test_trajectory();
+	test_singular_processor();
+	//test_trajectory();
 	
 	//test_scurve();
 	//test_path();

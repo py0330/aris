@@ -30,6 +30,8 @@ namespace aris::plan{
 		auto setMaxVels(const double* max_vels)->void;
 		auto setMaxAccs(const double* max_accs)->void;
 
+		auto init()->void;
+
 		~SingularProcessor();
 		SingularProcessor();
 		ARIS_DELETE_BIG_FOUR(SingularProcessor);
