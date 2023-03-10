@@ -570,7 +570,7 @@ namespace aris::dynamic{
 	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
-	struct XyztMotion::Imp { double mp_[4], vp_[4], ap_[4]; };
+	struct XyztMotion::Imp { double mp_[4], vp_[4], ap_[4], rotate_range_{0.0}; };
 	auto XyztMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[24]{
 			1,0,0,0,
@@ -675,7 +675,28 @@ namespace aris::dynamic{
 		imp_->mp_[0] = mpm[3];
 		imp_->mp_[1] = mpm[7];
 		imp_->mp_[2] = mpm[11];
-		imp_->mp_[3] = std::atan2(mpm[4] - mpm[1], mpm[0] + mpm[5]);
+
+		auto period = 2 * aris::PI;
+		
+
+		double mp_internal = std::atan2(mpm[4] - mpm[1], mpm[0] + mpm[5]);
+
+		auto mid = std::isfinite(rotateRange()) ? rotateRange() : imp_->mp_[3] / period;
+		// 对mid取整、取余 //
+		auto t = std::trunc(mid);
+		auto mod = mid - t;
+
+		// 将 mp 置于【-周期，+周期】 内
+		mp_internal = std::fmod(mp_internal, period);
+
+		// 将 mp 置于【mod-半个周期，mod+半个周期】 内
+		while (mp_internal > (mod + 0.5) * period) mp_internal -= period;
+		while (mp_internal < (mod - 0.5) * period) mp_internal += period;
+
+		// 叠加需偏移的整数个周期
+		mp_internal += t * period;
+
+		imp_->mp_[3] = mp_internal;
 	}
 	auto XyztMotion::setP(const double *mp) noexcept->void { s_vc(4, mp, imp_->mp_); }
 	auto XyztMotion::getP(double *mp)const noexcept->void { s_vc(4, imp_->mp_, mp); }
@@ -697,6 +718,9 @@ namespace aris::dynamic{
 	}
 	auto XyztMotion::setA(const double *ma) noexcept->void { s_vc(4, ma, imp_->ap_); }
 	auto XyztMotion::getA(double *ma)const noexcept->void { s_vc(4, imp_->ap_, ma); }
+	auto XyztMotion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
+	auto XyztMotion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
+
 	XyztMotion::~XyztMotion() = default;
 	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(XyztMotion);

@@ -472,6 +472,19 @@ namespace aris::dynamic
 		auto virtual f()const noexcept->const double* override { return cf(); }
 		auto virtual setF(const double *mf) noexcept->void override { setCf(mf); }
 
+		// 仅仅影响  updP() 函数计算转动轴的转角 mp 所处的象限   【注意是mp，不是mpInternal】
+		//
+		// 经过 upd() 函数调用后，mp 转角所处象限为：
+		// rotate range 为 0（默认值）  ：【-p/2        , p/2         】
+		// rotate range 为 r            ：【-p/2 + p*r  , p + p*r     】
+		// rotate range 为 nan          ： 距离当前转角最近的角度
+		//
+		// 以上 p 是指完整的角度周期，和 mpFator 有关。
+		// 例如当 mpFactor() = 0      时，周期 p 是 2 * pi
+		//     当 mpFactor() = pi/180 时，周期 p 是 360 
+		auto setRotateRange(double range)noexcept->void;
+		auto rotateRange()const noexcept->double;
+
 		virtual ~XyztMotion();
 		explicit XyztMotion(const std::string &name = "xyzt_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(XyztMotion);
