@@ -7,6 +7,7 @@
 using namespace aris::plan;
 
 auto test_singular_processor_1()->void {
+	// 构造 TG //
 	aris::plan::TrajectoryGenerator tg;
 
 	const int PE_SIZE = 3;
@@ -54,6 +55,7 @@ auto test_singular_processor_1()->void {
 
 	double out_pe[7 * EE_NUM + A_NUM];
 
+	// 构造模型 //
 	aris::dynamic::PumaParam puma_param;
 	puma_param.d1 = 0.3;
 	puma_param.a1 = 0.1;
@@ -67,20 +69,14 @@ auto test_singular_processor_1()->void {
 	puma->setOutputPos(init_pe);
 	puma->inverseKinematics();
 
-	//double input[6]{ 0,0,0,0,0.5,0 };
-	//puma->setInputPos(input);
+	//  这里处理 //
+	aris::plan::SingularProcessor sp;
 
-	//puma->forwardKinematics();
-	//puma->getOutputPos(input);
-	//aris::dynamic::dsp(1, 6, input);
-	
-
-
-	SingularProcessor sp;
-
+	// 最大速度、加速度 //
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
 	std::vector<double> max_accs{ 31.4, 31.4, 31.4, 31.4, 31.4, 31.4 };
 
+	// 设置模型等参数 //
 	sp.setModel(*puma);
 	sp.setMaxVels(max_vels.data());
 	sp.setMaxAccs(max_accs.data());
@@ -88,6 +84,10 @@ auto test_singular_processor_1()->void {
 
 	sp.init();
 
+	// 设置速度百分比 //
+	sp.setDs(0.5);
+
+	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{};
@@ -101,9 +101,6 @@ auto test_singular_processor_1()->void {
 	}
 
 	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
-	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
-	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
-
 }
 
 
