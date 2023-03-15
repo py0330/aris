@@ -570,7 +570,7 @@ namespace aris::dynamic{
 	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
-	struct XyztMotion::Imp { double mp_[4], vp_[4], ap_[4], rotate_range_{0.0}; };
+	struct XyztMotion::Imp { double mp_[4], vp_[4], ap_[4], rotate_range_{std::numeric_limits<double>::quiet_NaN()}; };
 	auto XyztMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[24]{
 			1,0,0,0,
@@ -1325,6 +1325,7 @@ namespace aris::dynamic{
 
 		aris::core::class_<XyztMotion>("XyztMotion")
 			.inherit<aris::dynamic::MotionBase>()
+			.prop("rotate_range", &XyztMotion::setRotateRange, &XyztMotion::rotateRange)
 			;
 
 		aris::core::class_<PlanarMotion>("PlanarMotion")

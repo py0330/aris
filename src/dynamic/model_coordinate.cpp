@@ -1278,8 +1278,21 @@ namespace aris::dynamic{
 		auto getPrtIv = [](Part *prt)->aris::core::Matrix { return aris::core::Matrix(1, 10, prt->prtIv()); };
 		auto setPrtIv = [](Part *prt, aris::core::Matrix iv)->void { prt->setPrtIv(iv.data()); };
 
+		auto marker_size = [](aris::core::PointerArray<Marker, Element>* pool)->aris::Size {
+			return pool->size();
+		};
+		auto marker_at = [](aris::core::PointerArray<Marker, Element>* pool, aris::Size i)->Marker& {
+			return pool->at(i);
+		};
+		auto marker_pushback = [](aris::core::PointerArray<Marker, Element>* pool, Marker* value)->void {
+			return pool->push_back(value);
+		};
+		auto marker_clear = [](aris::core::PointerArray<Marker, Element>* pool)->void {
+			return pool->clear();
+		};
+
 		aris::core::class_<aris::core::PointerArray<Marker, Element>>("MarkerPoolElement")
-			.asRefArray()
+			.asRefArray(&marker_size, &marker_at, &marker_pushback, &marker_clear)
 			;
 		aris::core::class_<aris::core::PointerArray<Geometry, Element>>("GeometryPoolElement")
 			.asRefArray()

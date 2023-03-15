@@ -71,8 +71,8 @@ namespace aris::dynamic{
 		});
 		imp_->ground_ = ground == partPool().end() ? &partPool().add<Part>("ground") : &*ground;
 
-		variablePool().model_ = this;
-		for (auto &ele : variablePool())ele.model_ = this;
+		//variablePool().model_ = this;
+		//for (auto &ele : variablePool())ele.model_ = this;
 		partPool().model_ = this;
 		for (Size i = 0; i< partPool().size(); ++i){
 			partPool()[i].model_ = this;
@@ -747,14 +747,40 @@ namespace aris::dynamic{
 		typedef aris::core::PointerArray<SimResult,         Element> &(Model::*SimResultPoolFunc)();
 		typedef aris::core::PointerArray<Calibrator,        Element> &(Model::*CalibratorPoolFunc)();
 
+		auto variable_size = [](aris::core::PointerArray<Variable, Element>* pool)->aris::Size {
+			return pool->size();
+		};
+		auto variable_at = [](aris::core::PointerArray<Variable, Element>* pool, aris::Size i)->Variable& {
+			return pool->at(i);
+		};
+		auto variable_pushback = [](aris::core::PointerArray<Variable, Element>* pool, Variable *value)->void {
+			return pool->push_back(value);
+		};
+		auto variable_clear = [](aris::core::PointerArray<Variable, Element>* pool)->void {
+			return pool->clear();
+		};
+
+		auto joint_size = [](aris::core::PointerArray<Joint, Element>* pool)->aris::Size {
+			return pool->size();
+		};
+		auto joint_at = [](aris::core::PointerArray<Joint, Element>* pool, aris::Size i)->Joint& {
+			return pool->at(i);
+		};
+		auto joint_pushback = [](aris::core::PointerArray<Joint, Element>* pool, Joint* value)->void {
+			return pool->push_back(value);
+		};
+		auto joint_clear = [](aris::core::PointerArray<Joint, Element>* pool)->void {
+			return pool->clear();
+		};
+
 		aris::core::class_<aris::core::PointerArray<Variable, Element>>("VariablePoolElement")
-			.asRefArray()
+			.asRefArray(&variable_size, &variable_at, &variable_pushback, &variable_clear)
 			;
 		aris::core::class_<aris::core::PointerArray<Part, Element>>("PartPoolElement")
 			.asRefArray()
 			;
 		aris::core::class_<aris::core::PointerArray<Joint, Element>>("JointPoolElement")
-			.asRefArray()
+			.asRefArray(&joint_size, &joint_at, &joint_pushback, &joint_clear)
 			;
 		aris::core::class_<aris::core::PointerArray<Motion, Element>>("MotionPoolElement")
 			.asRefArray()
@@ -778,20 +804,85 @@ namespace aris::dynamic{
 			.asRefArray()
 			;
 
+
+
+		auto getVariablePool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Variable, Element>&{
+			return m->variablePool();
+		};
+		auto setVariablePool = [](aris::dynamic::Model* m, aris::core::PointerArray<Variable, Element>* pool)->void {
+			m->resetVariablePool(pool);
+			pool->resetModel(m);
+		};
+		auto getPartPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Part, Element>&{
+			return m->partPool();
+		};
+		auto setPartPool = [](aris::dynamic::Model* m, aris::core::PointerArray<Part, Element>* pool)->void {
+			m->resetPartPool(pool);
+			pool->resetModel(m);
+		};
+		auto getMotionPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Motion, Element>&{
+			return m->motionPool();
+		};
+		auto setMotionPool = [](aris::dynamic::Model* m, aris::core::PointerArray<Motion, Element>* pool)->void {
+			m->resetMotionPool(pool);
+			pool->resetModel(m);
+		};
+		auto getJointPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Joint, Element>&{
+			return m->jointPool();
+		};
+		auto setJointPool = [](aris::dynamic::Model* m, aris::core::PointerArray<Joint, Element>* pool)->void {
+			m->resetJointPool(pool);
+			pool->resetModel(m);
+		};
+		auto getGeneralMotionPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<MotionBase, Element>&{
+			return m->generalMotionPool();
+		};
+		auto setGeneralMotionPool = [](aris::dynamic::Model* m, aris::core::PointerArray<MotionBase, Element>* pool)->void {
+			m->resetGeneralMotionPool(pool);
+			pool->resetModel(m);
+		};
+		auto getForcePool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Force, Element>&{
+			return m->forcePool();
+		};
+		auto setForcePool = [](aris::dynamic::Model* m, aris::core::PointerArray<Force, Element>* pool)->void {
+			m->resetForcePool(pool);
+			pool->resetModel(m);
+		};
+		auto getSolverPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Solver, Element>&{
+			return m->solverPool();
+		};
+		auto setSolverPool = [](aris::dynamic::Model* m, aris::core::PointerArray<Solver, Element>* pool)->void {
+			m->resetSolverPool(pool);
+			pool->resetModel(m);
+		};
+		auto getCalibratorPool = [](aris::dynamic::Model* m)->aris::core::PointerArray<Calibrator, Element>&{
+			return m->calibratorPool();
+		};
+		auto setCalibratorPool = [](aris::dynamic::Model* m, aris::core::PointerArray<Calibrator, Element>* pool)->void {
+			m->resetCalibratorPool(pool);
+			pool->resetModel(m);
+		};
+
 		aris::core::class_<Model>("Model")
 			.inherit<ModelBase>()
 			.prop("time", &Model::setTime, &Model::time)
 			.prop("environment", EnvironmentFunc(&Model::environment))
-			.prop("variable_pool", &Model::resetVariablePool, VarablePoolFunc(&Model::variablePool))
-			.prop("part_pool", &Model::resetPartPool,  PartPoolFunc(&Model::partPool))
-			.prop("motion_pool", &Model::resetMotionPool, MotionPoolFunc(&Model::motionPool))
-			.prop("joint_pool", &Model::resetJointPool, JointPoolFunc(&Model::jointPool))
-			.prop("general_motion_pool", &Model::resetGeneralMotionPool, GeneralMotionPoolFunc(&Model::generalMotionPool))
-			.prop("force_pool", &Model::resetForcePool, ForcePoolFunc(&Model::forcePool))
-			.prop("solver_pool", &Model::resetSolverPool, SolverPoolFunc(&Model::solverPool))
-			//.prop<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
-			//.prop<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
-			.prop("calibrator_pool", &Model::resetCalibratorPool, CalibratorPoolFunc(&Model::calibratorPool))
+			.prop("variable_pool", &setVariablePool, &getVariablePool)
+			.prop("part_pool", &setPartPool, &getPartPool)
+			.prop("motion_pool", &setMotionPool, &getMotionPool)
+			.prop("joint_pool", &setJointPool, &getJointPool)
+			.prop("general_motion_pool", &setGeneralMotionPool, &getGeneralMotionPool)
+			.prop("force_pool", &setForcePool, &getForcePool)
+			.prop("solver_pool", &setSolverPool, &getSolverPool)
+			.prop("calibrator_pool", &setCalibratorPool, &getCalibratorPool)
+			//.prop("variable_pool", &Model::resetVariablePool, VarablePoolFunc(&Model::variablePool))
+			//.prop("part_pool", &Model::resetPartPool,  PartPoolFunc(&Model::partPool))
+			//.prop("motion_pool", &Model::resetMotionPool, MotionPoolFunc(&Model::motionPool))
+			//.prop("joint_pool", &Model::resetJointPool, JointPoolFunc(&Model::jointPool))
+			//.prop("general_motion_pool", &Model::resetGeneralMotionPool, GeneralMotionPoolFunc(&Model::generalMotionPool))
+			//.prop("force_pool", &Model::resetForcePool, ForcePoolFunc(&Model::forcePool))
+			//.prop("solver_pool", &Model::resetSolverPool, SolverPoolFunc(&Model::solverPool))
+			//.prop("calibrator_pool", &Model::resetCalibratorPool, CalibratorPoolFunc(&Model::calibratorPool))
 			;
 
 		aris::core::class_<aris::core::PointerArray<ModelBase>>("ModelBasePool")
