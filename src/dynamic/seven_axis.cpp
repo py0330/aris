@@ -251,12 +251,9 @@ namespace aris::dynamic{
 		double loc_cm_I[6]{ 0,0,0,0,0,1 };
 	};
 	auto ArmAngleMotion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
-	auto ArmAngleMotion::p() const noexcept->const double* {
-		return &imp_->mp_;
-	}
-	auto ArmAngleMotion::updP() noexcept->void {
+	auto ArmAngleMotion::cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void {
 		double D[3];
-		s_vc(3, (*makI()->pm()) + 3, 4, D, 1);
+		s_vc(3, makI_pm + 3, 4, D, 1);
 
 		double z_Axis[3]{ 0,0,1 };
 		double r2[3];
@@ -265,8 +262,15 @@ namespace aris::dynamic{
 		s_nv(3, 1.0 / s_norm(3, r2), r2);
 
 		double dir[3];
-		s_c3(r2, 1, *makJ()->pm() + 1, 4, dir, 1);
-		imp_->mp_ =  s_sgn(s_vv(3, dir, D)) * std::acos(std::max(-1.0, std::min(1.0, s_vv(3, r2, 1, *makJ()->pm() + 1, 4))));
+		s_c3(r2, 1, makJ_pm + 1, 4, dir, 1);
+		*p = s_sgn(s_vv(3, dir, D)) * std::acos(std::max(-1.0, std::min(1.0, s_vv(3, r2, 1, *makJ()->pm() + 1, 4))));
+
+	}
+	auto ArmAngleMotion::p() const noexcept->const double* {
+		return &imp_->mp_;
+	}
+	auto ArmAngleMotion::updP() noexcept->void {
+		cptPFromPm(*makI()->pm(), *makI()->pm(), &imp_->mp_);
 	}
 	auto ArmAngleMotion::setP(const double* mp) noexcept->void {
 		imp_->mp_ = *mp;

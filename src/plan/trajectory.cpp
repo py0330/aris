@@ -343,7 +343,7 @@ namespace aris::plan {
 
 		double div = (a1 * b2 * c3 - a1 * b3 * c2 - a2 * b1 * c3 + a2 * b3 * c1 + a3 * b1 * c2 - a3 * b2 * c1);
 
-		if (std::abs(div) < 1e-10) {
+		if (std::abs(div) < 1e-14) {
 			double p2_minus_p0[3]{
 				p2[0] - p0[0],
 				p2[1] - p0[1],

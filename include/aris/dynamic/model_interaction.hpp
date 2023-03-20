@@ -12,8 +12,10 @@ namespace aris::dynamic
 	///
 	class ARIS_API Interaction :public DynEle{
 	public:
+		auto setMakI(Marker* mak_i) noexcept->void { makI_ = mak_i; }
 		auto makI() noexcept->Marker* { return makI_; }
 		auto makI() const noexcept->const Marker* { return makI_; }
+		auto setMakJ(Marker* mak_j) noexcept->void { makI_ = mak_j; }
 		auto makJ() noexcept->Marker* { return makJ_; }
 		auto makJ() const noexcept->const Marker* { return makJ_; }
 		auto prtNameM()const->std::string;
@@ -120,6 +122,7 @@ namespace aris::dynamic
 		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void;
 		auto virtual cptCp(double* cp)const noexcept->void override { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm(), p()); }
 
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void {}
 		auto virtual pSize()const noexcept->Size { return dim(); }
 		auto virtual p()const noexcept->const double* { return nullptr; }
 		auto virtual updP() noexcept->void {}
@@ -232,10 +235,10 @@ namespace aris::dynamic
 		static auto Dim()->Size { return 1; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		//auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p() const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
@@ -356,6 +359,7 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual pSize()const noexcept->Size;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
@@ -424,6 +428,7 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
@@ -457,6 +462,7 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
@@ -503,6 +509,7 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double* cv)const noexcept->void override;
 		auto virtual cptCa(double* ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;
@@ -536,6 +543,7 @@ namespace aris::dynamic
 		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
 		auto virtual cptCv(double* cv)const noexcept->void override;
 		auto virtual cptCa(double* ca)const noexcept->void override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;

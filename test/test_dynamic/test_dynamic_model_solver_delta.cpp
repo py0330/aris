@@ -69,7 +69,7 @@ void test_model_solver_delta_reduced()
 
 
 
-		solver.cptJacobiWrtEE();
+		//solver.cptJacobiWrtEE();
 		//std::cout << solver.mJf() << std::endl;
 		//std::cout << solver.nJf() << std::endl;
 		//aris::dynamic::dsp(solver.mJf(), solver.nJf(), solver.Jf());

@@ -162,7 +162,7 @@ void test_scara_vel() {
 	m->setInputVel(zeros);
 	m->setInputAcc(zeros);
 
-	dynamic_cast<aris::dynamic::ScaraInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(0);
+	dynamic_cast<aris::dynamic::ScaraInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(2);
 
 	// 计算反解，看看是否能够计算正确 //
 	if (m->inverseKinematics())std::cout << "failed" << std::endl;

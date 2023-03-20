@@ -37,6 +37,7 @@ namespace aris::dynamic{
 		static auto Dim()->Size { return 1; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
 		auto virtual p() const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;

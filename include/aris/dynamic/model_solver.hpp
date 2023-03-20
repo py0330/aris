@@ -37,6 +37,8 @@ namespace aris::dynamic
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
+		auto virtual kinPosPre()->int;      // 对位置进行预计算，但不设置 model 
+		auto virtual kinPosSetModel()->void; // 预计算之后，设置 model
 		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
 		auto mJg()const noexcept->Size;// = part_number x 6
 		auto nJg()const noexcept->Size;// = motion_number + general_motion_number x 6
@@ -51,18 +53,20 @@ namespace aris::dynamic
 		explicit UniversalSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(UniversalSolver);
 
-	public:
+	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+		friend class ForwardKinematicSolver;
+		friend class InverseKinematicSolver;
 	};
 	class ARIS_API ForwardKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
+		auto virtual kinPosWithoutSetModel(double* output)->int;
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 		auto cptJacobi()noexcept->void;
-		auto cptJacobiWrtEE()noexcept->void;// wrt ee.makI(), not compute cf
 		auto mJf()const noexcept->Size;// equal mot num
 		auto nJf()const noexcept->Size;// equal ee num * 6
 		auto Jf()const noexcept->const double *;// inverse jacobi   ee_vs = Jf * ee_vs + mot_vs
@@ -79,10 +83,10 @@ namespace aris::dynamic
 	class ARIS_API InverseKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
+		auto virtual kinPosWithoutSetModel(double* input)->int;
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
-		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void {}
 		auto cptJacobi()noexcept->void;
 		auto mJi()const noexcept->Size;// equal mot num
 		auto nJi()const noexcept->Size;// equal ee num * 6

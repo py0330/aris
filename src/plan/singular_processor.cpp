@@ -238,6 +238,8 @@ namespace aris::plan {
 	struct SingularProcessor::Imp {
 		using CurveParam = TcurveParam;
 
+		InverseKinematicMethod inv_func_;
+
 		aris::Size input_size_{ 0 };
 		double dt{ 0.001 };
 
@@ -361,9 +363,15 @@ namespace aris::plan {
 		auto move_tg_step = [this,get_max_ratio]()->std::int64_t {
 			// 当前处于非奇异状态，正常求反解 //
 			auto ret = imp_->tg_->getEePosAndMoveDt(imp_->output_pos_);
-			imp_->model_->setOutputPos(imp_->output_pos_);
-			if(imp_->model_->inverseKinematics())
-				std::cout << "failed to kinematics" << std::endl;
+			if (imp_->inv_func_) { 
+				imp_->inv_func_(*imp_->model_, imp_->output_pos_);
+			}
+			else {
+				imp_->model_->setOutputPos(imp_->output_pos_);
+				if (imp_->model_->inverseKinematics())
+					std::cout << "failed to kinematics" << std::endl;
+			}
+
 
 			auto tg_ds = imp_->tg_->currentDs();
 
@@ -626,7 +634,9 @@ namespace aris::plan {
 
 		return 0;
 	}
-
+	auto SingularProcessor::setInverseKinematicMethod(InverseKinematicMethod func)->void {
+		imp_->inv_func_ = func;
+	}
 
 	SingularProcessor::~SingularProcessor() = default;
 	SingularProcessor::SingularProcessor() :imp_(new Imp) {

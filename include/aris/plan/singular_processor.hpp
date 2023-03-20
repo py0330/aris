@@ -22,6 +22,8 @@
 namespace aris::plan{
 	class ARIS_API SingularProcessor {
 	public:
+		using InverseKinematicMethod = std::function<void(aris::dynamic::ModelBase& model, const double *ee_pos)>;
+
 		// 需要设置模型、TG、最大速度与最大加速度
 		auto setModel(aris::dynamic::ModelBase& model)->void;
 		auto setTrajectoryGenerator(TrajectoryGenerator& tg)->void;
@@ -34,6 +36,9 @@ namespace aris::plan{
 
 		// 每个实时周期调用这个函数，确保不超速
 		auto setModelPosAndMoveDt()->std::int64_t;
+
+		// 设置方法
+		auto setInverseKinematicMethod(InverseKinematicMethod)->void;
 
 		~SingularProcessor();
 		SingularProcessor();

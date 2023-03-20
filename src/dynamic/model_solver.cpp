@@ -1330,8 +1330,16 @@ namespace aris::dynamic{
 		std::copy_n(sys_vec.data(), sys_vec.size(), imp_->pd_->subsys_data_);
 	}
 	auto UniversalSolver::kinPos()->int{
-		double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-		s_mc(4, 4, pm, const_cast<double *>(*model()->ground().pm()));
+		if (auto ret = kinPosPre())
+			return ret;
+		else {
+			kinPosSetModel();
+			return ret;
+		}
+	}
+	auto UniversalSolver::kinPosPre()->int {
+		const double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		s_mc(4, 4, pm, const_cast<double*>(*model()->ground().pm()));
 
 		// 将各驱动位置与杆件位姿拷贝到局部变量中 //
 		ARIS_LOOP_SYS{
@@ -1347,10 +1355,10 @@ namespace aris::dynamic{
 					if (auto mot = dynamic_cast<const aris::dynamic::MotionBase*>(b->cst_))
 						mot->getP(sys->pd_->mp_ + b->mot_mp_pos_);// cp //
 				}
-			} 
+			}
 		}
 
-		// 将杆件位姿拷贝到局部变量中 //
+			// 将杆件位姿拷贝到局部变量中 //
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D d->part_->getPm(d->pm_);
 
 		setError(0.0);
@@ -1365,9 +1373,11 @@ namespace aris::dynamic{
 			setError(std::max(error(), sys->error_));
 		}
 
-		// 迭代成功，设置各杆件 //
-		if (error() < maxError())ARIS_LOOP_SYS ARIS_LOOP_SYS_D const_cast<Part*>(d->part_)->setPm(d->pm_);
 		return error() < maxError() ? 0 : -1;
+	} 
+	auto UniversalSolver::kinPosSetModel()->void {
+		// 迭代成功，设置各杆件 //
+		ARIS_LOOP_SYS ARIS_LOOP_SYS_D const_cast<Part*>(d->part_)->setPm(d->pm_);
 	}
 	auto UniversalSolver::kinVel()->int	{
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D d->part_->getPm(d->pm_);
@@ -1702,6 +1712,23 @@ namespace aris::dynamic{
 
 		UniversalSolver::allocateMemory();
 	}
+	auto ForwardKinematicSolver::kinPosWithoutSetModel(double *output)->int {
+		if (auto ret = kinPosPre()) {
+			return ret;
+		}
+		else {
+			auto pd = this->UniversalSolver::imp_->pd_;
+			aris::Size id = 0;
+			for (auto& m : model()->generalMotionPool()) {
+				m.cptPFromPm(
+					pd->get_diag_from_part_id_[m.makI()->fatherPart().id()]->pm_, 
+					pd->get_diag_from_part_id_[m.makJ()->fatherPart().id()]->pm_,
+					output + id);
+				id += m.pSize();
+			}
+			return 0;
+		}
+	}
 	auto ForwardKinematicSolver::kinPos()->int{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updP();
@@ -1721,7 +1748,7 @@ namespace aris::dynamic{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比，找出加速度差，就是cfi
-		int pos = 0;
+		aris::Size pos = 0;
 		for (auto &gm : model()->generalMotionPool()){
 			for (auto &mot : model()->motionPool()){
 				// reserve data //
@@ -1777,29 +1804,30 @@ namespace aris::dynamic{
 			pos += gm.dim();
 		}
 	}
-	auto ForwardKinematicSolver::cptJacobiWrtEE()noexcept->void{
-		cptGeneralJacobi();
-
-		for (auto &gm : model()->generalMotionPool()){
-			for (auto &mot : model()->motionPool()){
-				double tem[6];
-				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
-				s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
-
-				s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
-
-				//// 以下求cf //
-				//s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
-				//s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
-				//s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
-
-				// 以上和之前做法都一样，以下转换坐标系 //
-				double pp[3];
-				gm.makI()->getPp(*gm.makJ(), pp);
-				s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
-			}
-		}
-	}
+	// old method //
+	//auto ForwardKinematicSolver::cptJacobiWrtEE()noexcept->void{
+	//	cptGeneralJacobi();
+	//
+	//	for (auto &gm : model()->generalMotionPool()){
+	//		for (auto &mot : model()->motionPool()){
+	//			double tem[6];
+	//			s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+	//			s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+	//
+	//			s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+	//
+	//			//// 以下求cf //
+	//			//s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
+	//			//s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
+	//			//s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+	//
+	//			// 以上和之前做法都一样，以下转换坐标系 //
+	//			double pp[3];
+	//			gm.makI()->getPp(*gm.makJ(), pp);
+	//			s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+	//		}
+	//	}
+	//}
 	auto ForwardKinematicSolver::mJf()const noexcept->Size { return imp_->mJf_;  }
 	auto ForwardKinematicSolver::nJf()const noexcept->Size { return imp_->nJf_; }
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }
@@ -1829,6 +1857,23 @@ namespace aris::dynamic{
 
 		UniversalSolver::allocateMemory();
 	}
+	auto InverseKinematicSolver::kinPosWithoutSetModel(double *input)->int { 
+		if (auto ret = kinPosPre()) {
+			return ret;
+		}
+		else {
+			auto pd = this->UniversalSolver::imp_->pd_;
+			aris::Size id = 0;
+			for (auto& m : model()->motionPool()) {
+				m.cptPFromPm(
+					pd->get_diag_from_part_id_[m.makI()->fatherPart().id()]->pm_,
+					pd->get_diag_from_part_id_[m.makJ()->fatherPart().id()]->pm_,
+					input + id);
+				id += m.pSize();
+			}
+			return 0;
+		}
+	};
 	auto InverseKinematicSolver::kinPos()->int{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : model()->motionPool())m.updP();
@@ -1848,7 +1893,7 @@ namespace aris::dynamic{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比
-		int pos = 0;
+		aris::Size pos = 0;
 		for (auto &gm : model()->generalMotionPool()){
 			for (auto &mot : model()->motionPool()){
 				for (Size i = 0; i < gm.dim(); ++i) {
