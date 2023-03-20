@@ -207,6 +207,59 @@ void test_model_solver_scara(){
 	test_scara_inverse_solver();
 	test_scara_vel();
 
+	auto m = createScaraModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
+	auto& ee = m->generalMotionPool().at(0);
+
+	double input[4]{ 0.0, -0.0, 0.62, 0.15 }, output[4];
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -1.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -2.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -3.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -4.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -5.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -6.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -7.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -7.0;
+
 	std::cout << "-----------------test model solver scara finished------------" << std::endl << std::endl;
 }
 

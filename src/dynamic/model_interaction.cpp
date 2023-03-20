@@ -1220,8 +1220,17 @@ namespace aris::dynamic{
 			.inherit<aris::dynamic::Constraint>()
 			;
 
+		auto setMp = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
+		auto getMp = [](MotionBase* c)->aris::core::Matrix {	return aris::core::Matrix(1, c->pSize(), c->p()); };
+		auto setMv = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
+		auto getMv = [](MotionBase* c)->aris::core::Matrix {	return aris::core::Matrix(1, c->vSize(), c->v()); };
+		auto setMa = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
+		auto getMa = [](MotionBase* c)->aris::core::Matrix {	return aris::core::Matrix(1, c->aSize(), c->a()); };
 		aris::core::class_<MotionBase>("MotionBase")
 			.inherit<aris::dynamic::Constraint>()
+			.prop("mp", &setMp, &getMp)
+			.prop("mv", &setMv, &getMv)
+			.prop("ma", &setMa, &getMa)
 			;
 
 		aris::core::class_<Force>("Force")
@@ -1251,8 +1260,7 @@ namespace aris::dynamic{
 
 		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
 		auto getMotionFrc = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 3, c->frcCoe()); };
-		auto setMp = [](Motion* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
-		auto getMp = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 1, c->p()); };
+
 		aris::core::class_<Motion>("Motion")
 			.inherit<aris::dynamic::MotionBase>()
 			.prop("component", &Motion::setAxis, &Motion::axis)
@@ -1260,9 +1268,6 @@ namespace aris::dynamic{
 			.prop("rotate_range", &Motion::setRotateRange, &Motion::rotateRange)
 			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
 			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
-			.prop("mp", &setMp, &getMp)
-			.prop("mv", &Motion::setMv, &Motion::mv)
-			.prop("ma", &Motion::setMa, &Motion::ma)
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
