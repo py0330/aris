@@ -291,6 +291,12 @@ namespace aris::plan {
 	auto SingularProcessor::setMaxAccs(const double* max_accs)->void {
 		std::copy(max_accs, max_accs + imp_->input_size_, imp_->max_accs_);
 	}
+	auto SingularProcessor::setMaxVelRatio(double vel_ratio)->void {
+		imp_->max_vel_ratio_ = vel_ratio;
+	}
+	auto SingularProcessor::setMaxAccRatio(double acc_ratio)->void {
+		imp_->max_acc_ratio_ = acc_ratio;
+	}
 	auto SingularProcessor::setModel(aris::dynamic::ModelBase& model)->void {
 		imp_->model_ = &model;
 		imp_->input_size_ = model.inputPosSize();
@@ -431,10 +437,10 @@ namespace aris::plan {
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 			static int print_count = 0;
 
-			if(print_count++ < 2000)
+			//if(print_count++ < 2000)
 
 			//if (ds_ratio > 1.0)
-				std::cout << "less: ds:" << tg_ds << "  ds_ratio" << ds_ratio
+				std::cout <<print_count++ <<  ": ds:" << tg_ds << "  ds_ratio" << ds_ratio
 				<< "  vel_ratio" << vel_ratio << "  acc_ratio" << acc_ratio << std::endl;
 #endif
 
@@ -547,8 +553,8 @@ namespace aris::plan {
 							auto candidate_count = Ts_count[i * 3 + 2];
 							bool candidate_failed = false;
 							for (int j = 0; j < imp_->input_size_; ++j) {
-								if ((candidate_count <= Ts_count[j * 3]
-									|| (candidate_count >= Ts_count[j * 3 + 1]) && candidate_count <= Ts_count[j * 3 + 2])) {
+								if ((candidate_count < Ts_count[j * 3]
+									|| ((candidate_count > Ts_count[j * 3 + 1]) && candidate_count < Ts_count[j * 3 + 2]))) {
 									candidate_failed = true;
 									break;
 								}
@@ -557,12 +563,26 @@ namespace aris::plan {
 								Tmin_count = candidate_count;
 						}
 
-						if (Ts_count[i * 3] < Tmin_count) {
+						if (Ts_count[i * 3 + 1] < Tmin_count && Ts_count[i * 3] <= Ts_count[i * 3 + 1]) {
+							auto candidate_count = Ts_count[i * 3 + 1];
+							bool candidate_failed = false;
+							for (int j = 0; j < imp_->input_size_; ++j) {
+								if ((candidate_count < Ts_count[j * 3]
+									|| ((candidate_count > Ts_count[j * 3 + 1]) && candidate_count < Ts_count[j * 3 + 2]))) {
+									candidate_failed = true;
+									break;
+								}
+							}
+							if (!candidate_failed)
+								Tmin_count = candidate_count;
+						}
+
+						if (Ts_count[i * 3] < Tmin_count && Ts_count[i * 3] <= Ts_count[i * 3 + 1]) {
 							auto candidate_count = Ts_count[i * 3];
 							bool candidate_failed = false;
 							for (int j = 0; j < imp_->input_size_; ++j) {
-								if ((candidate_count <= Ts_count[j * 3]
-									|| (candidate_count >= Ts_count[j * 3 + 1]) && candidate_count <= Ts_count[j * 3 + 2])) {
+								if ((candidate_count < Ts_count[j * 3]
+									|| ((candidate_count > Ts_count[j * 3 + 1]) && candidate_count < Ts_count[j * 3 + 2]))) {
 									candidate_failed = true;
 									break;
 								}

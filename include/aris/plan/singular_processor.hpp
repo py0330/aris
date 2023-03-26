@@ -40,6 +40,10 @@ namespace aris::plan{
 		// 设置方法
 		auto setInverseKinematicMethod(InverseKinematicMethod)->void;
 
+		// 设置最大的速度比和加速度比
+		auto setMaxVelRatio(double vel_ratio)->void;
+		auto setMaxAccRatio(double acc_ratio)->void;
+
 		~SingularProcessor();
 		SingularProcessor();
 		ARIS_DELETE_BIG_FOUR(SingularProcessor);
