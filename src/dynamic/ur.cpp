@@ -186,7 +186,6 @@ namespace aris::dynamic
 	}
 
 	struct UrInverseKinematicSolver::Imp{
-		int which_root_{ 8 };
 		UrParamLocal puma_param;
 		union{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
@@ -420,10 +419,8 @@ namespace aris::dynamic
 			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
 		}
 	}
-	auto UrInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
-	auto UrInverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto UrInverseKinematicSolver::kinPos()->int {
-		if (imp_->which_root_ == 8) {
+		if (whichRoot() == rootNumber()) {
 			int solution_num = 0;
 			double diff_q[8][6];
 			double diff_norm[8];
@@ -474,7 +471,7 @@ namespace aris::dynamic
 			return 0;
 		}
 		else {
-			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), imp_->which_root_, q)) {
+			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), whichRoot(), q)) {
 				for (aris::Size i = 0; i < 6; ++i) {
 					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
@@ -502,7 +499,10 @@ namespace aris::dynamic
 		}
 	};
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
-	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
+	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
+		setWhichRoot(8);
+		setRootNumber(8);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(UrInverseKinematicSolver);
 
 	auto createModelUr(const UrParam &param)->std::unique_ptr<aris::dynamic::Model> {
@@ -621,7 +621,6 @@ namespace aris::dynamic
 	ARIS_REGISTRATION{
 		aris::core::class_<UrInverseKinematicSolver>("UrInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			.prop("which_root", &UrInverseKinematicSolver::setWhichRoot, &UrInverseKinematicSolver::whichRoot)
 			;
 	}
 }

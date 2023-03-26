@@ -78,7 +78,6 @@ namespace aris::dynamic{
 	}
 
 	struct ScaraInverseKinematicSolver::Imp {
-		int which_root_{ 2 };
 		ScaraParamLocal scara_param;
 		union {
 			struct { Part* GR, * L1, * L2, * L3, * L4; };
@@ -267,7 +266,7 @@ namespace aris::dynamic{
 	auto ScaraInverseKinematicSolver::kinPos()->int {
 		const int ROOT_NUM = 2;
 		const int ROOT_SIZE = 4;
-		if (imp_->which_root_ == ROOT_NUM) {
+		if (whichRoot() == rootNumber()) {
 			int solution_num = 0;
 			double diff_q[ROOT_NUM][ROOT_SIZE];
 			double diff_norm[ROOT_NUM];
@@ -354,7 +353,7 @@ namespace aris::dynamic{
 		else {
 			double input[4], output[4];
 			model()->getOutputPos(output);
-			if (auto ret = scaraInverse(imp_->scara_param, output, imp_->which_root_, input))
+			if (auto ret = scaraInverse(imp_->scara_param, output, whichRoot(), input))
 				return ret;
 
 			// link1~4 //
@@ -404,10 +403,11 @@ namespace aris::dynamic{
 			return 0;
 		}
 	}
-	auto ScaraInverseKinematicSolver::setWhichRoot(int root_of_0_to_1)->void { imp_->which_root_ = root_of_0_to_1; };
-	auto ScaraInverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
 	ScaraInverseKinematicSolver::~ScaraInverseKinematicSolver() = default;
-	ScaraInverseKinematicSolver::ScaraInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
+	ScaraInverseKinematicSolver::ScaraInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
+		setWhichRoot(2);
+		setRootNumber(2);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(ScaraInverseKinematicSolver);
 
 
@@ -584,7 +584,7 @@ namespace aris::dynamic{
 			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
 			const int ROOT_NUM = 2;
 			const int ROOT_SIZE = 3;
-			if (which_root_ == ROOT_NUM) {
+			if (whichRoot() == rootNumber()) {
 				int solution_num = 0;
 				double diff_q[ROOT_NUM][ROOT_SIZE];
 				double diff_norm[ROOT_NUM];
@@ -628,7 +628,7 @@ namespace aris::dynamic{
 			else {
 				double input[4], output[4];
 				model()->getOutputPos(output);
-				if (auto ret = planarScaraInverse(dh, output, which_root_, input))
+				if (auto ret = planarScaraInverse(dh, output, whichRoot(), input))
 					return ret;
 
 				// link1~4 //
@@ -646,13 +646,11 @@ namespace aris::dynamic{
 				return 0;
 			}
 		}
-		auto setWhichRoot(int root_of_0_to_7)->void { which_root_ = root_of_0_to_7; };
-		auto whichRoot()const->int { return which_root_; }
 
-		PlanarScaraInverseKinematicSolver() = default;
-
-	private:
-		int which_root_{ 2 };
+		PlanarScaraInverseKinematicSolver() {
+			setWhichRoot(2);
+			setRootNumber(2);
+		};
 	};
 	auto createModelPlanarScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
@@ -757,12 +755,10 @@ namespace aris::dynamic{
 
 		aris::core::class_<ScaraInverseKinematicSolver>("ScaraInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			.prop("which_root", &ScaraInverseKinematicSolver::setWhichRoot, &ScaraInverseKinematicSolver::whichRoot)
 			;
 
 		aris::core::class_<PlanarScaraInverseKinematicSolver>("PlanarScaraInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			.prop("which_root", &PlanarScaraInverseKinematicSolver::setWhichRoot, &PlanarScaraInverseKinematicSolver::whichRoot)
 			;
 	}
 }

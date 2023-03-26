@@ -117,8 +117,6 @@ namespace aris::dynamic{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
-		auto whichRoot()const->int;
 
 		virtual ~ScaraInverseKinematicSolver();
 		explicit ScaraInverseKinematicSolver();

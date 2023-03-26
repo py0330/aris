@@ -2050,6 +2050,8 @@ namespace aris::dynamic{
 
 	ARIS_REGISTRATION{
 		aris::core::class_<Solver>("Solver")
+			.prop("root_num", &Solver::setRootNumber, &Solver::rootNumber)
+			.prop("which_root", &Solver::setWhichRoot, &Solver::whichRoot)
 			.prop("max_iter_count", &Solver::setMaxIterCount, &Solver::maxIterCount)
 			.prop("max_error", &Solver::setMaxError, &Solver::maxError)
 			;

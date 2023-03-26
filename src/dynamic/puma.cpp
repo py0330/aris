@@ -400,7 +400,7 @@ namespace aris::dynamic{
 		}
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int {
-		if (imp_->which_root_ == 8) {
+		if (whichRoot() == rootNumber()) {
 			int solution_num = 0;
 			double diff_q[8][6];
 			double diff_norm[8];
@@ -477,10 +477,11 @@ namespace aris::dynamic{
 			else return -2;
 		}
 	}
-	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
-	auto PumaInverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
 	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
-	PumaInverseKinematicSolver::PumaInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
+	PumaInverseKinematicSolver::PumaInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
+		setWhichRoot(8);
+		setRootNumber(8);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
@@ -644,7 +645,6 @@ namespace aris::dynamic{
 	ARIS_REGISTRATION{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			.prop("which_root", &PumaInverseKinematicSolver::setWhichRoot, &PumaInverseKinematicSolver::whichRoot)
 			;
 	}
 }
