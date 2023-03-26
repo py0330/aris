@@ -19,16 +19,16 @@
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
-	test_screw();
-	test_spline();
-	test_plan();
-	test_model();
-	test_model_coordinate();
-	test_model_interaction();
-	test_model_solver();
-	test_model_solver_universal();
-	test_model_solver_scara();
+	//test_matrix();
+	//test_screw();
+	//test_spline();
+	//test_plan();
+	//test_model();
+	//test_model_coordinate();
+	//test_model_interaction();
+	//test_model_solver();
+	//test_model_solver_universal();
+	//test_model_solver_scara();
 	test_model_solver_puma();
 	test_model_solver_ur();
 	//test_model_solver_delta();

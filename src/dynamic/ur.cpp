@@ -498,6 +498,22 @@ namespace aris::dynamic
 			else return -2;
 		}
 	};
+	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
+		double mpm[16];
+
+		switch (imp_->EE->poseType()) {
+		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, mpm, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, mpm, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, mpm, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, mpm); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, mpm); break;
+		}
+
+		if (inverseUr(imp_->puma_param, mpm, which_root, input))
+			return 0;
+		else
+			return 1;
+	}
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
 	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
 		setWhichRoot(8);

@@ -167,7 +167,6 @@ namespace aris::dynamic{
 	}
 	
 	struct PumaInverseKinematicSolver::Imp {
-		int which_root_{ 8 };
 		PumaParamLocal puma_param;
 		union {
 			struct { Part* GR, * L1, * L2, * L3, * L4, * L5, * L6; };
@@ -450,7 +449,7 @@ namespace aris::dynamic{
 			return 0;
 		}
 		else {
-			if (double q[6]; pumaInverse(imp_->puma_param, *imp_->EE->mpm(), imp_->which_root_, q)) {
+			if (double q[6]; pumaInverse(imp_->puma_param, *imp_->EE->mpm(), whichRoot(), q)) {
 				for (aris::Size i = 0; i < 6; ++i) {
 					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
@@ -476,6 +475,22 @@ namespace aris::dynamic{
 			}
 			else return -2;
 		}
+	}
+	auto PumaInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
+		double mpm[16];
+		
+		switch (imp_->EE->poseType()) {
+		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, mpm, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, mpm, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, mpm, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, mpm); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, mpm); break;
+		}
+		
+		if (pumaInverse(imp_->puma_param, mpm, which_root, input))
+			return 0;
+		else
+			return 1;
 	}
 	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
