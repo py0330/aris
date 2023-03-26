@@ -14,6 +14,15 @@ namespace aris::dynamic
 		auto virtual kinPos()->int = 0;
 		auto virtual kinVel()->int = 0;
 		auto virtual dynAccAndFce()->int = 0;
+
+		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root)->int { return -1; };
+
+		// 运动学的解个数 //
+		auto setRootNumber(int root_of_solver)->void;
+		auto rootNumber()const->int;
+		// 选择哪个解 //
+		auto setWhichRoot(int root_of_solver)->void;
+		auto whichRoot()const->int;
 		auto error()const->double;
 		auto setError(double error)->void;
 		auto maxError()const->double;
@@ -37,8 +46,14 @@ namespace aris::dynamic
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
-		auto virtual kinPosPre()->int;      // 对位置进行预计算，但不设置 model 
-		auto virtual kinPosSetModel()->void; // 预计算之后，设置 model
+		
+		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root)->int override;
+
+		auto kinPosCompute()->int;                               // 进行计算
+		auto kinPosSetActiveMotionPos(const double* mp)->void;   // 将用户的作为 mp
+		auto kinPosGetUnactiveMotionPos(double* mp)->void; // 获取未激活的motion 的 mp
+		auto kinPosSetMotionPosFromModel()->void;                // 将Model的状态作为 mp
+		auto kinPosUpdateModel()->void;                          // 计算之后，设置 model 的状态
 		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
 		auto mJg()const noexcept->Size;// = part_number x 6
 		auto nJg()const noexcept->Size;// = motion_number + general_motion_number x 6
@@ -62,10 +77,10 @@ namespace aris::dynamic
 	class ARIS_API ForwardKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPosWithoutSetModel(double* output)->int;
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
+
 		auto cptJacobi()noexcept->void;
 		auto mJf()const noexcept->Size;// equal mot num
 		auto nJf()const noexcept->Size;// equal ee num * 6
@@ -83,10 +98,10 @@ namespace aris::dynamic
 	class ARIS_API InverseKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPosWithoutSetModel(double* input)->int;
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
+
 		auto cptJacobi()noexcept->void;
 		auto mJi()const noexcept->Size;// equal mot num
 		auto nJi()const noexcept->Size;// equal ee num * 6

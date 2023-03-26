@@ -1156,6 +1156,54 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			
 		}
 	}
+
+	// 测试无状态的运动学正反解 //
+	for (auto& s : m.solverPool()) {
+		/////////////////////////////////////////////////////正向，从输入到输出///////////////////////////////////////////////////
+		std::vector<double> result_pool(std::max(16 * m.generalMotionPool().size(), m.motionPool().size()));
+		double* result = result_pool.data();
+
+		// set topology //
+		for (auto& fce : m.forcePool())fce.activate(false);
+		for (auto& mot : m.motionPool())mot.activate(true);
+		for (auto& gm : m.generalMotionPool())gm.activate(false);
+
+		// set origin //
+		m.init();
+		m.setInputPos(ipo);
+		s.kinPos();
+
+		// 计算正解 //
+		s.kinPosPure(ipt, result, 0);
+
+		// check //
+		if (!s_is_equal(m.outputPosSize(), result, opt, error[0])) {
+			std::cout << s.id() << "::kinPos() forward failed" << std::endl;
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), opt);
+		}
+
+		/////////////////////////////////////////////////////反向，从输出到输入///////////////////////////////////////////////////
+		for (auto& fce : m.forcePool())fce.activate(false);
+		for (auto& mot : m.motionPool())mot.activate(false);
+		for (auto& gm : m.generalMotionPool())gm.activate(true);
+
+		// set ee origin status //
+		m.init();
+		m.setOutputPos(opo);
+		s.kinPos();
+
+		// compute //
+		s.kinPosPure(opt, result, 0);
+		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
+
+		// check //
+		if (!s_is_equal(m.inputPosSize(), result, ipt, error[4])) {
+			std::cout << s.id() << "::kinPos() inverse failed" << std::endl;
+			dsp(1, m.outputPosSize(), result);
+			dsp(1, m.outputPosSize(), ipt);
+		}
+	}
 }
 
 void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *ipo, const double *ivo, const double *iao, const double *ifo,

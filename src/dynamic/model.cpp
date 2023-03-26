@@ -71,8 +71,8 @@ namespace aris::dynamic{
 		});
 		imp_->ground_ = ground == partPool().end() ? &partPool().add<Part>("ground") : &*ground;
 
-		//variablePool().model_ = this;
-		//for (auto &ele : variablePool())ele.model_ = this;
+		variablePool().model_ = this;
+		for (auto &ele : variablePool())ele.model_ = this;
 		partPool().model_ = this;
 		for (Size i = 0; i< partPool().size(); ++i){
 			partPool()[i].model_ = this;
@@ -164,11 +164,19 @@ namespace aris::dynamic{
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	
-	auto Model::inverseKinematics(const double* output, double* input)const noexcept->int {
-		return 0;
+	auto Model::inverseKinematics(const double* output, double* input, int which_root)const noexcept->int {
+		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
+			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
+			return inv->kinPosPure(output, input, which_root);
+		}
+		return -1;
 	}
-	auto Model::forwardKinematics(const double* input, double* output)const noexcept->int {
-		return 0;
+	auto Model::forwardKinematics(const double* input, double* output, int which_root)const noexcept->int {
+		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
+			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
+			return fwd->kinPosPure(input, output, which_root);
+		}
+		return -1;
 	}
 
 	

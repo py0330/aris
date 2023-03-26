@@ -219,8 +219,8 @@ namespace aris::dynamic{
 		auto virtual forwardDynamics()noexcept->int override;
 
 		// kinematics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input)const noexcept->int override;
-		auto virtual forwardKinematics(const double* input, double* output)const noexcept->int override;
+		auto virtual inverseKinematics(const double* output, double* input, int which_root)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output, int which_root)const noexcept->int override;
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size override;                         

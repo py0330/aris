@@ -81,6 +81,11 @@ auto test_singular_processor_1()->void {
 	sp.setMaxVels(max_vels.data());
 	sp.setMaxAccs(max_accs.data());
 	sp.setTrajectoryGenerator(tg);
+	//sp.setInverseKinematicMethod([](aris::dynamic::ModelBase &model, const double *output) {
+	//	model
+	//
+	//
+	//	});
 
 	sp.init();
 

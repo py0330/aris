@@ -15,8 +15,8 @@ namespace aris::dynamic{
 		auto virtual forwardDynamics()noexcept->int { return -1; }
 
 		// kinematics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input)const noexcept->int { return -1; }
-		auto virtual forwardKinematics(const double* input, double* output)const noexcept->int { return -1; }
+		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0)const noexcept->int { return -1; }
+		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0)const noexcept->int { return -1; }
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size { return 0; }

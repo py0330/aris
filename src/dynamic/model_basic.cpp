@@ -16,8 +16,7 @@
 #include "aris/dynamic/screw.hpp"
 #include "aris/dynamic/model.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	auto MatrixVariable::fromString(std::string_view str)->void {
 		static aris::core::Calculator c;
 		static int i = 0;
