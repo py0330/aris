@@ -351,6 +351,9 @@ namespace aris::plan {
 	auto SingularProcessor::setDs(double ds)->void {
 		imp_->current_ds_ = ds;
 	}
+	auto SingularProcessor::setDds(double dds)->void {
+		imp_->current_dds_ = dds;
+	}
 	auto SingularProcessor::setTargetDs(double ds)->void {
 		imp_->target_ds_ = ds;
 	}
