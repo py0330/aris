@@ -349,9 +349,10 @@ namespace aris::server{
 	ControlServerErrorChecker::~ControlServerErrorChecker() = default;
 	ARIS_DEFINE_BIG_FOUR_CPP_NOEXCEPT(ControlServerErrorChecker);
 
+	struct PVC_Plus { double p; double v; double c; double pm; };
 	struct ControlServerErrorCheckerByModel::Imp {
 		std::vector<char> mem_pool_;
-		PVC* last_pvc_, * last_last_pvc_;
+		PVC_Plus* last_pvc_, * last_last_pvc_;
 		aris::server::ControlServer* cs_;
 	};
 	auto ControlServerErrorCheckerByModel::init(aris::server::ControlServer* cs)->void {
@@ -407,20 +408,20 @@ namespace aris::server{
 				case 6:break;
 				case 8: {
 					// check pos infinite //
-					if (!std::isfinite(input_pos_at_i)) {
+					if (!std::isfinite(cm.targetPos())) {
 						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 							u8"电机 %zu 目标位置不是有效值，当前周期: %zu\t目标位置: %f\n" :
 							u8"Motor %zu target position is INFINITE in count %zu:\nvalue: %f\n",
-							display_id, count, input_pos_at_i);
+							display_id, count, cm.targetPos());
 						return error_code;
 					}
 
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (input_pos_at_i > cm.maxPos())
-						&& (input_pos_at_i > ld.p))
+						&& (input_pos_at_i > ld.pm))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg,
@@ -434,7 +435,7 @@ namespace aris::server{
 					// check pos min //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
 						&& (input_pos_at_i < cm.minPos())
-						&& (input_pos_at_i < ld.p))
+						&& (input_pos_at_i < ld.pm))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg,
@@ -447,40 +448,40 @@ namespace aris::server{
 
 					// check pos continuous //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS)
-						&& ((input_pos_at_i - ld.p) > dt * cm.maxVel() || (input_pos_at_i - ld.p) < dt * cm.minVel()))
+						&& ((cm.targetPos() - ld.p) > dt * cm.maxVel() || (cm.targetPos() - ld.p) < dt * cm.minVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 							u8"电机 %zu 速度过大，当前周期: %zu\t上次位置: %f\t本次位置: %f\n" :
 							u8"Motor %zu target position NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n",
-							display_id, count, ld.p, input_pos_at_i);
+							display_id, count, ld.p, cm.targetPos());
 						return error_code;
 					}
 
 					// check pos continuous second order //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
-						&& ((input_pos_at_i + lld.p - 2 * ld.p) > dt * dt * cm.maxAcc() || (input_pos_at_i + lld.p - 2 * ld.p) < dt * dt * cm.minAcc()))
+						&& ((cm.targetPos() + lld.p - 2 * ld.p) > dt * dt * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < dt * dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 							u8"电机 %zu 加速度过大，当前Count %zu:\n上上次位置: %f\t上次位置: %f\t本次位置: %f\n" :
 							u8"Motor %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %f\tlast: %f\tnow: %f\n",
-							display_id, count, lld.p, ld.p, input_pos_at_i);
+							display_id, count, lld.p, ld.p, cm.targetPos());
 						return error_code;
 					}
 
 					// check pos following error //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR)
-						&& (std::abs(input_pos_at_i - cm.actualPos()) > cm.maxPosFollowingError()))
+						&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_FOLLOWING_ERROR;
 						sprintf(error_msg,
 							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
 							u8"电机 %zu 位置跟随误差过大，当前Count %zu:\n实际位置: %f\t目标位置: %f\n" :
 							u8"Motion %zu target position has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n",
-							display_id, count, cm.actualPos(), input_pos_at_i);
+							display_id, count, cm.actualPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -674,8 +675,9 @@ namespace aris::server{
 	}
 	auto ControlServerErrorCheckerByModel::storeServerData()->void {
 		auto controller_ = &imp_->cs_->controller();
-
+		auto model_ = &imp_->cs_->model();
 		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i) {
+			imp_->last_last_pvc_[i].pm = model_->inputPosAt(i);
 			imp_->last_last_pvc_[i].p = controller_->motorPool()[i].targetPos();
 			imp_->last_last_pvc_[i].v = controller_->motorPool()[i].targetVel();
 			imp_->last_last_pvc_[i].c = controller_->motorPool()[i].targetToq();
