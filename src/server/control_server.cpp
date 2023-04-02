@@ -76,8 +76,6 @@ namespace aris::server{
 
 		auto tg()->void;
 		auto executeCmd(aris::plan::Plan &plan)->int;
-		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
-		auto fixError()->std::int32_t;
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;
@@ -105,10 +103,6 @@ namespace aris::server{
 		std::thread collect_thread_;
 		std::atomic_bool is_collect_running_;
 
-		// 储存上一次motion的数据, p v c //
-		struct PVC { double p; double v; double c; };
-		PVC *last_pvc_, *last_last_pvc_;
-
 		// 交换controller与model所需的缓存 //
 		double *mem_transfer_p_, *mem_transfer_v_, *mem_transfer_a_, *mem_transfer_f_;
 
@@ -131,6 +125,7 @@ namespace aris::server{
 		std::unique_ptr<aris::core::PointerArray<aris::server::Interface>> interface_pool_{new aris::core::PointerArray<aris::server::Interface> };
 		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
 		std::unique_ptr<CustomModule> custom_module_{new CustomModule};
+		std::unique_ptr<ControlServerErrorChecker> error_checker_{ new ControlServerErrorChecker };
 
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
@@ -158,7 +153,7 @@ namespace aris::server{
 
 		// 如果处于错误状态,或者错误还未清理完 //
 		if (err_code_and_fixed){
-			err.fix = fixError();
+			err.fix = server_->errorChecker().fixError();
 			err_code_and_fixed_.store(err_code_and_fixed);
 			server_->master().resetRtStasticData(nullptr, false);
 			server_->master().lout() << std::flush;
@@ -215,8 +210,8 @@ namespace aris::server{
 					auto ret = executeCmd(plan);
 
 					// 错误，包含系统检查出的错误以及用户返回错误 //
-					if (((err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count())) < 0) || ((err.code = ret) < 0)) {
-						err.fix = fixError();
+					if (((err.code = server_->errorChecker().checkError(plan.count(), plan.motorOptions().data(), err_msg_)) < 0) || ((err.code = ret) < 0)) {
+						err.fix = server_->errorChecker().fixError();
 						err_code_and_fixed_.store(err_code_and_fixed);
 						if (error_handle_)error_handle_(&plan, err.code, err_msg_);
 
@@ -262,8 +257,8 @@ namespace aris::server{
 			}
 			
 			if (is_idle) {
-				if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0) {
-					err.fix = fixError();
+				if (err.code = server_->errorChecker().checkError(0, idle_mot_check_options_, err_msg_); err.code < 0) {
+					err.fix = server_->errorChecker().fixError();
 					err_code_and_fixed_.store(err_code_and_fixed);
 					if (error_handle_)error_handle_(nullptr, err.code, err_msg_);
 					server_->master().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
@@ -273,12 +268,7 @@ namespace aris::server{
 		
 
 		// 储存本次的数据 //
-		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
-			last_last_pvc_[i].p = controller_->motorPool()[i].targetPos();
-			last_last_pvc_[i].v = controller_->motorPool()[i].targetVel();
-			last_last_pvc_[i].c = controller_->motorPool()[i].targetToq();
-		}
-		std::swap(last_pvc_, last_last_pvc_);
+		server_->errorChecker().storeServerData();
 
 		// 给与外部想要的数据 //
 		if (if_get_data_.exchange(false)){ // 原子操作
@@ -303,298 +293,6 @@ namespace aris::server{
 
 
 		return ret;
-	}
-	auto ControlServer::Imp::checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int{
-		int error_code = aris::plan::Plan::SUCCESS;
-
-		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
-		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
-			const auto &cm = controller_->motorPool()[i];
-			const auto &ld = last_pvc_[i];
-			const auto &lld = last_last_pvc_[i];
-			const auto option = mot_options[i];
-			const auto dt = master_->samplePeriodNs() / 1.0e9;
-
-			auto display_id = i + 1;
-
-			// 检查使能 //
-			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
-				&& ((cm.statusWord() & 0x6f) != 0x27))
-			{
-				error_code = aris::plan::Plan::MOTION_NOT_ENABLED;
-				sprintf(error_msg, 
-					aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-					u8"电机 %zd 没在使能模式，当前周期: %zd\n":
-					u8"Motor %zd is not in OPERATION_ENABLE mode in count %zd\n",
-					display_id, count_);
-				return error_code;
-			}
-
-			// 使能时才检查 //
-			if (cm.isEnabled()){
-				switch (cm.modeOfOperation()){
-				case 6:break;
-				case 8:{
-					// check pos infinite //
-					if (!std::isfinite(cm.targetPos())){
-						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
-						sprintf(error_msg,
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 目标位置不是有效值，当前周期: %zu\t目标位置: %f\n":
-							u8"Motor %zu target position is INFINITE in count %zu:\nvalue: %f\n" ,
-							display_id, count_, cm.targetPos());
-						return error_code;
-					}
-					
-					// check pos max //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
-						&& (cm.targetPos() > cm.maxPos())
-						&& (cm.targetPos() > ld.p))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 超出正限位，当前周期: %zu\t允许最大位置: %f\t目标位置: %f\n":
-							u8"Motor %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n" ,
-							display_id, count_, cm.maxPos(), cm.targetPos());
-						return error_code;
-					}
-
-					// check pos min //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
-						&& (cm.targetPos() < cm.minPos())
-						&& (cm.targetPos() < ld.p))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 超出负限位，当前周期: %zu\t允许最小值: %f\t目标位置: %f\n":
-							u8"Motor %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n" ,
-							display_id, count_, cm.minPos(), cm.targetPos());
-						return error_code;
-					}
-
-					// check pos continuous //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS)
-						&& ((cm.targetPos() - ld.p) > dt * cm.maxVel() || (cm.targetPos() - ld.p) < dt * cm.minVel()))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 速度过大，当前周期: %zu\t上次位置: %f\t本次位置: %f\n":
-							u8"Motor %zu target position NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n",
-							display_id, count_, ld.p, cm.targetPos());
-						return error_code;
-					}
-
-					// check pos continuous second order //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
-						&& ((cm.targetPos() + lld.p - 2 * ld.p) > dt * dt * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < dt * dt * cm.minAcc()))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 加速度过大，当前Count %zu:\n上上次位置: %f\t上次位置: %f\t本次位置: %f\n":
-							u8"Motor %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %f\tlast: %f\tnow: %f\n",
-							display_id, count_, lld.p, ld.p, cm.targetPos());
-						return error_code;
-					}
-
-					// check pos following error //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR)
-						&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_FOLLOWING_ERROR;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 位置跟随误差过大，当前Count %zu:\n实际位置: %f\t目标位置: %f\n":
-							u8"Motion %zu target position has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n",
-							display_id, count_, cm.actualPos(), cm.targetPos());
-						return error_code;
-					}
-
-					break;
-				}
-				case 9:{
-					// check vel infinite //
-					if (!std::isfinite(cm.targetVel())){
-						error_code = aris::plan::Plan::MOTION_VEL_INFINITE;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 目标速度不是有效值，当前Count %zu:\n目标速度: %f\n":
-							u8"Motion %zu target velocity is INFINITE in count %zu:\nvalue: %f\n", 
-							display_id, count_, cm.targetVel());
-						return error_code;
-					}
-					
-					// check vel max //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
-						&& (cm.targetVel() > cm.maxVel()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 速度超限，当前Count %zu:\n允许最大速度: %f\t目标速度: %f\n":
-							u8"Motion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", 
-							display_id, count_, cm.maxVel(), cm.targetVel());
-						return error_code;
-					}
-
-					// check vel min //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
-						&& (cm.targetVel() < cm.minVel()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 速度超限，当前Count %zu:\n允许最小速度: %f\t目标速度: %f\n":
-							u8"Motion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", 
-							display_id, count_, cm.minVel(), cm.targetVel());
-						return error_code;
-					}
-
-					// check vel continuous //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
-						&& ((cm.targetVel() - ld.v) > dt * cm.maxAcc() || (cm.targetVel() - ld.v) < dt * cm.minAcc()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 加速度超限，当前Count %zu:\n上次速度: %f\t本次速度: %f\n":
-							u8"Motion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", display_id, count_, ld.v, cm.targetVel());
-						return error_code;
-					}
-
-					// check vel following error //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_FOLLOWING_ERROR)
-						&& (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_FOLLOWING_ERROR;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 速度跟随误差过大，当前Count %zu:\n实际速度: %f\t目标速度: %f\n":
-							u8"Motion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n", display_id, count_, cm.actualVel(), cm.targetVel());
-						return error_code;
-					}
-
-					break;
-				}
-				case 10:{
-					// check pos max //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
-						&& (cm.actualPos() > cm.maxPos()))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 实际位置超出最大值，当前Count %zu:\n允许最大位置: %f\t实际位置: %f\n" :
-							u8"Motion %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n", display_id, count_, cm.maxPos(), cm.targetPos());
-						return error_code;
-					}
-
-					// check pos min //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
-						&& (cm.actualPos() < cm.minPos()))
-					{
-						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 实际位置超出最小值，当前Count %zu:\n允许最小位置: %f\t实际位置: %f\n" :
-							u8"Motion %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n", 
-							display_id, count_, cm.minPos(), cm.targetPos());
-						return error_code;
-					}
-
-					// check vel max //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
-						&& (cm.actualVel() > cm.maxVel()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 实际速度超出最大值，当前Count %zu:\n允许最大速度: %f\t实际速度: %f\n" :
-							u8"Motion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", 
-							display_id, count_, cm.maxVel(), cm.actualVel());
-						return error_code;
-					}
-
-					// check vel min //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
-						&& (cm.actualVel() < cm.minVel()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 实际速度超出最小值，当前Count %zu:\n允许最小速度: %f\t实际速度: %f\n" :
-							u8"Motion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", display_id, count_, cm.minVel(), cm.actualVel());
-						return error_code;
-					}
-
-					// check vel continuous //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
-						&& ((cm.actualVel() - ld.v) > dt * cm.maxAcc() || (cm.actualVel() - ld.v) < dt * cm.minAcc()))
-					{
-						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, 
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 加速度过大，当前Count %zu:\n上次速度: %f\t本次速度: %f\n" :
-							u8"Motion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", 
-							display_id, count_, ld.v, cm.actualVel());
-						return error_code;
-					}
-					break;
-				}
-				default:{
-					// invalid mode //
-					if (!(option & aris::plan::Plan::NOT_CHECK_MODE)){
-						error_code = aris::plan::Plan::MOTION_INVALID_MODE;
-						sprintf(error_msg,
-							aris::core::currentLanguage() == (int)aris::core::Language::kSimplifiedChinese ?
-							u8"电机 %zu 模式不合法，当前Count %zu:\n模式: %d\n" :
-							u8"Motion %zu MODE INVALID in count %zu:\nmode: %d\n", 
-							display_id, count_, cm.modeOfOperation());
-						return error_code;
-					}
-				}
-				}
-			}
-		}
-
-		
-		return 0;
-	}
-	auto ControlServer::Imp::fixError()->std::int32_t{
-		// 只要在check里面执行，都说明修复没有结束 //
-		std::int32_t fix_finished{ 0 };
-		for (std::size_t i = 0; i < controller_->motorPool().size(); ++i){
-			// correct
-			auto &cm = controller_->motorPool().at(i);
-			switch (cm.modeOfOperation()){
-			case 1:
-			case 8:
-				cm.setTargetPos(std::abs(last_pvc_[i].p - cm.actualPos()) > cm.maxPosFollowingError() ? cm.actualPos() : last_pvc_[i].p);
-				break;
-			case 9:
-				cm.setTargetVel(0.0);
-				break;
-			case 10:
-				cm.setTargetToq(0.0);
-				fix_finished = cm.disable() || fix_finished;
-				break;
-			default:
-				fix_finished = cm.disable() || fix_finished;
-				cm.setTargetPos(0.0);
-				cm.setTargetVel(0.0);
-				cm.setTargetToq(0.0);
-			}
-
-			// store correct data
-			last_pvc_[i].p = last_last_pvc_[i].p = controller_->motorPool().at(i).targetPos();
-			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motorPool().at(i).targetVel();
-			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motorPool().at(i).targetToq();
-		}
-
-		return fix_finished;
 	}
 	auto ControlServer::instance()noexcept->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::resetModel(dynamic::ModelBase *model)->void { imp_->model_.reset(model); }
@@ -623,6 +321,9 @@ namespace aris::server{
 	auto ControlServer::resetCustomModule(server::CustomModule *custom_module)->void { imp_->custom_module_.reset(custom_module); }
 	auto ControlServer::customModule()->CustomModule& { return *imp_->custom_module_; }
 	
+	auto ControlServer::resetErrorChecker(server::ControlServerErrorChecker* error_checker)->void {	imp_->error_checker_.reset(error_checker);}
+	auto ControlServer::errorChecker()->ControlServerErrorChecker& {return *imp_->error_checker_;}
+
 	auto ControlServer::updateDataController2Model(const std::vector<std::uint64_t>& options)noexcept->void {
 		imp_->transfer_model_controller_->updateDataController2Model(options, &controller(), &model());
 	}
@@ -908,6 +609,8 @@ namespace aris::server{
 		planRoot().init();
 		middleWare().init();
 
+		errorChecker().init(this);
+
 		// 更新每个 plan 的初值 //
 		for (auto &p : planRoot().planPool()) {
 			p.setCmdId(0);
@@ -933,8 +636,6 @@ namespace aris::server{
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
 
-		core::allocMem(mem_size, imp_->last_pvc_, controller().motorPool().size());
-		core::allocMem(mem_size, imp_->last_last_pvc_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().motorPool().size());
 		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().motorPool().size());
 
@@ -945,8 +646,6 @@ namespace aris::server{
 
 		imp_->mempool_.resize(mem_size, char(0));
 
-		imp_->last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
-		imp_->last_last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
 		imp_->idle_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->idle_mot_check_options_);
 		std::fill_n(imp_->idle_mot_check_options_, controller().motorPool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
@@ -1829,6 +1528,7 @@ namespace aris::server{
 			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
 			.prop("custom_module", &ControlServer::resetCustomModule, CustomModuleFunc(&ControlServer::customModule))
+			.prop("error_checker", &ControlServer::resetErrorChecker, &ControlServer::errorChecker)
 			;
 		
 		aris::core::class_<ProgramMiddleware>("ProgramMiddleware")
