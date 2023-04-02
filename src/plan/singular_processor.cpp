@@ -1,4 +1,5 @@
 ﻿#include"aris/plan/singular_processor.hpp"
+#include"aris/plan/function.hpp"
 
 //#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
@@ -241,7 +242,7 @@ namespace aris::plan {
 		InverseKinematicMethod inv_func_;
 
 		aris::Size input_size_{ 0 };
-		double dt{ 0.001 };
+		double dt_{ 0.001 };
 
 
 
@@ -269,7 +270,11 @@ namespace aris::plan {
 		double check_rate_{ 0.99 };
 		double max_vel_ratio_{ 0.95 };
 		double max_acc_ratio_{ 0.9 };
-		double current_ds_{ 1.0 }, last_dds{0.0};
+		double current_ds_{ 1.0 }, // 类似 tg 中的 ds，但是在降速的时候，它其实是系统的上界，真实的 tg 里的ds 并不一定是这个值
+			   current_dds_{ 0.0 }, // 类似 tg 中的 dds
+			   current_ddds_{ 0.0 }, // 类似 tg 中的 ddds
+			   target_ds_{ 1.0 },  // 类似 tg 中的 target_ds，它是ds 追赶的目标
+			   last_dds{ 0.0 };
 		aris::dynamic::ModelBase* model_{nullptr};
 		aris::plan::TrajectoryGenerator* tg_{nullptr};
 
@@ -346,6 +351,9 @@ namespace aris::plan {
 	auto SingularProcessor::setDs(double ds)->void {
 		imp_->current_ds_ = ds;
 	}
+	auto SingularProcessor::setTargetDs(double ds)->void {
+		imp_->target_ds_ = ds;
+	}
 	auto SingularProcessor::setModelPosAndMoveDt()->std::int64_t {
 		
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
@@ -380,6 +388,8 @@ namespace aris::plan {
 
 
 			auto tg_ds = imp_->tg_->currentDs();
+			auto tg_max_dds = imp_->tg_->maxDds();
+			auto tg_max_ddds = imp_->tg_->maxDdds();
 
 			// 取出位置
 			std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
@@ -389,12 +399,12 @@ namespace aris::plan {
 			// 计算速度
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_pos_this_, imp_->input_vel_this_);
 			aris::dynamic::s_vs(imp_->input_size_, imp_->input_pos_last_, imp_->input_vel_this_);
-			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt, imp_->input_vel_this_);
+			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt_, imp_->input_vel_this_);
 
 			// 计算加速度
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_vel_this_, imp_->input_acc_this_);
 			aris::dynamic::s_vs(imp_->input_size_, imp_->input_vel_last_, imp_->input_acc_this_);
-			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt, imp_->input_acc_this_);
+			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt_, imp_->input_acc_this_);
 
 			// 计算去除 dds 项所影响的加速度
 			// d2p = d2p_ds2 * ds^2 + dp_ds * d2s
@@ -411,28 +421,21 @@ namespace aris::plan {
 				std::sqrt(acc_ratio / imp_->max_acc_ratio_)
 				});
 
-			if (ds_ratio > 1.0) {
-				auto ds = tg_ds / ds_ratio;
-				ds = std::max(0.01, ds);
-				imp_->tg_->setCurrentDs(ds);
-				imp_->tg_->setCurrentDds(0.0);
-				imp_->tg_->setTargetDs(ds);
-				imp_->last_dds = (ds - tg_ds)/imp_->dt;
-			}
-			else {
-				//auto ds_target = tg_ds / std::max(ds_ratio, 0.01);
-				//ds_target = std::min(ds_target, imp_->current_ds_);
-				//imp_->tg_->setTargetDs(ds_target);
-				//imp_->last_dds = imp_->tg_->currentDds();
+			// 追赶 current_ds，该值为 tg 中 ds 的上界
+			aris::Size total_count;
+			moveAbsolute2(imp_->current_ds_, imp_->current_dds_, imp_->current_ddds_, imp_->target_ds_, 0.0, 0.0,
+				tg_max_dds, tg_max_ddds, tg_max_dds, imp_->dt_, 1e-10,
+				imp_->current_ds_, imp_->current_dds_, imp_->current_ddds_, total_count);
 
-				auto ds = tg_ds / ds_ratio;
-				ds = std::max(0.01, ds);
-				ds = std::min(imp_->current_ds_, ds);
-				imp_->tg_->setCurrentDs(ds);
-				imp_->tg_->setCurrentDds(0.0);
-				imp_->tg_->setTargetDs(ds);
-				imp_->last_dds = (ds - tg_ds) / imp_->dt;
-			}
+			// 接管 tg 的 ds 设置
+			// 【注意】：tg 中的 ds dds ddds 的设置事实上不生效
+			auto ds = tg_ds / ds_ratio;
+			ds = std::max(imp_->current_ds_ * 0.01, ds); // 最低降到当前 ds 的 百分之一
+			ds = std::min(imp_->current_ds_, ds);
+			imp_->tg_->setCurrentDs(ds);
+			imp_->tg_->setCurrentDds(0.0);
+			imp_->tg_->setTargetDs(ds);
+			imp_->last_dds = (ds - tg_ds) / imp_->dt_;
 
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 			static int print_count = 0;
@@ -454,7 +457,7 @@ namespace aris::plan {
 			std::swap(imp_->input_vel_this_, imp_->input_vel_last_);
 			for (int i = 0; i < imp_->input_size_; ++i) {
 				//imp_->input_pos_this_[i] = s_third_polynomial_compute_value(imp_->curve_params_[i], imp_->current_singular_count_ * imp_->dt);
-				imp_->input_pos_this_[i] = s_tcurve_value(imp_->curve_params_[i], imp_->current_singular_count_ * imp_->dt);
+				imp_->input_pos_this_[i] = s_tcurve_value(imp_->curve_params_[i], imp_->current_singular_count_ * imp_->dt_);
 			}
 
 			imp_->model_->setInputPos(imp_->input_pos_this_);
@@ -463,12 +466,12 @@ namespace aris::plan {
 			// 计算速度
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_pos_this_, imp_->input_vel_this_);
 			aris::dynamic::s_vs(imp_->input_size_, imp_->input_pos_last_, imp_->input_vel_this_);
-			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt, imp_->input_vel_this_);
+			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt_, imp_->input_vel_this_);
 
 			// 计算加速度
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_vel_this_, imp_->input_acc_this_);
 			aris::dynamic::s_vs(imp_->input_size_, imp_->input_vel_last_, imp_->input_acc_this_);
-			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt, imp_->input_acc_this_);
+			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt_, imp_->input_acc_this_);
 
 			imp_->current_singular_count_++;
 			if (imp_->current_singular_count_ > imp_->total_singular_count_)
@@ -535,14 +538,14 @@ namespace aris::plan {
 						double T1, T2, T3;
 						s_tcurve_T_range(tcurve_param, T1, T2, T3);
 						if (T1 == T3) {
-							Ts_count[i * 3] = (std::int64_t)std::ceil(T1 / imp_->dt);
-							Ts_count[i * 3 + 1] = (std::int64_t)std::ceil(T2 / imp_->dt);
-							Ts_count[i * 3 + 2] = (std::int64_t)std::ceil(T3 / imp_->dt);
+							Ts_count[i * 3] = (std::int64_t)std::ceil(T1 / imp_->dt_);
+							Ts_count[i * 3 + 1] = (std::int64_t)std::ceil(T2 / imp_->dt_);
+							Ts_count[i * 3 + 2] = (std::int64_t)std::ceil(T3 / imp_->dt_);
 						}
 						else {
-							Ts_count[i * 3] = (std::int64_t)std::ceil(T1 / imp_->dt);
-							Ts_count[i * 3 + 1] = (std::int64_t)std::floor(T2 / imp_->dt);
-							Ts_count[i * 3 + 2] = (std::int64_t)std::ceil(T3 / imp_->dt);
+							Ts_count[i * 3] = (std::int64_t)std::ceil(T1 / imp_->dt_);
+							Ts_count[i * 3 + 1] = (std::int64_t)std::floor(T2 / imp_->dt_);
+							Ts_count[i * 3 + 2] = (std::int64_t)std::ceil(T3 / imp_->dt_);
 						}
 					}
 
@@ -594,7 +597,7 @@ namespace aris::plan {
 
 					// 根据 Tmin 生成曲线
 					for (int i = 0; i < imp_->input_size_; ++i) {
-						imp_->curve_params_[i].T = Tmin_count * imp_->dt;
+						imp_->curve_params_[i].T = Tmin_count * imp_->dt_;
 						s_tcurve_param(imp_->curve_params_[i]);
 					}
 

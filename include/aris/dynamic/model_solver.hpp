@@ -16,6 +16,8 @@ namespace aris::dynamic
 		auto virtual dynAccAndFce()->int = 0;
 
 		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root)->int { return -1; };
+		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)->int = 0;
+		auto virtual answerSize()->aris::Size = 0;
 
 		// 运动学的解个数 //
 		auto setRootNumber(int root_of_solver)->void;
@@ -48,6 +50,9 @@ namespace aris::dynamic
 		auto virtual dynAccAndFce()->int override;
 		
 		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root)->int override;
+		auto virtual answerSize()->aris::Size override;
+		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)->int override;
+		//auto virtual whichRootOfAnswer(const double* answer)->int override;
 
 		auto kinPosCompute()->int;                               // 进行计算
 		auto kinPosSetActiveMotionPos(const double* mp)->void;   // 将用户的作为 mp

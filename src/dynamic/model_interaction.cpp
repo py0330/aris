@@ -34,18 +34,6 @@ namespace aris::dynamic{
 	struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
 	auto Constraint::cf() const noexcept->const double* { return imp_->cf_; }
 	auto Constraint::setCf(const double *cf) noexcept->void { return s_vc(dim(), cf, imp_->cf_); }
-	auto Joint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void{
-		double pm_j2i[16], ps_j2i[6];
-		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
-		s_pm2ps(pm_j2i, ps_j2i);
-		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
-	}
-	auto MotionBase::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
-		double pm_j2i[16], ps_j2i[6];
-		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
-		s_pm2ps(pm_j2i, ps_j2i);
-		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
-	}
 	auto Constraint::cptCvDiff(double *cv)const noexcept->void{
 		// 获取 cv //
 		cptCv(cv);
@@ -66,6 +54,26 @@ namespace aris::dynamic{
 	Constraint::~Constraint() = default;
 	Constraint::Constraint(const std::string &name, Marker* makI, Marker* makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Constraint);
+
+	auto Joint::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		double pm_j2i[16], ps_j2i[6];
+		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
+		s_pm2ps(pm_j2i, ps_j2i);
+		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
+	}
+	auto MotionBase::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+		double pm_j2i[16], ps_j2i[6];
+		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
+		s_pm2ps(pm_j2i, ps_j2i);
+		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
+	}
+	auto MotionBase::compareP(const double* p1, const double* p2)->int {
+		for (int i = 0; i < pSize(); ++i) {
+			if (std::abs(p1[i] - p2[i]) > 1e-10)
+				return -1;
+		}
+		return 0;
+	}
 
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };

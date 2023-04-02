@@ -33,6 +33,7 @@ namespace aris::plan{
 		
 		// 设置速度百分比，类似 TG 中 setTargetDs
 		auto setDs(double ds)->void;
+		auto setTargetDs(double ds)->void;
 
 		// 每个实时周期调用这个函数，确保不超速
 		auto setModelPosAndMoveDt()->std::int64_t;

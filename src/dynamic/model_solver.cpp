@@ -23,10 +23,13 @@ namespace aris::dynamic{
 		Size iter_count_{ 0 };
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 	};
-	auto Solver::setRootNumber(int root_num)->void { imp_->root_num_ = root_num; }
+	auto Solver::setRootNumber(int root_num)->void { 
+		imp_->root_num_ = root_num;
+	}
 	auto Solver::rootNumber()const->int { return imp_->root_num_; }
 	auto Solver::setWhichRoot(int root_of_solver)->void { imp_->which_root_ = root_of_solver; }
 	auto Solver::whichRoot()const->int { return imp_->which_root_; }
+	
 	auto Solver::error()const->double { return imp_->error_; }
 	auto Solver::setError(double error)->void { imp_->error_ = error; }
 	auto Solver::maxError()const->double { return imp_->max_error_; }
@@ -910,7 +913,7 @@ namespace aris::dynamic{
 		// for mem_pool
 		Size mem_pool_size = 0;
 
-		// 构建 active 和 deactive 的 motion
+		// 构建输入的 mots, jnts prts，以及相关的输入输出变量长度
 		int active_mot_size = 0,
 			active_mp_size = 0,
 			active_mot_dim = 0,
@@ -918,7 +921,10 @@ namespace aris::dynamic{
 			deactive_mp_size = 0,
 			deactive_mot_dim = 0;
 		std::vector<aris::dynamic::MotionBase*> active_mot_vec, deactive_mot_vec;
+		std::vector<const Part*> active_prt_vec;
+		std::vector<Joint*> active_jnt_vec;
 		{
+			// 构建 mots //
 			for (auto& mot : model()->motionPool()) {
 				if (mot.active()) {
 					active_mot_size++;
@@ -947,24 +953,33 @@ namespace aris::dynamic{
 					deactive_mot_vec.push_back(&gmt);
 				}
 			}
+
+			// 构建 prts //
+			active_prt_vec.push_back(&model()->ground());
+			for (auto& p : model()->partPool())if (p.active() && &p != &model()->ground())active_prt_vec.push_back(&p);
+
+			// 构建 jnts //
+			for (auto& jnt : model()->jointPool())if (jnt.active())active_jnt_vec.push_back(&jnt);
 		}
 
-		// 根据关联拓扑，计算出 part 和 rel 的分组，用于构建subsys
+		// 构建公共变量区 //
+		PublicData pub_data;
+		s_vc(6, model()->environment().gravity(), pub_data.gravity_);
+		core::allocMem(mem_pool_size, imp_->pd_, 1);
+
+		// 构建子系统，先将prt 和 rel 分组 //
 		std::vector<std::vector<const Part*>> prt_vec_vec;
 		std::vector<std::vector<LocalRelation>> rel_vec_vec;
 		{
 			int mv_id = 0, mp_id = 0;
 
-			// make active part pool //
-			std::vector<const Part*> active_part_pool;
-			active_part_pool.push_back(&model()->ground());
-			for (auto &p : model()->partPool())if (p.active() && &p != &model()->ground())active_part_pool.push_back(&p);
+			// make active prt pool //
+			auto active_part_pool = active_prt_vec;
 
 			// make active constraint pool //
 			std::vector<const Constraint*> cp;
-			for (auto &jnt : model()->jointPool())if (jnt.active())cp.push_back(&jnt);
-			for (auto &mot : model()->motionPool())if (mot.active())cp.push_back(&mot);
-			for (auto &gmt : model()->generalMotionPool())if (gmt.active())cp.push_back(&gmt);
+			for (auto jnt : active_jnt_vec)cp.push_back(jnt);
+			for (auto mot : active_mot_vec)cp.push_back(mot);
 
 			// make relation pool //
 			std::vector<LocalRelation> relation_pool;
@@ -1064,11 +1079,6 @@ namespace aris::dynamic{
 				}
 			}
 		}
-
-		// 构建公共变量区 //
-		PublicData pub_data;
-		s_vc(6, model()->environment().gravity(), pub_data.gravity_);
-		core::allocMem(mem_pool_size, imp_->pd_, 1);
 
 		// 构建子系统 //
 		std::vector<SubSystem> sys_vec;
@@ -1467,7 +1477,6 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-
 	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, int which_root)->int {
 		kinPosSetActiveMotionPos(motion_pos);
 		if (auto ret = kinPosCompute())
@@ -1477,7 +1486,31 @@ namespace aris::dynamic{
 			return ret;
 		}
 	}
+	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)->int {
+		if (rootNumber() == 1) {
+			return 0;
+		}
+		else {
+			for (int i = 0; i < rootNumber(); ++i) {
+				kinPosPure(motion_pos, imp_->pd_->deactive_mp_, i);
+				int pos = 0;
+				for (int j = 0; j < imp_->pd_->deactive_mot_size_; ++j) {
+					if (imp_->pd_->deactive_mots_[j]->compareP(imp_->pd_->deactive_mp_ + pos, answer + pos) < 0)
+						break;
+					pos += imp_->pd_->deactive_mots_[j]->pSize();
+				}
 
+				// 本组解是所需要的解 //
+				if (pos == imp_->pd_->deactive_mp_size_)
+					return i;
+			}
+
+			return -1;
+		}
+	}
+	auto UniversalSolver::answerSize()->aris::Size {
+		return imp_->pd_->deactive_mp_size_;
+	}
 	auto UniversalSolver::kinPosGetUnactiveMotionPos(double* mp)->void {
 		for (Size i = 0, mp_pos = 0; i < imp_->pd_->deactive_mot_size_; i++) {
 			auto mot = imp_->pd_->deactive_mots_[i];

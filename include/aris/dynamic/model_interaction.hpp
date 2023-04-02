@@ -40,8 +40,6 @@ namespace aris::dynamic
 	public:
 		auto virtual dim() const->Size = 0;
 		auto virtual locCmI() const->const double* = 0;
-		//auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void;
-		//auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
 		auto virtual cptCp(double* cp)const noexcept->void {}
 		auto virtual cptCv(double *cv)const noexcept->void { std::fill_n(cv, dim(), 0.0); }
 		auto virtual cptCvDiff(double *cv)const noexcept->void;
@@ -123,6 +121,7 @@ namespace aris::dynamic
 		auto virtual cptCp(double* cp)const noexcept->void override { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm(), p()); }
 
 		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void {}
+		auto virtual compareP(const double* p1, const double* p2)->int; // 比较两个输入是否一致，等于0为一致，不等于0为不一致
 		auto virtual pSize()const noexcept->Size { return dim(); }
 		auto virtual p()const noexcept->const double* { return nullptr; }
 		auto virtual updP() noexcept->void {}
