@@ -650,6 +650,7 @@ namespace aris::dynamic{
 			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
 			auto& motion = m->addMotion(joint);
 			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 5);
+			ee_mot.setRotateRange(std::numeric_limits<double>::quiet_NaN());
 		}
 		else{
 			auto& joint = m->addPrismaticJoint(platform, m->ground(), pos, axis);

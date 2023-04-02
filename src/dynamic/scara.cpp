@@ -524,8 +524,6 @@ namespace aris::dynamic{
 		s_mm(3, 3, 3, install_pm_relative, 4, *ee.makI()->prtPm(), 4, install_pm, 4);
 		ee.makI()->setPrtPm(install_pm);
 
-		
-
 		////////////////////////////  ROBOT POSITION  /////////////////////////////
 		double robot_pm[16];
 		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
