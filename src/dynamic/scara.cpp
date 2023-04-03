@@ -493,6 +493,24 @@ namespace aris::dynamic{
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::XyztMotion>("ee", &makI, &makJ, false);
 
+		////////////////////////////  ROBOT POSITION  /////////////////////////////
+		double robot_pm[16];
+		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
+
+		p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
+		p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
+		p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
+		p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
+		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
+		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
+
+		////////////////////////////  TOOLS WOBJS  /////////////////////////////
+		for (int i = 1; i < 17; ++i)
+			p4.addMarker("tool" + std::to_string(i), *ee.makI()->prtPm());
+		for (int i = 1; i < 33; ++i)
+			model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *ee.makJ()->prtPm());
+
+
 		////////////////////////////  INSTALL METHODS  /////////////////////////////
 		double install_pm_relative[16];
 		switch (param.install_method) {
@@ -523,23 +541,13 @@ namespace aris::dynamic{
 		s_vc(16, *ee.makI()->prtPm(), install_pm);
 		s_mm(3, 3, 3, install_pm_relative, 4, *ee.makI()->prtPm(), 4, install_pm, 4);
 		ee.makI()->setPrtPm(install_pm);
-
-		////////////////////////////  ROBOT POSITION  /////////////////////////////
-		double robot_pm[16];
-		s_pe2pm(param.base2ref_pe, robot_pm, param.base2ref_pe_type.empty() ? "321" : param.base2ref_pe_type.c_str());
-
-		p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
-		p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
-		p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
-		p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
-		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
-		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
-
-		////////////////////////////  TOOLS WOBJS  /////////////////////////////
-		for (int i = 1; i < 17; ++i) 
-			p4.addMarker("tool" + std::to_string(i), *ee.makI()->prtPm());
-		for (int i = 1; i < 33; ++i) 
-			model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), *ee.makJ()->prtPm());
+		for (int i = 1; i < 17; ++i) {
+			auto tool = p4.findMarker("tool" + std::to_string(i));
+			s_vc(16, *tool->prtPm(), install_pm);
+			s_mm(3, 3, 3, install_pm_relative, 4, *tool->prtPm(), 4, install_pm, 4);
+			tool->setPrtPm(install_pm);
+		}
+			
 
 		////////////////////////////  SOLVERS  /////////////////////////////
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::ScaraInverseKinematicSolver>();

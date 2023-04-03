@@ -206,7 +206,7 @@ void test_create_scara() {
 	param.a = 0.3;
 	param.b = 0.4;
 
-	param.install_method = 1;
+	param.install_method = 2;
 
 	auto m = createModelScara(param);
 
@@ -229,13 +229,13 @@ void test_create_scara() {
 
 
 
-	dsp(4, 4, *m->generalMotionPool()[0].makI()->pm());
-	dsp(4, 4, *m->generalMotionPool()[0].makJ()->pm());
-	dsp(4, 4, *m->partPool().back().pm());
+	//dsp(4, 4, *m->generalMotionPool()[0].makI()->pm());
+	//dsp(4, 4, *m->generalMotionPool()[0].makJ()->pm());
+	//dsp(4, 4, *m->partPool().back().pm());
 
-	dsp(1, 4, input2);
+	//dsp(1, 4, input2);
 
-	std::cout << aris::core::toXmlString(*m) << std::endl;
+	//std::cout << aris::core::toXmlString(*m) << std::endl;
 }
 
 void test_model_solver_scara(){
