@@ -1782,22 +1782,44 @@ namespace aris::dynamic{
 		return aa_out;
 	}
 
-	auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type) noexcept->double *
-	{
+
+	auto s_rq2re(const double* rq_in, double* re_out = nullptr, const char* eu_type_in = "313") noexcept->double* {
+		// 补充默认参数 //
+		rq_in = rq_in ? rq_in : default_rq();
+		re_out = re_out ? re_out : default_out();
+
+		// 正式开始计算 //
+		double rm[9];
+		s_rq2rm(rq_in, rm);
+		s_rm2re(rm, re_out, eu_type_in);
+
+		return re_out;
+	}
+	auto s_re2rq(const double* re_in, double* rq_out = nullptr, const char* eu_type_in = "313") noexcept->double* {
+		// 补充默认参数 //
+		re_in = re_in ? re_in : default_re();
+		rq_out = rq_out ? rq_out : default_out();
+
+		// 正式开始计算 //
+		double rm[9];
+		s_re2rm(re_in, rm, eu_type_in);
+		s_rm2rq(rm, rq_out);
+
+		return rq_out;
+	}
+	auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type) noexcept->double *{
 		// 补充默认参数 //
 		pq_in = pq_in ? pq_in : default_pq();
 		pe_out = pe_out ? pe_out : default_out();
 
 		// 正式开始计算 //
-
 		double pm[16];
 		s_pq2pm(pq_in, pm);
 		s_pm2pe(pm, pe_out, eu_type);
 
 		return pe_out;
 	}
-	auto s_pe2pq(const double *pe_in, double *pq_out, const char *eu_type) noexcept->double *
-	{
+	auto s_pe2pq(const double *pe_in, double *pq_out, const char *eu_type) noexcept->double *{
 		// 补充默认参数 //
 		pe_in = pe_in ? pe_in : default_pe();
 		pq_out = pq_out ? pq_out : default_out();

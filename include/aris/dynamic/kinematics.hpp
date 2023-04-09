@@ -94,12 +94,16 @@ namespace aris::dynamic{
 		PE123,
 		PQ,
 		PM,
+		RE313,
+		RE321,
+		RE123,
+		RQ,
+		RM,
 		XYZT,
 		XYZ,
 		XYT,
 		XY,
 		X,
-		ABC,
 		A,
 		UNKNOWN,
 	};
@@ -117,6 +121,16 @@ namespace aris::dynamic{
 			return 7;
 		case EEType::PM:
 			return 16;
+		case EEType::RE313:
+			return 3;
+		case EEType::RE321:
+			return 3;
+		case EEType::RE123:
+			return 3;
+		case EEType::RQ:
+			return 4;
+		case EEType::RM:
+			return 9;
 		case EEType::XYZT:
 			return 4;
 		case EEType::XYZ:
@@ -126,8 +140,6 @@ namespace aris::dynamic{
 		case EEType::XY:
 			return 2;
 		case EEType::X:
-			return 1;
-		case EEType::ABC:
 			return 1;
 		case EEType::A:
 			return 1;
@@ -157,6 +169,16 @@ namespace aris::dynamic{
 			return 2;
 		case EEType::PM:
 			return 2;
+		case EEType::RE313:
+			return 1;
+		case EEType::RE321:
+			return 1;
+		case EEType::RE123:
+			return 1;
+		case EEType::RQ:
+			return 1;
+		case EEType::RM:
+			return 1;
 		case EEType::XYZT:
 			return 2;
 		case EEType::XYZ:
@@ -167,8 +189,6 @@ namespace aris::dynamic{
 			return 1;
 		case EEType::X:
 			return 1;
-		case EEType::ABC:
-			return 3;
 		case EEType::A:
 			return 1;
 		case EEType::UNKNOWN:

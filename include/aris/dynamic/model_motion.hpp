@@ -287,8 +287,18 @@ namespace aris::dynamic {
 	// 只包含 xyz 3个维度的末端，例如 4足 机器人的足端
 	class ARIS_API SphericalMotion final :public MotionTemplate<3, 3, 3>{
 	public:
+		enum class PoseType {
+			EULER313,
+			EULER321,
+			EULER123,
+			QUATERNION,
+			POSE_MATRIX,
+		};
+		auto setPoseType(PoseType type)->void;
+		auto poseType()const->PoseType;
+
 		static auto Dim()->Size { return 3; }
-		auto virtual eeType()const->EEType override { return EEType::ABC; }
+		auto virtual eeType()const->EEType override { return EEType::RE123; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
@@ -297,6 +307,11 @@ namespace aris::dynamic {
 		auto virtual cptCa(double* ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
+		auto virtual pSize()const noexcept->Size;
+		auto virtual p()const noexcept->const double* override;
+		auto virtual updP() noexcept->void override;
+		auto virtual setP(const double* mp) noexcept->void override;
+		auto virtual getP(double* mp)const noexcept->void override;
 		auto virtual updV() noexcept->void override;
 		auto virtual updA() noexcept->void override;
 		auto virtual f()const noexcept->const double* override { return cf(); }
@@ -305,6 +320,10 @@ namespace aris::dynamic {
 		virtual ~SphericalMotion();
 		explicit SphericalMotion(const std::string& name = "spherical_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(SphericalMotion);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 	// 只包含 xyz 和 theta 4个维度的末端，例如 scara和delta的末端
 	class ARIS_API XyztMotion final :public MotionTemplate<4, 4, 4>{

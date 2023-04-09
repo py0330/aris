@@ -29,3 +29,4 @@
 #include <aris/dynamic/mechanism_puma_5axis.hpp>
 #include <aris/dynamic/mechanism_rppr.hpp>
 #include <aris/dynamic/mechanism_prpr.hpp>
+#include <aris/dynamic/mechanism_abenics.hpp>

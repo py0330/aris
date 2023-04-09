@@ -561,9 +561,9 @@ auto test_trajectory_4()->void {
 void test_trajectory(){
 	std::cout << std::endl << "-----------------test trajectory---------------------" << std::endl;
 	
-	//test_trajectory_1();
-	//test_trajectory_2();
-	//test_trajectory_3();
+	test_trajectory_1();
+	test_trajectory_2();
+	test_trajectory_3();
 	test_trajectory_4();
 	
 	std::cout << "-----------------test trajectory finished------------" << std::endl << std::endl;

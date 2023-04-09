@@ -616,14 +616,25 @@ namespace aris::dynamic{
 	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionTemplate(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
+	struct SphericalMotion::Imp {
+		double mrm_[3][3]{ { 0 } };
+		mutable double p_[16]{ 0.0 };
+		SphericalMotion::PoseType pose_type_{ SphericalMotion::PoseType::EULER123 };
+	};
+	auto SphericalMotion::setPoseType(PoseType type)->void{
+		imp_->pose_type_ = type;
+	}
+	auto SphericalMotion::poseType()const->PoseType {
+		return imp_->pose_type_;
+	}
 	auto SphericalMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[18]{
+			0,0,0,
+			0,0,0,
+			0,0,0,
 			1,0,0,
 			0,1,0,
 			0,0,1,
-			0,0,0,
-			0,0,0,
-			0,0,0,
 		};
 		return loc_cm_I;
 	}
@@ -638,64 +649,70 @@ namespace aris::dynamic{
 		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
 
 		// in real i frame
-		double pm_i2j_diff[16];
+		double pm_i2j_diff[16], ps_i2j_diff[6];
 		s_inv_pm_dot_pm(pm_i2j, pm_i2j_should_be, pm_i2j_diff);
 
-		// 【注意】：这里不应考虑角度所造成的移动距离，不同于上文
-		s_vc(3, pm_i2j_diff + 3, 4, cp, 1);
+		s_pm2ps(pm_i2j_diff, ps_i2j_diff);
+		s_vc(3, ps_i2j_diff + 3, cp);
 	}
 	auto SphericalMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
-		double pm[16];
+		double pm[16], dm1[36];
 		s_inv_pm(makI_pm, pm);
-		s_tmf(pm, dm);
+		s_tmf(pm, dm1);
+
+		s_vc(18, dm1, dm + 18);
+		s_vc(18, dm1 + 18, dm);
 	}
 	auto SphericalMotion::cptCv(double* cv)const noexcept->void {
-		double vp_in_makI[3], vp_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), v(), vp_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
-
-		s_vc(3, vp_in_makI, cv);
+		// tbd
 	}
 	auto SphericalMotion::cptCa(double* ca)const noexcept->void {
-		Constraint::cptCa(ca);
-
-		// w x R * dr //
-		double vp_in_makI[3], vp_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), v(), vp_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
-
-		double vs_J_in_I[6];
-		makJ()->getVs(*makI(), vs_J_in_I);
-
-		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
-
-		// R * ddr //
-		double ap_in_makI[3], ap_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), a(), ap_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
-
-		s_va(3, ap_in_makI, ca);
+		// tbd
 	}
 	auto SphericalMotion::cptPFromPm(const double* mak_i2j, double* p)const noexcept->void {
-		s_pm2pp(mak_i2j, p);
+		s_pm2re(mak_i2j, p, "123");
 	}
 	auto SphericalMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
 		s_eye(4, pm_i2j);
-		pm_i2j[3] = p[0];
-		pm_i2j[7] = p[1];
-		pm_i2j[11] = p[2];
+		s_re2pm(p, pm_i2j, "123");
 	}
+	auto SphericalMotion::pSize()const noexcept->Size {
+		switch (poseType()) {
+		case SphericalMotion::PoseType::EULER123:return 3;
+		case SphericalMotion::PoseType::EULER321:return 3;
+		case SphericalMotion::PoseType::EULER313:return 3;
+		case SphericalMotion::PoseType::QUATERNION:return 4;
+		case SphericalMotion::PoseType::POSE_MATRIX:return 9;
+		default:return 6;
+		}
+	}
+	auto SphericalMotion::p()const noexcept->const double* {
+		switch (poseType()) {
+		case SphericalMotion::PoseType::EULER123:s_rm2re(*imp_->mrm_, imp_->p_, "123"); break;
+		case SphericalMotion::PoseType::EULER321:s_rm2re(*imp_->mrm_, imp_->p_, "321"); break;
+		case SphericalMotion::PoseType::EULER313:s_rm2re(*imp_->mrm_, imp_->p_, "313"); break;
+		case SphericalMotion::PoseType::QUATERNION:s_rm2rq(*imp_->mrm_, imp_->p_); break;
+		case SphericalMotion::PoseType::POSE_MATRIX:s_vc(9, *imp_->mrm_, imp_->p_); break;
+		}
+
+		return imp_->p_;
+	}
+	auto SphericalMotion::updP() noexcept->void { s_mm(3, 3, 3, *makJ()->pm(), T(4), *makI()->pm(), 4, *imp_->mrm_, 3); }
+	auto SphericalMotion::setP(const double* mp) noexcept->void {
+		switch (poseType()) {
+		case SphericalMotion::PoseType::EULER123:s_re2rm(mp, *imp_->mrm_, "123"); break;
+		case SphericalMotion::PoseType::EULER321:s_re2rm(mp, *imp_->mrm_, "321"); break;
+		case SphericalMotion::PoseType::EULER313:s_re2rm(mp, *imp_->mrm_, "313"); break;
+		case SphericalMotion::PoseType::QUATERNION:s_rq2rm(mp, *imp_->mrm_); break;
+		case SphericalMotion::PoseType::POSE_MATRIX:s_vc(9, mp, *imp_->mrm_); break;
+		}
+	}
+	auto SphericalMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
 	auto SphericalMotion::updV() noexcept->void {
-		double vs[6], pp[3];
-		s_pm2pp(*makI()->pm(), pp);
-		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
-		s_vs2vp(vs, pp, v_);
+		// tbd
 	}
 	auto SphericalMotion::updA() noexcept->void {
-		double as[6], vs[6], pp[3];
-		s_pm2pp(*makI()->pm(), pp);
-		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
-		s_as2ap(vs, as, pp, a_);
+		// tbd
 	}
 	SphericalMotion::~SphericalMotion() = default;
 	SphericalMotion::SphericalMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
@@ -1138,7 +1155,7 @@ namespace aris::dynamic{
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
-		aris::core::class_<GeneralMotion::PoseType>("PoseType")
+		aris::core::class_<GeneralMotion::PoseType>("GENERAL_MOTION_POS_TYPE")
 			.textMethod([](GeneralMotion::PoseType*type)->std::string {
 					switch (*type) {
 					case GeneralMotion::PoseType::EULER123:return "EULER123";
@@ -1189,6 +1206,31 @@ namespace aris::dynamic{
 			.prop("pose_type", &GeneralMotion::setPoseType, &GeneralMotion::poseType)
 			.prop("vel_type", &GeneralMotion::setVelType, &GeneralMotion::velType)
 			.prop("acc_type", &GeneralMotion::setAccType, &GeneralMotion::accType)
+			;
+
+		aris::core::class_<SphericalMotion::PoseType>("SPHERICAL_MOTION_POS_TYPE")
+			.textMethod([](SphericalMotion::PoseType* type)->std::string {
+			switch (*type) {
+			case SphericalMotion::PoseType::EULER123:return "EULER123";
+			case SphericalMotion::PoseType::EULER321:return "EULER321";
+			case SphericalMotion::PoseType::EULER313:return "EULER313";
+			case SphericalMotion::PoseType::QUATERNION:return "QUATERNION";
+			case SphericalMotion::PoseType::POSE_MATRIX:return "POSE_MATRIX";
+			default:return "EULER123";
+			}
+				}, [](SphericalMotion::PoseType* type, std::string_view name)->void {
+					if (name == "EULER123")*type = SphericalMotion::PoseType::EULER123;
+					if (name == "EULER321")*type = SphericalMotion::PoseType::EULER321;
+					if (name == "EULER313")*type = SphericalMotion::PoseType::EULER313;
+					if (name == "QUATERNION")*type = SphericalMotion::PoseType::QUATERNION;
+					if (name == "POSE_MATRIX")*type = SphericalMotion::PoseType::POSE_MATRIX;
+
+				})
+			;
+
+		aris::core::class_<SphericalMotion>("SphericalMotion")
+			.inherit<aris::dynamic::MotionBase>()
+			.prop("pose_type", &SphericalMotion::setPoseType, &SphericalMotion::poseType)
 			;
 
 		aris::core::class_<PointMotion>("PointMotion")

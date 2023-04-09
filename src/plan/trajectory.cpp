@@ -155,6 +155,36 @@ namespace aris::plan {
 				out_idx += 16;
 				break;
 			}
+			case aris::dynamic::EEType::RE313: {
+				aris::dynamic::s_rq2re(internal_pos + internal_idx, out_pos + out_idx, "313");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RE321: {
+				aris::dynamic::s_rq2re(internal_pos + internal_idx, out_pos + out_idx, "321");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RE123: {
+				aris::dynamic::s_rq2re(internal_pos + internal_idx, out_pos + out_idx, "123");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RQ: {
+				aris::dynamic::s_vc(4, internal_pos + internal_idx, out_pos + out_idx);
+				internal_idx += 4;
+				out_idx += 4;
+				break;
+			}
+			case aris::dynamic::EEType::RM: {
+				aris::dynamic::s_rq2rm(internal_pos + internal_idx, out_pos + out_idx);
+				internal_idx += 4;
+				out_idx += 9;
+				break;
+			}
 			case aris::dynamic::EEType::XYZT: {
 				aris::dynamic::s_vc(4, internal_pos + internal_idx, out_pos + out_idx);
 				internal_idx += 4;
@@ -1351,6 +1381,48 @@ namespace aris::plan {
 				vel_idx += 2;
 				break;
 			}
+			case aris::dynamic::EEType::RE313: [[fallthrough]];
+			case aris::dynamic::EEType::RE321: [[fallthrough]];
+			case aris::dynamic::EEType::RE123: [[fallthrough]];
+			case aris::dynamic::EEType::RM: [[fallthrough]];
+			case aris::dynamic::EEType::RQ: {
+				auto ee_abc = ee_pos + pos_idx;
+				auto mid_abc = mid_pos + pos_idx;
+				auto v_abc = vel[vel_idx];
+				auto a_abc = acc[vel_idx];
+				auto j_abc = jerk[vel_idx];
+				auto z_abc = zone[vel_idx];
+
+				switch (node_type) {
+				case aris::plan::Node::NodeType::ResetInitPos: {
+					// init //
+					init_unit(Node::UnitType::Rotate3, ee_abc, mid_abc, ee_abc, v_abc, a_abc, j_abc, z_abc, this_p->a_);
+					break;
+				}
+				case aris::plan::Node::NodeType::Line: {
+					auto last_p = &last_node->ee_plans_[i];
+					double p_end[4];
+					// abc //
+					s_compute_data_at_end(last_p->a_, p_end);
+					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, v_abc, a_abc, j_abc, z_abc, this_p->a_);
+					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					break;
+				}
+				case aris::plan::Node::NodeType::Circle: {
+					auto last_p = &last_node->ee_plans_[i];
+					double p_end[4];
+					// abc //
+					s_compute_data_at_end(last_p->a_, p_end);
+					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, v_abc, a_abc, j_abc, z_abc, this_p->a_);
+					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					break;
+				}
+				}
+
+				pos_idx += 4;
+				vel_idx += 1;
+				break;
+			}
 			case aris::dynamic::EEType::XYZT: {
 				auto ee_xyz = ee_pos + pos_idx;
 				auto mid_xyz = mid_pos + pos_idx;
@@ -1408,6 +1480,39 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::XYZ: {
+				auto ee_xyz = ee_pos + pos_idx;
+				auto mid_xyz = mid_pos + pos_idx;
+				auto v_xyz = vel[vel_idx];
+				auto a_xyz = acc[vel_idx];
+				auto j_xyz = jerk[vel_idx];
+				auto z_xyz = zone[vel_idx];
+
+				switch (node_type) {
+				case aris::plan::Node::NodeType::ResetInitPos: {
+					// init //
+					init_unit(Node::UnitType::Line3, ee_xyz, mid_xyz, ee_xyz, v_xyz, a_xyz, j_xyz, z_xyz, this_p->x_);
+					break;
+				}
+				case aris::plan::Node::NodeType::Line: {
+					auto last_p = &last_node->ee_plans_[i];
+					double p_end[4];
+					// xyz //
+					s_compute_data_at_end(last_p->x_, p_end);
+					init_unit(Node::UnitType::Line3, p_end, mid_xyz, ee_xyz, v_xyz, a_xyz, j_xyz, z_xyz, this_p->x_);
+					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					break;
+				}
+				case aris::plan::Node::NodeType::Circle: {
+					auto last_p = &last_node->ee_plans_[i];
+					double p_end[4];
+					// xyz //
+					s_compute_data_at_end(last_p->x_, p_end);
+					init_unit(Node::UnitType::Circle3, p_end, mid_xyz, ee_xyz, v_xyz, a_xyz, j_xyz, z_xyz, this_p->x_);
+					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					break;
+				}
+				}
+
 				pos_idx += 3;
 				vel_idx += 1;
 				break;
@@ -1493,6 +1598,16 @@ namespace aris::plan {
 					scurve_node_origin.params_.push_back(ee_p.a_.scurve_origin_);
 					break;
 				}
+				case aris::dynamic::EEType::RE313: [[fallthrough]];
+				case aris::dynamic::EEType::RE321: [[fallthrough]];
+				case aris::dynamic::EEType::RE123: [[fallthrough]];
+				case aris::dynamic::EEType::RM: [[fallthrough]];
+				case aris::dynamic::EEType::RQ: {
+					begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
+					scurve_node.params_.push_back(ee_p.a_.scurve_);
+					scurve_node_origin.params_.push_back(ee_p.a_.scurve_origin_);
+					break;
+				}
 				case aris::dynamic::EEType::XYZ: [[fallthrough]];
 				case aris::dynamic::EEType::XY: [[fallthrough]];
 				case aris::dynamic::EEType::X: [[fallthrough]];
@@ -1550,25 +1665,8 @@ namespace aris::plan {
 				case aris::dynamic::EEType::PE321: [[fallthrough]];
 				case aris::dynamic::EEType::PE123: [[fallthrough]];
 				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					ee_p.a_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					ee_p.a_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
+				case aris::dynamic::EEType::PQ: [[fallthrough]];
+				case aris::dynamic::EEType::XYZT: [[fallthrough]];
 				case aris::dynamic::EEType::XYT: {
 					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
 					s_idx++;
@@ -1576,11 +1674,17 @@ namespace aris::plan {
 					s_idx++;
 					break;
 				}
-				case aris::dynamic::EEType::XY: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
+				case aris::dynamic::EEType::RE313: [[fallthrough]];
+				case aris::dynamic::EEType::RE321: [[fallthrough]];
+				case aris::dynamic::EEType::RE123: [[fallthrough]];
+				case aris::dynamic::EEType::RM: [[fallthrough]];
+				case aris::dynamic::EEType::RQ: {
+					ee_p.a_.scurve_origin_ = scurve_node.params_[s_idx];
 					s_idx++;
 					break;
 				}
+				case aris::dynamic::EEType::XYZ: [[fallthrough]];
+				case aris::dynamic::EEType::XY: [[fallthrough]];
 				case aris::dynamic::EEType::X: [[fallthrough]];
 				case aris::dynamic::EEType::A: {
 					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
@@ -1609,25 +1713,8 @@ namespace aris::plan {
 				case aris::dynamic::EEType::PE321: [[fallthrough]];
 				case aris::dynamic::EEType::PE123: [[fallthrough]];
 				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: {
-					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-					ee_p.a_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-					ee_p.a_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
+				case aris::dynamic::EEType::PQ: [[fallthrough]];
+				case aris::dynamic::EEType::XYZT: [[fallthrough]];
 				case aris::dynamic::EEType::XYT: {
 					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
 					s_idx++;
@@ -1635,11 +1722,17 @@ namespace aris::plan {
 					s_idx++;
 					break;
 				}
-				case aris::dynamic::EEType::XY: {
-					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
+				case aris::dynamic::EEType::RE313: [[fallthrough]];
+				case aris::dynamic::EEType::RE321: [[fallthrough]];
+				case aris::dynamic::EEType::RE123: [[fallthrough]];
+				case aris::dynamic::EEType::RM: [[fallthrough]];
+				case aris::dynamic::EEType::RQ: {
+					ee_p.a_.scurve_ = scurve_node.params_[s_idx];
 					s_idx++;
 					break;
 				}
+				case aris::dynamic::EEType::XYZ: [[fallthrough]];
+				case aris::dynamic::EEType::XY: [[fallthrough]];
 				case aris::dynamic::EEType::X: [[fallthrough]];
 				case aris::dynamic::EEType::A: {
 					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
@@ -1674,6 +1767,16 @@ namespace aris::plan {
 				get_unit_data(s, ee_p.x_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 				idx += 3;
 
+				// a //
+				get_unit_data(s, ee_p.a_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
+				idx += 4;
+				break;
+			}
+			case aris::dynamic::EEType::RE313: [[fallthrough]];
+			case aris::dynamic::EEType::RE321: [[fallthrough]];
+			case aris::dynamic::EEType::RE123: [[fallthrough]];
+			case aris::dynamic::EEType::RM: [[fallthrough]];
+			case aris::dynamic::EEType::RQ: {
 				// a //
 				get_unit_data(s, ee_p.a_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
 				idx += 4;
@@ -1843,6 +1946,14 @@ namespace aris::plan {
 			case aris::dynamic::EEType::PQ:
 				internal_pos_size += 7;
 				out_vel_size += 6;
+				break;
+			case aris::dynamic::EEType::RE313: [[fallthrough]];
+			case aris::dynamic::EEType::RE321: [[fallthrough]];
+			case aris::dynamic::EEType::RE123: [[fallthrough]];
+			case aris::dynamic::EEType::RM: [[fallthrough]];
+			case aris::dynamic::EEType::RQ:
+				internal_pos_size += 4;
+				out_vel_size += 3;
 				break;
 			case aris::dynamic::EEType::XYZT:
 				internal_pos_size += 4;

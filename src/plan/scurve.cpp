@@ -1361,7 +1361,7 @@ namespace aris::plan {
                     double cons = std::max(vb1, 1e-10) * 1e-10;
                     
                     // 二分法寻找最接近 vb1 的可行 va
-                    double diff = va_below - va_upper;
+                    double diff = va_upper - va_below;
                     double diff_last;
 
                     do {
@@ -1375,7 +1375,7 @@ namespace aris::plan {
                             va_upper = param2.va_;
                         }
                         diff_last = diff;
-                        diff = va_below - va_upper;
+                        diff = va_upper - va_below;
 
                     } while (diff < diff_last);
 
