@@ -12,7 +12,7 @@
 #include <ios>
 
 #include "aris/core/core.hpp"
-#include "aris/dynamic/matrix.hpp"
+#include "aris/dynamic/math_matrix.hpp"
 #include "aris/dynamic/screw.hpp"
 #include "aris/dynamic/model.hpp"
 

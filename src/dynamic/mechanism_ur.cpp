@@ -12,7 +12,7 @@
 #include <array>
 
 #include "aris/dynamic/model.hpp"
-#include "aris/dynamic/ur.hpp"
+#include "aris/dynamic/mechanism_ur.hpp"
 #include "aris/core/reflection.hpp"
 
 namespace aris::dynamic

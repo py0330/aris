@@ -1853,6 +1853,13 @@ namespace aris::plan {
         double v_, a_, j_;
         // %CASE B
         if (mode == 1) {
+            const double Ta = param.Ta_ - std::min(param.Ta_, param.Tb_);
+            const double Tb = param.Tb_ - std::min(param.Ta_, param.Tb_);
+            const double lower_ratio = (param.T_ - Ta - Tb) < 1e-9 ? 1.0 : (param.T_ - param.Ta_ - param.Tb_) / (param.T_ - Ta - Tb);
+            const double a = param.a_ * lower_ratio;
+            const double j = param.j_ * lower_ratio * lower_ratio;
+
+
             if (t_ < Ta) {
                 p_ = pa + va * t_;
                 v_ = va;

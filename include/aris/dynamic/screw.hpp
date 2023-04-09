@@ -3,10 +3,10 @@
 
 #include <cmath>
 
-#include "aris/dynamic/matrix.hpp"
+#include "aris/dynamic/math_matrix.hpp"
+#include "aris/dynamic/kinematics.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	///
 	/// 符号定义: \n
 	/// pp  :  3x1 点位置(position of point)  \n
@@ -45,6 +45,7 @@ namespace aris::dynamic
 	/// im  :  6x6 空间惯量矩阵
 	/// iv  :  10x1 惯量矩阵向量[m, cx, cy, cz, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]
 
+	using double3x3 = double[3][3];
 
 	auto ARIS_API s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
 	auto ARIS_API s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
@@ -312,15 +313,6 @@ namespace aris::dynamic
 
 	auto ARIS_API s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
 	auto ARIS_API s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
-
-	auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
-	// 1-cos(x) = 2 sin(x/2)^2
-	//    1-cos(x) / x^2
-	// =  2 sin(x/2)^2 / x^2 
-	// =  0.5 sin(x/2)^2 / (x/2)^2 
-	// =  0.5 [sin(x/2) / (x/2) ]^2 
-	// 
-	auto inline s_one_minus_cosx_over_square_x(double x)->double { return 0.5*s_sinx_over_x(0.5*x)*s_sinx_over_x(0.5*x); };
 
 	/// \brief 计算三维向量叉乘矩阵
 	///
@@ -1694,122 +1686,47 @@ namespace aris::dynamic
 	auto ARIS_API s_iv2iv(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
 	auto ARIS_API s_inv_iv2iv(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
 
-	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
-	///
-	/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
-	///
-	///
-	auto ARIS_API s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
-	auto inline s_sov_pnts2pm(const double *origin, const double *first_pnt, const double *second_pnt, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_pnts2pm(origin, 1, first_pnt, 1, second_pnt, 1, pm_out, axis_order); };
-	
-	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
-	///
-	/// 这里原点origin为位姿矩阵pm_out的点,first_axis为第一根坐标轴的方向,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
-	///
-	///
-	auto ARIS_API s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
-	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
-	///
-	/// 这里原点origin为位姿矩阵pm_out的点,first_axis为第一坐标轴的方向,second_axis位于第一根坐标轴与第二根坐标轴的平面内，也是方向
-	///
-	///
-	auto inline s_sov_axes2pm(const double *origin, const double *first_axis, const double *second_axis, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_axis, 1, second_axis, 1, pm_out, axis_order); };
-	
-	/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根(可能相等)，成功返回0，失败返回-1
-	///
-	///
-	auto ARIS_API s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->int;
-	
-	/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
-	///
-	///
-	auto ARIS_API s_sov_ab(const double*pp, double *ab, const char*order = "321")noexcept->void;
-	/// \brief 求解v_alpha 和 v_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
-	///
-	///
-	auto ARIS_API s_sov_vab(const double*pp, const double*vp, double *vab, double *ab, const char*order = "321")noexcept->void;
-	/// \brief 求解a_alpha 和 a_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
-	///
-	///
-	auto ARIS_API s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
+	auto inline default_pp()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_ra()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_re()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_rq()noexcept->const double* { static const double value[4]{ 0,0,0,1 }; return value; }
+	auto inline default_rm()noexcept->const double* { static const double value[9]{ 1,0,0,0,1,0,0,0,1 }; return value; }
+	auto inline default_pe()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_pq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,1 }; return value; }
+	auto inline default_pa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_ps()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_pm()noexcept->const double* { static const double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
-	/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为任意位置，包含两个解
-	///
-	///
-	auto ARIS_API s_sov_ab_arbitrary(const double*pp0, const double *pp, double *alpha, double *beta, const char*order = "321")noexcept->int;
+	auto inline default_vp()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_we()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_wq()noexcept->const double* { static const double value[4]{ 0,0,0,0 }; return value; }
+	auto inline default_wm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_ve()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_vq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 }; return value; }
+	auto inline default_vm()noexcept->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_wa()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_va()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_vs()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 
+	auto inline default_ap()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_xe()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_xq()noexcept->const double* { static const double value[4]{ 0,0,0,0 }; return value; }
+	auto inline default_xm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_ae()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_aq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 }; return value; }
+	auto inline default_am()noexcept->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_xa()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_aa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_as()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 
-	/// \brief 求解某根轴下的相对位移，axis为0，1，2时对应x、y、z轴的位移，为4、5、6时对应延x、y、z轴的转角
-	///
-	///
-	auto ARIS_API s_sov_axis_distance(const double*from_pm, const double*to_pm, Size axis)noexcept->double;
+	auto inline default_fs()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_im()noexcept->const double* { static const double value[36]{ 0 }; return value; }
+	auto inline default_iv()noexcept->const double* { static const double value[10]{ 1,0,0,0,1,1,1,0,0,0 }; return value; }
+	auto inline default_i3()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
 
+	auto inline P()noexcept->const double3x3& { static const double p[3][3]{ { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } }; return p; }
+	auto inline Q()noexcept->const double3x3& { static const double q[3][3]{ { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }
 
-	/// \brief 求解平面内2点法标定，适用于scara 和 delta等4轴机器人
-	/// input:      2组数据6个数：[x1 y1 c1 x2 y2 c2]
-	/// result:     [tool_x tool_y]
-	/// mini_angle: 最小允许的输入角度差值
-	auto ARIS_API s_calib_tool_two_pnts(const double* input, double*result, double mini_angle = 0.1)noexcept->int;
-
-	//    生成长方体区域
-	//    input:  reference_marker_pm 4x4
-	//            eul_321
-	//            point1_xyz
-	//            point2_xyz
-	//    
-	//    output: box_center    : wrt World Frame
-	//            box_eul       : wrt World Frame
-	//            box_length    : length along xyz
-	auto ARIS_API s_generate_box(const double* reference_marker_pm, const double* eul_321, const double* point1_xyz, const double* point2_xyz,
-		 double* box_center, double* box_eul, double* box_length)noexcept->void;
-
-	//    检查两个长方体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉
-	//        2: box1 包含 box2
-	//        3: box2 包含 box1 
-	auto ARIS_API s_collide_check_box2box(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int;
-
-	//    检查两个长方体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉
-	//        2: sphere1 包含 sphere2
-	//        3: sphere2 包含 sphere1 
-	auto ARIS_API s_collide_check_sphere2sphere(const double* sphere1_center_xyz, double sphere1_radius,
-		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int;
-
-	//    检查球体与长方体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉
-	//        2: sphere1 包含 box2 
-	//        3: box2    包含 sphere1
-	auto ARIS_API s_collide_check_sphere2box(const double* sphere1_center_xyz, double sphere1_radius,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int;
-
-	//    检查长方体与球体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉
-	//        2: box1    包含 sphere2 
-	//        3: sphere2 包含 box1
-	auto inline ARIS_API s_collide_check_box2sphere(const double* box1_center, const double* box1_321_eul, const double* box1_length_xyz,
-		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int 
-	{	
-		auto ret = s_collide_check_sphere2box(sphere2_center_xyz, sphere2_radius, box1_center, box1_321_eul, box1_length_xyz);
-		return ret < 2 ? ret : (ret == 2 ? 3 : 2);
-	}
-
-	//    检查点与长方体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉，同时点也被box包含
-	auto ARIS_API s_collide_check_point2box(const double* point_xyz,
-		const double* box2_center, const double* box2_321_eul, const double* box2_length_xyz)noexcept->int;
-
-	//    检查点与球体是否碰撞
-	//    ret 0: 两者无干涉
-	//        1: 两者有干涉，同时点也被sphere包含
-	auto ARIS_API s_collide_check_point2sphere(const double* point_xyz,
-		const double* sphere2_center_xyz, double sphere2_radius)noexcept->int;
 }
 
 #endif

@@ -4,8 +4,13 @@
 #include <aris/core/expression_calculator.hpp>
 
 #include <aris/dynamic/model_base.hpp>
+#include <aris/dynamic/model_interaction.hpp>
+#include <aris/dynamic/model_joint.hpp>
+#include <aris/dynamic/model_motion.hpp>
+#include <aris/dynamic/model_force.hpp>
 #include <aris/dynamic/model_solver.hpp>
 #include <aris/dynamic/model_simulation.hpp>
+#include <aris/dynamic/kinematics.hpp>
 #include <aris/dynamic/plan.hpp>
 
 namespace aris::dynamic{
@@ -207,7 +212,20 @@ namespace aris::dynamic{
 
 	class ARIS_API Model:public ModelBase{
 	public:
+		auto virtual init()->void override;
+
 		/// @{
+
+		// kinematics, not set state //
+		auto virtual inverseRootNumber()const->int override;
+		auto virtual whichInverseRoot(const double* output, const double* input)->int override;
+		auto virtual forwardRootNumber()const->int override;
+		auto virtual whichForwardRoot(const double* input, const double* output)->int override;
+
+		auto virtual inverseKinematics(const double* output, double* input, int which_root)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output, int which_root)const noexcept->int override;
+
+
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
@@ -218,9 +236,10 @@ namespace aris::dynamic{
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
-		// kinematics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input, int which_root)const noexcept->int override;
-		auto virtual forwardKinematics(const double* input, double* output, int which_root)const noexcept->int override;
+
+		// EE types //
+		auto virtual eeTypes()const noexcept->const EEType* override;
+		auto virtual eeSize()const noexcept->aris::Size override;
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size override;                         
@@ -257,7 +276,7 @@ namespace aris::dynamic{
 		auto virtual setOutputFce(const double* fce)noexcept->void override;
 		/// @}
 
-		auto virtual init()->void override;
+		
 		/// @{
 		auto findVariable(std::string_view name)->Variable*;
 		auto findPart(std::string_view name)->Part*;
@@ -358,102 +377,12 @@ namespace aris::dynamic{
 		friend class Motion;
 	};
 
-	enum class EEType {
-		PE313,
-		PE321,
-		PE123,
-		PQ,
-		PM,
-		XYZT,
-		XYZ,
-		XYT,
-		XY,
-		X,
-		A,
-		UNKNOWN,
-	};
-	
-	auto inline getEETypePosSize(EEType type)noexcept->aris::Size {
-		switch (type)
-		{
-		case EEType::PE313:
-			return 6;
-		case EEType::PE321:
-			return 6;
-		case EEType::PE123:
-			return 6;
-		case EEType::PQ:
-			return 7;
-		case EEType::PM:
-			return 16;
-		case EEType::XYZT:
-			return 4;
-		case EEType::XYZ:
-			return 3;
-		case EEType::XYT:
-			return 3;
-		case EEType::XY:
-			return 2;
-		case EEType::X:
-			return 1;
-		case EEType::A:
-			return 1;
-		case EEType::UNKNOWN:
-			return -1;
-		default:
-			return -1;
-		}
-	}
-	auto inline getEETypePosSize(const std::vector<EEType> &types)noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto type : types) {
-			size += getEETypePosSize(type);
-		}
-		return size;
-	}
-	auto inline getScurveSize(EEType type)noexcept->aris::Size {
-		switch (type)
-		{
-		case EEType::PE313:
-			return 2;
-		case EEType::PE321:
-			return 2;
-		case EEType::PE123:
-			return 2;
-		case EEType::PQ:
-			return 2;
-		case EEType::PM:
-			return 2;
-		case EEType::XYZT:
-			return 2;
-		case EEType::XYZ:
-			return 1;
-		case EEType::XYT:
-			return 2;
-		case EEType::XY:
-			return 1;
-		case EEType::X:
-			return 1;
-		case EEType::A:
-			return 1;
-		case EEType::UNKNOWN:
-			return -1;
-		default:
-			return -1;
-		}
-	}
-	auto inline getScurveSize(const std::vector<EEType>& types)noexcept->aris::Size {
-		aris::Size size = 0;
-		for (auto type : types) {
-			size += getScurveSize(type);
-		}
-		return size;
-	}
-
 	// 多轴模型，覆盖了ModelBase类的虚方法 //
 	// 本质是在将所有子模型的对应方法全部调用了一遍 //
 	class ARIS_API MultiModel :public aris::dynamic::ModelBase {
 	public:
+		auto virtual init()->void override;
+
 		// kinematics & dynamics //
 		auto virtual inverseKinematics()noexcept->int override {
 			for (auto& model : subModels())
@@ -492,82 +421,53 @@ namespace aris::dynamic{
 			return 0;
 		}
 
-		// inputs //
-#define ARIS_INPUTDATA_DEFINATION(TYPE, VARIABLE)                                              \
-		auto virtual input##TYPE##Size()const noexcept->Size override;                         \
-		auto virtual getInput##TYPE(double* VARIABLE)const noexcept->void override;            \
-		auto virtual setInput##TYPE(const double* VARIABLE)noexcept->void override;            \
-		auto virtual input##TYPE##At(Size idx)const noexcept->double override;                 \
-		auto virtual setInput##TYPE##At(double VARIABLE, Size idx)noexcept->void override;     \
+		// EE types //
+		auto virtual eeTypes()const noexcept->const EEType* override;
+		auto virtual eeSize()const noexcept->aris::Size override;
 
-		ARIS_INPUTDATA_DEFINATION(Pos, mp)
-		ARIS_INPUTDATA_DEFINATION(Vel, mv)
-		ARIS_INPUTDATA_DEFINATION(Acc, ma)
-		ARIS_INPUTDATA_DEFINATION(Fce, mf)
-#undef ARIS_INPUTDATA_DEFINATION
+		// inputs //
+		auto virtual inputPosSize()const noexcept->Size override;
+		auto virtual getInputPos(double* mp)const noexcept->void override;
+		auto virtual setInputPos(const double* mp)noexcept->void override;
+		auto virtual inputPosAt(Size idx)const noexcept->double override;
+		auto virtual setInputPosAt(double mp, Size idx)noexcept->void override;
+
+		auto virtual inputVelSize()const noexcept->Size override;
+		auto virtual getInputVel(double* mv)const noexcept->void override;
+		auto virtual setInputVel(const double* mv)noexcept->void override;
+		auto virtual inputVelAt(Size idx)const noexcept->double override;
+		auto virtual setInputVelAt(double mv, Size idx)noexcept->void override;
+
+		auto virtual inputAccSize()const noexcept->Size override;
+		auto virtual getInputAcc(double* ma)const noexcept->void override;
+		auto virtual setInputAcc(const double* ma)noexcept->void override;
+		auto virtual inputAccAt(Size idx)const noexcept->double override;
+		auto virtual setInputAccAt(double ma, Size idx)noexcept->void override;
+
+		auto virtual inputFceSize()const noexcept->Size override;
+		auto virtual getInputFce(double* mf)const noexcept->void override;
+		auto virtual setInputFce(const double* mf)noexcept->void override;
+		auto virtual inputFceAt(Size idx)const noexcept->double override;
+		auto virtual setInputFceAt(double mf, Size idx)noexcept->void override;
 
 		// outputs //
-		auto virtual outputPosSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.outputPosSize();
-			return size;
-		}
-		auto virtual getOutputPos(double* mp)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputPosSize(), ++idx)
-				subModels()[idx].getOutputPos(mp + pos);
-		}
-		auto virtual setOutputPos(const double* mp)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputPosSize(), ++idx)
-				subModels()[idx].setOutputPos(mp + pos);
-		}
+		auto virtual outputPosSize()const noexcept->aris::Size override;
+		auto virtual getOutputPos(double* mp)const noexcept->void override;
+		auto virtual setOutputPos(const double* mp)noexcept->void override;
 
-		auto virtual outputVelSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.outputVelSize();
-			return size;
-		}
-		auto virtual getOutputVel(double* mv)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputVelSize(), ++idx)
-				subModels()[idx].getOutputVel(mv + pos);
-		}
-		auto virtual setOutputVel(const double* mv)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputVelSize(), ++idx)
-				subModels()[idx].setOutputVel(mv + pos);
-		}
+		auto virtual outputVelSize()const noexcept->aris::Size override;
+		auto virtual getOutputVel(double* mv)const noexcept->void override;
+		auto virtual setOutputVel(const double* mv)noexcept->void override;
 
-		auto virtual outputAccSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.outputAccSize();
-			return size;
-		}
-		auto virtual getOutputAcc(double* ma)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputAccSize(), ++idx)
-				subModels()[idx].getOutputAcc(ma + pos);
-		}
-		auto virtual setOutputAcc(const double* ma)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputAccSize(), ++idx)
-				subModels()[idx].setOutputAcc(ma + pos);
-		}
+		auto virtual outputAccSize()const noexcept->aris::Size override;
+		auto virtual getOutputAcc(double* ma)const noexcept->void override;
+		auto virtual setOutputAcc(const double* ma)noexcept->void override;
 
-		auto virtual outputFceSize()const noexcept->aris::Size override {
-			aris::Size size = 0;
-			for (auto& m : subModels())size += m.outputFceSize();
-			return size;
-		}
-		auto virtual getOutputFce(double* mf)const noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputFceSize(), ++idx)
-				subModels()[idx].getOutputFce(mf + pos);
-		}
-		auto virtual setOutputFce(const double* mf)noexcept->void override {
-			for (aris::Size pos = 0, idx = 0; idx < subModels().size(); pos += subModels()[idx].outputFceSize(), ++idx)
-				subModels()[idx].setOutputFce(mf + pos);
-		}
+		auto virtual outputFceSize()const noexcept->aris::Size override;
+		auto virtual getOutputFce(double* mf)const noexcept->void override;
+		auto virtual setOutputFce(const double* mf)noexcept->void override;
 
-		auto virtual init()->void override{
-			for (auto& m : subModels())
-				m.init();
-		}
-
+		// sub models //
 		auto resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void;
 		auto subModels()->aris::core::PointerArray<ModelBase>&;
 		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
@@ -631,51 +531,7 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	// axis 为外部轴的轴，0,1,2,3,4,5 分别代表xyz（平移）abc（旋转）
-	// pm 为外部轴的位置姿态
-	// is_revolute: 是否为转轴
-	// is_coupling: 是否与其他模型耦合，仅影响规划
-	auto inline createExternalAxisModel(const double *pos, const double *axis, bool is_revolute, bool is_coupling = false)->std::unique_ptr < Model > {
-		auto m = std::make_unique<aris::dynamic::Model>();
-		m->setName("ExAxisModel");
 
-		auto &platform = m->partPool().add<Part>("EE");
-		
-		m->variablePool().add<MatrixVariable>("pos", aris::core::Matrix(1, 3, pos));
-		m->variablePool().add<MatrixVariable>("axis", aris::core::Matrix(1, 3, axis));
-		m->variablePool().add<BoolVariable>("is_revolute", is_revolute);
-		m->variablePool().add<BoolVariable>("is_coupling", is_coupling);
-
-		if (is_revolute) {
-			auto& joint = m->addRevoluteJoint(platform, m->ground(), pos, axis);
-			auto& motion = m->addMotion(joint);
-			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 5);
-			ee_mot.setRotateRange(std::numeric_limits<double>::quiet_NaN());
-		}
-		else{
-			auto& joint = m->addPrismaticJoint(platform, m->ground(), pos, axis);
-			auto& motion = m->addMotion(joint);
-			auto& ee_mot = m->generalMotionPool().add<Motion>("ee", joint.makI(), joint.makJ(), 2);
-		}
-
-		// add tool & wobj
-		for (int i = 1; i < 8; ++i) {
-			// 把 tool 的pe 默认设置到转台位置处
-			double tool_pe[6]{ pos[0], pos[1], pos[2], 0.0,0.0,0.0 };
-			platform.addMarker("tool" + std::to_string(i)).setPrtPe(tool_pe);
-			m->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i));
-		}
-
-		// add solver
-		auto& inverse_kinematic = m->solverPool().add<aris::dynamic::InverseKinematicSolver>();
-		auto& forward_kinematic = m->solverPool().add<ForwardKinematicSolver>();
-		auto& inverse_dynamic = m->solverPool().add<aris::dynamic::InverseDynamicSolver>();
-		auto& forward_dynamic = m->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-
-		m->init();
-
-		return m;
-	}
 
 
 	/// @}

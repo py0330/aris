@@ -13,7 +13,7 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/serial_3axis.hpp"
+#include "aris/dynamic/mechanism_serial_3axis.hpp"
 #include "aris/core/reflection.hpp"
 
 namespace aris::dynamic

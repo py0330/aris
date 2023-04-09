@@ -15,7 +15,7 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/puma.hpp"
+#include "aris/dynamic/mechanism_puma.hpp"
 
 namespace aris::dynamic{
 	struct PumaParamLocal {

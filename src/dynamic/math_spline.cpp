@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <ios>
 
-#include "aris/dynamic/spline.hpp"
+#include "aris/dynamic/math_spline.hpp"
 
 namespace aris::dynamic
 {

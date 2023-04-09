@@ -11,8 +11,9 @@
 #include <type_traits>
 #include <array>
 
+#include "aris/dynamic/kinematics.hpp"
 #include "aris/dynamic/model.hpp"
-#include "aris/dynamic/stewart.hpp"
+#include "aris/dynamic/mechanism_stewart.hpp"
 
 namespace aris::dynamic
 {

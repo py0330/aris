@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_SERIAL_3_AXIS_H_
-#define ARIS_DYNAMIC_SERIAL_3_AXIS_H_
+﻿#ifndef ARIS_DYNAMIC_MECHANISM_SERIAL_3_AXIS_H_
+#define ARIS_DYNAMIC_MECHANISM_SERIAL_3_AXIS_H_
 
 #include <array>
 #include <aris/dynamic/model_solver.hpp>

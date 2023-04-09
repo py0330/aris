@@ -15,7 +15,7 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/puma_5axis.hpp"
+#include "aris/dynamic/mechanism_puma_5axis.hpp"
 
 namespace aris::dynamic
 {

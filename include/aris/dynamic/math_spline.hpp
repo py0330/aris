@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_SPLINE_H_
-#define ARIS_DYNAMIC_SPLINE_H_
+﻿#ifndef ARIS_DYNAMIC_MATH_SPLINE_H_
+#define ARIS_DYNAMIC_MATH_SPLINE_H_
 
 #include <aris_lib_export.h>
 #include <aris/core/basic_type.hpp>

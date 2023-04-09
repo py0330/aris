@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <aris/dynamic/model.hpp>
-#include <aris/dynamic/matrix.hpp>
+#include <aris/dynamic/math_matrix.hpp>
 
 namespace aris::dynamic
 {

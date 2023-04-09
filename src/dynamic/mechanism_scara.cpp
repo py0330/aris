@@ -15,7 +15,8 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/scara.hpp"
+#include "aris/dynamic/mechanism_scara.hpp"
+#include "aris/dynamic/kinematics.hpp"
 
 namespace aris::dynamic{
 	struct ScaraParamLocal {
@@ -547,7 +548,7 @@ namespace aris::dynamic{
 			s_mm(3, 3, 3, install_pm_relative, 4, *tool->prtPm(), 4, install_pm, 4);
 			tool->setPrtPm(install_pm);
 		}
-			
+		
 
 		////////////////////////////  SOLVERS  /////////////////////////////
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::ScaraInverseKinematicSolver>();

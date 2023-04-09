@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MATRIX_H_
-#define ARIS_DYNAMIC_MATRIX_H_
+﻿#ifndef ARIS_DYNAMIC_MATH_MATRIX_H_
+#define ARIS_DYNAMIC_MATH_MATRIX_H_
 
 #include <vector>
 #include <numeric>
@@ -211,13 +211,6 @@ namespace aris::dynamic{
 	/// s_householder_up2pinv(m, n, rank, U, u_t, tau, tau_t, p, x, x_t, tau2, t_t, zero_check)
 	/// 
 	/// 
-
-
-
-
-
-
-
 
 	struct ARIS_API RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_)noexcept :r_ld(r_ld_) {}; };
 	struct ARIS_API ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_)noexcept :c_ld(c_ld_) {}; };

@@ -880,8 +880,6 @@ namespace aris::dynamic{
 				s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 
 				// 计算 cp //
-				//if (cpt_cp)b->cst_->cptCpFromPm(d->bc_ + pos, pmI, pmJ);
-
 				if (cpt_cp) {
 					if (auto mot = dynamic_cast<const aris::dynamic::MotionBase*>(b->cst_)) {
 						mot->cptCpFromPm(d->bc_ + pos, pmI, pmJ, b->mp_);
@@ -1521,7 +1519,10 @@ namespace aris::dynamic{
 			s_pm_dot_pm(blk_i->pm_, *mot->makI()->prtPm(), mak_pm_i);
 			s_pm_dot_pm(blk_j->pm_, *mot->makJ()->prtPm(), mak_pm_j);
 			
-			mot->cptPFromPm(mak_pm_i, mak_pm_j,	mp + mp_pos);
+			double pm_i2j[16];
+			s_inv_pm_dot_pm(mak_pm_j, mak_pm_i, pm_i2j);
+
+			mot->cptPFromPm(pm_i2j,	mp + mp_pos);
 			mp_pos += mot->pSize();
 		}
 	}

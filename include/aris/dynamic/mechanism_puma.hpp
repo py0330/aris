@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_PUMA_H_
-#define ARIS_DYNAMIC_PUMA_H_
+﻿#ifndef ARIS_DYNAMIC_MECHANISM_PUMA_H_
+#define ARIS_DYNAMIC_MECHANISM_PUMA_H_
 
 #include <array>
 #include <aris/dynamic/model_solver.hpp>

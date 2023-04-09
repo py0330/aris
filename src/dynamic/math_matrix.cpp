@@ -11,12 +11,10 @@
 #include <list>
 
 #include "aris/core/log.hpp"
-#include "aris/dynamic/matrix.hpp"
+#include "aris/dynamic/math_matrix.hpp"
 
-namespace aris::dynamic
-{
-	auto dlmread(const char *FileName, double *pMatrix)->void
-	{
+namespace aris::dynamic {
+	auto dlmread(const char* FileName, double* pMatrix)->void {
 		std::ifstream file;
 
 		file.open(FileName);
@@ -25,15 +23,13 @@ namespace aris::dynamic
 
 
 		Size i = 0;
-		while (!file.eof())
-		{
+		while (!file.eof()) {
 			file >> *(pMatrix + i);
 			++i;
 		}
 	}
 
-	auto dlmread(const char *filename)->std::vector<double>
-	{
+	auto dlmread(const char *filename)->std::vector<double>	{
 		std::vector<double> mtx;
 
 		std::fstream file;
@@ -42,13 +38,11 @@ namespace aris::dynamic
 		if (!file) THROW_FILE_LINE("file not exist");
 
 		Size i = 0;
-		while (!file.eof())
-		{
+		while (!file.eof())	{
 			double data;
 			file >> data;
 
-			if (file.fail())
-			{
+			if (file.fail()){
 				file.clear();
 				char c;
 				file >> c;
@@ -63,13 +57,11 @@ namespace aris::dynamic
 		file.close();
 		file.open(filename);
 		i = 0;
-		while (!file.eof())
-		{
+		while (!file.eof())	{
 			double data;
 			file >> data;
 
-			if (file.fail())
-			{
+			if (file.fail()){
 				file.clear();
 				char c;
 				file >> c;

@@ -206,17 +206,17 @@ void test_create_scara() {
 	param.a = 0.3;
 	param.b = 0.4;
 
-	param.install_method = 2;
+	param.install_method = 1;
 
 	auto m = createModelScara(param);
 
-	double input0[4]{ 0,0,0,0 };
+	double input0[4]{ 0,0.15,0,0 };
 	//m->forwardKinematics(input3, output, 0);
 	m->setInputPos(input0);
 	m->forwardKinematics();
+	m->getOutputPos(input0);
 
-
-	double input[4]{ 0.1,0.2,0.3,0.4 };
+	double input[4]{ 0,0.15,0,0 };
 	double output[4];
 	
 	m->forwardKinematics(input, output, 0);

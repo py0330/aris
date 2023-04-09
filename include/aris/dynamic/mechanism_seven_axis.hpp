@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_SEVEN_AXIS_H_
-#define ARIS_DYNAMIC_SEVEN_AXIS_H_
+﻿#ifndef ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS_H_
+#define ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS_H_
 
 #include <array>
 #include <aris/dynamic/model.hpp>
@@ -35,9 +35,10 @@ namespace aris::dynamic{
 	class ARIS_API ArmAngleMotion final :public MotionBase{
 	public:
 		static auto Dim()->Size { return 1; }
+		auto virtual eeType()const->EEType override { return EEType::A; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptPFromPm(const double* makI_pm, const double* makJ_pm, double* p)const noexcept->void override;
+		auto virtual cptPFromPm(const double* mak_i2j, double* p)const noexcept->void override;
 		auto virtual p() const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;

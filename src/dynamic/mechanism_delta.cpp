@@ -15,7 +15,8 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/delta.hpp"
+#include "aris/dynamic/kinematics.hpp"
+#include "aris/dynamic/mechanism_delta.hpp"
 
 namespace aris::dynamic {
 

@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_UR_H_
-#define ARIS_DYNAMIC_UR_H_
+﻿#ifndef ARIS_DYNAMIC_MECHANISM_UR_H_
+#define ARIS_DYNAMIC_MECHANISM_UR_H_
 
 #include <aris/dynamic/model_solver.hpp>
 
