@@ -1783,7 +1783,7 @@ namespace aris::dynamic{
 	}
 
 
-	auto s_rq2re(const double* rq_in, double* re_out = nullptr, const char* eu_type_in = "313") noexcept->double* {
+	auto s_rq2re(const double* rq_in, double* re_out, const char* eu_type_in) noexcept->double* {
 		// 补充默认参数 //
 		rq_in = rq_in ? rq_in : default_rq();
 		re_out = re_out ? re_out : default_out();
@@ -1795,7 +1795,7 @@ namespace aris::dynamic{
 
 		return re_out;
 	}
-	auto s_re2rq(const double* re_in, double* rq_out = nullptr, const char* eu_type_in = "313") noexcept->double* {
+	auto s_re2rq(const double* re_in, double* rq_out, const char* eu_type_in) noexcept->double* {
 		// 补充默认参数 //
 		re_in = re_in ? re_in : default_re();
 		rq_out = rq_out ? rq_out : default_out();
