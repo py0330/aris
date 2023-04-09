@@ -616,6 +616,91 @@ namespace aris::dynamic{
 	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionTemplate(name, makI, makJ, active){}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
+	auto SphericalMotion::locCmI() const noexcept->const double* {
+		static const double loc_cm_I[18]{
+			1,0,0,
+			0,1,0,
+			0,0,1,
+			0,0,0,
+			0,0,0,
+			0,0,0,
+		};
+		return loc_cm_I;
+	}
+	auto SphericalMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+		// 先计算 mak_i 相对于 mak_j 所应该处的位姿 pm_i2j_should_be
+		// 再计算 mak_i 相对于 mak_j 真实的位姿     pm_i2j
+		// 两者的差值就是应该的补偿量
+		double pm_i2j_should_be[16];
+		cptPmFromP(mp, pm_i2j_should_be);
+
+		double pm_i2j[16];
+		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+
+		// in real i frame
+		double pm_i2j_diff[16];
+		s_inv_pm_dot_pm(pm_i2j, pm_i2j_should_be, pm_i2j_diff);
+
+		// 【注意】：这里不应考虑角度所造成的移动距离，不同于上文
+		s_vc(3, pm_i2j_diff + 3, 4, cp, 1);
+	}
+	auto SphericalMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
+	auto SphericalMotion::cptCv(double* cv)const noexcept->void {
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), v(), vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		s_vc(3, vp_in_makI, cv);
+	}
+	auto SphericalMotion::cptCa(double* ca)const noexcept->void {
+		Constraint::cptCa(ca);
+
+		// w x R * dr //
+		double vp_in_makI[3], vp_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), v(), vp_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+
+		double vs_J_in_I[6];
+		makJ()->getVs(*makI(), vs_J_in_I);
+
+		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
+
+		// R * ddr //
+		double ap_in_makI[3], ap_in_ground[3];
+		s_pm_dot_v3(*makJ()->pm(), a(), ap_in_ground);
+		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
+
+		s_va(3, ap_in_makI, ca);
+	}
+	auto SphericalMotion::cptPFromPm(const double* mak_i2j, double* p)const noexcept->void {
+		s_pm2pp(mak_i2j, p);
+	}
+	auto SphericalMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
+		s_eye(4, pm_i2j);
+		pm_i2j[3] = p[0];
+		pm_i2j[7] = p[1];
+		pm_i2j[11] = p[2];
+	}
+	auto SphericalMotion::updV() noexcept->void {
+		double vs[6], pp[3];
+		s_pm2pp(*makI()->pm(), pp);
+		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
+		s_vs2vp(vs, pp, v_);
+	}
+	auto SphericalMotion::updA() noexcept->void {
+		double as[6], vs[6], pp[3];
+		s_pm2pp(*makI()->pm(), pp);
+		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
+		s_as2ap(vs, as, pp, a_);
+	}
+	SphericalMotion::~SphericalMotion() = default;
+	SphericalMotion::SphericalMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(SphericalMotion);
+
 	struct XyztMotion::Imp { double rotate_range_{ std::numeric_limits<double>::quiet_NaN() }; };
 	auto XyztMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[24]{
