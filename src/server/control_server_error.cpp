@@ -14,6 +14,8 @@
 #include "aris/server/api.hpp"
 
 namespace aris::server{
+	static auto inline greater(double l, double r, int precision=9)->bool { return l - r > std::pow(0.1, precision); }
+	static auto inline less(double l, double r, int precision=9)->bool { return l - r < -std::pow(0.1, precision); }
 	struct PVC { double p; double v; double c; };
 	
 	struct ControlServerErrorChecker::Imp {
@@ -82,8 +84,8 @@ namespace aris::server{
 
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
-						&& (cm.targetPos() > cm.maxPos())
-						&& (cm.targetPos() > ld.p))
+						&& greater(cm.targetPos(), cm.maxPos())
+						&& greater(cm.targetPos(), ld.p))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg,
@@ -96,8 +98,8 @@ namespace aris::server{
 
 					// check pos min //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
-						&& (cm.targetPos() < cm.minPos())
-						&& (cm.targetPos() < ld.p))
+						&& less(cm.targetPos(), cm.minPos())
+						&& less(cm.targetPos(), ld.p))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg,
@@ -420,8 +422,8 @@ namespace aris::server{
 
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
-						&& (input_pos_at_i > cm.maxPos())
-						&& (input_pos_at_i > ld.pm))
+						&& greater(input_pos_at_i, cm.maxPos())
+						&& greater(input_pos_at_i, ld.pm))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg,
@@ -434,8 +436,8 @@ namespace aris::server{
 
 					// check pos min //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
-						&& (input_pos_at_i < cm.minPos())
-						&& (input_pos_at_i < ld.pm))
+						&& less(input_pos_at_i, cm.minPos())
+						&& less(input_pos_at_i, ld.pm))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg,
