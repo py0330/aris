@@ -19,7 +19,11 @@ void test_abenics_forward_solver() {
 	m->inverseKinematics();
 	m->getInputPos(input);
 
-	dsp(1, m->inputPosSize(), input);
+	//dsp(1, m->inputPosSize(), input);
+
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	dsp(1, 3, output);
 }
 
 void test_model_solver_abenics(){

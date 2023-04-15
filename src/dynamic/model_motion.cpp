@@ -22,7 +22,7 @@ namespace aris::dynamic{
 		s_pm2ps(pm_j2i, ps_j2i);
 		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 	}
-	auto MotionBase::compareP(const double* p1, const double* p2)->double {
+	auto MotionBase::cptPError(const double* p1, const double* p2)->double {
 		double ret_value{ 0.0 };
 		for (int i = 0; i < pSize(); ++i) {
 			ret_value = std::max(ret_value, std::abs(p1[i] - p2[i]));
@@ -30,12 +30,6 @@ namespace aris::dynamic{
 		return ret_value;
 	}
 	auto MotionBase::setPByMak(const Marker* mak_tool, const Marker* mak_base, const double* p) noexcept->void {
-		
-		
-		double pm_i[16], pm_j[16], pm_relative[16];
-
-		s_inv_pm_dot_pm(*makI()->prtPm(), *mak_tool->prtPm(), pm_relative);
-
 		// 已知 tool wrt base，求 maki wrt makj
 		//
 		// P_b_t 代表 tool 在 base 下的位姿
@@ -51,8 +45,22 @@ namespace aris::dynamic{
 		//
 		// 其中
 
+		double result1[16], result2[16], p_i2j[16];
 
+		double pm_b_t[16];
+		cptPmFromP(p, pm_b_t);
 
+		double pm_left[16];
+		s_inv_pm_dot_pm(*makJ()->prtPm(), *mak_base->prtPm(), pm_left);
+
+		double pm_right[16];
+		s_inv_pm_dot_pm(*mak_tool->prtPm(), *makI()->prtPm(), pm_right);
+
+		s_pm_dot_pm(pm_left, pm_b_t, result1);
+		s_pm_dot_pm(result1, pm_right, result2);
+		
+		cptPFromPm(result2, p_i2j);
+		setP(p_i2j);
 	}
 	auto MotionBase::updP() noexcept->void {
 		double pm_i2j[16];
@@ -156,8 +164,8 @@ namespace aris::dynamic{
 			pm_i2j[3 + axis() * 4] += pitch() * mp_internal / 2 / PI;
 		}
 	}
-	auto Motion::compareP(const double* p1, const double* p2)->double {
-		return axis() > 2 ? s_put_into_period(*p1, (*p2) / aris::PI, aris::PI) - (*p2) : (*p1) - (*p2);
+	auto Motion::cptPError(const double* p1, const double* p2)->double {
+		return axis() > 2 ? s_put_into_period(*p1, (*p2)/2.0 / aris::PI, 2*aris::PI) - (*p2) : (*p1) - (*p2);
 	}
 	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
 	auto Motion::updP() noexcept->void{
@@ -356,6 +364,42 @@ namespace aris::dynamic{
 		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(p, pm_i2j); break;
 		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, p, pm_i2j); break;
 		}
+	}
+	auto GeneralMotion::cptPError(const double* p1, const double* p2)->double {
+		double pq1[7], pq2[7];
+
+		switch (poseType()) {
+		case GeneralMotion::PoseType::EULER123:
+			s_pe2pq(p1, pq1, "123");
+			s_pe2pq(p2, pq2, "123");
+			break;
+		case GeneralMotion::PoseType::EULER321:
+			s_pe2pq(p1, pq1, "321");
+			s_pe2pq(p2, pq2, "321");
+			break;
+		case GeneralMotion::PoseType::EULER313:
+			s_pe2pq(p1, pq1, "313");
+			s_pe2pq(p2, pq2, "313");
+			break;
+		case GeneralMotion::PoseType::QUATERNION:
+			s_vc(7, p1, pq1);
+			s_vc(7, p2, pq2);
+			break;
+		case GeneralMotion::PoseType::POSE_MATRIX:
+			s_pm2pq(p1, pq1);
+			s_pm2pq(p2, pq2);
+			break;
+		}
+
+		if (s_vv(4, pq1 + 3, pq2 + 3) < 0)
+			s_iv(4, pq2 + 3);
+
+		double max_error = 0;
+		for (int i = 0; i < 7; ++i) {
+			max_error = std::max(max_error, std::abs(pq1[i] - pq2[i]));
+		}
+
+		return max_error;
 	}
 	auto GeneralMotion::pSize()const noexcept->Size { 
 		switch (poseType()) {
@@ -676,6 +720,41 @@ namespace aris::dynamic{
 		s_eye(4, pm_i2j);
 		s_re2pm(p, pm_i2j, "123");
 	}
+	auto SphericalMotion::cptPError(const double* p1, const double* p2)->double {
+		double q1[4], q2[4];
+
+		switch (poseType()) {
+		case SphericalMotion::PoseType::EULER123:
+			s_re2rq(p1, q1, "123");
+			s_re2rq(p2, q2, "123");
+			break;
+		case SphericalMotion::PoseType::EULER321:
+			s_re2rq(p1, q1, "321");
+			s_re2rq(p2, q2, "321");
+			break;
+		case SphericalMotion::PoseType::EULER313:
+			s_re2rq(p1, q1, "313");
+			s_re2rq(p2, q2, "313");
+			break;
+		case SphericalMotion::PoseType::QUATERNION:
+			s_vc(4, p1, q1);
+			s_vc(4, p2, q2);
+			break;
+		case SphericalMotion::PoseType::POSE_MATRIX:
+			s_rm2rq(p1, q1);
+			s_rm2rq(p2, q2);
+			break;
+		}
+
+		if (s_vv(4, q1, q2) < 0)
+			s_iv(4, q2);
+
+		double max_error = 0;
+		for (int i = 0; i < 4; ++i) {
+			max_error = std::max(max_error, std::abs(q1[i] - q2[i]));
+		}
+		return max_error;
+	}
 	auto SphericalMotion::pSize()const noexcept->Size {
 		switch (poseType()) {
 		case SphericalMotion::PoseType::EULER123:return 3;
@@ -880,6 +959,15 @@ namespace aris::dynamic{
 	}
 	auto XyztMotion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
 	auto XyztMotion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
+	auto XyztMotion::cptPError(const double* p1, const double* p2)->double {
+		double max_error = 0;
+		for (int i = 0; i < 3; ++i) {
+			max_error = std::max(max_error, std::abs(p1[i] - p2[i]));
+		}
+		max_error = std::max(max_error, s_put_into_period(std::abs(p1[3] - p2[3]), 0, 2*aris::PI));
+
+		return max_error;
+	}
 	XyztMotion::~XyztMotion() = default;
 	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(XyztMotion);
@@ -989,6 +1077,15 @@ namespace aris::dynamic{
 		pm_i2j[3] = p[0];
 		pm_i2j[7] = p[1];
 		s_rmz(p[2], pm_i2j, 4);
+	}
+	auto PlanarMotion::cptPError(const double* p1, const double* p2)->double {
+		double max_error = 0;
+		for (int i = 0; i < 2; ++i) {
+			max_error = std::max(max_error, std::abs(p1[i] - p2[i]));
+		}
+		max_error = std::max(max_error, s_put_into_period(std::abs(p1[2] - p2[2]), 0, 2 * aris::PI));
+
+		return max_error;
 	}
 	auto PlanarMotion::updV() noexcept->void {
 		double mvs[6], vp[3];

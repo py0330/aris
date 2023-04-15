@@ -163,6 +163,9 @@ void test_puma_inverse_solver(){
 			if (new_m->inverseKinematics(ee_pm, input_result, i))
 				std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
+			if(new_m->whichInverseRoot(ee_pm, input_result)!=i)
+				std::cout << __FILE__ << __LINE__ << "which root failed" << std::endl;
+
 			if (!s_is_equal(6, input_result, input_result2, 1e-10))
 			{
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;

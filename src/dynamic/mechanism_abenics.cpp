@@ -26,10 +26,10 @@ namespace aris::dynamic {
 	public:
 		auto virtual kinPos()->int override {
 			//InverseKinematicSolver::kinPos();
-			//
+			////
 			//double input[6];
 			//model()->getInputPos(input);
-			//dsp(1, 6, input);
+			//dsp(1, 3, input);
 
 			auto& ee = model()->generalMotionPool()[0];
 
@@ -119,13 +119,96 @@ namespace aris::dynamic {
 			model()->setInputPosAt(re_A[0], 0);
 			model()->setInputPosAt(re_A[1], 1);
 			model()->setInputPosAt(re_B[0], 2);
-			model()->setInputPosAt(re_A[1], 3);
+			model()->setInputPosAt(re_B[1], 3);
 
 			return 0;
 		}
 
 		AbenicsInverseKinematicSolver() = default;
 	};
+	class AbenicsForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
+	public:
+		auto virtual kinPos()->int override {
+			auto& ee = model()->generalMotionPool()[0];
+
+			double sq2 = std::sqrt(2.0) / 2;
+			double rm_ee0_wrt_A[9]{
+			 sq2,  0,  sq2,
+			   0,  1,  0,
+			-sq2,  0,  sq2
+			};
+
+
+
+			double q1 = model()->inputPosAt(0);
+			double q2 = model()->inputPosAt(1);
+			double q3 = model()->inputPosAt(2);
+			double q4 = model()->inputPosAt(3);
+
+			auto s1 = std::sin(q1);
+			auto c1 = std::cos(q1);
+			auto s2 = std::sin(q2);
+			auto c2 = std::cos(q2);
+			auto s3 = std::sin(q3);
+			auto c3 = std::cos(q3);
+			auto s4 = std::sin(q4);
+			auto c4 = std::cos(q4);
+
+			double rm[9]{
+				c2,    0, -s3*s4,
+				c1*s2, 0, c3*s4,
+				s1*s2, 0, c4
+			};
+
+			//dsp(3, 3, rm);
+
+			s_c3(rm + 2, 3, rm, 3, rm + 1, 3);
+			s_c3(rm, 3, rm + 1, 3, rm + 2, 3);
+
+
+			//std::cout << s_vv(3, rm + 1, 3, rm + 1, 3) << std::endl;
+			//std::cout << s_vv(3, rm + 2, 3, rm + 2, 3) << std::endl;
+
+			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm, 3, rm, 3)), rm, 3);
+			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm + 1, 3, rm + 1, 3)), rm + 1, 3);
+			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm + 2, 3, rm + 2, 3)), rm + 2, 3);
+
+			//std::cout << s_vv(3, rm + 1, 3, rm + 1, 3) << std::endl;
+			//std::cout << s_vv(3, rm + 2, 3, rm + 2, 3) << std::endl;
+
+			double rm_ee[9], rm_ee2[9];
+
+			//s_mm(3, 3, 3, rm_ee0_wrt_A, 3, rm, 3, rm_ee, 3);
+			//dsp(3, 3, rm_ee);
+
+			s_mm(3, 3, 3, rm_ee0_wrt_A, T(3), rm, 3, rm_ee, 3);
+			s_mm(3, 3, 3, rm_ee, 3, rm_ee0_wrt_A, 3, rm_ee2, 3);
+			//dsp(3, 3, rm_ee);
+			//dsp(3, 3, rm_ee2);
+
+			double re[3];
+			s_rm2re(rm_ee2, re, "123");
+			//dsp(1, 3, re);
+
+			//s_mm(3, 3, 3, rm, 3, rm_ee0_wrt_A, 3, rm_ee, 3);
+			//s_mm(3, 3, 3, rm_ee, 3, rm_ee0_wrt_A, T(3), rm_ee2, 3);
+			//dsp(3, 3, rm_ee);
+			//dsp(3, 3, rm_ee2);
+
+
+
+			//std::cout << "------------" << std::endl;
+
+			//s_mm(3, 3, 3, rm, 3, rm_ee0_wrt_A, T(3), rm_ee, 3);
+			//dsp(3, 3, rm_ee);
+			model()->generalMotionPool()[0].setP(re);
+
+			return 0;
+		}
+
+		AbenicsForwardKinematicSolver() = default;
+	};
+
 	auto createModelAbenics(const AbenicsParam& param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
 
@@ -175,7 +258,7 @@ namespace aris::dynamic {
 
 		// add solver
 		auto& inverse_kinematic = model->solverPool().add<aris::dynamic::AbenicsInverseKinematicSolver>();
-		auto& forward_kinematic = model->solverPool().add<aris::dynamic::ForwardKinematicSolver>();
+		auto& forward_kinematic = model->solverPool().add<aris::dynamic::AbenicsForwardKinematicSolver>();
 		auto& inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto& forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 

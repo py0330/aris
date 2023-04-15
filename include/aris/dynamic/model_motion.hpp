@@ -18,7 +18,7 @@ namespace aris::dynamic {
 
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void {}
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {}
-		auto virtual compareP(const double* p1, const double* p2)->double; // 比较两个输入差，返回最大的差值
+		auto virtual cptPError(const double* p1, const double* p2)->double; // 比较两个输入差，返回最大的差值
 		auto virtual pSize()const noexcept->Size { return dim(); }
 		auto virtual p()const noexcept->const double* { return nullptr; }
 		auto virtual updP() noexcept->void;
@@ -45,7 +45,6 @@ namespace aris::dynamic {
 		: Constraint(name, makI, makJ, active){}
 		ARIS_DEFINE_BIG_FOUR(MotionBase);
 	};
-
 
 	template<int P_SIZE, int V_SIZE, int A_SIZE>
 	class ARIS_API MotionTemplate : public MotionBase {
@@ -84,7 +83,7 @@ namespace aris::dynamic {
 		auto virtual cptCa(double *ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
-		auto virtual compareP(const double* p1, const double* p2)->double;
+		auto virtual cptPError(const double* p1, const double* p2)->double;
 		auto virtual p() const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
@@ -208,6 +207,7 @@ namespace aris::dynamic {
 		auto virtual cptCa(double *ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
+		auto virtual cptPError(const double* p1, const double* p2)->double override;
 		auto virtual pSize()const noexcept->Size;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
@@ -307,6 +307,7 @@ namespace aris::dynamic {
 		auto virtual cptCa(double* ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
+		auto virtual cptPError(const double* p1, const double* p2)->double override;
 		auto virtual pSize()const noexcept->Size;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
@@ -334,6 +335,7 @@ namespace aris::dynamic {
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void override;
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptPError(const double* p1, const double* p2)->double override;
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
@@ -375,6 +377,7 @@ namespace aris::dynamic {
 		auto virtual cptCa(double* ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
+		auto virtual cptPError(const double* p1, const double* p2)->double override;
 		auto virtual updV() noexcept->void override;
 		auto virtual updA() noexcept->void override;
 

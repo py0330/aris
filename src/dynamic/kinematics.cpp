@@ -25,8 +25,8 @@ namespace aris::dynamic{
 		// 取余的周期
 		auto mod = which_period - t;
 
-		while (value > (mod + 0.5) * period) ret -= period;
-		while (value < (mod - 0.5) * period) ret += period;
+		while (ret > (mod + 0.5) * period) ret -= period;
+		while (ret < (mod - 0.5) * period) ret += period;
 
 		ret += t * period;
 

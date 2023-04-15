@@ -1242,7 +1242,7 @@ namespace aris::dynamic{
 
 		core::allocMem(mem_pool_size, pub_data.active_mots_, pub_data.active_mot_size_);
 		core::allocMem(mem_pool_size, pub_data.active_mp_, active_mp_size);
-		core::allocMem(mem_pool_size, pub_data.deactive_mots_, pub_data.active_mot_size_);
+		core::allocMem(mem_pool_size, pub_data.deactive_mots_, pub_data.deactive_mot_size_);
 		core::allocMem(mem_pool_size, pub_data.deactive_mp_, deactive_mp_size);
 		core::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
 		core::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
@@ -1485,6 +1485,9 @@ namespace aris::dynamic{
 		}
 	}
 	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)->int {
+		int solution_id = 0;
+		double error = std::numeric_limits<double>::infinity();
+
 		if (rootNumber() == 1) {
 			return 0;
 		}
@@ -1492,18 +1495,19 @@ namespace aris::dynamic{
 			for (int i = 0; i < rootNumber(); ++i) {
 				kinPosPure(motion_pos, imp_->pd_->deactive_mp_, i);
 				int pos = 0;
+				double this_error = 0.0;
 				for (int j = 0; j < imp_->pd_->deactive_mot_size_; ++j) {
-					if (imp_->pd_->deactive_mots_[j]->compareP(imp_->pd_->deactive_mp_ + pos, answer + pos) < 0)
-						break;
+					this_error = std::max(this_error, imp_->pd_->deactive_mots_[j]->cptPError(imp_->pd_->deactive_mp_ + pos, answer + pos));
 					pos += imp_->pd_->deactive_mots_[j]->pSize();
 				}
 
-				// 本组解是所需要的解 //
-				if (pos == imp_->pd_->deactive_mp_size_)
-					return i;
+				if (this_error < error) {
+					error = this_error;
+					solution_id = i;
+				}
 			}
 
-			return -1;
+			return solution_id;
 		}
 	}
 	auto UniversalSolver::answerSize()->aris::Size {
