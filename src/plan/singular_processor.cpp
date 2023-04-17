@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/singular_processor.hpp"
 #include"aris/plan/function.hpp"
 
-//#define ARIS_DEBUG_SINGULAR_PROCESSOR
+#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
 namespace aris::plan {
 	struct ThirdPolynomialParam {

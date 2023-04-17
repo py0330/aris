@@ -23,6 +23,10 @@ void test_abenics_forward_solver() {
 
 	m->forwardKinematics();
 	m->getOutputPos(output);
+
+	dsp(1, 3, output);
+	m->generalMotionPool()[0].updP();
+	m->getOutputPos(output);
 	dsp(1, 3, output);
 }
 

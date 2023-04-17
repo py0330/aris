@@ -121,6 +121,15 @@ namespace aris::dynamic {
 			model()->setInputPosAt(re_B[0], 2);
 			model()->setInputPosAt(re_B[1], 3);
 
+			// upd each part //
+			model()->motionPool()[0].updMakIPm();
+			model()->motionPool()[1].updMakIPm();
+			model()->motionPool()[2].updMakIPm();
+			model()->motionPool()[3].updMakIPm();
+			ee.updMakIPm();
+
+
+
 			return 0;
 		}
 
@@ -160,48 +169,30 @@ namespace aris::dynamic {
 				s1*s2, 0, c4
 			};
 
-			//dsp(3, 3, rm);
-
 			s_c3(rm + 2, 3, rm, 3, rm + 1, 3);
 			s_c3(rm, 3, rm + 1, 3, rm + 2, 3);
-
-
-			//std::cout << s_vv(3, rm + 1, 3, rm + 1, 3) << std::endl;
-			//std::cout << s_vv(3, rm + 2, 3, rm + 2, 3) << std::endl;
 
 			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm, 3, rm, 3)), rm, 3);
 			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm + 1, 3, rm + 1, 3)), rm + 1, 3);
 			s_nv(3, 1.0 / std::sqrt(s_vv(3, rm + 2, 3, rm + 2, 3)), rm + 2, 3);
 
-			//std::cout << s_vv(3, rm + 1, 3, rm + 1, 3) << std::endl;
-			//std::cout << s_vv(3, rm + 2, 3, rm + 2, 3) << std::endl;
-
 			double rm_ee[9], rm_ee2[9];
-
-			//s_mm(3, 3, 3, rm_ee0_wrt_A, 3, rm, 3, rm_ee, 3);
-			//dsp(3, 3, rm_ee);
-
 			s_mm(3, 3, 3, rm_ee0_wrt_A, T(3), rm, 3, rm_ee, 3);
 			s_mm(3, 3, 3, rm_ee, 3, rm_ee0_wrt_A, 3, rm_ee2, 3);
-			//dsp(3, 3, rm_ee);
-			//dsp(3, 3, rm_ee2);
 
 			double re[3];
 			s_rm2re(rm_ee2, re, "123");
-			//dsp(1, 3, re);
 
-			//s_mm(3, 3, 3, rm, 3, rm_ee0_wrt_A, 3, rm_ee, 3);
-			//s_mm(3, 3, 3, rm_ee, 3, rm_ee0_wrt_A, T(3), rm_ee2, 3);
-			//dsp(3, 3, rm_ee);
-			//dsp(3, 3, rm_ee2);
-
-
-
-			//std::cout << "------------" << std::endl;
-
-			//s_mm(3, 3, 3, rm, 3, rm_ee0_wrt_A, T(3), rm_ee, 3);
-			//dsp(3, 3, rm_ee);
 			model()->generalMotionPool()[0].setP(re);
+
+			// upd each part //
+			model()->motionPool()[0].updMakIPm();
+			model()->motionPool()[1].updMakIPm();
+			model()->motionPool()[2].updMakIPm();
+			model()->motionPool()[3].updMakIPm();
+			ee.updMakIPm();
+
+
 
 			return 0;
 		}
@@ -274,6 +265,10 @@ namespace aris::dynamic {
 	ARIS_REGISTRATION{
 		aris::core::class_<AbenicsInverseKinematicSolver>("AbenicsInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
+			;
+
+		aris::core::class_<AbenicsForwardKinematicSolver>("AbenicsForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
 			;
 	}
 }

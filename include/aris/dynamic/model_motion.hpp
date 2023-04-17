@@ -23,6 +23,8 @@ namespace aris::dynamic {
 		auto virtual p()const noexcept->const double* { return nullptr; }
 		auto virtual updP() noexcept->void;
 		auto virtual setPByMak(const Marker* mak_i, const Marker* mak_j, const double* p) noexcept->void;
+		auto virtual updMakIPm() noexcept->void;
+		auto virtual updMakJPm() noexcept->void;
 		auto virtual setP(const double *p) noexcept->void {}
 		auto virtual getP(double *p)const noexcept->void { s_vc(pSize(), this->p(), p); }
 		auto virtual vSize()const noexcept->Size { return dim(); }

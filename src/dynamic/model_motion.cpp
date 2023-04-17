@@ -67,7 +67,17 @@ namespace aris::dynamic{
 		s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), pm_i2j);
 		cptPFromPm(pm_i2j, const_cast<double*>(this->p()));
 	}
-
+	auto MotionBase::updMakIPm() noexcept->void {
+		double pm_j_i[16];
+		cptPmFromP(p(), pm_j_i);
+		makI()->setPm(*makJ(), pm_j_i);
+	}
+	auto MotionBase::updMakJPm() noexcept->void {
+		double pm_j_i[16], inv_pm[16];
+		cptPmFromP(p(), pm_j_i);
+		s_inv_pm(pm_j_i, inv_pm);
+		makJ()->setPm(*makI(), pm_j_i);
+	}
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
 		Size component_axis_{ 2 };
