@@ -76,7 +76,7 @@ namespace aris::dynamic{
 		double pm_j_i[16], inv_pm[16];
 		cptPmFromP(p(), pm_j_i);
 		s_inv_pm(pm_j_i, inv_pm);
-		makJ()->setPm(*makI(), pm_j_i);
+		makJ()->setPm(*makI(), inv_pm);
 	}
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
