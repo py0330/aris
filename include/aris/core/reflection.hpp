@@ -296,16 +296,52 @@ namespace aris::core{
 			return *this;
 		}
 
-		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
+		// espect: Class_Type::size()->size_t
+		//         Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
-		//         Class_Type::size()->size_t
 		//         Class_Type::clear()->void
 		template<typename C = Class_Type>
-		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>{
-			auto size_func = [](Instance* ins)->std::size_t	{return ins->castToPointer<C>()->size();	};
-			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castToPointer<C>()->at(id);};
-			auto push_back_func = [](Instance* ins, const Instance& value)->void {ins->castToPointer<C>()->push_back(value.castToPointer<typename C::value_type>()); const_cast<Instance&>(value).release(); };
-			auto clear_func = [](Instance* ins)->void{	ins->castToPointer<C>()->clear();	};
+		auto asRefArray()->std::enable_if_t<
+			std::is_object_v<typename C::value_type>, class_<Class_Type>&>
+		{
+			auto size_func = [](Instance* ins)->std::size_t	{
+				return ins->castToPointer<C>()->size();
+			};
+			auto at_func = [](Instance* ins, std::size_t id)->Instance{	
+				return ins->castToPointer<C>()->at(id);
+			};
+			auto push_back_func = [](Instance* ins, const Instance& value)->void {
+				ins->castToPointer<C>()->push_back(value.castToPointer<typename C::value_type>()); 
+				const_cast<Instance&>(value).release(); 
+			};
+			auto clear_func = [](Instance* ins)->void{	
+				ins->castToPointer<C>()->clear();	
+			};
+			type_->as_array(true, size_func, at_func, push_back_func, clear_func);
+			return *this;
+		}
+
+		// espect: size(C* c)->size_t
+		//         at(C* c, size_t id)->T or at(C* c, size_t id)->T&
+		//         push_back(C* c, T* value)->void
+		//         clear(C* c)->void
+		template<typename C = Class_Type, typename SizeFunc, typename AtFunc, typename PushbackFunc, typename ClearFunc>
+		auto asRefArray(SizeFunc size_f, AtFunc at_f, PushbackFunc pushback_f, ClearFunc clear_f)->std::enable_if_t<
+			std::is_object_v<typename C::value_type>, class_<Class_Type>&>
+		{
+			auto size_func = [size_f](Instance* ins)->std::size_t {
+				return size_f ? (*size_f)(ins->castToPointer<C>()) : ins->castToPointer<C>()->size();
+			};
+			auto at_func = [at_f](Instance* ins, std::size_t id)->Instance {
+				return (*at_f)(ins->castToPointer<C>(), id); 
+			};
+			auto push_back_func = [pushback_f](Instance* ins, const Instance& value)->void {
+				(*pushback_f)(ins->castToPointer<C>(), value.castToPointer<typename C::value_type>());
+				const_cast<Instance&>(value).release(); 
+			};
+			auto clear_func = [clear_f](Instance* ins)->void {
+				(*clear_f)(ins->castToPointer<C>());	
+			};
 			type_->as_array(true, size_func, at_func, push_back_func, clear_func);
 			return *this;
 		}
@@ -406,7 +442,8 @@ namespace aris::core{
 			std::is_class_v<C>
 			&& !std::is_member_function_pointer_v<SetFunc>
 			&& !std::is_member_function_pointer_v<GetFunc>
-			&& !std::is_same_v<SetFunc, void(*)(C*, std::decay_t<decltype((*g)((C*)(nullptr)))>*) >
+			&& !std::is_invocable_v<decltype(*s), C*, std::decay_t<decltype((*g)((C*)(nullptr)))>*>
+			//&& (!std::is_same_v<SetFunc, void(*)(C*, std::decay_t<decltype((*g)((C*)(nullptr)))>*) >)
 			, class_<Class_Type>& >
 		{
 			using T = std::decay_t<decltype((*g)((C*)(nullptr)))>;
@@ -414,6 +451,25 @@ namespace aris::core{
 			auto get = [g](Instance *obj)->Instance {	return (*g)(obj->castToPointer<C>());	};
 			auto set = [s](Instance *obj, Instance value) {(*s)(obj->castToPointer<C>(), *value.castToPointer<T>()); };
 			auto &prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
+
+			return *this;
+		}
+
+		// espect: setProp(C *obj, T *v)->void  
+//         getProp(C *obj)->T
+		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
+		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
+			std::is_class_v<C>
+			&& !std::is_member_function_pointer_v<SetFunc>
+			&& !std::is_member_function_pointer_v<GetFunc>
+			&& std::is_invocable_v<decltype(*s), C*, std::decay_t<decltype((*g)((C*)(nullptr)))>*>
+			, class_<Class_Type>& >
+		{
+			using T = std::decay_t<decltype((*g)((C*)(nullptr)))>;
+
+			auto get = [g](Instance* obj)->Instance {	return (*g)(obj->castToPointer<C>());	};
+			auto set = [s](Instance* obj, Instance value) {(*s)(obj->castToPointer<C>(), value.castToPointer<T>()); value.release(); };
+			auto& prop = type_->this_properties().emplace_back(name, type_, typeid(T).hash_code(), false, set, get);
 
 			return *this;
 		}

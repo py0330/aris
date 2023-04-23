@@ -4,7 +4,7 @@
 
 #include <aris.hpp>
 
-#include <aris/dynamic/puma_5axis.hpp>
+#include <aris/dynamic/mechanism_puma_5axis.hpp>
 
 auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>{
 	aris::dynamic::PumaParam param;

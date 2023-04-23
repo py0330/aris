@@ -12,12 +12,11 @@
 #include <ios>
 
 #include "aris/core/core.hpp"
-#include "aris/dynamic/matrix.hpp"
+#include "aris/dynamic/math_matrix.hpp"
 #include "aris/dynamic/screw.hpp"
 #include "aris/dynamic/model.hpp"
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	auto MatrixVariable::fromString(std::string_view str)->void {
 		static aris::core::Calculator c;
 		static int i = 0;

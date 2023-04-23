@@ -326,8 +326,8 @@ namespace aris::core
 		auto add(T *obj)->T & { push_back(obj); return dynamic_cast<T&>(back()); }
 		template<typename TT, typename ...Args>
 		auto add(Args&&... args)->std::enable_if_t<std::is_base_of<T, TT>::value, TT>& { return dynamic_cast<TT&>(add(new TT(std::forward<Args>(args)...))); }
-		template<typename ...Args>
-		auto addChild(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
+		//template<typename ...Args>
+		//auto addChild(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 		~PointerArray() = default;

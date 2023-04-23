@@ -15,6 +15,7 @@
 
 #include "aris/server/interface.hpp"
 #include "aris/server/middle_ware.hpp"
+#include "aris/server/control_server_error.hpp"
 
 namespace aris::server{
 	class ARIS_API CustomModule {
@@ -283,6 +284,10 @@ namespace aris::server{
 		auto resetCustomModule(server::CustomModule *custom_module)->void;
 		auto customModule()->CustomModule&;
 		auto customModule()const ->const CustomModule& { return const_cast<ControlServer *>(this)->customModule(); }
+
+		// error checker //
+		auto resetErrorChecker(server::ControlServerErrorChecker* error_checker)->void;
+		auto errorChecker()->ControlServerErrorChecker&;
 
 		// rt error handler //
 		// p can be nullptr, means idle

@@ -110,6 +110,24 @@ namespace aris::plan {
         }
     }
 
+            param1.vc_ = vc1;
+            param1.Ta_ = s_acc_time(param1.va_, vc1, param1.a_, param1.j_);
+            param1.Tb_ = s_acc_time(param1.vb_, vc1, param1.a_, param1.j_);
+        }
+        else {
+            // mode 1
+            param1.mode_ = 1;
+            param1.vb_ = vb1;
+
+            double Tc = s_acc_time(param1.va_, param1.vb_, param1.a_, param1.j_);
+            double va = vb1;
+            double v_avg = (param1.T_ - Tc) > 1e-12 ? (l1 - Tc * (param1.va_ + param1.vb_) / 2) / (param1.T_ - Tc) : (param1.va_ + param1.vb_) / 2;
+            param1.Ta_ = std::abs(param1.va_ - param1.vb_) > 1e-12 ? std::abs((v_avg - param1.vb_) / (param1.va_ - param1.vb_)) * (param1.T_ - Tc) : (param1.T_ - Tc) / 2;
+            param1.Tb_ = param1.T_ - param1.Ta_ - Tc;
+            param1.vc_ = v_avg;
+        }
+    }
+
     auto s_compute_scurve_Tmax_Tmin(const SCurveParam& param, double T_min_set)->std::tuple<double, double>;
 
 
@@ -1361,7 +1379,7 @@ namespace aris::plan {
                     double cons = std::max(vb1, 1e-10) * 1e-10;
                     
                     // 二分法寻找最接近 vb1 的可行 va
-                    double diff = va_below - va_upper;
+                    double diff = va_upper - va_below;
                     double diff_last;
 
                     do {
@@ -1375,7 +1393,7 @@ namespace aris::plan {
                             va_upper = param2.va_;
                         }
                         diff_last = diff;
-                        diff = va_below - va_upper;
+                        diff = va_upper - va_below;
 
                     } while (diff < diff_last);
 
@@ -1853,6 +1871,13 @@ namespace aris::plan {
         double v_, a_, j_;
         // %CASE B
         if (mode == 1) {
+            const double Ta = param.Ta_ - std::min(param.Ta_, param.Tb_);
+            const double Tb = param.Tb_ - std::min(param.Ta_, param.Tb_);
+            const double lower_ratio = (param.T_ - Ta - Tb) < 1e-9 ? 1.0 : (param.T_ - param.Ta_ - param.Tb_) / (param.T_ - Ta - Tb);
+            const double a = param.a_ * lower_ratio;
+            const double j = param.j_ * lower_ratio * lower_ratio;
+
+
             if (t_ < Ta) {
                 p_ = pa + va * t_;
                 v_ = va;

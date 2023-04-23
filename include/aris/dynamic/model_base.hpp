@@ -1,9 +1,20 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_BASE_H_
 #define ARIS_DYNAMIC_MODEL_BASE_H_
 
+#include <aris/dynamic/kinematics.hpp>
+
 namespace aris::dynamic{
 	class ARIS_API ModelBase: public aris::core::NamedObject{
 	public:
+		// kinematic roots // 
+		auto virtual inverseRootNumber()const->int { return 1; }
+		auto virtual whichInverseRoot(const double* output, const double* input)->int { return 0; }
+		auto virtual forwardRootNumber()const->int { return 1; }
+		auto virtual whichForwardRoot(const double* input, const double* output)->int { return 0; }
+
+		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0)const noexcept->int { return -1; }
+		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0)const noexcept->int { return -1; }
+
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int { return -1; }
 		auto virtual forwardKinematics()noexcept->int { return -1; }
@@ -14,9 +25,9 @@ namespace aris::dynamic{
 		auto virtual inverseDynamics()noexcept->int { return -1; }
 		auto virtual forwardDynamics()noexcept->int { return -1; }
 
-		// kinematics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input)const noexcept->int { return -1; }
-		auto virtual forwardKinematics(const double* input, double* output)const noexcept->int { return -1; }
+		// EE types //
+		auto virtual eeTypes()const noexcept->const EEType* { return nullptr; }
+		auto virtual eeSize()const noexcept->aris::Size { return 0; }
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size { return 0; }

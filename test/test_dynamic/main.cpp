@@ -12,6 +12,7 @@
 #include "test_dynamic_model_solver_seven_axis.h"
 #include "test_dynamic_model_solver_stewart.h"
 #include "test_dynamic_model_solver_universal.h"
+#include "test_dynamic_model_solver_abenics.h"
 #include "test_dynamic_model_interaction.h"
 #include "test_dynamic_plan.h"
 
@@ -19,7 +20,7 @@
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
+	//test_matrix();
 	//test_screw();
 	//test_spline();
 	//test_plan();
@@ -32,8 +33,9 @@ int main(int argc, char *argv[])
 	//test_model_solver_puma();
 	//test_model_solver_ur();
 	//test_model_solver_delta();
-	test_model_solver_seven_axis();
+	//test_model_solver_seven_axis();
 	//test_model_solver_stewart();
+	test_model_solver_abenics();
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;
 	std::cin.get();

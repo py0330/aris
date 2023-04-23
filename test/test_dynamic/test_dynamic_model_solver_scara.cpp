@@ -162,7 +162,7 @@ void test_scara_vel() {
 	m->setInputVel(zeros);
 	m->setInputAcc(zeros);
 
-	dynamic_cast<aris::dynamic::ScaraInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(0);
+	dynamic_cast<aris::dynamic::ScaraInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(2);
 
 	// 计算反解，看看是否能够计算正确 //
 	if (m->inverseKinematics())std::cout << "failed" << std::endl;
@@ -200,13 +200,106 @@ void test_scara_vel() {
 	if (!s_is_equal(EE_SIZE, result, output_a, 1e-9))std::cout << "failed" << std::endl;
 }
 
+void test_create_scara() {
+	ScaraParam param;
+	
+	param.a = 0.3;
+	param.b = 0.4;
+
+	param.install_method = 1;
+
+	auto m = createModelScara(param);
+
+	double input0[4]{ 0,0.15,0,0 };
+	//m->forwardKinematics(input3, output, 0);
+	m->setInputPos(input0);
+	m->forwardKinematics();
+	m->getOutputPos(input0);
+
+	double input[4]{ 0,0.15,0,0 };
+	double output[4];
+	
+	m->forwardKinematics(input, output, 0);
+
+
+	double input2[4];
+	m->inverseKinematics(output, input2, 0);
+	m->inverseKinematics(output, input2, 1);
+
+
+
+
+	//dsp(4, 4, *m->generalMotionPool()[0].makI()->pm());
+	//dsp(4, 4, *m->generalMotionPool()[0].makJ()->pm());
+	//dsp(4, 4, *m->partPool().back().pm());
+
+	//dsp(1, 4, input2);
+
+	//std::cout << aris::core::toXmlString(*m) << std::endl;
+}
+
 void test_model_solver_scara(){
-	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
+	std::cout << std::endl << "-----------------test model solver scara---------------------" << std::endl;
 
 	test_scara_forward_solver();
 	test_scara_inverse_solver();
 	test_scara_vel();
 
-	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;
+	test_create_scara();
+
+	auto m = createScaraModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
+	auto& ee = m->generalMotionPool().at(0);
+
+	double input[4]{ 0.0, -0.0, 0.62, 0.15 }, output[4];
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -1.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -2.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -3.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -4.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -5.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -6.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -7.0;
+
+	m->setInputPos(input);
+	m->forwardKinematics();
+	m->getOutputPos(output);
+	aris::dynamic::dsp(1, 4, output);
+	input[3] = -7.0;
+
+	std::cout << "-----------------test model solver scara finished------------" << std::endl << std::endl;
 }
 
