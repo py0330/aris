@@ -12,8 +12,8 @@ int main(int argc, char *argv[]){
 	//test_singular_processor();
 	test_trajectory();
 	
-	//test_scurve();
-	//test_path();
+	test_scurve();
+	test_path();
 	
 	//test_function();
 

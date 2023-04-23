@@ -124,7 +124,6 @@ namespace aris::dynamic
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 
 		inverse_kinematic.setWhichRoot(8);
-		inverse_kinematic.setAxisAngle(0.0);
 		
 		model->init();
 		// make topology correct // 
@@ -323,10 +322,6 @@ namespace aris::dynamic
 	}
 	auto SevenAxisInverseKinematicSolver3::kinPos()->int
 	{
-		// 求解轴角 //
-		{
-			this->setAxisAngle(*this->model()->motionPool()[3].p());
-		}
 		
 		// 求解 //
 		if (imp_->which_root_ == 8)
@@ -418,7 +413,6 @@ namespace aris::dynamic
 	}
 	auto SevenAxisInverseKinematicSolver3::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto SevenAxisInverseKinematicSolver3::whichRoot()->int { return imp_->which_root_; }
-	auto SevenAxisInverseKinematicSolver3::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
 	SevenAxisInverseKinematicSolver3::~SevenAxisInverseKinematicSolver3() = default;
 	SevenAxisInverseKinematicSolver3::SevenAxisInverseKinematicSolver3() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver3);

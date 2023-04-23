@@ -110,24 +110,6 @@ namespace aris::plan {
         }
     }
 
-            param1.vc_ = vc1;
-            param1.Ta_ = s_acc_time(param1.va_, vc1, param1.a_, param1.j_);
-            param1.Tb_ = s_acc_time(param1.vb_, vc1, param1.a_, param1.j_);
-        }
-        else {
-            // mode 1
-            param1.mode_ = 1;
-            param1.vb_ = vb1;
-
-            double Tc = s_acc_time(param1.va_, param1.vb_, param1.a_, param1.j_);
-            double va = vb1;
-            double v_avg = (param1.T_ - Tc) > 1e-12 ? (l1 - Tc * (param1.va_ + param1.vb_) / 2) / (param1.T_ - Tc) : (param1.va_ + param1.vb_) / 2;
-            param1.Ta_ = std::abs(param1.va_ - param1.vb_) > 1e-12 ? std::abs((v_avg - param1.vb_) / (param1.va_ - param1.vb_)) * (param1.T_ - Tc) : (param1.T_ - Tc) / 2;
-            param1.Tb_ = param1.T_ - param1.Ta_ - Tc;
-            param1.vc_ = v_avg;
-        }
-    }
-
     auto s_compute_scurve_Tmax_Tmin(const SCurveParam& param, double T_min_set)->std::tuple<double, double>;
 
 
@@ -1685,7 +1667,7 @@ namespace aris::plan {
             return true;
 
         std::vector<double> Tmaxs(begin->params_.size()), Tmins(begin->params_.size());
-        for (Size i = 0; i < begin->params_.size(); ++i) {
+        for (aris::Size i = 0; i < begin->params_.size(); ++i) {
             // 计算 vb
             s_compute_scurve_node(begin->params_[i]);
 

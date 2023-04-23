@@ -9,13 +9,13 @@ namespace aris::plan {
 	};
 	auto s_third_polynomial_compute_Tmin(double pb, double pe, double vb, double ve, double vmax, double amax)->double {
 		// 根据速度算 T 的最小值
-		double A1 = (- vb*vb - vb*ve - 3*vmax*vb - ve*ve - 3*vmax*ve);
-		double B1 = (6*pe*vb - 6*pb*ve - 6*pb*vb + 6*pe*ve - 6*pb*vmax + 6*pe*vmax);
-		double C1 = (-9*pb*pb + 18*pb*pe - 9*pe*pe);
+		double A1 = (-vb * vb - vb * ve - 3 * vmax * vb - ve * ve - 3 * vmax * ve);
+		double B1 = (6 * pe * vb - 6 * pb * ve - 6 * pb * vb + 6 * pe * ve - 6 * pb * vmax + 6 * pe * vmax);
+		double C1 = (-9 * pb * pb + 18 * pb * pe - 9 * pe * pe);
 
-		double A2 = (- vb*vb - vb*ve + 3*vmax*vb - ve*ve + 3*vmax*ve);
-		double B2 = (6*pe*vb - 6*pb*ve - 6*pb*vb + 6*pe*ve + 6*pb*vmax - 6*pe*vmax);
-		double C2 = (-9*pb*pb + 18*pb*pe - 9*pe*pe);
+		double A2 = (-vb * vb - vb * ve + 3 * vmax * vb - ve * ve + 3 * vmax * ve);
+		double B2 = (6 * pe * vb - 6 * pb * ve - 6 * pb * vb + 6 * pe * ve + 6 * pb * vmax - 6 * pe * vmax);
+		double C2 = (-9 * pb * pb + 18 * pb * pe - 9 * pe * pe);
 
 		double T_min_candidate[4]{ -1,-1,-1,-1 };
 
@@ -23,19 +23,19 @@ namespace aris::plan {
 			T_min_candidate[0] = (-B1 - std::sqrt(B1 * B1 - 4 * A1 * C1)) / (2 * A1);
 			T_min_candidate[1] = (-B1 + std::sqrt(B1 * B1 - 4 * A1 * C1)) / (2 * A1);
 		}
-			
+
 		if (B2 * B2 - 4 * A2 * C2 > 0) {
 			T_min_candidate[2] = (-B2 - std::sqrt(B2 * B2 - 4 * A2 * C2)) / (2 * A2);
 			T_min_candidate[3] = (-B2 + std::sqrt(B2 * B2 - 4 * A2 * C2)) / (2 * A2);
 		}
-		
+
 		std::sort(T_min_candidate, T_min_candidate + 4);
 
 		double Tmin = 0.0;
 		for (int i = 0; i < 4; ++i) {
 			double T = T_min_candidate[3 - i];
 			double m = (T * (3 * pb - 3 * pe + 2 * T * vb + T * ve)) / (3 * (2 * pb - 2 * pe + T * vb + T * ve));
-			if ((0 < m && m < T) || T < 0.0){
+			if ((0 < m && m < T) || T < 0.0) {
 				Tmin = T;
 				break;
 			}
@@ -71,7 +71,7 @@ namespace aris::plan {
 	}
 	auto s_third_polynomial_compute_param(double pb, double pe, double vb, double ve, double T)->ThirdPolynomialParam {
 		ThirdPolynomialParam param;
-		
+
 		param.a = (2 * pb - 2 * pe + T * vb + T * ve) / T / T / T;
 		param.b = -(3 * pb - 3 * pe + 2 * T * vb + T * ve) / T / T;
 		param.c = vb;
@@ -83,14 +83,14 @@ namespace aris::plan {
 		return param.a * t * t * t + param.b * t * t + param.c * t + param.d;
 	}
 
-	struct TcurveParam{
+	struct TcurveParam {
 		double pb, pe, vb, ve, vmax, amax;
 		double T, Ta, Tb, v, a;
 		int mode;
 	};
 	// 计算可行的时间域
 	// (T1 T2), (T3,inf)
-	auto s_tcurve_T_range(const TcurveParam &param, double &T1, double &T2, double &T3)->void {
+	auto s_tcurve_T_range(const TcurveParam& param, double& T1, double& T2, double& T3)->void {
 		// 
 		const double pb = param.pb;
 		const double pe = param.pe;
@@ -98,7 +98,7 @@ namespace aris::plan {
 		const double ve = param.ve;
 		const double vmax = param.vmax;
 		const double amax = param.amax;
-		
+
 		// 
 		const double pt = pe - pb;
 		const double Tb2e = std::abs(vb - ve) / amax;
@@ -106,26 +106,26 @@ namespace aris::plan {
 
 		double v;
 		if (pb2e < pt) {
-			if ((vmax + vb) / 2 * (vmax - vb) / amax + (vmax + ve) / 2 * (vmax - ve) / amax < pt){
+			if ((vmax + vb) / 2 * (vmax - vb) / amax + (vmax + ve) / 2 * (vmax - ve) / amax < pt) {
 				v = vmax;
 				double Ta = (v - vb) / amax;
 				double Tb = (v - ve) / amax;
 				T1 = (pt - Ta * (vb + v) / 2 - Tb * (ve + v) / 2) / v + Ta + Tb;
 			}
 			else {
-				v = std::sqrt(std::abs(pt * amax + (vb*vb + ve*ve)/2));
+				v = std::sqrt(std::abs(pt * amax + (vb * vb + ve * ve) / 2));
 				T1 = (v - vb) / amax + (v - ve) / amax;
 			}
 		}
 		else {
-			if ((-vmax + vb) / 2 * (vb + vmax) / amax + (-vmax + ve) / 2 * (ve + vmax) / amax > pt){
+			if ((-vmax + vb) / 2 * (vb + vmax) / amax + (-vmax + ve) / 2 * (ve + vmax) / amax > pt) {
 				v = -vmax;
 				double Ta = (vb - v) / amax;
 				double Tb = (ve - v) / amax;
 				T1 = (pt - Ta * (vb + v) / 2 - Tb * (ve + v) / 2) / v + Ta + Tb;
 			}
 			else {
-				v = -std::sqrt(std::abs(-pt*amax + (vb*vb + ve*ve)/2));
+				v = -std::sqrt(std::abs(-pt * amax + (vb * vb + ve * ve) / 2));
 				T1 = (vb - v) / amax + (ve - v) / amax;
 			}
 		}
@@ -139,7 +139,7 @@ namespace aris::plan {
 				T3 = std::abs(vb + v) / amax + std::abs(ve + v) / amax;
 			}
 		}
-		else if(v < 0 && vb < 0 && ve < 0) {
+		else if (v < 0 && vb < 0 && ve < 0) {
 			if (-vb * vb / 2 / amax - ve * ve / 2 / amax < pt) {
 				v = -std::sqrt(std::abs(pt * amax + (vb * vb + ve * ve) / 2));
 				T2 = std::abs(vb - v) / amax + std::abs(ve - v) / amax;
@@ -148,7 +148,7 @@ namespace aris::plan {
 		}
 	}
 	// 计算param
-	auto s_tcurve_param(TcurveParam &param)->void {
+	auto s_tcurve_param(TcurveParam& param)->void {
 		const auto pb = param.pb;
 		const auto pe = param.pe;
 		const auto vb = param.vb;
@@ -172,7 +172,7 @@ namespace aris::plan {
 			param.mode = 0;
 			param.a = amax;
 
-			double A= 1;
+			double A = 1;
 			double B = -T * a - vb - ve;
 			double C = (vb * vb + ve * ve) / 2 + pt * a;
 
@@ -180,7 +180,7 @@ namespace aris::plan {
 			param.Ta = (v - vb) / a;
 			param.Tb = (v - ve) / a;
 		}
-			
+
 		else if ((pt - pb2e) > (T - Tb2e) * std::min(vb, ve)) {
 			param.mode = 1;
 			param.v = (pt - pb2e) / (T - Tb2e);
@@ -222,16 +222,16 @@ namespace aris::plan {
 
 		if (mode == 0)
 			if (t < Ta)
-				return pb + vb * t + a*t*t / 2;
-			else if(t < T - Tb)
+				return pb + vb * t + a * t * t / 2;
+			else if (t < T - Tb)
 				return pb + vb * Ta + a * Ta * Ta / 2 + v * (t - Ta);
 			else
-				return pe - ve * (T - t) - a * (T - t)*(T - t) / 2;
+				return pe - ve * (T - t) - a * (T - t) * (T - t) / 2;
 		else
 			if (t < Ta)
 				return pb + vb * t;
-			else if(t < T - Tb)
-				return pb + vb * t + a * (t - Ta)*(t - Ta) / 2;
+			else if (t < T - Tb)
+				return pb + vb * t + a * (t - Ta) * (t - Ta) / 2;
 			else
 				return  pe - ve * (T - t);
 	}
@@ -259,40 +259,40 @@ namespace aris::plan {
 		//					input_pos_this_,
 		//	                output_pos_begin_,
 		//	                output_pos_end_;
-		
-		double *max_vels_, 
-			   *max_accs_,
-			   *input_pos_begin_,
-			   *input_vel_begin_,
-			   *input_acc_begin_,
-			   *input_pos_end_,
-			   *input_vel_end_,
-			   *input_acc_end_,
-			   *input_pos_last_,
-			   *input_vel_last_,
-			   *input_pos_this_,
-			   *input_vel_this_,
-			   *input_acc_this_,
-			   *input_acc_ratio_,
-			   *output_pos_;
+
+		double* max_vels_,
+			* max_accs_,
+			* input_pos_begin_,
+			* input_vel_begin_,
+			* input_acc_begin_,
+			* input_pos_end_,
+			* input_vel_end_,
+			* input_acc_end_,
+			* input_pos_last_,
+			* input_vel_last_,
+			* input_pos_this_,
+			* input_vel_this_,
+			* input_acc_this_,
+			* input_acc_ratio_,
+			* output_pos_;
 
 		std::int64_t singular_ret_{ 0 };
 		aris::Size total_singular_count_{ 0 }, current_singular_count_{ 0 };
 		CurveParam* curve_params_;
 
 
-		
+
 		double T;
 		double check_rate_{ 0.99 };
 		double max_vel_ratio_{ 0.95 };
 		double max_acc_ratio_{ 0.9 };
 		double current_ds_{ 1.0 }, // 类似 tg 中的 ds，但是在降速的时候，它其实是系统的上界，真实的 tg 里的ds 并不一定是这个值
-			   current_dds_{ 0.0 }, // 类似 tg 中的 dds
-			   current_ddds_{ 0.0 }, // 类似 tg 中的 ddds
-			   target_ds_{ 1.0 },  // 类似 tg 中的 target_ds，它是ds 追赶的目标
-			   last_dds{ 0.0 };
-		aris::dynamic::ModelBase* model_{nullptr};
-		aris::plan::TrajectoryGenerator* tg_{nullptr};
+			current_dds_{ 0.0 }, // 类似 tg 中的 dds
+			current_ddds_{ 0.0 }, // 类似 tg 中的 ddds
+			target_ds_{ 1.0 },  // 类似 tg 中的 target_ds，它是ds 追赶的目标
+			last_dds{ 0.0 };
+		aris::dynamic::ModelBase* model_{ nullptr };
+		aris::plan::TrajectoryGenerator* tg_{ nullptr };
 
 		// 是否已经处于奇异状态，或者是否还在继续准备处理奇异情况 //
 		int singular_idx;
@@ -337,7 +337,7 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->input_acc_ratio_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->output_pos_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->curve_params_, imp_->input_size_);
-		
+
 		imp_->mem_.resize(mem_size, char(0));
 
 		imp_->max_vels_ = core::getMem(imp_->mem_.data(), imp_->max_vels_);
@@ -376,13 +376,13 @@ namespace aris::plan {
 		imp_->target_ds_ = ds;
 	}
 	auto SingularProcessor::setModelPosAndMoveDt()->std::int64_t {
-		
+
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 		static int count{ 0 };
 		count++;
-		if(count % 1000 == 0)
-			std::cout <<"count: " << count++ << std::endl;
-		if (count== 125)
+		if (count % 1000 == 0)
+			std::cout << "count: " << count++ << std::endl;
+		if (count == 125)
 			std::cout << "debug" << std::endl;
 #endif
 
@@ -393,13 +393,13 @@ namespace aris::plan {
 				max_ratio = std::max(max_ratio, std::abs(value[idx]) / max_value[idx]);
 			return max_ratio;
 		};
-		
-	auto SingularProcessor::setModelPosAndMoveDt()->int {
+
+
 		// move tg step //
-		auto move_tg_step = [this,get_max_ratio]()->std::int64_t {
+		auto move_tg_step = [this, get_max_ratio]()->std::int64_t {
 			// 当前处于非奇异状态，正常求反解 //
 			auto ret = imp_->tg_->getEePosAndMoveDt(imp_->output_pos_);
-			if (imp_->inv_func_) { 
+			if (imp_->inv_func_) {
 				imp_->inv_func_(*imp_->model_, imp_->output_pos_);
 			}
 			else {
@@ -431,7 +431,7 @@ namespace aris::plan {
 			// 计算去除 dds 项所影响的加速度
 			// d2p = d2p_ds2 * ds^2 + dp_ds * d2s
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_acc_this_, imp_->input_acc_ratio_);
-			aris::dynamic::s_va(imp_->input_size_, -imp_->last_dds/tg_ds, imp_->input_vel_this_, imp_->input_acc_ratio_);
+			aris::dynamic::s_va(imp_->input_size_, -imp_->last_dds / tg_ds, imp_->input_vel_this_, imp_->input_acc_ratio_);
 
 			// 正常情况下，可能需改变规划器中ds //
 			auto vel_ratio = get_max_ratio(imp_->input_size_, imp_->max_vels_, imp_->input_vel_this_);
@@ -465,13 +465,13 @@ namespace aris::plan {
 			//if(print_count++ < 2000)
 
 			//if (ds_ratio > 1.0)
-				std::cout <<print_count++ <<  ": ds:" << tg_ds << "  ds_ratio" << ds_ratio
+			std::cout << print_count++ << ": ds:" << tg_ds << "  ds_ratio" << ds_ratio
 				<< "  vel_ratio" << vel_ratio << "  acc_ratio" << acc_ratio << std::endl;
 #endif
 
 			return ret;
 		};
-		
+
 		// move in singular state
 		auto move_in_singular = [this]()->std::int64_t {
 			// 取出位置
@@ -503,7 +503,7 @@ namespace aris::plan {
 		};
 
 		// check if singular //
-		auto check_if_singular = [](aris::Size input_size, const double *max_vel, const double*max_acc, const double*vel, const double *acc)->int {
+		auto check_if_singular = [](aris::Size input_size, const double* max_vel, const double* max_acc, const double* vel, const double* acc)->int {
 			// here is condition //
 			int idx = 0;
 			for (idx = 0; idx < input_size; ++idx) {
@@ -682,65 +682,11 @@ namespace aris::plan {
 	auto SingularProcessor::setInverseKinematicMethod(InverseKinematicMethod func)->void {
 		imp_->inv_func_ = func;
 	}
-
-
 	SingularProcessor::~SingularProcessor() = default;
 	SingularProcessor::SingularProcessor() :imp_(new Imp) {
 
 	}
 
-	
-
-	struct TrajectoryModelAdapter::Imp {
-		std::vector<double> max_vels_, 
-			                max_accs_, 
-			                input_pos_begin_,
-			                input_pos_end_,
-							input_pos_last_,
-							input_pos_this_,
-							input_pos_diff_,
-			                output_pos_begin_,
-			                output_pos_end_;
-
-		aris::Size input_size_;
-
-		double T;
-		double check_rate_{ 0.99 };
-		aris::dynamic::ModelBase* model_{nullptr};
-		aris::plan::TrajectoryGenerator* tg_{nullptr};
-
-		bool is_in_singular{ false };
-	};
-	auto TrajectoryModelAdapter::setMaxVels(const std::vector<double> max_vels)->void {
-		imp_->max_vels_ = max_vels;
-	}
-	auto TrajectoryModelAdapter::setMaxAccs(const std::vector<double> max_accs)->void {
-		imp_->max_accs_ = max_accs;
-	}
-	auto TrajectoryModelAdapter::setModel(aris::dynamic::ModelBase& model)->void {
-		imp_->model_ = &model;
-		imp_->input_pos_begin_.resize(model.inputPosSize());
-		imp_->input_pos_end_.resize(model.inputPosSize());
-		imp_->output_pos_begin_.resize(model.outputPosSize());
-		imp_->output_pos_end_.resize(model.outputPosSize());
-		imp_->input_size_ = model.inputPosSize();
-	}
-	auto TrajectoryModelAdapter::setTrajectoryGenerator(TrajectoryGenerator& tg)->void {
-		imp_->tg_ = &tg;
-	}
-	auto TrajectoryModelAdapter::setModelPosAndMoveDt()->int {
-		// check if singular //
-		
-		
-
-
-
-		return 0;
-	}
-	TrajectoryModelAdapter::~TrajectoryModelAdapter() = default;
-	TrajectoryModelAdapter::TrajectoryModelAdapter() :imp_(new Imp) {
-
-	}
 
 
 

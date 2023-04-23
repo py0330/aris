@@ -32,11 +32,9 @@ auto test_singular_processor_1()->void {
 		{ 10, 10 },
 		{ 0.1, 0.1 },
 		{ 0.1, 0.1 },
-		{ 0.1, 0.1 },
 	};
 	double accs[PE_SIZE][2 * EE_NUM + A_NUM]{
 		{ 10, 10 },
-		{ 0.1, 0.1 },
 		{ 0.1, 0.1 },
 		{ 0.1, 0.1 },
 	};
