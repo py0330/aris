@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/singular_processor.hpp"
 #include"aris/plan/function.hpp"
 
-#define ARIS_DEBUG_SINGULAR_PROCESSOR
+//#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
 namespace aris::plan {
 	struct ThirdPolynomialParam {
@@ -198,7 +198,7 @@ namespace aris::plan {
 			double B = -T * a - vb - ve;
 			double C = (vb * vb + ve * ve) / 2 + pt * a;
 
-			param.v = (-B + sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
+			param.v = (-B + std::sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
 			param.Ta = (v - vb) / a;
 			param.Tb = (v - ve) / a;
 		}
