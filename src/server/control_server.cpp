@@ -19,7 +19,7 @@ namespace aris::server{
 		const aris::control::Controller* controller, 
 		aris::dynamic::ModelBase* model)->void
 	{
-		for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+		for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 			auto& cm = controller->motorPool()[i];
 			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
 				model->setInputPosAt(cm.targetPos(), i);
@@ -32,7 +32,7 @@ namespace aris::server{
 		const aris::dynamic::ModelBase* model,
 		aris::control::Controller* controller) ->void
 	{
-		for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+		for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 			auto& cm = controller->motorPool()[i];
 			if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
 				cm.setTargetPos(model->inputPosAt(i));
