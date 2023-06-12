@@ -56,7 +56,7 @@ namespace aris::server{
 			const aris::control::Controller* controller,
 			aris::dynamic::ModelBase* model)->void override
 		{
-			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
 					model->setInputPosAt(cm.targetPos(), i);
@@ -72,7 +72,7 @@ namespace aris::server{
 			const aris::dynamic::ModelBase* model,
 			aris::control::Controller* controller)->void override
 		{
-			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
 					cm.setTargetPos(model->inputPosAt(i));
@@ -111,7 +111,7 @@ namespace aris::server{
 			const aris::control::Controller* controller,
 			aris::dynamic::ModelBase* model)->void override
 		{
-			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				controller_pos_[i] = cm.targetPos();
 				controller_vel_[i] = cm.targetVel();
@@ -120,7 +120,7 @@ namespace aris::server{
 			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_pos_.data(), model_pos_.data());
 			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_vel_.data(), model_vel_.data());
 			
-			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
 					model->setInputPosAt(model_pos_[i], i);
@@ -141,7 +141,7 @@ namespace aris::server{
 			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), model_vel_.data(), controller_vel_.data());
 			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), model_toq_.data(), controller_toq_.data());
 
-			for (std::size_t i = 0; i < controller->motorPool().size(); ++i) {
+			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
 					cm.setTargetPos(controller_pos_[i]);
