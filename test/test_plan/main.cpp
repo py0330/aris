@@ -7,8 +7,10 @@
 #include "test_plan_scurve.h"
 #include "test_plan_trajectory.h"
 #include "test_plan_singular_processor.h"
+#include "test_plan_move_follower.h"
 
 int main(int argc, char *argv[]){
+	test_move_follower();
 	//test_singular_processor();
 	test_trajectory();
 	
