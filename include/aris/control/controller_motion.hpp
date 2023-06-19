@@ -7,6 +7,7 @@
 namespace aris::control{
 	class ARIS_API Motor{
 	public:
+		auto virtual init()->void {}
 		auto motId()const->aris::Size;
 		auto maxPos()const->double;
 		auto setMaxPos(double max_pos)->void;
@@ -93,6 +94,8 @@ namespace aris::control{
 	};
 	class ARIS_API DigitalIo {
 	public:
+		auto virtual init()->void {}
+
 		auto numOfDi() const->std::uint16_t;
 		auto setNumOfDi(std::uint16_t num_of_di)->void;
 
@@ -118,6 +121,8 @@ namespace aris::control{
 	};
 	class ARIS_API AnalogIo {
 	public:
+		auto virtual init()->void {}
+
 		auto numOfAi() const->std::uint16_t;
 		auto setNumOfAi(std::uint16_t num_of_ai)->void;
 
@@ -143,6 +148,7 @@ namespace aris::control{
 	};
 	class ARIS_API FtSensor {
 	public:
+		auto virtual init()->void {}
 		virtual auto getFtData(double *data_address)->void = 0;
 	};
 

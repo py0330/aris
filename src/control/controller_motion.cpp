@@ -123,7 +123,12 @@ namespace aris::control{
 	auto Controller::analogIoPool()->aris::core::PointerArray<AnalogIo>& { return *imp_->analog_io_pool_; }
 	auto Controller::resetFtSensorPool(aris::core::PointerArray<FtSensor> *pool) { imp_->ft_sensor_pool_.reset(pool); }
 	auto Controller::ftSensorPool()->aris::core::PointerArray<FtSensor>& { return *imp_->ft_sensor_pool_; }
-	auto Controller::init()->void{}
+	auto Controller::init()->void{
+		for (auto &motor : motorPool())	 motor.init();
+		for (auto &digital_io : digitalIoPool()) digital_io.init();
+		for (auto &analog_io : analogIoPool()) analog_io.init();
+		for (auto &ft_sensor : ftSensorPool()) ft_sensor.init();
+	}
 	Controller::~Controller() = default;
 	Controller::Controller(const std::string &name) :imp_(new Imp) {}
 
