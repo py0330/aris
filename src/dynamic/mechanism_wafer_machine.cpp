@@ -41,6 +41,10 @@ namespace aris::dynamic{
 		for (int i = 0; i < 5; ++i) {
 			model()->jointPool()[i].makI()->setPe(*model()->jointPool()[i].makJ(), joint_pe[i], "123");
 		}
+
+		for (auto& mot : model()->motionPool()) {
+			mot.updP();
+		}
 		
 
 		return 0;
@@ -303,6 +307,10 @@ namespace aris::dynamic{
 	ARIS_REGISTRATION{
 		aris::core::class_<WaferMachineInverseKinematicSolver>("WaferMachineInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
+			;
+
+		aris::core::class_<WaferMachineForwardKinematicSolver>("WaferMachineForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
 			;
 	}
 }
