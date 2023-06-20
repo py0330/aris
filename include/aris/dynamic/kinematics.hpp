@@ -101,8 +101,10 @@ namespace aris::dynamic{
 		RM,
 		XYZT,
 		XYZ,
+		RTZ,
 		XYT,
 		XY,
+		RT,
 		X,
 		A,
 		UNKNOWN,
@@ -135,9 +137,13 @@ namespace aris::dynamic{
 			return 4;
 		case EEType::XYZ:
 			return 3;
+		case EEType::RTZ:
+			return 3;
 		case EEType::XYT:
 			return 3;
 		case EEType::XY:
+			return 2;
+		case EEType::RT:
 			return 2;
 		case EEType::X:
 			return 1;
@@ -183,10 +189,14 @@ namespace aris::dynamic{
 			return 2;
 		case EEType::XYZ:
 			return 1;
+		case EEType::RTZ:
+			return 2;
 		case EEType::XYT:
 			return 2;
 		case EEType::XY:
 			return 1;
+		case EEType::RT:
+			return 2;
 		case EEType::X:
 			return 1;
 		case EEType::A:

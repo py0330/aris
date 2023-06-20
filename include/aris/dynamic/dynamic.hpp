@@ -30,3 +30,4 @@
 #include <aris/dynamic/mechanism_rppr.hpp>
 #include <aris/dynamic/mechanism_prpr.hpp>
 #include <aris/dynamic/mechanism_abenics.hpp>
+#include <aris/dynamic/mechanism_wafer_machine.hpp>

@@ -264,6 +264,36 @@ namespace aris::plan {
 				out_idx += 16;
 				break;
 			}
+			case aris::dynamic::EEType::RE313: {
+				aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "313");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RE321: {
+				aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "321");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RE123: {
+				aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "123");
+				internal_idx += 4;
+				out_idx += 3;
+				break;
+			}
+			case aris::dynamic::EEType::RQ: {
+				aris::dynamic::s_vc(4, out_pos + out_idx, internal_pos + internal_idx);
+				internal_idx += 4;
+				out_idx += 4;
+				break;
+			}
+			case aris::dynamic::EEType::RM: {
+				aris::dynamic::s_rm2rq(out_pos + out_idx, internal_pos + internal_idx);
+				internal_idx += 9;
+				out_idx += 9;
+				break;
+			}
 			case aris::dynamic::EEType::XYZT: {
 				aris::dynamic::s_vc(4, out_pos + out_idx, internal_pos + internal_idx);
 				internal_idx += 4;
@@ -1793,6 +1823,9 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::XYZ: {
+				// x //
+				get_unit_data(s, ee_p.x_, internal_pos + idx, internal_vel + idx, internal_acc + idx);
+				idx += 3;
 				break;
 			}
 			case aris::dynamic::EEType::XYT: {
