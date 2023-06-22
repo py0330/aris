@@ -1889,6 +1889,7 @@ namespace aris::plan {
 		std::vector<double> internal_vec_;
 
 		// 规划节点 //
+		int max_replan_num_{ 10 };
 		std::list<Node> nodes_;
 		std::atomic<Node*> current_node_;
 
@@ -1923,7 +1924,7 @@ namespace aris::plan {
 						replan_iter_begin = std::next(replan_iter_end);
 						replan_num = 0;
 					}
-					else if (replan_num > 4)
+					else if (replan_num > max_replan_num_)
 						replan_iter_begin++;
 					else
 						replan_num++;
