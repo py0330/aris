@@ -110,8 +110,9 @@ namespace aris::plan {
         }
     }
 
+#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
     auto s_compute_scurve_Tmax_Tmin(const SCurveParam& param, double T_min_set)->std::tuple<double, double>;
-
+#endif
 
     // 根据起始条件，终止位置，总时间来计算 S 曲线
     //

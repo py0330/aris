@@ -62,13 +62,18 @@ namespace aris::dynamic{
 
 		// rtz //
 		double r = std::sqrt(x*x + y*y);
-		double theta = std::atan2(y, x) - aris::PI/2;
-		theta = aris::dynamic::s_put_into_period(theta, 0.0, 2 * aris::PI);
-		
+		double theta;
+		if (r < 1e-10) {
+			theta = model()->motionPool()[1].mp();
+		}
+		else {
+			theta = std::atan2(y, x) - aris::PI / 2;
+			theta = aris::dynamic::s_put_into_period(theta, 0.0, 2 * aris::PI);
+		}
 
 		input[0] = z - a;
 		input[1] = theta;
-		input[2] = aris::PI / 2 - std::acos((r*r+b*b-c*c)/(2*r*b));
+		input[2] = r > 1e-10 ? aris::PI / 2 - std::acos((r*r+b*b-c*c)/(2*r*b)) : 0.0;
 
 
 

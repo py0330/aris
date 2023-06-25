@@ -10,12 +10,12 @@
 #include "test_plan_move_follower.h"
 
 int main(int argc, char *argv[]){
-	test_move_follower();
+	//test_move_follower();
 	//test_singular_processor();
-	test_trajectory();
+	//test_trajectory();
 	
 	test_scurve();
-	test_path();
+	//test_path();
 	
 	//test_function();
 
