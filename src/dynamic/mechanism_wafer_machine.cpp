@@ -60,20 +60,31 @@ namespace aris::dynamic{
 		double y = output[1];
 		double z = output[2];
 
+		
+
 		// rtz //
-		double r = std::sqrt(x*x + y*y);
-		double theta;
-		if (r < 1e-10) {
-			theta = model()->motionPool()[1].mp();
+		double r = std::sqrt(x * x + y * y);              // 理想的r 
+		double theta = std::atan2(y, x) - aris::PI / 2;   // 理想的theta
+
+		// 判断 r 的符号
+		auto diff = theta - model()->motionPool()[2].mp();
+		if (std::abs(aris::dynamic::s_put_into_period(diff, 0.0, 2 * aris::PI)) > aris::PI / 2) {
+			r = -r;
+			theta = std::abs(r) < 1e-10 ? model()->motionPool()[1].mp() : theta + aris::PI; // r 过小时，就用当前角度
 		}
 		else {
-			theta = std::atan2(y, x) - aris::PI / 2;
-			theta = aris::dynamic::s_put_into_period(theta, 0.0, 2 * aris::PI);
+			theta = std::abs(r) < 1e-10 ? model()->motionPool()[1].mp() : theta; // r 过小时，就用当前角度
 		}
+
+		// 将theta 置入 【-pi，pi】中
+		theta = aris::dynamic::s_put_into_period(theta, 0.0, 2 * aris::PI);
+
+		
+
 
 		input[0] = z - a;
 		input[1] = theta;
-		input[2] = r > 1e-10 ? aris::PI / 2 - std::acos((r*r+b*b-c*c)/(2*r*b)) : 0.0;
+		input[2] = (aris::PI / 2 - std::acos(std::min(std::max((r*r+b*b-c*c)/(2*std::abs(r)*b), -1.0), 1.0))) * aris::dynamic::s_sgn2(r);
 
 
 
@@ -146,10 +157,10 @@ namespace aris::dynamic{
 		// 等效成 2 次方程
 
 		double A = 1;
-		double B = -2 * std::cos(aris::PI/2 - input[2]) * b;
+		double B = -2 * std::cos(aris::PI/2 - std::abs(input[2])) * b;
 		double C = b * b - c * c;
 
-		double r = (-B + std::sqrt(B * B - 4 * C)) / 2;
+		double r = (-B + std::sqrt(B * B - 4 * C)) / 2 * aris::dynamic::s_sgn2(input[2]);
 
 		double x = r * std::cos(theta + aris::PI / 2);
 		double y = r * std::sin(theta + aris::PI / 2);

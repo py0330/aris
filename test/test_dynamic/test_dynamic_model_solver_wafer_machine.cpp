@@ -15,7 +15,7 @@ void test_wafer_machine_forward_solver(){
 	param.c = 0.3;
 	auto m = aris::dynamic::createModelWaferMachine(param);
 
-	double input[3]{ 0.0, 0.0, 0.3 }, output[3];
+	double input[3]{ 1.58, 0.0, 0.3 }, output[3];
 	m->forwardKinematics(input, output, 0);
 
 	m->setInputPos(input);
@@ -26,8 +26,18 @@ void test_wafer_machine_forward_solver(){
 	m->inverseKinematics(output, input, 0);
 	aris::dynamic::dsp(1, 3, input);
 
-	
+	output[1] = 0.1;
+	m->setOutputPos(output);
+	m->inverseKinematics(output, input, 0);
+	aris::dynamic::dsp(1, 3, input);
 
+	output[1] = -0.1;
+	m->setOutputPos(output);
+	m->inverseKinematics(output, input, 0);
+	aris::dynamic::dsp(1, 3, input);
+
+	m->forwardKinematics(input, output, 0);
+	aris::dynamic::dsp(1, 3, output);
 }
 void test_wafer_machine_inverse_solver(){
 }
