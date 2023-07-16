@@ -141,7 +141,7 @@ namespace aris::dynamic {
 			}
 
 			// 找到最接近的解
-			double diff_q[4]{ {0} }, q[4], diff_nrm[4];
+			double diff_q[4]{ 0 }, q[4], diff_nrm[4];
 			model()->getInputPos(q);
 			for (int i = 0; i < 4; ++i) {
 				s_vc(4, roots[i], diff_q);
