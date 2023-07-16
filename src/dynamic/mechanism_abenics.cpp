@@ -89,37 +89,76 @@ namespace aris::dynamic {
 				re_B[i] += re_B[i] < -PI ? 2 * PI : 0.0;
 			}
 			
-			if (re_A[0] > PI / 2) {
-				re_A[0] -= PI;
-				re_A[1] = -re_A[1];
-				re_A[2] -= re_A[2] > 0 ? PI : -PI;
-			}
+			//if (re_A[0] > PI / 2) {
+			//	re_A[0] -= PI;
+			//	re_A[1] = -re_A[1];
+			//	re_A[2] -= re_A[2] > 0 ? PI : -PI;
+			//}
 
-			if (re_A[0] < -PI / 2) {
-				re_A[0] += PI;
-				re_A[1] = -re_A[1];
-				re_A[2] -= re_A[2] > 0 ? PI : -PI;
-			}
+			//if (re_A[0] < -PI / 2) {
+			//	re_A[0] += PI;
+			//	re_A[1] = -re_A[1];
+			//	re_A[2] -= re_A[2] > 0 ? PI : -PI;
+			//}
 
-			if (re_B[0] > PI / 2) {
-				re_B[0] -= PI;
-				re_B[1] = -re_B[1];
-				re_B[2] -= re_B[2] > 0 ? PI : -PI;
-			}
+			//if (re_B[0] > PI / 2) {
+			//	re_B[0] -= PI;
+			//	re_B[1] = -re_B[1];
+			//	re_B[2] -= re_B[2] > 0 ? PI : -PI;
+			//}
 
-			if (re_B[0] < -PI / 2) {
-				re_B[0] += PI;
-				re_B[1] = -re_B[1];
-				re_B[2] -= re_B[2] > 0 ? PI : -PI;
-			}
+			//if (re_B[0] < -PI / 2) {
+			//	re_B[0] += PI;
+			//	re_B[1] = -re_B[1];
+			//	re_B[2] -= re_B[2] > 0 ? PI : -PI;
+			//}
 
 			//dsp(1, 3, re_A);
 			//dsp(1, 3, re_B);
+			
+			
+			// 生成4组解 
+			double roots[4][4]{ 
+				{ re_A[0], re_A[1], re_B[0], re_B[1] },
+				{ re_A[0] + PI, -re_A[1], re_B[0], re_B[1] },
+				{ re_A[0], re_A[1], re_B[0] + aris::PI, -re_B[1] },
+				{ re_A[0] + PI, -re_A[1], re_B[0] + aris::PI, -re_B[1] } 
+			};
 
-			model()->setInputPosAt(re_A[0], 0);
-			model()->setInputPosAt(re_A[1], 1);
-			model()->setInputPosAt(re_B[0], 2);
-			model()->setInputPosAt(re_B[1], 3);
+			// 如果当前没有解，将其设为0
+			for (int i = 0; i < 4; ++i) {
+				if (!std::isfinite(model()->inputPosAt(i))) {
+					model()->setInputPosAt(0.0, i);
+				}
+			}
+
+
+			// 将4组解，置入当前电机的位置里
+			for (int i = 0; i < 4; ++i) {
+				for (int j = 0; j < 4; ++j) {
+					roots[i][j] = s_put_into_period(roots[i][j], model()->inputPosAt(j) / 2 * aris::PI, aris::PI * 2);
+				}
+			}
+
+			// 找到最接近的解
+			double diff_q[4]{ {0} }, q[4], diff_nrm[4];
+			model()->getInputPos(q);
+			for (int i = 0; i < 4; ++i) {
+				s_vc(4, roots[i], diff_q);
+				s_vs(4, q, diff_q);
+				diff_nrm[i] = s_norm(4, diff_q);
+			}
+
+			auto real_solution = std::min_element(diff_nrm, diff_nrm + 4) - diff_nrm;
+
+
+
+			model()->setInputPos(roots[real_solution]);
+
+			//model()->setInputPosAt(re_A[0], 0);
+			//model()->setInputPosAt(re_A[1], 1);
+			//model()->setInputPosAt(re_B[0], 2);
+			//model()->setInputPosAt(re_B[1], 3);
 
 			// upd each part //
 			model()->motionPool()[0].updMakIPm();
