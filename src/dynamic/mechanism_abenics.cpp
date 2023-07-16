@@ -136,7 +136,7 @@ namespace aris::dynamic {
 			// 将4组解，置入当前电机的位置里
 			for (int i = 0; i < 4; ++i) {
 				for (int j = 0; j < 4; ++j) {
-					roots[i][j] = s_put_into_period(roots[i][j], model()->inputPosAt(j) / 2 * aris::PI, aris::PI * 2);
+					roots[i][j] = s_put_into_period(roots[i][j], model()->inputPosAt(j) / 2 / aris::PI, aris::PI * 2);
 				}
 			}
 
