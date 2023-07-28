@@ -104,6 +104,10 @@ namespace aris::plan{
 		int    mode_{ 0 };       // A or B 模式
 
 		LargeNum t0_{ 0.0 };     // 起始时间
+		double va_upper_{ 0.0 }; // va 上限
+		double va_below_{ 0.0 }; // va 下限
+		double vb_upper_{ 0.0 }; // vb 上限
+		double vb_below_{ 0.0 }; // vb 下限
 	};
 
 	struct ARIS_API SCurveNode {

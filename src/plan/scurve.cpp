@@ -77,6 +77,27 @@ namespace aris::plan {
     auto inline safe_sqrt(double v)->double {
         return v > 0.0 ? std::sqrt(v) : 0.0;
     }
+
+    auto s_scurve_cpt_vb_upper(SCurveParam& param)-> void {
+    
+    }
+    auto s_scurve_cpt_vb_below(SCurveParam& param) -> void {
+
+    }
+    auto s_scurve_cpt_vb_range(SCurveParam& param) -> void {
+
+    }
+
+    auto s_scurve_cpt_vavc(SCurveParam& param) -> void {
+    
+    }
+
+    auto s_scurve_cpt_T_range(SCurveParam& param) -> void {
+
+    }
+
+
+
     auto s_scurve_plan_eliminate_optimization(double vb1, SCurveParam& param1)->void
     {
         double T_va_to_vb = s_acc_time(vb1, param1.va_, param1.a_, param1.j_);
@@ -1118,7 +1139,7 @@ namespace aris::plan {
         //% 加速不到max_vb, 可以达到最大加速度a
         //% va < vb < max_vb, vb - va >= a^2 / j
         l = l_va_to_vb;
-        if (pt < l) {
+        if (va < vb_max && pt < l) {
             //% clear
             //% syms va vb a j pt;
             //% T = (vb-va) / a + a/j;
