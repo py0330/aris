@@ -18,6 +18,11 @@ double drand() {
 }
 
 void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
+	constexpr double V_TOL = 1E-8;
+	constexpr double A_TOL = 1E-6;
+	constexpr double J_TOL = 1E-3;
+	
+	
 	std::vector<LargeNum> last_last_last_p, last_last_p, last_p, p;
 	std::vector<double> v, a, j;
 
@@ -85,13 +90,13 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 
 				double j_current = (a_current - a_last) / dt;
 
-				if (v[i] > max_v + 1e-8 || std::abs(v[i] - v_current) > max_a * dt + 1e-8 || std::abs(v_current) > max_v + 1e-8 * max_v) {
+				if (v[i] > max_v + V_TOL || std::abs(v[i] - v_current) > max_a * dt + V_TOL || std::abs(v_current) > max_v + V_TOL * max_v) {
 					//auto pr = std::prev(iter);
 					aris::plan::s_scurve_at(iter->params_[i], t - 0.01, &last_p[i], &v[i], &a[i], &j[i]);
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check velocity failed");
 				}
-				if (a[i] > max_a + 1e-6 || std::abs(a[i] - a_current) > max_j * dt + 1e-6 || std::abs(a_current) > max_a + 1e-6 * max_a) {
+				if (a[i] > max_a + A_TOL || std::abs(a[i] - a_current) > max_j * dt + A_TOL || std::abs(a_current) > max_a + A_TOL * max_a) {
 					auto prev_iter = std::prev(iter);
 					auto pprev_iter = std::prev(prev_iter);
 					
@@ -109,7 +114,7 @@ void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check acceleration failed");
 				}
-				if (j[i] > max_j + 1e-3 || std::abs(j_current) > max_j + 1e-3 * max_j) {
+				if (j[i] > max_j + J_TOL || std::abs(j_current) > max_j + J_TOL * max_j) {
 					aris::plan::s_scurve_at(iter->params_[i], t, &p[i], &v[i], &a[i], &j[i]);
 					THROW_FILE_LINE("check jerk failed");
 				}

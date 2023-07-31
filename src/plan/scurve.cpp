@@ -290,7 +290,7 @@ namespace aris::plan {
         double vb_min = 0;
         double vc_min = 0;
         
-        constexpr double cons = 5e-7;
+        constexpr double cons = 1e-9;
         double Z1 = a*a / j;
         double Z2 = T*T * j;
 
@@ -475,10 +475,10 @@ namespace aris::plan {
                 //%
                 //%计算Ta = min(T, 2 * a / j, T - 2 * a / j)
                 //% l3 = la + lb
-                double k3 = -j / 8;
-                double k2 = (a / 2 + (3 * T * j) / 8);
-                double k1 = (-(T*T * j) / 8 - a*a/ (2 * j) - (T * (2 * a + (T * j) / 2)) / 2);
-                double k0 = -pt + (T * (2 * va + (T*T * j) / 4 + (2 * a*a) / j)) / 2;
+                double k3 = -j;
+                double k2 = 4*a + 3*T*j;
+                double k1 = -3*j*T*T - 8*a*T - 4*a*a/j;
+                double k0 = j*T*T*T + 8*T*a*a/j + 8*va*T - 8*pt;
 
                 //% 选根
                 //% syms f(Ta) g(Ta)
@@ -487,18 +487,17 @@ namespace aris::plan {
                 //% solve(g, Ta)
                 //%
                 //%可得其极值：
-                //% r1 = 4 / 3 * T - 2 / 3 * a / j
-                //% r2 = -(2 * a) / j
+                //% r1 = (2*a + T*j)/j
+                //% r2 = (2*a + 3*T*j)/(3*j)
                 //%
-                //%由于b段可达最大加速度，因此必有 T >= 2a / j
-                //% 于是
-                //% r1 >= 4 / 3 * T - 1 / 3 * T = T
-                //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x){return k3 * x * x * x + k2 * x * x + k1 * x + k0;}, 0, T);
+                //% 均大于T，因此其上下界为[0, T]
+                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x){
+                    return ((k3 * x + k2) * x + k1) * x + k0;
+                    }, 0, T_va_to_vcmin);
 
                 vc = va - Ta * a + a * a / j;
                 Tb = T - Ta;
-                vb = s_acc_vend(vc, a, j, Tb);
+                vb = vc + j * Tb * Tb / 4.0;
                 double vb_upper = vb;
 
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
@@ -543,10 +542,15 @@ namespace aris::plan {
                 //%
                 //%计算Ta = min(T, 2 * a / j, T - 2 * a / j)
                 //% l3 = la + lb
-                double k3 = j / 8;
-                double k2 = (a / 2 - (T * j) / 4);
-                double k1 = (a*a / (2 * j) - T * a);
-                double k0 = -pt + (T * (2 * va + T * a - a*a / j)) / 2;
+                //double k3 = j / 8;
+                //double k2 = (a / 2 - (T * j) / 4);
+                //double k1 = (a*a / (2 * j) - T * a);
+                //double k0 = -pt + (T * (2 * va + T * a - a*a / j)) / 2;
+
+                double k3 = j;
+                double k2 = 4*a - 2*T*j;
+                double k1 = -8*a*T + 4*a*a/j;
+                double k0 = 4*a*T*T - 4*T*a*a/j + 8*va*T - 8 * pt;
 
                 //% 选根
                 //% syms f(Ta) g(Ta)
@@ -562,7 +566,9 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {return k3 * x * x * x + k2 * x * x + k1 * x + k0; }, 0, T);
+                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                    return ((k3 * x + k2) * x + k1) * x + k0;
+                    }, 0, T_va_to_vcmin);
 
                 vc = va - j * Ta * Ta / 4;
                 Tb = T - Ta;
@@ -606,7 +612,7 @@ namespace aris::plan {
                 //% debug check%
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
                 if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
-                    throw std::runtime_error("wrong vb_upper in CASE 2.4");
+                    THROW_FILE_LINE("wrong vb_upper in CASE 2.4");
                 }
 #endif
                 return vb_upper;
@@ -679,7 +685,7 @@ namespace aris::plan {
         double vc_max = param.vc_max_;
         double vb_min = 0;
 
-        constexpr double cons = 5e-7;
+        constexpr double cons = 1e-9;
         double Z1 = a * a / j;
         double Z2 = T * T * j;
 
@@ -826,7 +832,6 @@ namespace aris::plan {
                 return vb_below;
             }
 
-
             //% Ta有匀加速, Tb无匀加速
             if ((4 * a / j < T && l4 <= pt && pt < l3) ||
                 (2 * a / j < T && T <= 4 * a / j && l5 <= pt && pt < l3)) 
@@ -878,7 +883,9 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {return k3 * x * x * x + k2 * x * x + k1 * x + k0; }, 0, T);
+                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                    return ((k3 * x + k2) * x + k1) * x + k0;
+                    }, 0, T_va_to_vcmax);
 
                 vc = va + Ta * a - Z1;
                 Tb = T - Ta;
@@ -945,7 +952,9 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {return k3 * x * x * x + k2 * x * x + k1 * x + k0; }, 0, T);
+                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                    return ((k3 * x + k2) * x + k1) * x + k0;
+                    }, 0, T_va_to_vcmax);
 
                 vc = va + j * Ta * Ta / 4;
                 Tb = T - Ta;
@@ -957,8 +966,7 @@ namespace aris::plan {
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
                 if (vc < -cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
                     THROW_FILE_LINE("wrong vb_below in CASE 2.2");
-                }
-                    
+                }   
 #endif
                 return vb_below;
             }
@@ -1026,7 +1034,7 @@ namespace aris::plan {
         return vb_min;
     }
     auto s_scurve_cpt_vb_range(SCurveParam& param) ->std::tuple<double, double> {
-        const double cons = 5e-7;
+        const double cons = 1e-10;
         
         const double pa = param.pa_;
         const double pb = param.pb_;
@@ -1100,42 +1108,20 @@ namespace aris::plan {
         param.va_upper_ = va_upper_ori_;
         param.va_below_ = va_below_ori_;
 
-
         return std::make_tuple(param.vb_upper_, param.vb_below_);
     }
 
-    // 可能会失败，因为会对可行的 T 范围进行试算
-    auto s_scurve_cpt_T_upper(const SCurveParam& param, double T_min_set) -> double {
+    // T_upper 与 T_below 必定会成功，T_range可能会失败
+    auto s_scurve_cpt_T_upper(const SCurveParam& param) -> double {
         const double va = param.va_;
-        const double vb_max = param.vb_max_;
-        const double vc_max = param.vc_max_;
         const double a = param.a_;
         const double j = param.j_;
         const double pt = param.pb_ - param.pa_;
-        const double Tmin_max = T_min_set;
-        if (pt < std::numeric_limits<double>::epsilon() * 100) {
-            if (va > std::numeric_limits<double>::epsilon() * 100) {
-                return -1;
-            }
-            else {
-                return std::numeric_limits<double>::infinity();
-            }
-        }
-
-
-        double Tmax;
 
         double Z1 = a * a / j;
-        double T_va_to_vb = s_acc_time(va, vb_max, a, j);
-        double l_va_to_vb = T_va_to_vb * (va + vb_max) / 2;
-
-        // failed //
-        if ((!std::isfinite(Z1)) || (!std::isfinite(T_va_to_vb)) || (!std::isfinite(l_va_to_vb)) || (va > vb_max && l_va_to_vb > pt))
-            return -1;
-
         double pacc = va - 1.5 * Z1 > 0 ? 0.5 * (Z1 / 2 + va) * (Z1 / 2 + va) / a : 4.0 / 3.0 * va * safe_sqrt(2.0 / 3.0 * va / j);
         if (pacc <= pt)
-            Tmax = std::numeric_limits<double>::infinity();
+            return std::numeric_limits<double>::infinity();
         else {
             //% 计算vb
             //% 【条件1】 加速度正好可以达到a时，所前进的长度
@@ -1156,9 +1142,8 @@ namespace aris::plan {
 
                 double vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((va - x) / j) * (va + x) - pt; }
                 , va / 3, va);
-                Tmax = s_acc_time(va, vb, a, j);
+                return s_acc_time(va, vb, a, j);
             }
-
             else {
                 //% 此时有匀速段
                 //% 前进时间为：t = (va-vb)/a+a/j;
@@ -1174,42 +1159,23 @@ namespace aris::plan {
                 double B = -Z1;
                 double C = 2 * pt * a - va * Z1 - va * va;
                 double vb = (-B + safe_sqrt(B * B - 4 * C)) / 2;
-                Tmax = s_acc_time(va, vb, a, j);
+                return s_acc_time(va, vb, a, j);
             }
         }
-
-        if (Tmax < Tmin_max)
-            return -1;
-
-        return Tmax;
     }
-    auto s_scurve_cpt_T_below(const SCurveParam& param, double T_min_set) -> double {
+    auto s_scurve_cpt_T_below(const SCurveParam& param) -> double {
         const double va = param.va_;
         const double vb_max = param.vb_max_;
         const double vc_max = param.vc_max_;
         const double a = param.a_;
         const double j = param.j_;
         const double pt = param.pb_ - param.pa_;
-        const double Tmin_max = T_min_set;
-        if (pt < std::numeric_limits<double>::epsilon() * 100) {
-            if (va > std::numeric_limits<double>::epsilon() * 100) {
-                return -1;
-            }
-            else {
-                return Tmin_max;
-            }
-        }
-
 
         double Tmin, vb, l, v1, v2, v_upper, v_below;
 
         double Z1 = a * a / j;
         double T_va_to_vb = s_acc_time(va, vb_max, a, j);
         double l_va_to_vb = T_va_to_vb * (va + vb_max) / 2;
-
-        // failed //
-        if ((!std::isfinite(Z1)) || (!std::isfinite(T_va_to_vb)) || (!std::isfinite(l_va_to_vb)) || (va > vb_max && l_va_to_vb > pt + 1e-10))
-            return -1;
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 计算Tmin：%%%%%%
 
@@ -1260,8 +1226,7 @@ namespace aris::plan {
             //% newton raphson %
             vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((x - va) / j) * (va + x) - pt; }
             , va, vb_max);
-            Tmin = s_acc_time(va, vb, a, j);
-            return Tmin;
+            return s_acc_time(va, vb, a, j);
         }
 
         //% ------------------ l2 --------------------
@@ -1420,8 +1385,6 @@ namespace aris::plan {
             double T1 = (v - v1) / a + a / j;
             double T2 = (v - v2) / a + a / j;
             Tmin = T1 + T2;
-
-            Tmin = std::max(Tmin, Tmin_max);
             return Tmin;
         }
 
@@ -1438,22 +1401,7 @@ namespace aris::plan {
         return Tmin;
     }
     auto s_scurve_cpt_T_range(SCurveParam& param, double T_min_set) -> std::tuple<double, double> {
-        //% 计算当前点位所需的最大最小时间
-        //%
-        //% pa     : init pos
-        //% va : init vel
-        //% pb : end  pos
-        //% max_vb : max  end vel
-        //% v : max  vel  during period
-        //% a : max  acc  during period
-        //% j : max  jerk during period
-        //% T : period
-        //%
-        //%Tmax：开始时尽可能快的减速，若减速到0，则为inf，否则以到达pb的时间为准
-        //% Tmin：开始时尽可能快的加速，直到速度最大，之后保持最大速度到终点
-
-
-        //% 确保必然可以实现 T
+        
         const double va = param.va_;
         const double vb_max = param.vb_max_;
         const double vc_max = param.vc_max_;
@@ -1461,6 +1409,7 @@ namespace aris::plan {
         const double j = param.j_;
         const double pt = param.pb_ - param.pa_;
 
+        //% 计算一定可行的 va_upper
         double va_upper;
         if (pt < (a * (a * a / j + 2 * vb_max)) / j) {
             //% clear
@@ -1472,7 +1421,6 @@ namespace aris::plan {
             double T = newton_raphson_binary_search([j, vb_max, pt](double T) { return j * T * T * T + 8 * vb_max * T - 8 * pt; }, 0, 2 * a / j);
             va_upper = std::min(param.va_upper_, vb_max + j * T * T / 4);
         }
-
         else {
             //% clear
             //% syms T va pt j T a
@@ -1480,23 +1428,24 @@ namespace aris::plan {
             //% l = T * (vb + va) / 2;
             //% collect(l, T)
             //% solve(l == pt, T)
-            double T = (a*a - 2 * j * vb_max + 2 * safe_sqrt(a*a*a*a / 4 - a*a * j * vb_max + 2 * pt * a * j*j + j*j * vb_max*vb_max)) / (2 * a * j);
+            double T = (a*a - 2 * j * vb_max + safe_sqrt((a*a - 2*j*vb_max)*(a*a - 2*j*vb_max) + 8*pt*a*j*j)) / (2 * a * j);
             va_upper = std::min(param.va_upper_, vb_max + T * a - a*a / j);
         }
 
-        param.va_ = param.va_below_;
-        double T_upper = s_scurve_cpt_T_upper(param, T_min_set);
-        param.va_ = va_upper;
-        double T_below = s_scurve_cpt_T_below(param, T_min_set);
+        // 失败
+        if (va_upper < param.va_below_) {
+            return std::make_tuple(-1.0, -1.0);
+        }
 
-#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
-        //if (T_below == -1) {
-        //    //Tmin = s_scurve_cpt_Tmin(pa, va_upper, pb, vb_max, vc_max, a, j);
-        //    THROW_FILE_LINE("ERROR");
-        //}
-#endif
-        
-        return std::make_tuple(T_upper, T_below);
+        param.va_ = param.va_below_;
+        double T_upper = s_scurve_cpt_T_upper(param);
+        param.va_ = va_upper;
+        double T_below = s_scurve_cpt_T_below(param);
+
+        if(T_upper < T_min_set)
+            return std::make_tuple(-1.0, -1.0);
+        else
+            return std::make_tuple(T_upper, std::max(T_below, T_min_set));
     }
 
     // 必然成功
@@ -1802,7 +1751,7 @@ namespace aris::plan {
         if (Tmax_all == std::numeric_limits<double>::infinity()) {
             return true;
         }
-        else if (Tmax_all < 0 || Tmin_all == std::numeric_limits<double>::infinity() || Tmax_all < Tmin_all) {
+        else if (Tmax_all < 0 || Tmin_all < 0 || Tmax_all < Tmin_all) {
             return false;
         }
         else {
@@ -1811,7 +1760,6 @@ namespace aris::plan {
             }
             return s_scurve_test_following_nodes(std::next(begin), end, T_min_set);
         }
-    
     }
 
     // 循环计算每个节点2：
