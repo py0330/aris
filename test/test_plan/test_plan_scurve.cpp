@@ -218,7 +218,7 @@ void test_multi_s_curve(){
 	}
 
 	try {
-		s_compute_scurve(scurve.begin(), scurve.end());
+		s_scurve_make_nodes(scurve.begin(), scurve.end());
 		test_s_curve_vaj(scurve);
 	}
 	catch (std::exception& e) {

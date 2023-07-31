@@ -120,6 +120,9 @@ namespace aris::plan{
 	// 构造scurve
 	auto ARIS_API s_compute_scurve(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->int;
 
+	// 构造scurve2：
+	auto ARIS_API s_scurve_make_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->int;
+
 	// 平滑优化scurve
 	auto ARIS_API s_optimize_scurve_adjacent_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min = 0.001)->int;
 

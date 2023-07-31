@@ -1656,7 +1656,7 @@ namespace aris::plan {
 		}
 
 		// 进行规划 //
-		if (s_compute_scurve(ins_scurve_list.begin(), ins_scurve_list.end()) != 0) {
+		if (s_scurve_make_nodes(ins_scurve_list.begin(), ins_scurve_list.end()) != 0) {
 			// 如果失败，则改为原始数据，因为原始数据一定会成功
 			// 但是原始数据的首个节点的起始速度不对，应改为上次优化后的数据
 			for (int i = 0; i < ins_scurve_list.front().params_.size(); ++i) {
@@ -1674,7 +1674,7 @@ namespace aris::plan {
 			std::swap(ins_scurve_list, ins_scurve_origin_list);
 
 
-			if (s_compute_scurve(std::next(ins_scurve_list.begin()), ins_scurve_list.end()) != 0) {
+			if (s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end()) != 0) {
 				return -1;
 			}
 		}
