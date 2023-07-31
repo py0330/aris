@@ -511,8 +511,6 @@ namespace aris::plan {
                 return vb_upper;
             }
 
-
-
             //% Ta无匀加速, Tb有匀加速
             if ((4 * a / j < T && l6 >= pt && pt > l5) ||
                 (2 * a / j < T && T <= 4 * a / j && l6 >= pt && pt > l4)) 
