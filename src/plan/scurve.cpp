@@ -1,13 +1,13 @@
 ﻿#include"aris/plan/scurve.hpp"
 
-//#define DEBUG_ARIS_PLAN_TRAJECTORY
+#define DEBUG_ARIS_PLAN_TRAJECTORY
 
 
 namespace aris::plan {
     auto inline safe_sqrt(double v)->double {
         return v > 0.0 ? std::sqrt(v) : 0.0;
     }
-    auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper, double tol = std::numeric_limits<double>::epsilon() * 10) -> double {
+    auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper) -> double {
         double f_upper = f(x_upper);
         double f_below = f(x_below);
 
@@ -75,12 +75,12 @@ namespace aris::plan {
     // 给定速度，计算加加速段的终止速度
     auto s_acc_time(double va, double vb, double a, double j)noexcept->double {
         double v_diff = std::abs(vb - va);
-        return v_diff > a * a / j ? v_diff / a + a / j : 2 * std::sqrt(v_diff / j);
+        return v_diff > a * a / j ? v_diff / a + a / j : 2 * safe_sqrt(v_diff / j);
     };
 
     // 不考虑 pt //
     auto s_scurve_cpt_vc_upper_by_va_vb_T(double va, double vb, double T, double a, double j, double *vc_upper = nullptr, double *Ta = nullptr, double *Tb = nullptr) -> double {
-        double cons = 5e-7;
+        double cons = 1e-10;
 
         double vc_upper_value_{ 0.0 }, Ta_value_{ 0.0 }, Tb_value_{ 0.0 };
         vc_upper = vc_upper ? vc_upper : &vc_upper_value_;
@@ -102,11 +102,16 @@ namespace aris::plan {
 
         //% v1 无法加速到 v2
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
-        if (T_v1_to_v2 > T + cons) {
-            THROW_FILE_LINE("failed in s_cpt_vc_upper_by_va_vb_T");
+        if (v2 - v1 > cons && T_v1_to_v2 > T + cons) {
+            THROW_FILE_LINE("failed in s_scurve_cpt_vc_upper_by_va_vb_T");
         }
 #endif
-        if (ve1 >= v2 && T_v1_to_ve1 + T_v2_to_ve1 >= T) {
+        if (T <= T_v1_to_v2) {
+            vc = v2;
+            T1 = T;
+            T2 = 0;
+        }
+        else if (ve1 >= v2 && T <= T_v1_to_ve1 + T_v2_to_ve1) {
             //% 第一段无匀加速，第二段无匀加速
             //% clear
             //% syms T1 T2 T v1 v2 vc a j pt
@@ -114,21 +119,20 @@ namespace aris::plan {
             //% T2 = 2 * sqrt((vc - v2) / j)
             //% vc_ans = solve(T1 + T2 == T, vc)
             vc = (T*T*T*T * j*j + 8 * T*T * j * v1 + 8 * T*T * j * v2 + 16 * v1*v1 - 32 * v1 * v2 + 16 * v2*v2) / (16 * T*T * j);
-            T1 = 2 * std::sqrt((vc - v1) / j);
-            T2 = 2 * std::sqrt((vc - v2) / j);
+            T1 = 2 * safe_sqrt((vc - v1) / j);
+            T2 = T - T1;
         }
-        else if (T_v1_to_ve2 + T_v2_to_ve2 >= T) {
+        else if (T <= T_v1_to_ve2 + T_v2_to_ve2) {
             //% 第一段有匀加速，第二段无匀加速
             //% clear
             //% syms T1 T2 T v1 v2 vc a j pt
             //% T1 = (vc - v1) / a + a / j
             //% T2 = 2 * sqrt((vc - v2) / j)
             //% solve(T1 + T2 == T, vc)
-            vc = (j * v1 + a*a - 2 * a * j * std::sqrt((v1 - v2 + T * a) / j) + T * a * j) / j;
+            vc = (j * v1 + a*a - 2 * a * j * safe_sqrt((v1 - v2 + T * a) / j) + T * a * j) / j;
             T1 = (vc - v1) / a + a / j;
-            T2 = 2 * std::sqrt((vc - v2) / j);
+            T2 = T - T1;
         }
-            
         else {
             //% 第一段有匀加速，第二段有匀加速
             //% clear
@@ -138,7 +142,7 @@ namespace aris::plan {
             //% solve(T1 + T2 == T, vc)
             vc = (-2 * a*a + T * j * a + j * v1 + j * v2) / (2 * j);
             T1 = (vc - v1) / a + a / j;
-            T2 = (vc - v2) / a + a / j;
+            T2 = T - T1;
         }
 
         //% 更新 vc_upper, Ta, Tb
@@ -155,7 +159,7 @@ namespace aris::plan {
         return *vc_upper;
     }
     auto s_scurve_cpt_vc_below_by_va_vb_T(double va, double vb, double T, double a, double j, double* vc_below = nullptr, double* Ta = nullptr, double* Tb = nullptr)->double {
-        double cons = 5e-7;
+        double cons = 1e-10;
 
         double vc_below_value_, Ta_value_, Tb_value_;
         vc_below = vc_below ? vc_below : &vc_below_value_;
@@ -177,11 +181,16 @@ namespace aris::plan {
 
         //% v1 无法加速到 v2
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
-        if (T_v1_to_v2 > T + cons) {
-            throw std::runtime_error("failed in s_cpt_vc_upper_by_va_vb_T");
+        if (v2 - v1 > cons && T_v1_to_v2 > T + cons) {
+            THROW_FILE_LINE("failed in s_scurve_cpt_vc_below_by_va_vb_T");
         }
 #endif
-        if (ve2 <= v1 && T_v1_to_ve2 + T_v2_to_ve2 >= T) {
+        if (T <= T_v1_to_v2) {
+            vc = v1;
+            T1 = 0;
+            T2 = v2;
+        }
+        else if (ve2 <= v1 && T <= T_v1_to_ve2 + T_v2_to_ve2 ) {
             //% 第一段无匀加速，第二段无匀加速
             //% clear
             //% syms T1 T2 T v1 v2 vc a j pt
@@ -189,20 +198,19 @@ namespace aris::plan {
             //% T2 = 2 * sqrt((v2 - vc) / j)
             //% vc_ans = solve(T1 + T2 == T, vc)
             vc = (-T*T*T*T * j*j + 8 * T*T * j * v1 + 8 * T*T * j * v2 - 16 * v1*v1 + 32 * v1 * v2 - 16 * v2*v2) / (16 * T*T * j);
-            T1 = 2 * std::sqrt((v1 - vc) / j);
-            T2 = 2 * std::sqrt((v2 - vc) / j);
+            T2 = 2 * safe_sqrt((v2 - vc) / j);
+            T1 = T - T2;
         }
-
-        else if (T_v1_to_ve1 + T_v2_to_ve1 >= T) {
+        else if (T <= T_v1_to_ve1 + T_v2_to_ve1) {
             //% 第一段有匀加速，第二段无匀加速
             //% clear
             //% syms T1 T2 T v1 v2 vc a j pt
             //% T1 = 2 * sqrt((v1 - vc) / j)
             //% T2 = (v2 - vc) / a + a / j
             //% solve(T1 + T2 == T, vc)
-            vc = (j * v2 - a*a + 2 * a * j * std::sqrt((v1 - v2 + T * a) / j) - T * a * j) / j;
-            T1 = 2 * std::sqrt((v1 - vc) / j);
+            vc = (j * v2 - a*a + 2 * a * j * safe_sqrt((v1 - v2 + T * a) / j) - T * a * j) / j;
             T2 = (v2 - vc) / a + a / j;
+            T1 = T - T2;
         }
         else {
             //% 第一段有匀加速，第二段有匀加速
@@ -212,17 +220,16 @@ namespace aris::plan {
             //% T2 = (v2 - vc) / a + a / j
             //% solve(T1 + T2 == T, vc)
             vc = (2 * a*a - T * j * a + j * v1 + j * v2) / (2 * j);
-            T1 = (v1 - vc) / a + a / j;
             T2 = (v2 - vc) / a + a / j;
+            T1 = T - T2;
         }
 
-            //% 更新 vc_upper, Ta, Tb
+        //% 更新 vc_below, Ta, Tb
         *vc_below = vc;
         if (vb > va) {
             *Ta = T1;
             *Tb = T2;
         }
-            
         else {
             *Ta = T2;
             *Tb = T1;
@@ -231,7 +238,7 @@ namespace aris::plan {
         return *vc_below;
     }
 
-    // 考虑 pt
+    // 考虑 pt，且必定成功，因为在计算 T 的范围时，已经考虑了 vb 的可实现性
     auto s_scurve_cpt_vb_upper(const SCurveParam& param)-> double {
         //%
         //% 1. 确定必然可以达到的 vb_min vb_max vc_min vc_max
@@ -369,7 +376,7 @@ namespace aris::plan {
                 double B = -a / j;
                 double C = (2 * la - 2 * pt + 2 * vc_min * (T - Ta)) / a;
 
-                Tb = (-B + std::sqrt(std::max(B * B - 4 * C, 0.0))) / 2;
+                Tb = (-B + safe_sqrt(std::max(B * B - 4 * C, 0.0))) / 2;
                 vb = vc_min + Tb * a - Z1;
                 return vb;
             }
@@ -421,7 +428,7 @@ namespace aris::plan {
                 //% 选根
                 //% 其极值为(k1) / (2 * k2) = (3 * T) / 2
                 //% 因此需选其较小的根
-                Ta = (-k1 - std::sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
+                Ta = (-k1 - safe_sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
 
                 vc = va - j * Ta * Ta / 4;
                 Tb = T - Ta;
@@ -430,7 +437,7 @@ namespace aris::plan {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
                 //% debug check%
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
-                if (vc < vc_min - cons || vc > vc_max + cons || abs(l - pt) > cons || abs(Ta + Tb - T) > cons) {
+                if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
                     THROW_FILE_LINE("wrong vb_upper in CASE 2.1");
                 }
 #endif
@@ -567,7 +574,7 @@ namespace aris::plan {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
                 //% debug check%
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
-                if (vc < vc_min - cons || vc > vc_max + cons || abs(l - pt) > cons || abs(Ta + Tb - T) > cons) {
+                if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
                     throw std::runtime_error("wrong vb_upper in CASE 2.2");
                 }
 #endif 
@@ -591,7 +598,7 @@ namespace aris::plan {
                 double k1 = -2 * T * a;
                 double k0 = -pt + (T * (2 * va + T * a + a*a / j)) / 2;
 
-                Ta = (-k1 - std::sqrt(k1 * k1 - 4 * k2 * k0)) / (2 * k2);
+                Ta = (-k1 - safe_sqrt(k1 * k1 - 4 * k2 * k0)) / (2 * k2);
 
                 vc = va - Ta * a + a * a / j;
                 Tb = std::max(T - Ta, 0.0);
@@ -600,7 +607,7 @@ namespace aris::plan {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
                 //% debug check%
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
-                if (vc < vc_min - cons || vc > vc_max + cons || abs(l - pt) > cons || abs(Ta + Tb - T) > cons) {
+                if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
                     throw std::runtime_error("wrong vb_upper in CASE 2.4");
                 }
 #endif
@@ -751,7 +758,7 @@ namespace aris::plan {
                 double B = -a / j;
                 double C = -(2 * la - 2 * pt + 2 * vc_max * (T - Ta)) / a;
 
-                Tb = (-B + std::sqrt(std::max(B * B - 4 * C, 0.0))) / 2;
+                Tb = (-B + safe_sqrt(B * B - 4 * C)) / 2;
                 vb = vc_max - Tb * a + Z1;
 
                 return vb;
@@ -805,7 +812,7 @@ namespace aris::plan {
                 //% 选根
                 //% 其极值为(k1) / (2 * k2) = (3 * T) / 2
                 //% 因此需选其较小的根
-                Ta = (-k1 - std::sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
+                Ta = (-k1 - safe_sqrt(k1 * k1 - 4 * k0 * k2)) / 2 / k2;
 
                 vc = va + j * Ta * Ta / 4;
                 Tb = T - Ta;
@@ -890,9 +897,7 @@ namespace aris::plan {
                 return vb_below;
             }
 
-                
-
-                //% Ta无匀加速, Tb有匀加速
+            //% Ta无匀加速, Tb有匀加速
             if ((4 * a / j < T && l6 <= pt && pt < l5) ||
                 (2 * a / j < T && T <= 4 * a / j && l6 <= pt && pt < l4)) 
             {
@@ -960,8 +965,6 @@ namespace aris::plan {
                 return vb_below;
             }
 
-
-
             //% Ta有匀加速, Tb有匀加速    
             if ((4 * a / j < T && l5 <= pt && pt < l4)) {
                 //% syms va T a j pt Ta
@@ -995,7 +998,7 @@ namespace aris::plan {
                 //% T_below = 2 * a / j
                 //% T_upper = T
 
-                Ta = (-k1 + std::sqrt(k1 * k1 - 4 * k2 * k0)) / (2 * k2);
+                Ta = (-k1 + safe_sqrt(k1 * k1 - 4 * k2 * k0)) / (2 * k2);
 
                 vc = va + Ta * a - Z1;
                 Tb = std::max(T - Ta, 0.0);
@@ -1103,6 +1106,7 @@ namespace aris::plan {
         return std::make_tuple(param.vb_upper_, param.vb_below_);
     }
 
+    // 可能会失败，因为会对可行的 T 范围进行试算
     auto s_scurve_cpt_T_upper(const SCurveParam& param, double T_min_set) -> double {
         const double va = param.va_;
         const double vb_max = param.vb_max_;
@@ -1478,7 +1482,7 @@ namespace aris::plan {
             //% l = T * (vb + va) / 2;
             //% collect(l, T)
             //% solve(l == pt, T)
-            double T = (a*a - 2 * j * vb_max + 2 * std::sqrt(a*a*a*a / 4 - a*a * j * vb_max + 2 * pt * a * j*j + j*j * vb_max*vb_max)) / (2 * a * j);
+            double T = (a*a - 2 * j * vb_max + 2 * safe_sqrt(a*a*a*a / 4 - a*a * j * vb_max + 2 * pt * a * j*j + j*j * vb_max*vb_max)) / (2 * a * j);
             va_upper = std::min(param.va_upper_, vb_max + T * a - a*a / j);
         }
 
@@ -1497,6 +1501,7 @@ namespace aris::plan {
         return std::make_tuple(T_upper, T_below);
     }
 
+    // 必然成功
     auto s_scurve_cpt_vavc(SCurveParam& param) -> void {
         //% 在给定过程中起始速度va, 最大速度v，加速度a，跃度j，时间长度T的情况下
         //% 自动计算末端所可能达到的【最大的】vb
@@ -1691,8 +1696,8 @@ namespace aris::plan {
                 va = va_below;
                 if (T - T_va_below_to_vb > 1e-10) {
                     vc = (pt - T_va_below_to_vb * (va + vb) / 2) / (T - T_va_below_to_vb);
-                    Ta = abs((vc - vb) / (va - vb)) * (T - T_va_below_to_vb);
-                    Tb = abs((vc - va) / (va - vb)) * (T - T_va_below_to_vb);
+                    Ta = std::abs((vc - vb) / (va - vb)) * (T - T_va_below_to_vb);
+                    Tb = std::abs((vc - va) / (va - vb)) * (T - T_va_below_to_vb);
                 }
                 else {
                     vc = (vb + va_below) / 2;
@@ -1728,8 +1733,8 @@ namespace aris::plan {
                 va = va_upper;
                 if (T - T_va_upper_to_vb > 1e-10) {
                     vc = (pt - T_va_upper_to_vb * (va_upper + vb) / 2) / (T - T_va_upper_to_vb);
-                    Ta = abs((vc - vb) / (va - vb)) * (T - T_va_upper_to_vb);
-                    Tb = abs((vc - va) / (va - vb)) * (T - T_va_upper_to_vb);
+                    Ta = std::abs((vc - vb) / (va - vb)) * (T - T_va_upper_to_vb);
+                    Tb = std::abs((vc - va) / (va - vb)) * (T - T_va_upper_to_vb);
                 }
                 else {
                     vc = (vb + va_upper) / 2;
@@ -1779,11 +1784,10 @@ namespace aris::plan {
 
         std::vector<double> T_uppers(begin->params_.size()), T_belows(begin->params_.size());
         for (aris::Size i = 0; i < begin->params_.size(); ++i) {
+            auto next_iter = std::next(begin);
+            
             // 计算 vb range
             s_scurve_cpt_vb_range(begin->params_[i]);
-            //s_compute_scurve_node(begin->params_[i]);
-
-            auto next_iter = std::next(begin);
 
             // 更新 vb
             std::next(begin)->params_[i].va_ = begin->params_[i].vb_;
@@ -1800,7 +1804,7 @@ namespace aris::plan {
         if (Tmax_all == std::numeric_limits<double>::infinity()) {
             return true;
         }
-        else if (Tmax_all < 0 || Tmax_all < Tmin_all) {
+        else if (Tmax_all < 0 || Tmin_all == std::numeric_limits<double>::infinity() || Tmax_all < Tmin_all) {
             return false;
         }
         else {
@@ -1812,6 +1816,162 @@ namespace aris::plan {
     
     }
 
+    // 循环计算每个节点2：
+    auto ARIS_API s_scurve_make_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
+        // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性
+        for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
+            // 设置正确的 pa
+            for (Size i = 0; i < iter->params_.size(); ++i) {
+                iter->params_[i].pa_ = std::prev(iter)->params_[i].pb_;
+
+                if (iter->params_[i].pa_ > iter->params_[i].pb_)
+                    THROW_FILE_LINE("POS SET NOT CORRECT");
+
+                if (iter->params_[i].pb_ - iter->params_[i].pa_ >= 100 * std::numeric_limits<double>::epsilon()) {
+                    if (iter->params_[i].vc_max_ < 1e-10)
+                        THROW_FILE_LINE("VEL SET NOT CORRECT");
+                    if (iter->params_[i].a_ < 1e-10)
+                        THROW_FILE_LINE("ACC SET NOT CORRECT");
+                    if (iter->params_[i].j_ < 1e-10)
+                        THROW_FILE_LINE("JERK SET NOT CORRECT");
+                }
+            }
+        }
+
+        // 设置正确的 vb_max,  vb_max 应小于上一个与这一个的 较小的 vc //
+        for (auto iter = begin_iter; iter != end_iter && iter != std::prev(end_iter); ++iter) {
+            // 设置正确的 vb_max
+            for (Size i = 0; i < iter->params_.size(); ++i) {
+                iter->params_[i].vb_max_ = std::min(iter->params_[i].vc_max_, iter->params_[i].vb_max_);
+                iter->params_[i].vb_max_ = std::min(std::next(iter)->params_[i].vc_max_, iter->params_[i].vb_max_);
+            }
+        }
+
+        // 设置起始的 va_range 等于 va
+        for (Size i = 0; i < begin_iter->params_.size(); ++i) {
+            begin_iter->params_[i].va_upper_ = begin_iter->params_[i].va_;
+            begin_iter->params_[i].va_below_ = begin_iter->params_[i].va_;
+        }
+
+        // 设置最后的 vb_max 等于 0
+        for (Size i = 0; i < std::prev(end_iter)->params_.size(); ++i) {
+            std::prev(end_iter)->params_[i].vb_max_ = 0.0;
+            std::prev(end_iter)->params_[i].vb_upper_ = 0.0;
+            std::prev(end_iter)->params_[i].vb_below_ = 0.0;
+        }
+
+        // 开始正向循环计算，更新每个节点的 T vb_range 等信息
+        for (auto iter = begin_iter; iter != end_iter; ++iter) {
+#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
+            static int count_ = 0;
+            //std::cout << "trajectory count:" << count_ << std::endl;
+            //if (count_ >= 66)
+            //    std::cout << "debuging" << std::endl;
+
+            count_++;
+#endif
+
+            // STEP 1 : 计算全部末端的最大最小时间
+            std::vector<double> Tmaxs(iter->params_.size()), Tmins(iter->params_.size());
+            for (Size i = 0; i < iter->params_.size(); ++i) {
+                // 设置正确的 pa 和 va
+                if (iter != begin_iter) {
+                    iter->params_[i].va_ = std::prev(iter)->params_[i].vb_;
+                    iter->params_[i].va_upper_ = std::prev(iter)->params_[i].vb_upper_;
+                    iter->params_[i].va_below_ = std::prev(iter)->params_[i].vb_below_;
+                }
+
+                // 计算 Tmax Tmin
+                std::tie(Tmaxs[i], Tmins[i]) = s_scurve_cpt_T_range(iter->params_[i], T_min);
+            }
+
+            double Tmin_all = *std::max_element(Tmins.begin(), Tmins.end());
+            double Tmax_all = *std::min_element(Tmaxs.begin(), Tmaxs.end());
+
+            // 若起始速度过大，有可能无法规划成功 //
+            if (Tmin_all > Tmax_all)
+                return -1;
+
+            // STEP 2 : 基于 T_below 求得 T_upper 上限
+            double T_upper = Tmax_all;
+            double T_below = std::max(Tmin_all, T_min);
+
+            if (T_upper == std::numeric_limits<double>::infinity()) {
+                T_upper = std::max(T_below, 1.0) * 2.0; // in case T_below == 0.0
+                for (auto& p : iter->params_)
+                    p.T_ = T_upper;
+
+                while (!s_scurve_test_following_nodes(iter, end_iter, T_min)) {
+                    T_below = T_upper;
+                    T_upper = 2.0 * T_upper;
+
+                    for (auto& p : iter->params_)
+                        p.T_ = T_upper;
+                }
+            }
+
+            // STEP 3 : 二分法求解最优的可行时间
+            double diff = std::abs(T_upper - T_below);
+            double diff_last = 10 * diff;
+
+            while (diff < diff_last) {
+                diff_last = diff;
+                double T_next = (T_upper + T_below) / 2;
+#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
+                //std::cout << "  Tnext:" << T_next << std::endl;              
+#endif
+                for (auto& p : iter->params_)
+                    p.T_ = T_next;
+
+                if (s_scurve_test_following_nodes(iter, end_iter, T_min)) {
+                    T_upper = T_next;
+                }
+                else {
+                    T_below = T_next;
+                }
+
+                diff = std::abs(T_upper - T_below);
+            }
+
+            // STEP 4 : 设置可行时间并计算每段 s 曲线
+            for (auto& p : iter->params_) {
+                p.T_ = T_upper;
+                s_scurve_cpt_vb_range(p);
+
+                if (iter != begin_iter) {
+                    LargeNum t0 = std::prev(iter)->params_[0].t0_ + std::prev(iter)->params_[0].T_;
+                    for (auto& p : iter->params_) {
+                        p.t0_ = t0;
+                        //p.t0_count_ = std::prev(iter)->params_[0].t0_count_ + std::lround((t0 - std::fmod(t0, 1000.0))/1000.0);
+                    }
+                }
+
+            }
+        }
+
+        // 逆向循环计算 va vc 等
+        for (auto iter = std::prev(end_iter); iter != begin_iter; --iter) {
+            for (Size i = 0; i < iter->params_.size(); ++i) {
+                if (iter != std::prev(end_iter)) {
+                    iter->params_[i].vb_ = std::next(iter)->params_[i].va_;
+                }
+
+
+                s_scurve_cpt_vavc(iter->params_[i]);
+            }
+        }
+
+        // 计算起始节点的 va vc 等
+        for (Size i = 0; i < begin_iter->params_.size(); ++i) {
+            if (begin_iter != std::prev(end_iter)) {
+                begin_iter->params_[i].vb_ = std::next(begin_iter)->params_[i].va_;
+            }
+
+            s_scurve_cpt_vavc(begin_iter->params_[i]);
+        }
+
+        return 0;
+    }
 
 
     auto s_scurve_plan_eliminate_optimization(double vb1, SCurveParam& param1)->void
@@ -3555,161 +3715,6 @@ namespace aris::plan {
         return 0;
     }
 
-    // 循环计算每个节点2：
-    auto ARIS_API s_scurve_make_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
-        // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性
-        for (auto iter = std::next(begin_iter); iter != end_iter; ++iter) {
-            // 设置正确的 pa
-            for (Size i = 0; i < iter->params_.size(); ++i) {
-                iter->params_[i].pa_ = std::prev(iter)->params_[i].pb_;
-
-                if (iter->params_[i].pa_ > iter->params_[i].pb_)
-                    THROW_FILE_LINE("POS SET NOT CORRECT");
-
-                if (iter->params_[i].pb_ - iter->params_[i].pa_ >= 100 * std::numeric_limits<double>::epsilon()) {
-                    if (iter->params_[i].vc_max_ < 1e-10)
-                        THROW_FILE_LINE("VEL SET NOT CORRECT");
-                    if (iter->params_[i].a_ < 1e-10)
-                        THROW_FILE_LINE("ACC SET NOT CORRECT");
-                    if (iter->params_[i].j_ < 1e-10)
-                        THROW_FILE_LINE("JERK SET NOT CORRECT");
-                }
-            }
-        }
-
-        // 设置正确的 vb_max,  vb_max 应小于上一个与这一个的 较小的 vc //
-        for (auto iter = begin_iter; iter != end_iter && iter != std::prev(end_iter); ++iter) {
-            // 设置正确的 vb_max
-            for (Size i = 0; i < iter->params_.size(); ++i) {
-                iter->params_[i].vb_max_ = std::min(iter->params_[i].vc_max_, iter->params_[i].vb_max_);
-                iter->params_[i].vb_max_ = std::min(std::next(iter)->params_[i].vc_max_, iter->params_[i].vb_max_);
-            }
-        }
-
-        // 设置起始的 va_range 等于 va
-        for (Size i = 0; i < begin_iter->params_.size(); ++i) {
-            begin_iter->params_[i].va_upper_ = begin_iter->params_[i].va_;
-            begin_iter->params_[i].va_below_ = begin_iter->params_[i].va_;
-        }
-
-        // 设置最后的 vb_max 等于 0
-        for (Size i = 0; i < std::prev(end_iter)->params_.size(); ++i) {
-            std::prev(end_iter)->params_[i].vb_max_ = 0.0;
-            std::prev(end_iter)->params_[i].vb_upper_ = 0.0;
-            std::prev(end_iter)->params_[i].vb_below_ = 0.0;
-        }
-
-        // 开始正向循环计算，更新每个节点的 T vb_range 等信息
-        for (auto iter = begin_iter; iter != end_iter; ++iter) {
-#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
-            static int count_ = 0;
-            //std::cout << "trajectory count:" << count_ << std::endl;
-            //if (count_ >= 66)
-            //    std::cout << "debuging" << std::endl;
-
-            count_++;
-#endif
-
-            // STEP 1 : 计算全部末端的最大最小时间
-            std::vector<double> Tmaxs(iter->params_.size()), Tmins(iter->params_.size());
-            for (Size i = 0; i < iter->params_.size(); ++i) {
-                // 设置正确的 pa 和 va
-                if (iter != begin_iter) {
-                    iter->params_[i].va_ = std::prev(iter)->params_[i].vb_;
-                    iter->params_[i].va_upper_ = std::prev(iter)->params_[i].vb_upper_;
-                    iter->params_[i].va_below_ = std::prev(iter)->params_[i].vb_below_;
-                }
-
-                // 计算 Tmax Tmin
-                std::tie(Tmaxs[i], Tmins[i]) = s_scurve_cpt_T_range(iter->params_[i], T_min);
-            }
-
-            double Tmin_all = *std::max_element(Tmins.begin(), Tmins.end());
-            double Tmax_all = *std::min_element(Tmaxs.begin(), Tmaxs.end());
-
-            // 若起始速度过大，有可能无法规划成功 //
-            if (Tmin_all > Tmax_all)
-                return -1;
-
-            // STEP 2 : 基于 T_below 求得 T_upper 上限
-            double T_upper = Tmax_all;
-            double T_below = std::max(Tmin_all, T_min);
-
-            if (T_upper == std::numeric_limits<double>::infinity()) {
-                T_upper = std::max(T_below, 1.0) * 2.0; // in case T_below == 0.0
-                for (auto& p : iter->params_)
-                    p.T_ = T_upper;
-
-                while (!s_scurve_test_following_nodes(iter, end_iter, T_min)) {
-                    T_below = T_upper;
-                    T_upper = 2.0 * T_upper;
-
-                    for (auto& p : iter->params_)
-                        p.T_ = T_upper;
-                }
-            }
-
-            // STEP 3 : 二分法求解最优的可行时间
-            double diff = std::abs(T_upper - T_below);
-            double diff_last = 10 * diff;
-
-            while (diff < diff_last) {
-                diff_last = diff;
-                double T_next = (T_upper + T_below) / 2;
-#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
-                //std::cout << "  Tnext:" << T_next << std::endl;              
-#endif
-                for (auto& p : iter->params_)
-                    p.T_ = T_next;
-
-                if (s_scurve_test_following_nodes(iter, end_iter, T_min)) {
-                    T_upper = T_next;
-                }
-                else {
-                    T_below = T_next;
-                }
-
-                diff = std::abs(T_upper - T_below);
-            }
-
-            // STEP 4 : 设置可行时间并计算每段 s 曲线
-            for (auto& p : iter->params_) {
-                p.T_ = T_upper;
-                s_scurve_cpt_vb_range(p);
-
-                if (iter != begin_iter) {
-                    LargeNum t0 = std::prev(iter)->params_[0].t0_ + std::prev(iter)->params_[0].T_;
-                    for (auto& p : iter->params_) {
-                        p.t0_ = t0;
-                        //p.t0_count_ = std::prev(iter)->params_[0].t0_count_ + std::lround((t0 - std::fmod(t0, 1000.0))/1000.0);
-                    }
-                }
-
-            }
-        }
-
-        // 逆向循环计算 va vc 等
-        for (auto iter = std::prev(end_iter); iter != begin_iter; --iter) {
-            for (Size i = 0; i < iter->params_.size(); ++i) {
-                if (iter != std::prev(end_iter)) {
-                    iter->params_[i].vb_ = std::next(iter)->params_[i].va_;
-                }
-
-                
-                s_scurve_cpt_vavc(iter->params_[i]);
-            }
-        }
-
-        for (Size i = 0; i < begin_iter->params_.size(); ++i) {
-            if (begin_iter != std::prev(end_iter)) {
-                begin_iter->params_[i].vb_ = std::next(begin_iter)->params_[i].va_;
-            }
-            
-            s_scurve_cpt_vavc(begin_iter->params_[i]);
-        }
-
-        return 0;
-    }
 
 
     // 平滑优化scurve

@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/path.hpp"
 
 namespace aris::plan{
-	auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper, double tol = std::numeric_limits<double>::epsilon() * 10)->double;
+	auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper)->double;
 
 	// 使用3阶bezier曲线，控制点为：[p0, p1, p1, p2]
 	auto s_bezier3_blend_line_line(double s,
