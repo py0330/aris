@@ -2028,7 +2028,7 @@ namespace aris::plan {
 	auto TrajectoryGenerator::maxReplanNum()const->int {
 		return imp_->max_replan_num_;
 	}
-	auto TrajectoryGenerator::setMaxReplanNum(int max_replan_num = 10) -> void {
+	auto TrajectoryGenerator::setMaxReplanNum(int max_replan_num) -> void {
 		imp_->max_replan_num_ = max_replan_num;
 	}
 	auto TrajectoryGenerator::dt()const->double {
