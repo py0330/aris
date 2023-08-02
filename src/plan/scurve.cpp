@@ -1,6 +1,6 @@
 ﻿#include"aris/plan/scurve.hpp"
 
-#define DEBUG_ARIS_PLAN_TRAJECTORY
+//#define DEBUG_ARIS_PLAN_TRAJECTORY
 
 
 namespace aris::plan {

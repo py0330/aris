@@ -2025,6 +2025,12 @@ namespace aris::plan {
 		imp_->internal_vel_ = imp_->internal_vec_.data() + 1 * internal_pos_size;
 		imp_->internal_acc_ = imp_->internal_vec_.data() + 2 * internal_pos_size;
 	}
+	auto TrajectoryGenerator::maxReplanNum()const->int {
+		return imp_->max_replan_num_;
+	}
+	auto TrajectoryGenerator::setMaxReplanNum(int max_replan_num = 10) -> void {
+		imp_->max_replan_num_ = max_replan_num;
+	}
 	auto TrajectoryGenerator::dt()const->double {
 		return imp_->dt_;
 	}
