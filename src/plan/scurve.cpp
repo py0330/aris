@@ -188,7 +188,7 @@ namespace aris::plan {
         if (T <= T_v1_to_v2) {
             vc = v1;
             T1 = 0;
-            T2 = v2;
+            T2 = T;
         }
         else if (ve2 <= v1 && T <= T_v1_to_ve2 + T_v2_to_ve2 ) {
             //% 第一段无匀加速，第二段无匀加速
