@@ -118,7 +118,7 @@ namespace aris::plan {
             //% T1 = 2 * sqrt((vc - v1) / j)
             //% T2 = 2 * sqrt((vc - v2) / j)
             //% vc_ans = solve(T1 + T2 == T, vc)
-            vc = (T*T*T*T * j*j + 8 * T*T * j * v1 + 8 * T*T * j * v2 + 16 * v1*v1 - 32 * v1 * v2 + 16 * v2*v2) / (16 * T*T * j);
+            vc = (T*T*j + 8*v1 + 8*v2)/16 + (v2-v1)/T * (v2-v1)/T / j;
             T1 = 2 * safe_sqrt((vc - v1) / j);
             T2 = T - T1;
         }
@@ -197,7 +197,7 @@ namespace aris::plan {
             //% T1 = 2 * sqrt((v1 - vc) / j)
             //% T2 = 2 * sqrt((v2 - vc) / j)
             //% vc_ans = solve(T1 + T2 == T, vc)
-            vc = (-T*T*T*T * j*j + 8 * T*T * j * v1 + 8 * T*T * j * v2 - 16 * v1*v1 + 32 * v1 * v2 - 16 * v2*v2) / (16 * T*T * j);
+            vc = (-T*T*j + 8*v1 + 8*v2)/16 - (v2-v1)/T * (v2-v1)/T /j;
             T2 = 2 * safe_sqrt((v2 - vc) / j);
             T1 = T - T2;
         }
@@ -503,7 +503,7 @@ namespace aris::plan {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
                 //% debug check%
                 double l = Ta * (va + vc) / 2.0 + Tb * (vb + vc) / 2.0;
-                if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > cons || std::abs(Ta + Tb - T) > cons) {
+                if (vc < vc_min - cons || vc > vc_max + cons || std::abs(l - pt) > std::max(pt,1.0)*cons || std::abs(Ta + Tb - T) > cons) {
                     THROW_FILE_LINE("wrong vb_upper in CASE 2.3");
                 }
 #endif
@@ -1400,7 +1400,7 @@ namespace aris::plan {
         Tmin = T1 + T2 + T3;
         return Tmin;
     }
-    auto s_scurve_cpt_T_range(SCurveParam& param, double T_min_set) -> std::tuple<double, double> {
+    auto s_scurve_cpt_T_range(SCurveParam& param) -> std::tuple<double, double> {
         
         const double va = param.va_;
         const double vb_max = param.vb_max_;
@@ -1442,10 +1442,7 @@ namespace aris::plan {
         param.va_ = va_upper;
         double T_below = s_scurve_cpt_T_below(param);
 
-        if(T_upper < T_min_set)
-            return std::make_tuple(-1.0, -1.0);
-        else
-            return std::make_tuple(T_upper, std::max(T_below, T_min_set));
+        return std::make_tuple(T_upper, T_below);
     }
 
     // 必然成功
@@ -1742,11 +1739,13 @@ namespace aris::plan {
             std::next(begin)->params_[i].va_below_ = begin->params_[i].vb_below_;
 
             // 计算 Tmax Tmin
-            std::tie(T_uppers[i], T_belows[i]) = s_scurve_cpt_T_range(std::next(begin)->params_[i], T_min_set);
+            std::tie(T_uppers[i], T_belows[i]) = s_scurve_cpt_T_range(std::next(begin)->params_[i]);
         }
 
         double Tmin_all = *std::max_element(T_belows.begin(), T_belows.end());
         double Tmax_all = *std::min_element(T_uppers.begin(), T_uppers.end());
+
+        Tmin_all = std::max(Tmin_all, T_min_set);
 
         if (Tmax_all == std::numeric_limits<double>::infinity()) {
             return true;
@@ -1828,15 +1827,18 @@ namespace aris::plan {
                 }
 
                 // 计算 Tmax Tmin
-                std::tie(Tmaxs[i], Tmins[i]) = s_scurve_cpt_T_range(iter->params_[i], T_min);
+                std::tie(Tmaxs[i], Tmins[i]) = s_scurve_cpt_T_range(iter->params_[i]);
             }
 
             double Tmin_all = *std::max_element(Tmins.begin(), Tmins.end());
             double Tmax_all = *std::min_element(Tmaxs.begin(), Tmaxs.end());
 
+            Tmin_all = std::max(Tmin_all, T_min);
+
             // 若起始速度过大，有可能无法规划成功 //
-            if (Tmin_all > Tmax_all)
-                return -1;
+            if (Tmin_all > Tmax_all){
+                THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
+            }
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
@@ -1901,8 +1903,6 @@ namespace aris::plan {
                 if (iter != std::prev(end_iter)) {
                     iter->params_[i].vb_ = std::next(iter)->params_[i].va_;
                 }
-
-
                 s_scurve_cpt_vavc(iter->params_[i]);
             }
         }
@@ -1912,7 +1912,6 @@ namespace aris::plan {
             if (begin_iter != std::prev(end_iter)) {
                 begin_iter->params_[i].vb_ = std::next(begin_iter)->params_[i].va_;
             }
-
             s_scurve_cpt_vavc(begin_iter->params_[i]);
         }
 

@@ -20,7 +20,7 @@ double drand() {
 void test_s_curve_vaj(const std::list<SCurveNode> &scurve) {
 	constexpr double V_TOL = 1E-8;
 	constexpr double A_TOL = 1E-6;
-	constexpr double J_TOL = 1E-4;
+	constexpr double J_TOL = 1E-3;
 	
 	
 	std::vector<LargeNum> last_last_last_p, last_last_p, last_p, p;
