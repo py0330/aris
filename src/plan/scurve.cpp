@@ -239,7 +239,7 @@ namespace aris::plan {
     }
 
     // 考虑 pt，且必定成功，因为在计算 T 的范围时，已经考虑了 vb 的可实现性
-    auto s_scurve_cpt_vb_upper(const SCurveParam& param)-> double {
+    auto ARIS_API s_scurve_cpt_vb_upper(const SCurveParam& param)-> double {
         //%
         //% 1. 确定必然可以达到的 vb_min vb_max vc_min vc_max
         //%
@@ -1838,6 +1838,7 @@ namespace aris::plan {
             // 若起始速度过大，有可能无法规划成功 //
             if (Tmin_all > Tmax_all){
                 THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
+                return -1;
             }
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限

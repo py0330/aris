@@ -1143,42 +1143,65 @@ namespace aris::plan {
 			return;
 		}
 
-		switch (last_u.type_) {
-		case Node::UnitType::Line3:
-			switch (this_u.type_) {
-			case Node::UnitType::Line3: 
-				make_zone_and_scurve_ll(last_u, this_u);
-				break;
-			case Node::UnitType::Circle3:
-				make_zone_and_scurve_lc(last_u, this_u);
-				break;
-			}
-			break;
-		case Node::UnitType::Circle3:
-			switch (this_u.type_) {
+		double last_zone_value_upper = last_u.zone2_.zone_value_;
+		double last_zone_value_below = 0.0;
+
+		double diff = last_zone_value_upper - last_zone_value_below;
+		double last_diff = std::max(1.0, 2 * diff);
+
+		// 二分法修正上个单元的 scurve，使得它可以达到 Tmax（否则可能会出现规划失败）
+		while (diff != last_diff) {
+			last_u.zone2_.zone_value_ = (last_zone_value_upper + last_zone_value_below) / 2;
+			
+			switch (last_u.type_) {
 			case Node::UnitType::Line3:
-				make_zone_and_scurve_cl(last_u, this_u);
+				switch (this_u.type_) {
+				case Node::UnitType::Line3:
+					make_zone_and_scurve_ll(last_u, this_u);
+					break;
+				case Node::UnitType::Circle3:
+					make_zone_and_scurve_lc(last_u, this_u);
+					break;
+				}
 				break;
 			case Node::UnitType::Circle3:
-				make_zone_and_scurve_cc(last_u, this_u);
+				switch (this_u.type_) {
+				case Node::UnitType::Line3:
+					make_zone_and_scurve_cl(last_u, this_u);
+					break;
+				case Node::UnitType::Circle3:
+					make_zone_and_scurve_cc(last_u, this_u);
+					break;
+				}
 				break;
-			}
-			break;
-		case Node::UnitType::Rotate3:
-			switch (this_u.type_) {
 			case Node::UnitType::Rotate3:
-				make_zone_and_scurve_qq(last_u, this_u);
+				switch (this_u.type_) {
+				case Node::UnitType::Rotate3:
+					make_zone_and_scurve_qq(last_u, this_u);
+					break;
+				}
 				break;
-			}
-			break;
-		case Node::UnitType::Line1:
-			switch (this_u.type_) {
 			case Node::UnitType::Line1:
-				make_zone_and_scurve_ll(last_u, this_u);
+				switch (this_u.type_) {
+				case Node::UnitType::Line1:
+					make_zone_and_scurve_ll(last_u, this_u);
+					break;
+				}
 				break;
 			}
-			break;
+
+			if (s_scurve_cpt_T_upper(last_u.scurve_) != std::numeric_limits<double>::infinity()) {
+				last_zone_value_upper = last_u.zone2_.zone_value_;
+			}
+			else {
+				last_zone_value_below = last_u.zone2_.zone_value_;
+			}
+
+			last_diff = diff;
+			diff = last_zone_value_upper - last_zone_value_below;
 		}
+
+
 
 		// 更新起始的scurve数值 //
 		last_u.scurve_origin_ = last_u.scurve_;
@@ -1679,9 +1702,6 @@ namespace aris::plan {
 			}
 		}
 
-
-			
-
 		// 将规划好的 scurve 返回到 nodes 中的 origin 位置 //
 		auto scurve_iter = ins_scurve_list.begin();
 		for (auto iter = begin; iter != end; ++iter) {
@@ -1911,7 +1931,7 @@ namespace aris::plan {
 				auto& last_node = *std::prev(nodes_.end());
 				auto& ins_node = nodes_.emplace_back(ee_types_.size());
 
-				// 获得需要重新规划的起点，默认为5段轨迹
+				// 获得需要重新规划的起点
 				auto current_node = current_node_.load();
 				auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
 					return &node == current_node;
@@ -1939,7 +1959,7 @@ namespace aris::plan {
 				auto scurve_size = aris::dynamic::getEeTypeScurveSize(ee_types_.size(), ee_types_.data());
 				auto replan_ret = replan_nodes((int)scurve_size, ee_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
-				// 查看是否冲规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。
+				// 查看是否重规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。
 				if (replan_ret != 0) {
 					nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
 					make_node(0, &ins_node, &*std::prev(nodes_.end(), 2), ee_types_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
