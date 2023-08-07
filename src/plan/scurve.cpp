@@ -1815,7 +1815,6 @@ namespace aris::plan {
 
             count_++;
 #endif
-
             // STEP 1 : 计算全部末端的最大最小时间
             std::vector<double> Tmaxs(iter->params_.size()), Tmins(iter->params_.size());
             for (Size i = 0; i < iter->params_.size(); ++i) {
@@ -1837,7 +1836,14 @@ namespace aris::plan {
 
             // 若起始速度过大，有可能无法规划成功 //
             if (Tmin_all > Tmax_all){
-                THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
+                //THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
+                
+                int left_node_num = 0;
+                for (auto i = iter; iter != end_iter; ++i)
+                    left_node_num++;
+
+
+                std::cout << "[debug failed] left node num: " << left_node_num << std::endl;
                 return -1;
             }
 
