@@ -1143,6 +1143,9 @@ namespace aris::plan {
 			return;
 		}
 
+		auto last_u_reserve = last_u;
+		auto this_u_reserve = this_u;
+
 		bool if_need_binary = false;
 
 		double last_zone_value_upper = last_u.zone2_.zone_value_;
@@ -1153,6 +1156,9 @@ namespace aris::plan {
 
 		// 二分法修正上个单元的 scurve，使得它可以达到 Tmax（否则可能会出现规划失败）
 		while (diff != last_diff) {
+			last_u = last_u_reserve;
+			this_u = this_u_reserve;
+			
 			last_u.zone2_.zone_value_ = (last_zone_value_upper + last_zone_value_below) / 2;
 			
 			switch (last_u.type_) {
