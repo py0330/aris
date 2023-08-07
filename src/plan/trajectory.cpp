@@ -1702,7 +1702,17 @@ namespace aris::plan {
 
 			if (s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end()) != 0) {
 				std::cout << "[debug failed] : make scurve error when use origin data" << std::endl;
-				
+				std::cout << "[debug failed] : scurve length:" << std::endl;
+				for (auto& scurve_param : ins_scurve_list.back().params_)
+					std::cout << scurve_param.pb_ - scurve_param.pa_ << std::endl;
+
+				std::cout << "[debug failed] : zone1 length:" << std::endl;
+				for (auto& p : std::prev(end)->ee_plans_)
+					std::cout << p.x_.zone1_.length_ << std::endl;
+
+
+
+
 				return -1;
 			}
 		}
