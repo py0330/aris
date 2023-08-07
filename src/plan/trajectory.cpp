@@ -1199,7 +1199,7 @@ namespace aris::plan {
 			}
 
 			if (s_scurve_cpt_T_upper(last_u.scurve_) != std::numeric_limits<double>::infinity()) {
-				std::cout << "[debug in make_zone_and_scurve] : binary search zone value " << diff <<"  last" << last_diff << std::endl;
+				//std::cout << "[debug in make_zone_and_scurve] : binary search zone value " << diff <<"  last" << last_diff << std::endl;
 				last_zone_value_upper = last_u.zone2_.zone_value_;
 				if_need_binary = true;
 			}
@@ -1211,8 +1211,11 @@ namespace aris::plan {
 			diff = last_zone_value_upper - last_zone_value_below;
 		}
 
-		if (if_need_binary)
+		if (if_need_binary) {
 			std::cout << "binary search end:" << last_zone_value_upper << "  " << last_zone_value_below << std::endl;
+		
+		}
+			
 
 
 

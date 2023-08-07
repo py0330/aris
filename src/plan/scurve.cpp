@@ -1,6 +1,6 @@
 ﻿#include"aris/plan/scurve.hpp"
 
-//#define DEBUG_ARIS_PLAN_TRAJECTORY
+#define DEBUG_ARIS_PLAN_TRAJECTORY
 
 
 namespace aris::plan {
@@ -239,7 +239,7 @@ namespace aris::plan {
     }
 
     // 考虑 pt，且必定成功，因为在计算 T 的范围时，已经考虑了 vb 的可实现性
-    auto ARIS_API s_scurve_cpt_vb_upper(const SCurveParam& param)-> double {
+    auto s_scurve_cpt_vb_upper(const SCurveParam& param)-> double {
         //%
         //% 1. 确定必然可以达到的 vb_min vb_max vc_min vc_max
         //%
@@ -1112,7 +1112,7 @@ namespace aris::plan {
     }
 
     // T_upper 与 T_below 必定会成功，T_range可能会失败
-    auto s_scurve_cpt_T_upper(const SCurveParam& param) -> double {
+    auto ARIS_API s_scurve_cpt_T_upper(const SCurveParam& param) -> double {
         const double va = param.va_;
         const double a = param.a_;
         const double j = param.j_;
@@ -1809,10 +1809,7 @@ namespace aris::plan {
         for (auto iter = begin_iter; iter != end_iter; ++iter) {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
             static int count_ = 0;
-            //std::cout << "trajectory count:" << count_ << std::endl;
-            //if (count_ >= 66)
-            //    std::cout << "debuging" << std::endl;
-
+            std::cout << "trajectory count:" << count_ << std::endl;
             count_++;
 #endif
             // STEP 1 : 计算全部末端的最大最小时间
