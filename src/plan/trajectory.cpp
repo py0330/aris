@@ -1143,7 +1143,7 @@ namespace aris::plan {
 			return;
 		}
 
-		static bool if_need_binary = false;
+		bool if_need_binary = false;
 
 		double last_zone_value_upper = last_u.zone2_.zone_value_;
 		double last_zone_value_below = 0.0;
@@ -1206,7 +1206,7 @@ namespace aris::plan {
 		}
 
 		if (if_need_binary)
-			std::cout << "binary search end" << std::endl;
+			std::cout << "binary search end:" << last_zone_value_upper << "  " << last_zone_value_below << std::endl;
 
 
 
