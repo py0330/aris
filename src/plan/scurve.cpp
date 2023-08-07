@@ -1842,8 +1842,15 @@ namespace aris::plan {
                 for (auto i = iter; iter != end_iter; ++i)
                     left_node_num++;
 
-
+                std::cout << "failed in scurve-------------------" << std::endl;
                 std::cout << "[debug failed] left node num: " << left_node_num << std::endl;
+                std::cout << "max pos:" << std::max_element(Tmaxs.begin(), Tmaxs.end()) - Tmaxs.begin() << std::endl;
+                std::cout << "min pos:" << std::max_element(Tmins.begin(), Tmins.end()) - Tmins.begin() << std::endl;
+
+
+                std::cout << "-----------------------------------" << std::endl << std::endl;
+
+
                 return -1;
             }
 
