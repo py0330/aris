@@ -1844,10 +1844,8 @@ namespace aris::plan {
 
                 std::cout << "failed in scurve-------------------" << std::endl;
                 std::cout << "[debug failed] left node num: " << left_node_num << std::endl;
-                std::cout << "max pos:" << std::max_element(Tmaxs.begin(), Tmaxs.end()) - Tmaxs.begin() << std::endl;
-                std::cout << "min pos:" << std::max_element(Tmins.begin(), Tmins.end()) - Tmins.begin() << std::endl;
-
-
+                std::cout << "max pos:" << std::min_element(Tmaxs.begin(), Tmaxs.end()) - Tmaxs.begin() << "  value: " << Tmax_all << std::endl;
+                std::cout << "min pos:" << std::max_element(Tmins.begin(), Tmins.end()) - Tmins.begin() << "  value: " << Tmin_all << std::endl;
                 std::cout << "-----------------------------------" << std::endl << std::endl;
 
 
