@@ -1836,7 +1836,7 @@ namespace aris::plan {
                 //THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
                 
                 int left_node_num = 0;
-                for (auto i = iter; iter != end_iter; ++i)
+                for (auto i = iter; i != end_iter; ++i)
                     left_node_num++;
 
                 std::cout << "failed in scurve-------------------" << std::endl;
