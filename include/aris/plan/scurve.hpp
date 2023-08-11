@@ -116,8 +116,8 @@ namespace aris::plan{
 
 
 	// 
-	auto ARIS_API s_scurve_cpt_T_upper(const SCurveParam& param) -> double;
-	auto ARIS_API s_scurve_cpt_T_below(const SCurveParam& param) -> double;
+	//auto ARIS_API s_scurve_cpt_T_upper(const SCurveParam& param) -> double;
+	//auto ARIS_API s_scurve_cpt_T_below(const SCurveParam& param) -> double;
 
 	// to be hide //
 	auto s_scurve_plan_eliminate_optimization(double vb1, SCurveParam& param1)->void;

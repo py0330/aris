@@ -1155,11 +1155,11 @@ namespace aris::plan {
 		double last_diff = std::max(1.0, 2 * diff);
 
 		// 二分法修正上个单元的 scurve，使得它可以达到 Tmax（否则可能会出现规划失败）
-		while (diff != last_diff) {
-			last_u = last_u_reserve;
-			this_u = this_u_reserve;
-			
-			last_u.zone2_.zone_value_ = (last_zone_value_upper + last_zone_value_below) / 2;
+		//while (diff != last_diff) {
+		//	last_u = last_u_reserve;
+		//	this_u = this_u_reserve;
+		//	
+		//	last_u.zone2_.zone_value_ = (last_zone_value_upper + last_zone_value_below) / 2;
 			
 			switch (last_u.type_) {
 			case Node::UnitType::Line3:
@@ -1198,18 +1198,18 @@ namespace aris::plan {
 				break;
 			}
 
-			if (s_scurve_cpt_T_upper(last_u.scurve_) != std::numeric_limits<double>::infinity()) {
-				//std::cout << "[debug in make_zone_and_scurve] : binary search zone value " << diff <<"  last" << last_diff << std::endl;
-				last_zone_value_upper = last_u.zone2_.zone_value_;
-				if_need_binary = true;
-			}
-			else {
-				last_zone_value_below = last_u.zone2_.zone_value_;
-			}
+		//	if (s_scurve_cpt_T_upper(last_u.scurve_) != std::numeric_limits<double>::infinity()) {
+		//		//std::cout << "[debug in make_zone_and_scurve] : binary search zone value " << diff <<"  last" << last_diff << std::endl;
+		//		last_zone_value_upper = last_u.zone2_.zone_value_;
+		//		if_need_binary = true;
+		//	}
+		//	else {
+		//		last_zone_value_below = last_u.zone2_.zone_value_;
+		//	}
 
-			last_diff = diff;
-			diff = last_zone_value_upper - last_zone_value_below;
-		}
+		//	last_diff = diff;
+		//	diff = last_zone_value_upper - last_zone_value_below;
+		//}
 
 		if (if_need_binary) {
 			std::cout << "binary search end:" << last_zone_value_upper << "  " << last_zone_value_below << std::endl;
@@ -1699,24 +1699,26 @@ namespace aris::plan {
 			std::cout << "[debug failed] : make scurve error" << std::endl;
 			
 			
-			// 如果失败，则改为原始数据，因为原始数据一定会成功
-			// 但是原始数据的首个节点的起始速度不对，应改为上次优化后的数据
-			for (int i = 0; i < ins_scurve_list.front().params_.size(); ++i) {
-				// param1 //
-				auto& origin_param = ins_scurve_origin_list.front().params_[i];
-				auto& param = ins_scurve_list.front().params_[i];
+			//// 如果失败，则改为原始数据，因为原始数据一定会成功
+			//// 但是原始数据的首个节点的起始速度不对，应改为上次优化后的数据
+			//for (int i = 0; i < ins_scurve_list.front().params_.size(); ++i) {
+			//	// param1 //
+			//	auto& origin_param = ins_scurve_origin_list.front().params_[i];
+			//	auto& param = ins_scurve_list.front().params_[i];
 
-				double vb = origin_param.vb_;
+			//	double vb = origin_param.vb_;
 
-				s_scurve_plan_eliminate_optimization(vb, param);
+			//	s_scurve_plan_eliminate_optimization(vb, param);
 
-				std::swap(origin_param, param);
-			}
+			//	std::swap(origin_param, param);
+			//}
 			// 交换优化 //
 			std::swap(ins_scurve_list, ins_scurve_origin_list);
 
 
 			if (s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end()) != 0) {
+				s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end());
+				
 				std::cout << "[debug failed] : make scurve error when use origin data" << std::endl;
 				std::cout << "[debug failed] : scurve length:" << std::endl;
 				for (auto& scurve_param : ins_scurve_list.back().params_)
@@ -1781,7 +1783,7 @@ namespace aris::plan {
 		}
 
 		// 优化节点 //
-		s_optimize_scurve_adjacent_nodes(ins_scurve_list.begin(), ins_scurve_list.end());
+		//s_optimize_scurve_adjacent_nodes(ins_scurve_list.begin(), ins_scurve_list.end());
 
 		// 将规划好的 scurve 返回到 nodes 中的优化后的位置 //
 		for (auto iter = begin; iter != end; ++iter) {
