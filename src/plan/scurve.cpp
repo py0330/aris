@@ -1114,20 +1114,106 @@ namespace aris::plan {
     // T_upper 与 T_below 必定会成功，T_range可能会失败
     auto ARIS_API s_scurve_cpt_T_upper(const SCurveParam& param) -> double {
         const double va = param.va_;
+        const double vb_max = param.vb_max_;
         const double a = param.a_;
         const double j = param.j_;
         const double pt = param.pb_ - param.pa_;
+        
+        const double Z1 = a * a / j;
 
-        double Z1 = a * a / j;
-        double pacc = va - 1.5 * Z1 > 0 ? 0.5 * (Z1 / 2 + va) * (Z1 / 2 + va) / a : 4.0 / 3.0 * va * safe_sqrt(2.0 / 3.0 * va / j);
-        if (pacc <= pt)
+        double T_va_to_0 = s_acc_time(va, 0, a, j);
+        double T_va_to_vbmax = s_acc_time(va, vb_max, a, j);
+
+        double l_va_to_0 = T_va_to_0 * va / 2;
+        double l_va_to_vbmax = T_va_to_vbmax * (va + vb_max) / 2;
+
+
+
+
+        //% 计算vb
+        //  因为可能有多解需要计算出距离 vb_max 最近的 vb 值
+        // 
+        // 1）在 vb >= va - a^2/j 时，此时没有匀加速段
+        //% 此时无匀加速段
+        //% 前进时间为：t = 2 * sqrt( (va-vb) / j );
+        //% 前进长度的平方为：
+        //% p^2 = (t * (va+vb)/2)^2
+        //%     =  va^3/j + (va^2*vb)/j - (va*vb^2)/j - vb^3/j
+        //% vb 需求解一元三次方程 【1,va,-va^2,pb-pa-va^3】
+        //%
+        //% vb 取尽可能大的实数
+        //% vb 的范围取自 【va/3，va】
+        // 
+        // 1.1）va/3 <= va - a^2/j
+        //   l 随 vb 在[va/3，va]单调递减，极大值位于 vb = va/3 处，极小值位于 vb = va处 
+        //   考虑 vb 应当尽量贴近 vb_max，因此不考虑 vb < va/3 时的根
+        // 
+        // 1.2）va/3 > va - a^2/j
+        //   l 随 vb 在[va - a^2/j，va]单调递减，极大值位于 vb = va - a^2/j 处，极小值位于 vb = va处
+        // 
+        // 2）在 vb <  va - a^2/j 时，此时拥有匀加速段
+        //% 此时有匀速段
+        //% 前进时间为：t = (va-vb)/a+a/j;
+        //% 前进长度为：
+        //% l = t*(va+vb)/2
+        //%   = - vb^2/(2*a) + (a*vb)/(2*j) + (va*(a/j + va/a))/2
+        //% vb 需求解一元二次方程 【
+        //%       -1/(2*a),
+        //%       a/(2*j),
+        //%       (va*(a/j + va/a))/2-pt
+        //% 】
+        //% 对于根来说，应当取大值，这是因为Tmax应该尽可能的小
+        // 其极值应当位于 a^2/(2*j) 处
+        // 
+        // 2.1）a^2/(2*j) <= va - a^2/j
+        //   l 随 vb 在[a^2/(2*j)，va - a^2/j]单调递减，极大值位于 vb = a^2/(2*j) 处，极小值位于 vb = va - a^2/j 处 
+        //   考虑 vb 应当尽量贴近 vb_max，因此不考虑 vb < a^2/(2*j) 时的根
+        // 
+        // 2.2）a^2/(2*j) >  va - a^2/j
+        //   l 随 vb 在[0, va - a^2/j]单调递增，极大值位于 vb = va - a^2/j 处，极小值位于 vb = 0处
+        // 
+        //% 【条件1】 加速度正好可以达到a时，所前进的长度
+        //% 此时 vb = - a^2/j + va
+        //% 前进时间 t = (va-vb)/a+a/j
+        //% 前进长度 l = t*(va+vb)/2 = (2*a*va)/j - a*a*a/j/j
+        
+        // CASE 1中的极大值
+        double vb = std::max(va / 3, va - a*a / j);
+        double l;
+        if (vb <= vb_max) {
+            l = s_acc_time(va, vb, a, j) * (va + vb) / 2;
+            if (l > pt) {
+                vb = newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt;}
+                , vb, va);
+                return s_acc_time(va, vb, a, j);
+            }
+        }
+
+
+        vb = std::min({ a*a / (2 * j), va - a*a / j, vb_max });
+        if (vb >= 0 && vb <= vb_max) {
+            l = s_acc_time(va, vb, a, j) * (va + vb) / 2;
+            if (l > pt) {
+                double B = -Z1;
+                double C = 2 * pt * a - va * Z1 - va * va;
+                vb = (-B + safe_sqrt(B * B - 4 * C)) / 2;
+                return s_acc_time(va, vb, a, j);
+            }
+        }
+
+        return std::numeric_limits<double>::infinity();
+
+
+        if (l_va_to_0 <= pt)
             return std::numeric_limits<double>::infinity();
+
+
+
+
+
+
         else {
-            //% 计算vb
-            //% 【条件1】 加速度正好可以达到a时，所前进的长度
-            //% 此时 vb = - a^2/j + va
-            //% 前进时间 t = (va-vb)/a+a/j
-            //% 前进长度 l = t*(va+vb)/2 = (2*a*va)/j - a*a*a/j/j
+
             if (va<a * a / j || (2 * a * va) / j - a * a * a / j / j > pt) {
                 //% 此时无匀速段
                 //% 前进时间为：t = 2 * sqrt( (va-vb) / j );
@@ -1142,6 +1228,9 @@ namespace aris::plan {
 
                 double vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((va - x) / j) * (va + x) - pt; }
                 , va / 3, va);
+
+                //double vb2 = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((va - x) / j) * (va + x) - pt; }
+                //, 0, va/3);
                 return s_acc_time(va, vb, a, j);
             }
             else {
@@ -1151,9 +1240,9 @@ namespace aris::plan {
                 //% l = t*(va+vb)/2
                 //%   = - vb^2/(2*a) + (a*vb)/(2*j) + (va*(a/j + va/a))/2
                 //% vb 需求解一元二次方程 【
-                //%       1,
-                //%       (va - a*(a/j + va/a)),
-                //%       2*(pb-pa)*a- a*va*(a/j + va/a)
+                //%       -1/(2*a),
+                //%       a/(2*j),
+                //%       (va*(a/j + va/a))/2-pt
                 //% 】
                 //% 对于根来说，应当取大值，这是因为Tmax应该尽可能的小
                 double B = -Z1;
@@ -1433,7 +1522,7 @@ namespace aris::plan {
         }
 
         // 失败
-        if (va_upper < param.va_below_) {
+        if (va_upper < param.va_below_ - 1e-10) {
             return std::make_tuple(-1.0, -1.0);
         }
 
@@ -1810,7 +1899,10 @@ namespace aris::plan {
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
             static int count_ = 0;
             std::cout << "trajectory count:" << count_ << std::endl;
+            if (count_ == 2948)
+                std::cout << "debuging" << std::endl;
             count_++;
+
 #endif
             // STEP 1 : 计算全部末端的最大最小时间
             std::vector<double> Tmaxs(iter->params_.size()), Tmins(iter->params_.size());
@@ -1831,8 +1923,10 @@ namespace aris::plan {
 
             Tmin_all = std::max(Tmin_all, T_min);
 
+            
+
             // 若起始速度过大，有可能无法规划成功 //
-            if (Tmin_all > Tmax_all){
+            if (Tmin_all > Tmax_all + 1e-10){
                 //THROW_FILE_LINE("FAILED TO REPLAN, Tmin:" + std::to_string(Tmin_all)+ "  Tmax:" + std::to_string(Tmax_all));
                 
                 int left_node_num = 0;
@@ -1845,9 +1939,16 @@ namespace aris::plan {
                 std::cout << "min pos:" << std::max_element(Tmins.begin(), Tmins.end()) - Tmins.begin() << "  value: " << Tmin_all << std::endl;
                 std::cout << "-----------------------------------" << std::endl << std::endl;
 
+                for (int i = 0; i < Tmaxs.size(); ++i) {
+                    std::tie(Tmaxs[i], Tmins[i]) = s_scurve_cpt_T_range(iter->params_[i]);
+                }
+                
 
                 return -1;
             }
+
+            if (Tmin_all > Tmax_all)
+                std::swap(Tmin_all, Tmax_all);
 
             // STEP 2 : 基于 T_below 求得 T_upper 上限
             double T_upper = Tmax_all;
