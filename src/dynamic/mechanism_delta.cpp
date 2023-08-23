@@ -670,7 +670,9 @@ namespace aris::dynamic {
 		for (int i = 1; i < 17; ++i) {
 			pee.addMarker("tool" + std::to_string(i), ee_i_pm);
 		}
-		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+		for (int i = 0; i < 33; ++i) {
+		
+		}model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), wobj_pm);
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::DeltaInverseKinematicSolver>();
