@@ -93,7 +93,7 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	auto ARIS_API createModelWaferMachine(const WaferMachineParam&param)->std::unique_ptr<aris::dynamic::Model>;
-
+	auto ARIS_API createModelWaferMachineTwoArms(const WaferMachineParam& param)->std::unique_ptr<aris::dynamic::Model>;
 
 	///
 	/// @}

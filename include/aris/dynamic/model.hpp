@@ -225,7 +225,6 @@ namespace aris::dynamic{
 		auto virtual inverseKinematics(const double* output, double* input, int which_root)const noexcept->int override;
 		auto virtual forwardKinematics(const double* input, double* output, int which_root)const noexcept->int override;
 
-
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
@@ -235,7 +234,6 @@ namespace aris::dynamic{
 		auto virtual forwardKinematicsAcc()noexcept->int override;
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
-
 
 		// EE types //
 		auto virtual eeTypes()const noexcept->const EEType* override;

@@ -40,6 +40,21 @@ void test_wafer_machine_forward_solver(){
 	aris::dynamic::dsp(1, 3, output);
 }
 void test_wafer_machine_inverse_solver(){
+	aris::dynamic::WaferMachineParam param;
+	param.a = 0.1;
+	param.b = 0.3;
+	param.c = 0.3;
+	auto m = aris::dynamic::createModelWaferMachineTwoArms(param);
+
+	double input[4]{ 0.1,0.2,0.3,0.4 };
+	m->setInputPos(input);
+
+	m->forwardKinematics();
+	m->inverseKinematics();
+
+	m->getInputPos(input);
+
+	aris::dynamic::dsp(1, 4, input);
 }
 
 void test_model_solver_wafer_machine(){
@@ -47,6 +62,8 @@ void test_model_solver_wafer_machine(){
 
 	test_wafer_machine_forward_solver();
 	test_wafer_machine_inverse_solver();
+
+
 
 	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;
 }
