@@ -641,8 +641,8 @@ namespace aris::dynamic {
 			0,0,0,1 };
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
-		auto &makI = pee.addMarker("tool0", ee_i_pm);
-		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
+		auto &makI = pee.addMarker("eei_mak", ee_i_pm);
+		auto &makJ = model->ground().addMarker("ee_j_mak", ee_j_pm);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::XyztMotion>("tool", &makI, &makJ, false);
 
@@ -667,12 +667,24 @@ namespace aris::dynamic {
 		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
 
 		// add tools and wobj //
-		for (int i = 1; i < 17; ++i) {
+		double tool_pm[16]{
+			1,0,0,xyza[0],
+			0,1,0,xyza[1],
+			0,0,1,xyza[2],
+			0,0,0,1 };
+		double wobj_pm[16]{ 
+			1,0,0,xyza[0],
+			0,1,0,xyza[1],
+			0,0,1,xyza[2],
+			0,0,0,1 };
+
+
+		for (int i = 0; i < 17; ++i) {
 			pee.addMarker("tool" + std::to_string(i), ee_i_pm);
 		}
 		for (int i = 0; i < 33; ++i) {
-		
-		}model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), wobj_pm);
+			model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), wobj_pm);
+		}
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::DeltaInverseKinematicSolver>();
