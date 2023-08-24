@@ -89,24 +89,24 @@ namespace aris::dynamic{
 	auto ARIS_API s_calib_tool_two_pnts(const double* input, double* result, double mini_angle = 0.1)noexcept->int;
 
 	enum class EEType {
-		PE313,
-		PE321,
-		PE123,
-		PQ,
-		PM,
-		RE313,
-		RE321,
-		RE123,
-		RQ,
-		RM,
-		XYZT,
-		XYZ,
-		RTZ,
-		XYT,
-		XY,
-		RT,
-		X,
-		A,
+		PE313,   // 位置与313欧拉角，6维末端，6维向量
+		PE321,   // 位置与321欧拉角，6维末端，6维向量
+		PE123,   // 位置与123欧拉角，6维末端，6维向量
+		PQ,      // 位置与四元数，   6维末端，7维向量
+		PM,      // 位置与位姿矩阵， 6维末端，16维向量
+		RE313,   // 313欧拉角，      3维末端，3维向量
+		RE321,   // 321欧拉角，      3维末端，3维向量
+		RE123,   // 123欧拉角，      3维末端，3维向量
+		RQ,      // 四元数，         3维末端，4维向量
+		RM,      // 位姿矩阵，       3维末端，9维向量
+		XYZT,    // x,y,z,theta，    4维末端，4维向量
+		XYZ,     // x,y,z，          3维末端，3维向量
+		RTZ,     // 极坐标r,theta,z，3维末端，3维向量
+		XYT,     // x,y,theta，      3维末端，3维向量
+		XY,      // x,y，            2维末端，2维向量
+		RT,      // 极坐标r,theta，  2维末端，2维向量
+		X,       // 位置x，          1维末端，1维向量
+		A,       // 角度a，          1维末端，1维向量
 		UNKNOWN,
 	};
 
