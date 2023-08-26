@@ -1339,6 +1339,7 @@ namespace aris::dynamic{
 	}
 	auto inline s_householder_up_sov(Size m, Size n, Size rhs, Size rank, const double *U, const Size *p, const double *b, double *x, double zero_check = 1e-10)noexcept->void { s_householder_up_sov(m, n, rhs, rank, U, n, p, b, rhs, x, rhs, zero_check); }
 	
+	// tbd ....
 	//    U :        m x n
 	//  tau : max(m,n) x 1
 	//    p : max(m,n) x 1

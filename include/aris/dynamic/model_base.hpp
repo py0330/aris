@@ -12,6 +12,7 @@ namespace aris::dynamic{
 		auto virtual forwardRootNumber()const->int { return 1; }
 		auto virtual whichForwardRoot(const double* input, const double* output)->int { return 0; }
 
+		// kinematics & dynamics, not set state //
 		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0)const noexcept->int { return -1; }
 		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0)const noexcept->int { return -1; }
 
@@ -24,6 +25,9 @@ namespace aris::dynamic{
 		auto virtual forwardKinematicsAcc()noexcept->int { return -1; }
 		auto virtual inverseDynamics()noexcept->int { return -1; }
 		auto virtual forwardDynamics()noexcept->int { return -1; }
+
+		// singular check //
+		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool { return false; }
 
 		// EE types //
 		auto virtual eeTypes()const noexcept->const EEType* { return nullptr; }

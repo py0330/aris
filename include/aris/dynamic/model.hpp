@@ -235,6 +235,8 @@ namespace aris::dynamic{
 		auto virtual inverseDynamics()noexcept->int override;
 		auto virtual forwardDynamics()noexcept->int override;
 
+		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
+
 		// EE types //
 		auto virtual eeTypes()const noexcept->const EEType* override;
 		auto virtual eeSize()const noexcept->aris::Size override;
@@ -418,6 +420,8 @@ namespace aris::dynamic{
 					return ret;
 			return 0;
 		}
+
+		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
 		// EE types //
 		auto virtual eeTypes()const noexcept->const EEType* override;

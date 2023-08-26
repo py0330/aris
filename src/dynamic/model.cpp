@@ -180,6 +180,20 @@ namespace aris::dynamic{
 		return -1;
 	}
 
+	auto Model::isSingular(double zero_check)noexcept->bool {
+		double U[144], tau[12]; // MAX SUPPORT 12*12
+		Size p[12], rank;
+
+		auto& u = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(this->solverPool()[1]);
+		u.cptJacobi();
+
+		s_householder_utp(u.mJf(), u.nJf(), u.Jf(), U, tau, p, rank, zero_check);
+
+		aris::dynamic::dsp(u.mJf(), u.nJf(), u.Jf());
+
+		return rank < u.nJf();
+	}
+
 	auto Model::eeTypes()const noexcept->const EEType* {
 		return imp_->ee_types_.data();
 	}
@@ -465,6 +479,15 @@ namespace aris::dynamic{
 			imp_->ee_types_.resize(imp_->ee_types_.size() + m.eeSize());
 			std::copy_n(m.eeTypes(), m.eeSize(), imp_->ee_types_.begin() + begin_idx);
 		}
+	}
+
+	auto MultiModel::isSingular(double zero_check)noexcept->bool {
+		for (auto& m : this->subModels()) {
+			if (m.isSingular(zero_check))
+				return true;
+		}
+
+		return false;
 	}
 
 	auto MultiModel::eeTypes()const noexcept->const EEType* {
