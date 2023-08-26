@@ -186,10 +186,7 @@ namespace aris::dynamic{
 
 		auto& u = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(this->solverPool()[1]);
 		u.cptJacobi();
-
 		s_householder_utp(u.mJf(), u.nJf(), u.Jf(), U, tau, p, rank, zero_check);
-
-		aris::dynamic::dsp(u.mJf(), u.nJf(), u.Jf());
 
 		return rank < u.nJf();
 	}
