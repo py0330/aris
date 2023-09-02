@@ -1494,7 +1494,7 @@ namespace aris::dynamic{
 		else {
 			for (int i = 0; i < rootNumber(); ++i) {
 				kinPosPure(motion_pos, imp_->pd_->deactive_mp_, i);
-				int pos = 0;
+				aris::Size pos = 0;
 				double this_error = 0.0;
 				for (int j = 0; j < imp_->pd_->deactive_mot_size_; ++j) {
 					this_error = std::max(this_error, imp_->pd_->deactive_mots_[j]->cptPError(imp_->pd_->deactive_mp_ + pos, answer + pos));

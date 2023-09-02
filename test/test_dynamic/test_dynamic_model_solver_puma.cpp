@@ -163,8 +163,11 @@ void test_puma_inverse_solver(){
 			if (new_m->inverseKinematics(ee_pm, input_result, i))
 				std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
-			if(new_m->whichInverseRoot(ee_pm, input_result)!=i)
+			if (new_m->whichInverseRoot(ee_pm, input_result) != i) {
+				new_m->whichInverseRoot(ee_pm, input_result);
 				std::cout << __FILE__ << __LINE__ << "which root failed" << std::endl;
+			}
+				
 
 			if (!s_is_equal(6, input_result, input_result2, 1e-10))
 			{
@@ -202,7 +205,10 @@ void test_puma_vel() {
 	m->setInputAcc(zeros);
 
 	// 计算反解，看看是否能够计算正确 //
-	if (m->inverseKinematics())std::cout << __LINE__ << "failed" << std::endl;
+	if (m->inverseKinematics()) {
+		m->inverseKinematics();
+		std::cout << __LINE__ << "failed" << std::endl;
+	}
 	if (m->inverseKinematicsVel())std::cout << __LINE__ << "failed" << std::endl;
 	if (m->inverseKinematicsAcc())std::cout << __LINE__ << "failed" << std::endl;
 

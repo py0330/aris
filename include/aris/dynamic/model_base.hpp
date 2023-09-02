@@ -13,8 +13,8 @@ namespace aris::dynamic{
 		auto virtual whichForwardRoot(const double* input, const double* output)->int { return 0; }
 
 		// kinematics & dynamics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0)const noexcept->int { return -1; }
-		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0)const noexcept->int { return -1; }
+		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0, const double *current_input = nullptr)const noexcept->int { return -1; }
+		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0, const double* current_input = nullptr)const noexcept->int { return -1; }
 
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int { return -1; }

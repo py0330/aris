@@ -33,7 +33,7 @@ namespace aris::dynamic {
 
 			auto& ee = model()->generalMotionPool()[0];
 
-			double rm_ee_wrt_ee0[9], rm_ee[9];
+			double rm_ee[9];
 			s_re2rm(ee.p(), rm_ee, "123");
 
 

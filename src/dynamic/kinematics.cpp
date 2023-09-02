@@ -32,6 +32,15 @@ namespace aris::dynamic{
 
 		return ret;
 	}
+	auto s_put_near_value(double value, double current_value, double period)->double {
+		if (std::isfinite(value) && std::isfinite(current_value) && std::isfinite(period) && period!=0) {
+			period = std::abs(period);
+			double diff_v = value - current_value;
+			auto compensate_v = std::fmod(diff_v, period);
+			return current_value + (std::abs(compensate_v) <= period/2 ? compensate_v : -s_sgn2(compensate_v)*(period - std::abs(compensate_v)));
+		}
+		return value;
+	}
 
 	auto s_sov_pnts2pm(const double* origin, Size origin_ld, const double* first_pnt, Size first_ld, const double* second_pnt, Size second_ld, double* pm_out, const char* axis_order) noexcept->void {
 		pm_out[12] = 0;
@@ -304,4 +313,49 @@ namespace aris::dynamic{
 		s_mm(2, 1, 2, inv_A, b, result);
 		return 0;
 	}
+
+
+	auto s_ik(int root_size, int root_num, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods, const double* current_root) -> int {
+		if (which_root >= root_num || which_root < 0) {
+			int solution_num = 0;
+			double max_diff_norm = std::numeric_limits<double>::infinity();
+			for (int i = 0; i < root_num; ++i) {
+				if (func(ee_pos, i, roots_mem) >= 0) {
+					// 采用 无穷 范数来比较两组向量，即只看差值最大的那一个数据
+					double this_norm = 0;
+					for (int j = 0; j < root_size; ++j) {
+						// 放置到当前根所在的周期
+						if (root_periods && current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
+							roots_mem[j] = s_put_near_value(roots_mem[j], current_root[j], root_periods[j]);
+
+						auto diff = current_root ? std::abs(roots_mem[j] - current_root[j]) : std::abs(roots_mem[j]);
+						this_norm = std::max(diff, this_norm);
+					}
+
+					if (max_diff_norm > this_norm) {
+						max_diff_norm = this_norm;
+						s_vc(root_size, roots_mem, input_pos);
+					}
+
+					++solution_num;
+				}
+			}
+			return solution_num > 0 ? 0: -1;
+		}
+		else {
+			if (func(ee_pos, which_root, input_pos) >= 0) {
+				// 贴近当前根
+				for (int j = 0; j < root_size; ++j) {
+					if (root_periods && current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
+						input_pos[j] = s_put_near_value(input_pos[j], current_root[j], root_periods[j]);
+				}
+				return 0;
+			}
+			else
+				return -2;
+		}
+
+	}
+
+
 }

@@ -165,14 +165,14 @@ namespace aris::dynamic{
 	auto Model::inverseDynamics()noexcept->int { return solverPool()[2].dynAccAndFce(); }
 	auto Model::forwardDynamics()noexcept->int { return solverPool()[3].dynAccAndFce(); }
 	
-	auto Model::inverseKinematics(const double* output, double* input, int which_root)const noexcept->int {
+	auto Model::inverseKinematics(const double* output, double* input, int which_root, const double *current_input)const noexcept->int {
 		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
 			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
 			return inv->kinPosPure(output, input, which_root);
 		}
 		return -1;
 	}
-	auto Model::forwardKinematics(const double* input, double* output, int which_root)const noexcept->int {
+	auto Model::forwardKinematics(const double* input, double* output, int which_root, const double* current_input)const noexcept->int {
 		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
 			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
 			return fwd->kinPosPure(input, output, which_root);

@@ -222,8 +222,8 @@ namespace aris::dynamic{
 		auto virtual forwardRootNumber()const->int override;
 		auto virtual whichForwardRoot(const double* input, const double* output)->int override;
 
-		auto virtual inverseKinematics(const double* output, double* input, int which_root)const noexcept->int override;
-		auto virtual forwardKinematics(const double* input, double* output, int which_root)const noexcept->int override;
+		auto virtual inverseKinematics(const double* output, double* input, int which_root, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output, int which_root, const double* current_input = nullptr)const noexcept->int override;
 
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int override;

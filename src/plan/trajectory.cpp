@@ -2221,7 +2221,7 @@ namespace aris::plan {
 				make_node(replan_num, &ins_node, &*std::prev(nodes_.end(), 2), ee_types_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 
 				// 重规划 scurve
-				auto scurve_size = aris::dynamic::getEeTypeScurveSize(ee_types_.size(), ee_types_.data());
+				auto scurve_size = aris::dynamic::s_ee_type_vel_dim(ee_types_.size(), ee_types_.data());
 				auto replan_ret = replan_nodes((int)scurve_size, ee_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
 				// 查看是否重规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。
@@ -2252,7 +2252,7 @@ namespace aris::plan {
 	}
 	auto TrajectoryGenerator::setEeTypes(const std::vector<aris::dynamic::EEType>& ee_types)->void {
 		imp_->ee_types_ = ee_types;
-		imp_->outpos_size_ = aris::dynamic::getEETypePosSize(ee_types.size(), ee_types.data());
+		imp_->outpos_size_ = aris::dynamic::s_ee_type_pos_size(ee_types.size(), ee_types.data());
 
 		auto &internal_pos_size = imp_->internal_pos_size;
 		auto& out_vel_size = imp_->outvel_size_;
@@ -2476,7 +2476,7 @@ namespace aris::plan {
 		ins_node.id_ = id;
 
 		// 初始化节点 //
-		auto scurve_size = aris::dynamic::getEeTypeScurveSize(eeTypes().size(), eeTypes().data());
+		auto scurve_size = aris::dynamic::s_ee_type_vel_dim(eeTypes().size(), eeTypes().data());
 		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
 		make_node(0, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, eeTypes(), Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());

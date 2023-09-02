@@ -7,6 +7,11 @@ namespace aris::plan {
 
 	using namespace aris::dynamic;
 
+	// 起始速度是 v0，结束速度是 v1
+	// 在该dt过程中，需要达到的平均速度是 v_avg
+	// 判断是否可行
+	//
+	// 一般来说，v_avg 是根据位置算出的，但是起始和末端的速度还有约束，因此需要判断是否能够同时满足
 	auto s_is_in_vavg_boundage(const double* v0, const double* v1, const double *v_avg, double a, double dt, double *dis = nullptr, double *r = nullptr)->bool {
 		// input check //
 		double dis_, r_;

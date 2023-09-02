@@ -21,6 +21,31 @@
 
 int main(int argc, char *argv[])
 {
+	std::cout << aris::dynamic::s_put_near_value(-4, 3, 3) << std::endl;
+	std::cout << aris::dynamic::s_put_near_value(-5, 3, 3) << std::endl;
+	std::cout << aris::dynamic::s_put_near_value(4, -3, 3) << std::endl;
+	std::cout << aris::dynamic::s_put_near_value(5, -3, 3) << std::endl;
+
+	aris::dynamic::PumaParam param;
+	param.a1 = 0.1;
+	param.d1 = 0.1;
+	param.a2 = 0.3;
+	param.a3 = 0.3;
+	param.d3 = 0.1;
+	param.d4 = 0.1;
+
+	auto m = aris::dynamic::createModelPuma(param);
+
+	m->forwardKinematics();
+
+	double output_pos[6], input_pos[6];
+	m->getOutputPos(output_pos);
+	output_pos[0] += 0.01;
+	output_pos[4] += 0.8;
+
+	m->inverseKinematics(output_pos, input_pos, 8);
+
+
 	//test_matrix();
 	//test_screw();
 	//test_spline();

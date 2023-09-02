@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iterator>
+#include <functional>
 
 #include <aris_lib_export.h>
 #include <aris/core/basic_type.hpp>
@@ -28,8 +29,13 @@ namespace aris::dynamic{
 	//                 例如 which_period =  0.0，代表返回值应该在 [ -0.5 * period ,  0.5 * period ] 中
 	//                      which_period =  0.5，代表返回值应该在 [             0 ,        period ] 中
 	//                      which_period = -2.3，代表返回值应该在 [ -2.8 * period , -1.8 * period ] 中
-	// period        : 周期值，常见的是 pi
+	// period        : 周期值，常见的是 2*pi
 	auto ARIS_API s_put_into_period(double value, double which_period, double period)->double;
+
+	// value         : 输入值
+	// current_value : 返回值应该在该值的附近，与该值的差应小于半个周期
+	// period        : 周期值，常见的是 2*pi
+	auto ARIS_API s_put_near_value(double value, double current_value, double period)->double;
 
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 	///
@@ -110,7 +116,7 @@ namespace aris::dynamic{
 		UNKNOWN,
 	};
 
-	auto inline getEETypePosSize(EEType type)noexcept->aris::Size {
+	auto inline s_ee_type_pos_size(EEType type)noexcept->aris::Size {
 		switch (type)
 		{
 		case EEType::PE313:
@@ -155,14 +161,14 @@ namespace aris::dynamic{
 			return -1;
 		}
 	}
-	auto inline getEETypePosSize(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+	auto inline s_ee_type_pos_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n; ++i) {
-			size += getEETypePosSize(ee_types[i]);
+			size += s_ee_type_pos_size(ee_types[i]);
 		}
 		return size;
 	}
-	auto inline getScurveSize(EEType type)noexcept->aris::Size {
+	auto inline s_ee_type_vel_dim(EEType type)noexcept->aris::Size {
 		switch (type)
 		{
 		case EEType::PE313:
@@ -207,13 +213,17 @@ namespace aris::dynamic{
 			return -1;
 		}
 	}
-	auto inline getEeTypeScurveSize(aris::Size n, const EEType *ee_types)noexcept->aris::Size {
+	auto inline s_ee_type_vel_dim(aris::Size n, const EEType *ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n;++i) {
-			size += getScurveSize(ee_types[i]);
+			size += s_ee_type_vel_dim(ee_types[i]);
 		}
 		return size;
 	}
+
+	using IkFunc = std::function<int(const double* ee_pos, int which_root, double* input)>;
+	auto ARIS_API s_ik(int root_size, int root_num, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods = nullptr, const double* current_root = nullptr)->int;
+
 }
 
 #endif
