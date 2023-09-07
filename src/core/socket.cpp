@@ -427,9 +427,11 @@ namespace aris::core{
 		for (;;){
 			switch (imp->type_){
 			case Type::TCP:{
-				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), sizeof(MsgHeader)) <= 0) { imp->lose_tcp(); return; }
-				if (recv_msg.size() > 0x00100000 || recv_msg.size() < 0) { imp->lose_tcp(); return; }
-				recv_msg.resize(recv_msg.size());
+				MsgHeader header;
+				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&header), sizeof(MsgHeader)) <= 0) { imp->lose_tcp(); return; }
+				if (header.msg_size_ > 0x00100000 || header.msg_size_ < 0) { imp->lose_tcp(); return; }
+				recv_msg.resize(header.msg_size_);
+				recv_msg.header() = header;
 				if (recv_msg.size() > 0 && safe_recv(imp->recv_socket_, recv_msg.data(), recv_msg.size()) <= 0) { imp->lose_tcp(); return; }
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;

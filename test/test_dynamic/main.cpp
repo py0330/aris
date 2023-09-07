@@ -45,6 +45,9 @@ int main(int argc, char *argv[])
 
 	m->inverseKinematics(output_pos, input_pos, 8);
 
+	double rq[4]{ -0.77524412650053143 ,-0.19792375003600998 ,-0.52033056221242624 ,0.29846078389934505 }, re[3];
+	aris::dynamic::s_rq2re(rq, re, "123");
+	aris::dynamic::dsp(1, 3, re);
 
 	//test_matrix();
 	//test_screw();
