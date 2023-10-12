@@ -67,21 +67,21 @@ int main(int argc, char *argv[]){
 
 
 	auto& cs = aris::server::ControlServer::instance();
-	try {
-		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh.xml");
-	}
-	catch (std::runtime_error&e) {
-		std::cout << e.what() << std::endl;
-	}
-	
-	
-	auto &m = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
-	
-	double pos[3]{ 0,0,0 };
-	double axis[3]{ 0,0,1 };
-	m.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false, false).release());
+	//try {
+	//	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\kaanh.xml");
+	//}
+	//catch (std::runtime_error&e) {
+	//	std::cout << e.what() << std::endl;
+	//}
+	//
+	//
+	//auto &m = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
+	//
+	//double pos[3]{ 0,0,0 };
+	//double axis[3]{ 0,0,1 };
+	//m.subModels().push_back(aris::dynamic::createExternalAxisModel(pos, axis, false, false).release());
 
-	auto t = m.getMotionTypes();
+	//auto t = m.getMotionTypes();
 	
 
 

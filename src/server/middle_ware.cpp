@@ -33,8 +33,14 @@ namespace aris::server {
 			{
 				//LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
 
-				// only copy if it is a str
-				if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
+				// prepare error
+				if (plan.prepareRetCode() != aris::plan::Plan::RetStatus::SUCCESS) {
+					std::vector<std::pair<std::string, std::any>> ret_js;
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.prepareRetCode()));
+					ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.prepareRetMsg())));
+					send_and_print(aris::server::parse_ret_value(ret_js));
+				}
+				else if(auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 				{
 					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.executeRetCode()));
 					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.executeRetMsg())));

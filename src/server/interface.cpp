@@ -54,7 +54,7 @@ namespace aris::server{
 		nlohmann::json js;
 
 		for (auto &key_value : ret){
-			if (auto value = std::any_cast<std::string>(&key_value.second)) std::cout << key_value.first << ":" << *value << std::endl;
+			//if (auto value = std::any_cast<std::string>(&key_value.second)) std::cout << key_value.first << ":" << *value << std::endl;
 
 
 #define ARIS_SET_TYPE(TYPE) if (auto value = std::any_cast<TYPE>(&key_value.second)) js[key_value.first] = *value; else
