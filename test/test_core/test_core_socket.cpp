@@ -180,8 +180,44 @@ void test_socket_connect_time_out() {
 }
 void test_socket()
 {
+	aris::core::Socket server, client;
+	server.setConnectType(aris::core::Socket::Type::WEB_RAW);
+	client.setConnectType(aris::core::Socket::Type::WEB_RAW);
+
+	server.startServer("5867");
+	server.setOnReceivedMsg([](aris::core::Socket*, aris::core::Msg& msg)->int {
+		std::cout << "server recv:" << std::string(msg.data(), msg.size()) << std::endl;
+		return 0;
+		});
+	client.setOnReceivedMsg([](aris::core::Socket*, aris::core::Msg& msg)->int {
+		std::cout <<"client recv:" << std::string(msg.data(), msg.size()) << std::endl;
+		return 0;
+		});
+
+	server.setOnReceivedRawData([](aris::core::Socket*, const char *data, int size)->int {
+		std::cout << "server recv:" << std::string(data, size) << std::endl;
+		return 0;
+		});
+	client.setOnReceivedRawData([](aris::core::Socket*, const char* data, int size)->int {
+		std::cout << "client recv:" << std::string(data, size) << std::endl;
+		return 0;
+		});
+
+	client.connect("127.0.0.1", "5867");
+	//client.sendMsg(aris::core::Msg("abcd"));
+	//std::this_thread::sleep_for(std::chrono::seconds(1));
+	//server.sendMsg(aris::core::Msg("abcd  5678"));
+	//client.sendMsg(aris::core::Msg("123"));
+	//server.sendMsg(aris::core::Msg("abcd  1234"));
+	//server.sendMsg(aris::core::Msg("abcd  2"));
+	//client.sendMsg(aris::core::Msg("rst"));
+	client.sendRawData("1234",5);
+	server.sendRawData("5675", 5);
+	std::this_thread::sleep_for(std::chrono::seconds(10));
+
+
 	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
-	//test_socket_multi_thread();
-	test_socket_connect_time_out();
+	test_socket_multi_thread();
+	//test_socket_connect_time_out();
 	std::cout << "-----------------test socket finished------------" << std::endl;
 }

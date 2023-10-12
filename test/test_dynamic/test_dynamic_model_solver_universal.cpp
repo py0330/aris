@@ -11,7 +11,14 @@ void test_single_body_universal(){
 	std::cout << "test single body:" << std::endl;
 
 	aris::dynamic::Model m;
-	auto &p = m.partPool().add<aris::dynamic::Part>();
+	auto &p = m.partPool().add<aris::dynamic::Part>("aaa");
+	auto &maki = p.markerPool().add<aris::dynamic::Marker>("mak_i");
+	auto& makj = m.ground().markerPool().add<aris::dynamic::Marker>("mak_j");
+
+	m.init();
+	m.forcePool().add<aris::dynamic::SingleComponentForce>("ssss", &maki, &makj);
+
+
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 	m.init();
 
@@ -173,9 +180,9 @@ void test_float_5_bar_universal()
 void test_model_solver_universal()
 {
 	std::cout << std::endl << "-----------------test model solver universal---------------------" << std::endl;
-	//test_single_body_universal();
-	test_float_5_bar_universal();
-	test_servo_press_universal();
+	test_single_body_universal();
+	//test_float_5_bar_universal();
+	//test_servo_press_universal();
 
 	std::cout << "-----------------test model solver universal------------" << std::endl << std::endl;
 }

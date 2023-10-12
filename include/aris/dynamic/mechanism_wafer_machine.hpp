@@ -93,6 +93,35 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	auto ARIS_API createModelWaferMachine(const WaferMachineParam&param)->std::unique_ptr<aris::dynamic::Model>;
+	
+	class ARIS_API WaferMachineInverseKinematicSolverTwoArm :public aris::dynamic::InverseKinematicSolver {
+	public:
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPos()->int override;
+		auto virtual kinPosPure(const double* output, double* input, int which_root)->int override;
+
+		virtual ~WaferMachineInverseKinematicSolverTwoArm();
+		explicit WaferMachineInverseKinematicSolverTwoArm();
+		ARIS_DECLARE_BIG_FOUR(WaferMachineInverseKinematicSolverTwoArm);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	class ARIS_API WaferMachineForwardKinematicSolverTwoArm :public aris::dynamic::ForwardKinematicSolver {
+	public:
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPos()->int override;
+		auto virtual kinPosPure(const double* output, double* input, int which_root)->int override;
+
+		virtual ~WaferMachineForwardKinematicSolverTwoArm();
+		explicit WaferMachineForwardKinematicSolverTwoArm();
+		ARIS_DECLARE_BIG_FOUR(WaferMachineForwardKinematicSolverTwoArm);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 	auto ARIS_API createModelWaferMachineTwoArms(const WaferMachineParam& param)->std::unique_ptr<aris::dynamic::Model>;
 
 	///

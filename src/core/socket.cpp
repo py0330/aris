@@ -492,15 +492,17 @@ namespace aris::core{
 					// 获取掩码
 					bool mask_flag = (web_head[1] & 0x80) == 0x80; // 是否包含掩码    
 					char masks[4];
-					if (safe_recv(imp->recv_socket_, masks, 4) <= 0) { imp->lose_tcp(); return; }
+					if (mask_flag && safe_recv(imp->recv_socket_, masks, 4) <= 0) { imp->lose_tcp(); return; }
 
 					// 用掩码读取出数据 //
 					auto last_size = payload_data.size();
 					payload_data.resize(payload_data.size() + static_cast<std::size_t>(payload_len));
 					if (safe_recv(imp->recv_socket_, payload_data.data() + last_size, static_cast<int>(payload_len)) <= 0) { imp->lose_tcp(); return; }
 
-					for (int i{ 0 }; i<payload_len; ++i){
-						payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
+					if (mask_flag) {
+						for (int i{ 0 }; i < payload_len; ++i) {
+							payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
+						}
 					}
 				}
 
@@ -570,15 +572,17 @@ namespace aris::core{
 					// 获取掩码
 					bool mask_flag = (web_head[1] & 0x80) == 0x80; // 是否包含掩码    
 					char masks[4];
-					if (safe_recv(imp->recv_socket_, masks, 4) <= 0) { imp->lose_tcp(); return; }
+					if (mask_flag && safe_recv(imp->recv_socket_, masks, 4) <= 0) { imp->lose_tcp(); return; }
 
 					// 用掩码读取出数据 //
 					auto last_size = payload_data.size();
 					payload_data.resize(payload_data.size() + static_cast<std::size_t>(payload_len));
 					if (safe_recv(imp->recv_socket_, payload_data.data() + last_size, static_cast<int>(payload_len)) <= 0) { imp->lose_tcp(); return; }
 
-					for (int i{ 0 }; i<payload_len; ++i){
-						payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
+					if (mask_flag) {
+						for (int i{ 0 }; i < payload_len; ++i) {
+							payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
+						}
 					}
 				}
 

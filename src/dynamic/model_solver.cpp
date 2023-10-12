@@ -1444,8 +1444,11 @@ namespace aris::dynamic{
 				double fsI[6], fsJ[6];
 				fce.cptGlbFs(fsI, fsJ);
 
-				s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
-				s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
+				if (&fce.makI()->fatherPart() != &model()->ground()) 
+					s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
+				
+				if (&fce.makJ()->fatherPart() != &model()->ground())
+					s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
 			}
 		}
 
@@ -1673,8 +1676,11 @@ namespace aris::dynamic{
 					if (fce.active()){
 						double fsI[6], fsJ[6];
 						fce.cptGlbFs(fsI, fsJ);
-						s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
-						s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
+						if (&fce.makI()->fatherPart() != &model()->ground())
+							s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
+						
+						if (&fce.makJ()->fatherPart() != &model()->ground())
+							s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
 					}
 				}
 				
