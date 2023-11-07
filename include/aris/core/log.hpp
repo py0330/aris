@@ -114,6 +114,7 @@ namespace aris::core{
 
 	// 返回当前程序的文件名，例如：C:/program/abc.exe -> abc
 	auto ARIS_API logExeName()->std::string;
+	auto ARIS_API logExeDirectory()->std::filesystem::path;
 	// 返回时间格式 "%Y-%m-%d--%H-%M-%S"
 	auto ARIS_API logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
 	auto ARIS_API dateFormat(const std::chrono::system_clock::time_point &time)->std::string;

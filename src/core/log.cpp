@@ -128,7 +128,7 @@ namespace aris::core{
 	auto setDefaultLogDirectory(const std::filesystem::path &log_dir)->void {
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
-		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute("log") : std::filesystem::absolute(log_dir);
+		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute(logExeDirectory() / "log") : std::filesystem::absolute(log_dir);
 		std::filesystem::create_directories(log_dir_path_);
 	}
 	auto defaultLogDirectory()->std::filesystem::path {
@@ -258,6 +258,55 @@ namespace aris::core{
 #endif
 		return std::string(proName);
 
+	}
+	auto logExeDirectory() -> std::filesystem::path {
+		const int TASK_NAME_LEN = 1024;
+#ifdef WIN32
+		char path[TASK_NAME_LEN] = { 0 };
+		GetModuleFileName(NULL, path, TASK_NAME_LEN);
+
+		char* p = strrchr(path, '\\');
+
+		
+
+		if (p == nullptr)
+			THROW_FILE_LINE("windows can't identify the program name");
+
+		return std::string(path, p - path);
+#endif
+
+#ifdef UNIX
+		int count = 0;
+		int nIndex = 0;
+		char path[TASK_NAME_LEN] = { 0 };
+		char cParam[100] = { 0 };
+		char* proName = path;
+
+		pid_t pId = getpid();
+		sprintf(cParam, "/proc/%d/exe", pId);
+		count = readlink(cParam, path, TASK_NAME_LEN);
+
+		if (count < 0 || count >= TASK_NAME_LEN)
+		{
+			THROW_FILE_LINE("Current System Not Surport Proc.\n");
+		}
+		else
+		{
+			nIndex = count - 1;
+
+			for (; nIndex >= 0; nIndex--)
+			{
+				if (path[nIndex] == '/')
+				{
+					nIndex++;
+					proName += nIndex;
+					break;
+				}
+			}
+		}
+		return std::string(path, nIndex);
+#endif
+		//
 	}
 	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string{
 		auto time_t_var = std::chrono::system_clock::to_time_t(time);

@@ -108,7 +108,7 @@ int main(int argc, char *argv[]){
 
 	std::cout << aris::core::toXmlString(cs) << std::endl;
 
-	
+	std::cout << aris::core::logExeDirectory() << std::endl;
 
 	//cs.resetModel(new aris::dynamic::Model);
 	//cs.resetPlanRoot(new aris::plan::PlanRoot);
