@@ -423,6 +423,9 @@ namespace aris::plan{
 
 		explicit Show(const std::string &name = "show");
 		ARIS_DECLARE_BIG_FOUR(Show);
+
+	private:
+		std::vector<double> ee_pos_;
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
 	/// 

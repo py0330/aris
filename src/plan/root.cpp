@@ -687,7 +687,7 @@ namespace aris::plan{
 		if (count() == 1){
 			for (Size i = 0; i < controller()->motorPool().size(); ++i){
 				if (imp_->active_motor[i]){
-					imp_->axis_begin_pos_vec[i] = controller()->motorPool().at(i).actualPos();
+					imp_->axis_begin_pos_vec[i] = controller()->motorPool().at(i).targetPos();
 				}
 			}
 		}
@@ -797,11 +797,12 @@ namespace aris::plan{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
-	auto Show::prepareNrt()->void{	for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; }
+	auto Show::prepareNrt()->void{	
+		ee_pos_.resize(model()->outputPosSize());
+		for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; 
+	}
 	auto Show::executeRT()->int{
-		double ee[6];
-		
-		model()->getOutputPos(ee);
+		model()->getOutputPos(ee_pos_.data());
 
 		master()->mout() << "controller pos: ";
 		for (auto &m : controller()->motorPool()){
@@ -813,7 +814,7 @@ namespace aris::plan{
 		}
 		master()->mout() << "\nmodel ee      : ";
 		for (int i = 0; i < model()->outputPosSize(); ++i) {
-			master()->mout() << std::setprecision(15) << ee[i] << "   ";
+			master()->mout() << std::setprecision(15) << ee_pos_[i] << "   ";
 		}
 		master()->mout() << std::endl;
 		return 0;

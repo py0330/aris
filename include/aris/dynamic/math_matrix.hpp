@@ -302,7 +302,7 @@ namespace aris::dynamic{
 
 	template <typename T, typename TType>
 	auto inline dsp(Size m, Size n, const T *data, TType d_t)noexcept->void{
-		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(16);
+		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(6);
 
 		std::cout << std::endl;
 		for (Size i = 0; i < m; i++){
@@ -3066,8 +3066,50 @@ namespace aris::dynamic{
 		s_svd(m, n, A, n, U, m, S, n, V, n, zero_check);
 	}
 
+	// using quadprog to solve the qp problem
+	// // G, CE, CI, g, ce, ci, n = 2 is torque and m = 3 is accelerate.
+	//  min x^T*G*x + g^T*x    G is (n*n), g is (n*1)
+	//      CE^T*x + ce = 0;  CE is (n*p), ce is (p*1)
+	//		CI^T x + ci >= 0; ci is (n*m), ci is (m*1);
+	//auto inline s_qp(const Eigen::MatrixXd& dataG, const Eigen::MatrixXd& dataCE, const Eigen::MatrixXd& dataCI,
+	//	const Eigen::VectorXd& datag, const Eigen::VectorXd& datace, const Eigen::VectorXd& dataci,
+	//	const int n, const int m)->void;
+	//template<typename GType, typename gType, typename CEType, typename ceType, typename CIType, typename ciType, typename xType>
+	//auto inline s_qp(Size n, Size m, Size p,
+	//	const double *G, const double *g, 
+	//	const double *CE, const double *ce, 
+	//	const double *CI, const double *ci,
+	//	double *x)->void;
 
+	//	The problem is in the form:
+	//
+	//min 0.5 * x G x + g0 x
+	//s.t.
+	//    CE^T x + ce0 =  0
+	//    CI^T x + ci0 >= 0
+	//	 
+	// The matrix and vectors dimensions are as follows:
+	//    G : nG * nG
+	//	  g0: nG
+	//				
+	//    CE: nCE * nCE
+	//	 ce0: nCE
+	//				
+	//	  CI: nCI * nCI
+	//   ci0: nCI
+	//
+	//     x: nG
+	auto ARIS_API s_qp(Size nG, Size nCE, Size nCI,
+		const double* G, const double* g,
+		const double* CE, const double* ce,
+		const double* CI, const double* ci,
+		double* x)->double;
 
+	auto ARIS_API s_qp2(Size nG, Size nCE, Size nCI,
+		double* G, double* g,
+		double* CE, double* ce,
+		double* CI, double* ci,
+		double* x)->double;
 
 	// find plane using point clouds //
 	//    n : point number

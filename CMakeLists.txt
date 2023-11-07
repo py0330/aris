@@ -95,8 +95,8 @@ link_directories(${RELY_LINK_DIR})
 ## build targets ##
 include (GenerateExportHeader) 
 foreach(target robot server plan dynamic control sensor core ext)
-	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
-	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.h ${HEADERS})
+	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h include/aris/${target}/*.hh)
+	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.cc  src/${target}/*.hh src/${target}/*.h ${HEADERS})
 	add_library(aris_${target} OBJECT ${HEADERS} ${SOURCES})
 	target_compile_definitions(aris_${target} PRIVATE aris_lib_EXPORTS)
 	target_include_directories(aris_${target}
