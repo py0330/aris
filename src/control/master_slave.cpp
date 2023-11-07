@@ -224,7 +224,7 @@ namespace aris::control {
 						file.open(raw_name, std::ios::out | std::ios::trunc);
 					}
 					else if (!msg.empty()) {
-						if (file.is_open())file << msg.toString();
+						if (file.is_open())file << msg.toString() << std::flush;
 					}
 				}
 				else if (imp_->mout_pipe_.recvMsg(msg)) {
