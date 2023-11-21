@@ -42,19 +42,40 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 			continue;
 		}
 
+		// 再次正解，应该得到类似的值 //
+		int root_found = 0;
+		for (; root_found < m.forwardRootNumber(); ++root_found) {
+			std::vector<double> current_output(m.outputPosSize());
+			std::vector<double> current_input(m.inputPosSize());
+			m.getInputPos(current_input.data());
 
-		// 再次正解，理应得到同样的反解值 //
-		if (m.forwardKinematics()) {
-			std::cout << __FILE__ << __LINE__ << " failed forward kinematics again" << std::endl;
-			continue;
+			auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), root_found, current_output.data());
+			if (ret == 0
+				&& aris::dynamic::s_is_finite(m.outputPosSize(), output_compare.data())
+				&& aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error))
+			{
+				break;
+			}
 		}
-
-
-		// 比较两次的末端位置
-		m.getOutputPos(output_compare.data());
-		if (!aris::dynamic::s_is_finite(m.outputPosSize(), output.data())
-			|| !aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error))
+		if (root_found >= m.forwardRootNumber())
 		{
+			for (root_found = 0; root_found < m.forwardRootNumber(); ++root_found) {
+				std::vector<double> current_output(m.outputPosSize());
+				std::vector<double> current_input(m.inputPosSize());
+				m.getInputPos(current_input.data());
+				m.getOutputPos(current_output.data());
+
+				auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), root_found, current_output.data());
+				if (ret == 0
+					&& aris::dynamic::s_is_finite(m.outputPosSize(), output_compare.data())
+					&& aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error))
+				{
+					break;
+				}
+			}
+
+
+
 			m.setInputPos(input.data());
 			m.forwardKinematics();
 
@@ -64,7 +85,6 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 			aris::dynamic::dsp(1, m.outputPosSize(), output_compare.data());
 			continue;
 		}
-
 	}
 
 	return 0;

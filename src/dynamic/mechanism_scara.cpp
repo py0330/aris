@@ -265,147 +265,52 @@ namespace aris::dynamic{
 		}
 	}
 	auto ScaraInverseKinematicSolver::kinPos()->int {
-		const int ROOT_NUM = 2;
-		const int ROOT_SIZE = 4;
-		if (whichRoot() == rootNumber()) {
-			int solution_num = 0;
-			double diff_q[ROOT_NUM][ROOT_SIZE];
-			double diff_norm[ROOT_NUM];
+		double output_pos[4], input_pos[4], current_input_pos[4];
+		model()->getOutputPos(output_pos);
+		model()->getInputPos(current_input_pos);
 
-			for (int i = 0; i < ROOT_NUM; ++i) {
-				double output[ROOT_SIZE];
-				model()->getOutputPos(output);
+		if (auto ret = kinPosPure(output_pos, input_pos, whichRoot()))
+			return ret;
 
-				if (scaraInverse(imp_->scara_param, output, i, diff_q[solution_num]) == 0) {
-					diff_norm[solution_num] = 0;
-
-					for (auto j : { 0,1,3 }) {
-						if (!std::isfinite(model()->motionPool()[j].mpInternal())) {
-							model()->motionPool()[j].setMpInternal(0.0);
-						}
-						diff_q[solution_num][j] = std::fmod(diff_q[solution_num][j] - model()->motionPool()[j].mpInternal(), 2 * PI);
-
-						// 如果是 2 的话，忽略轴的范围，选择最近的可达解 //
-						if (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
-						if (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
-
-						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
-					}
-
-					// 对3轴抵消4轴的pitch影响 //
-					diff_q[solution_num][2] -= model()->motionPool()[2].mpInternal()
-						+ (model()->motionPool()[3].mpInternal() + diff_q[solution_num][3]) / 2 / PI
-						* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
-
-					++solution_num;
-				}
-			}
-
-			if (solution_num == 0) return -1;
-
-			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
-
-			// link1~4 //
-			double pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-			if (&imp_->J1->makI()->fatherPart() == imp_->L1) {
-				pe[5] = model()->motionPool()[0].mpInternal() + diff_q[real_solution][0];
-				imp_->J1->makI()->setPe(*imp_->J1->makJ(), pe, "123");
+		for (aris::Size i = 0; i < 4; ++i) {
+			if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
+				double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+				double pe[6]{ 0, 0, 0, 0, 0, input_pos[i] };
+				s_pe2pm(pe, pm_rot);
+				s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+				s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
+				imp_->parts[i + 1]->setPm(pm_prt_i);
 			}
 			else {
-				pe[5] = -model()->motionPool()[0].mpInternal() - diff_q[real_solution][0];
-				imp_->J1->makJ()->setPe(*imp_->J1->makI(), pe, "123");
+				double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+				double pe[6]{ 0, 0, 0, 0, 0, -input_pos[i] };
+				s_pe2pm(pe, pm_rot);
+				s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+				s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
+				imp_->parts[i + 1]->setPm(pm_prt_j);
 			}
-
-			if (&imp_->J2->makI()->fatherPart() == imp_->L2) {
-				pe[5] = model()->motionPool()[1].mpInternal() + diff_q[real_solution][1];
-				imp_->J2->makI()->setPe(*imp_->J2->makJ(), pe, "123");
-			}
-			else {
-				pe[5] = -model()->motionPool()[1].mpInternal() - diff_q[real_solution][1];
-				imp_->J2->makJ()->setPe(*imp_->J2->makI(), pe, "123");
-			}
-
-			pe[5] = 0.0;
-			if (&imp_->J3->makI()->fatherPart() == imp_->L3) {
-				pe[2] = model()->motionPool()[2].mpInternal() + diff_q[real_solution][2];
-				imp_->J3->makI()->setPe(*imp_->J3->makJ(), pe, "123");
-			}
-			else {
-				pe[2] = -model()->motionPool()[2].mpInternal() - diff_q[real_solution][2];
-				imp_->J3->makJ()->setPe(*imp_->J3->makI(), pe, "123");
-			}
-			
-			if (&imp_->J4->makI()->fatherPart() == imp_->L4) {
-				pe[2] = (model()->motionPool()[3].mpInternal() + diff_q[real_solution][3]) / 2 / PI
-					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
-				pe[5] = model()->motionPool()[3].mpInternal() + diff_q[real_solution][3];
-				imp_->J4->makI()->setPe(*imp_->J4->makJ(), pe, "123");
-			}
-			else {
-				pe[2] = -(model()->motionPool()[3].mpInternal() + diff_q[real_solution][3]) / 2 / PI
-					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
-				pe[5] = -model()->motionPool()[3].mpInternal() - diff_q[real_solution][3];
-				imp_->J4->makJ()->setPe(*imp_->J4->makI(), pe, "123");
-			}
-
-			for (auto& m : model()->motionPool()) m.updP();
-			return 0;
 		}
-		else {
-			double input[4], output[4];
-			model()->getOutputPos(output);
-			if (auto ret = scaraInverse(imp_->scara_param, output, whichRoot(), input))
-				return ret;
 
-			// link1~4 //
-			double pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-			if (&imp_->J1->makI()->fatherPart() == imp_->L1) {
-				pe[5] = input[0];
-				imp_->J1->makI()->setPe(*imp_->J1->makJ(), pe, "123");
-			}
-			else {
-				pe[5] = -input[0];
-				imp_->J1->makJ()->setPe(*imp_->J1->makI(), pe, "123");
-			}
-
-			if (&imp_->J2->makI()->fatherPart() == imp_->L2) {
-				pe[5] = input[1];
-				imp_->J2->makI()->setPe(*imp_->J2->makJ(), pe, "123");
-			}
-			else {
-				pe[5] = -input[1];
-				imp_->J2->makJ()->setPe(*imp_->J2->makI(), pe, "123");
-			}
-
-			pe[5] = 0.0;
-			if (&imp_->J3->makI()->fatherPart() == imp_->L3) {
-				pe[2] = input[2];
-				imp_->J3->makI()->setPe(*imp_->J3->makJ(), pe, "123");
-			}
-			else {
-				pe[2] = -input[2];
-				imp_->J3->makJ()->setPe(*imp_->J3->makI(), pe, "123");
-			}
-
-			if (&imp_->J4->makI()->fatherPart() == imp_->L4) {
-				pe[2] = input[3] / 2 / PI
-					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
-				pe[5] = input[3];
-				imp_->J4->makI()->setPe(*imp_->J4->makJ(), pe, "123");
-			}
-			else {
-				pe[2] = -input[3] / 2 / PI
-					* dynamic_cast<ScrewJoint&>(model()->jointPool()[3]).pitch();
-				pe[5] = -input[3];
-				imp_->J4->makJ()->setPe(*imp_->J4->makI(), pe, "123");
-			}
-
-			for (auto& m : model()->motionPool()) m.updP();
-			return 0;
+		// 设置电机位置 //
+		for (aris::Size i = 0; i < 4; ++i) {
+			imp_->motions[i]->setMpInternal(input_pos[i]);
 		}
+
+		return 0;
 	}
 	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
-		return scaraInverse(imp_->scara_param, output, which_root, input);
+		double current_input_pos[4]{}, root_mem[4]{};
+		const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,std::numeric_limits<double>::infinity()};
+
+		for (int i = 0; i < 4; ++i)
+			current_input_pos[i] = model()->motionPool()[i].mpInternal();
+
+		auto ik = [this](const double* ee_pos, int which_root, double* input)->int {
+			return scaraInverse(imp_->scara_param, ee_pos, which_root, input);
+		};
+
+		return s_ik(4, rootNumber(), ik, which_root, output, input, root_mem, input_period, current_input_pos);
+
 	}
 	ScaraInverseKinematicSolver::~ScaraInverseKinematicSolver() = default;
 	ScaraInverseKinematicSolver::ScaraInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {

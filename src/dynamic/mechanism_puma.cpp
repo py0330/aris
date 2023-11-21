@@ -416,14 +416,16 @@ namespace aris::dynamic{
 		for (aris::Size i = 0; i < 6; ++i) {
 			if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 				double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-				s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, input_pos[i]}.data(), pm_rot);
+				double pe[6]{ 0, 0, 0, 0, 0, input_pos[i] };
+				s_pe2pm(pe, pm_rot);
 				s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
 				s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 				imp_->parts[i + 1]->setPm(pm_prt_i);
 			}
 			else {
 				double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-				s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -input_pos[i]}.data(), pm_rot);
+				double pe[6]{ 0, 0, 0, 0, 0, -input_pos[i] };
+				s_pe2pm(pe, pm_rot);
 				s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
 				s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
 				imp_->parts[i + 1]->setPm(pm_prt_j);

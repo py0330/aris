@@ -53,7 +53,7 @@ namespace aris::dynamic {
 				return -2;
 
 			input[i] =
-				0x01 << which_root ?
+				((0x01 << i) & which_root) ?
 				-std::atan2(z, k) + std::atan2(c, b) - std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0) :
 				-std::atan2(z, k) + std::atan2(c, b) + std::acos((bc * bc + l * l - d1 * d1) / bc / l / 2.0);
 		}
@@ -253,6 +253,11 @@ namespace aris::dynamic {
 
 			double v1[4], v2[4];
 
+			if (B * B - 4 * A * C < 0.0) {
+				return -1;
+			}
+
+
 			v1[p[3]] = (-B - std::sqrt(B * B - 4 * A * C)) / 2.0 / A;
 			v1[p[0]] = b[0] + b[1] * v1[p[3]];
 			v1[p[1]] = b[2] + b[3] * v1[p[3]];
@@ -295,16 +300,14 @@ namespace aris::dynamic {
 	class DeltaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver {
 	public:
 		auto virtual kinPos()->int override {
-			double input[4], output[4];
+			double input_pos[4], output_pos[4];
 
-			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
-
-			model()->getOutputPos(output);
-			if (auto ret = deltaInverse(dh, output, 0, input))
+			model()->getOutputPos(output_pos);
+			if (auto ret = kinPosPure(output_pos, input_pos, whichRoot()))
 				return ret;
 
 			// ee //
-			double pe[6]{ output[0],output[1],output[2],output[3], 0.0, 0.0 }, pp[3];
+			double pe[6]{ output_pos[0],output_pos[1],output_pos[2],output_pos[3], 0.0, 0.0 }, pp[3];
 			model()->generalMotionPool()[0].makI()->setPe(*model()->generalMotionPool()[0].makJ(), pe, "321");
 
 			// up //
@@ -314,15 +317,15 @@ namespace aris::dynamic {
 
 			// link1 //
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[0];
+			pe[5] = input_pos[0];
 			model()->jointPool()[0].makI()->setPe(*model()->jointPool()[0].makJ(), pe, "123");
 
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[1];
+			pe[5] = input_pos[1];
 			model()->jointPool()[5].makI()->setPe(*model()->jointPool()[5].makJ(), pe, "123");
 
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[2];
+			pe[5] = input_pos[2];
 			model()->jointPool()[10].makI()->setPe(*model()->jointPool()[10].makJ(), pe, "123");
 
 			// link2&3 //
@@ -357,7 +360,7 @@ namespace aris::dynamic {
 		}
 		auto virtual kinPosPure(const double* output, double* input, int which_root)->int override {
 			double current_input_pos[4]{}, root_mem[4]{};
-			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2};
+			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
 
 			for (int i = 0; i < 4; ++i)
 				current_input_pos[i] = model()->motionPool()[i].mpInternal();
@@ -370,7 +373,10 @@ namespace aris::dynamic {
 			return s_ik(4, rootNumber(), ik, which_root, output, input, root_mem, input_period, current_input_pos);
 		}
 
-		DeltaInverseKinematicSolver() = default;
+		DeltaInverseKinematicSolver() {
+			setWhichRoot(8);
+			setRootNumber(8);
+		}
 	};
 	class DeltaForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
 	public:
@@ -435,8 +441,25 @@ namespace aris::dynamic {
 			for (auto &m : model()->generalMotionPool()) m.updP();
 			return 0;
 		}
+		auto virtual kinPosPure(const double* output, double* input, int which_root)->int override {
+			double current_output_pos[4]{}, root_mem[4]{};
+			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
 
-		DeltaForwardKinematicSolver() = default;
+			model()->getOutputPos(current_output_pos);
+
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+			auto ik = [this, dh](const double* ee_pos, int which_root, double* input)->int {
+				return deltaForward(dh, ee_pos, which_root, input);
+			};
+
+			return s_ik(4, rootNumber(), ik, which_root, output, input, root_mem, input_period, current_output_pos);
+		}
+
+
+		DeltaForwardKinematicSolver() {
+			setWhichRoot(2);
+			setRootNumber(2);
+		}
 	};
 
 	auto ARIS_API createModelDelta(const DeltaParam &param)->std::unique_ptr<aris::dynamic::Model> {

@@ -420,96 +420,62 @@ namespace aris::dynamic
 		}
 	}
 	auto UrInverseKinematicSolver::kinPos()->int {
-		if (whichRoot() == rootNumber()) {
-			int solution_num = 0;
-			double diff_q[8][6];
-			double diff_norm[8];
+		double output_pos[16], input_pos[6], current_input_pos[6];
+		model()->getOutputPos(output_pos);
+		model()->getInputPos(current_input_pos);
 
-			for (int i = 0; i < 8; ++i) {
-				if (inverseUr(imp_->puma_param, *imp_->EE->mpm(), i, diff_q[solution_num]) == 0) {
-					diff_norm[solution_num] = 0;
-					for (int j = 0; j < 6; ++j) {
-						if (!std::isfinite(imp_->motions[j]->mpInternal())) {
-							imp_->motions[j]->setMpInternal(0.0);
-						}
-						diff_q[solution_num][j] = std::fmod(diff_q[solution_num][j] - imp_->motions[j]->mpInternal(), 2 * PI);
-
-						// 如果是8 的话，忽略轴的范围，选择最近的可达解 //
-						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
-						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
-
-						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
-					}
-
-					++solution_num;
-				}
+		if (auto ret = kinPosPure(output_pos, input_pos, whichRoot()))
+			return ret;
+		
+		// 设置所有杆件位置 //
+		for (aris::Size i = 0; i < 6; ++i) {
+			if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
+				double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+				double pe[6]{ 0, 0, 0, 0, 0, input_pos[i] };
+				s_pe2pm(pe, pm_rot);
+				s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+				s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
+				imp_->parts[i + 1]->setPm(pm_prt_i);
 			}
-
-			if (solution_num == 0) return -1;
-
-			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
-
-			for (aris::Size i = 0; i < 6; ++i) {
-				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
-					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
-					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
-					imp_->parts[i + 1]->setPm(pm_prt_i);
-				}
-				else {
-					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
-					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
-					imp_->parts[i + 1]->setPm(pm_prt_j);
-				}
-
-				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
+			else {
+				double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+				double pe[6]{ 0, 0, 0, 0, 0, -input_pos[i] };
+				s_pe2pm(pe, pm_rot);
+				s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+				s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
+				imp_->parts[i + 1]->setPm(pm_prt_j);
 			}
-
-			return 0;
 		}
-		else {
-			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), whichRoot(), q) == 0) {
-				for (aris::Size i = 0; i < 6; ++i) {
-					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
-						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
-						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
-						imp_->parts[i + 1]->setPm(pm_prt_i);
-					}
-					else {
-						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
-						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
-						imp_->parts[i + 1]->setPm(pm_prt_j);
-					}
 
-					double last_mp = imp_->motions[i]->mpInternal();
-					imp_->motions[i]->updP();
-					imp_->motions[i]->setMpInternal(q[i]);
-				}
-
-				return 0;
-			}
-			else return -2;
+		// 设置电机位置 //
+		for (aris::Size i = 0; i < 6; ++i) {
+			imp_->motions[i]->setMpInternal(input_pos[i]);
 		}
 	};
 	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
-		double mpm[16];
+		double current_input_pos[6]{}, ee_pos[16]{}, root_mem[6]{};
 
 		switch (imp_->EE->poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, mpm, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, mpm, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, mpm, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, mpm); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, mpm); break;
+		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, ee_pos, "123"); break;
+		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, ee_pos, "321"); break;
+		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, ee_pos, "313"); break;
+		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, ee_pos); break;
+		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, ee_pos); break;
 		}
 
-		return inverseUr(imp_->puma_param, mpm, which_root, input);
+		const double input_period[6]{
+			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,
+		};
+
+		for (int i = 0; i < 6; ++i)
+			current_input_pos[i] = model()->motionPool()[i].mpInternal();
+
+		auto ik = [this](const double* ee_pos, int which_root, double* input)->int {
+			return inverseUr(this->imp_->puma_param, ee_pos, which_root, input);
+		};
+
+		return s_ik(6, rootNumber(), ik, which_root, ee_pos, input, root_mem, input_period, current_input_pos);
+
 	}
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
 	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
