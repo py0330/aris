@@ -405,10 +405,7 @@ namespace aris::dynamic{
 		}
 	}
 	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
-		if (scaraInverse(imp_->scara_param, output, which_root, input))
-			return 0;
-		else
-			return 1;
+		return scaraInverse(imp_->scara_param, output, which_root, input);
 	}
 	ScaraInverseKinematicSolver::~ScaraInverseKinematicSolver() = default;
 	ScaraInverseKinematicSolver::ScaraInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {

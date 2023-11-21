@@ -426,7 +426,7 @@ namespace aris::dynamic
 			double diff_norm[8];
 
 			for (int i = 0; i < 8; ++i) {
-				if (inverseUr(imp_->puma_param, *imp_->EE->mpm(), i, diff_q[solution_num])) {
+				if (inverseUr(imp_->puma_param, *imp_->EE->mpm(), i, diff_q[solution_num]) == 0) {
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 6; ++j) {
 						if (!std::isfinite(imp_->motions[j]->mpInternal())) {
@@ -471,7 +471,7 @@ namespace aris::dynamic
 			return 0;
 		}
 		else {
-			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), whichRoot(), q)) {
+			if (double q[6]; inverseUr(imp_->puma_param, *imp_->EE->mpm(), whichRoot(), q) == 0) {
 				for (aris::Size i = 0; i < 6; ++i) {
 					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
@@ -509,10 +509,7 @@ namespace aris::dynamic
 		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, mpm); break;
 		}
 
-		if (inverseUr(imp_->puma_param, mpm, which_root, input))
-			return 0;
-		else
-			return 1;
+		return inverseUr(imp_->puma_param, mpm, which_root, input);
 	}
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
 	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {

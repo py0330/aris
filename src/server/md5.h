@@ -34,6 +34,7 @@ documentation and/or software.
 #define BZF_MD5_H
 
 #include <cstring>
+#include <cstdint>
 #include <iostream>
 
 

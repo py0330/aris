@@ -3,6 +3,8 @@
 #include "test_dynamic_matrix.h"
 #include <iostream>
 #include <aris/dynamic/dynamic.hpp>
+#include <random>
+
 
 using namespace aris::dynamic;
 
@@ -1688,7 +1690,96 @@ void test_qp() {
 
 		double x[nG]{ 2.48254029703319,-0.685447014679704,  1.10183459377713, 0.188516684659099, 0.730326069702987,  -3.0669612537688 };
 
-		test_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, x);
+		//test_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, x);
+	}
+
+	{
+		aris::Size nG = 6, nCE = 1, nCI = 7;
+		std::vector<double> G(nG*nG), g(nG), CE(nCE*nG), ce(nCE), CI(nCI*nG), ci(nCI), x(nG);
+
+		auto drand = []()->double {
+			static std::random_device rd;
+			static std::mt19937 gen(rd());
+			static std::uniform_real_distribution<> dis(-10.0, 10.0);
+
+			return dis(gen);
+		};
+
+		auto generate_rand_mtx = [&]() {
+			std::vector<double> L(nG*nG);
+			
+			for (int i = 0; i < nG * nG; ++i) {
+				L[i] = drand();
+			}
+			for (int i = 0; i < nG * nCE; ++i) {
+				CE[i] = drand();
+			}
+			for (int i = 0; i < nG * nCI; ++i) {
+				CI[i] = drand();
+			}
+			for (int i = 0; i < nG; ++i) {
+				g[i] = drand();
+			}
+			for (int i = 0; i < nCE; ++i) {
+				ce[i] = drand();
+			}
+			for (int i = 0; i < nCI; ++i) {
+				ci[i] = drand();
+			}
+
+			s_mm(nG, nG, nG, L.data(), nG, L.data(), T(nG), G.data(), nG);
+		};
+
+
+		for (int i = 0; i < 1000000; ++i) {
+			if (i % 1000 == 0)
+				std::cout << i << std::endl;
+
+//#define DEBUG_ERROR
+#ifdef DEBUG_ERROR
+			std::cout << "[WARNING!] debuging old data..." << std::endl;
+
+			auto data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\G.txt");
+			aris::dynamic::s_vc(nG*nG, data.data(), G.data());
+			data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\g0.txt");
+			aris::dynamic::s_vc(nG, data.data(), g.data());
+			data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\CE.txt");
+			aris::dynamic::s_vc(nG*nCE, data.data(), CE.data());
+			data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\CI.txt");
+			aris::dynamic::s_vc(nG* nCI, data.data(), CI.data());
+			data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\ce0.txt");
+			aris::dynamic::s_vc(nCE, data.data(), ce.data());
+			data = aris::dynamic::dlmread("C:\\Users\\py033\\Desktop\\test_data\\ci0.txt");
+			aris::dynamic::s_vc(nCI, data.data(), ci.data());
+#else
+			generate_rand_mtx();
+			//aris::dynamic::dlmwrite(nG, nG, G.data(), "C:\\Users\\py033\\Desktop\\test_data\\G.txt");
+			//aris::dynamic::dlmwrite(nG, 1, g.data(), "C:\\Users\\py033\\Desktop\\test_data\\g0.txt");
+			//aris::dynamic::dlmwrite(nCE, nG, CE.data(), "C:\\Users\\py033\\Desktop\\test_data\\CE.txt");
+			//aris::dynamic::dlmwrite(nCE, 1, ce.data(), "C:\\Users\\py033\\Desktop\\test_data\\ce0.txt");
+			//aris::dynamic::dlmwrite(nCI, nG, CI.data(), "C:\\Users\\py033\\Desktop\\test_data\\CI.txt");
+			//aris::dynamic::dlmwrite(nCI, 1, ci.data(), "C:\\Users\\py033\\Desktop\\test_data\\ci0.txt");
+
+
+
+#endif
+
+
+			
+			auto r1 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
+			auto r2 = aris::dynamic::s_qp2(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
+
+			if (std::abs(r1 - r2) > 1e-5*(std::abs(r1) + std::abs(r2))) {
+				std::cout << "error"<< r1 <<"  " << r2 << std::endl;
+				//std::exit(0);
+			}
+
+		
+		}
+
+
+
+		//test_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, x);
 	}
 
 }

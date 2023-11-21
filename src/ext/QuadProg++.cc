@@ -21,7 +21,7 @@ File $Id: QuadProg++.cc 232 2007-06-21 12:29:00Z digasper $
 #include "aris/dynamic/math_matrix.hpp"
 
 
-#define TRACE_SOLVER
+//#define TRACE_SOLVER
 
 using namespace aris::dynamic;
 
@@ -194,9 +194,9 @@ double solve_quadprog(Matrix<double>& G, Vector<double>& g0,
     t2 = 0.0;
     if (fabs(scalar_product(z, z)) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
       t2 = (-scalar_product(np, x) - ce0[i]) / scalar_product(z, np);
-    
+#ifdef TRACE_SOLVER
     std::cout << "t2 : " << t2 << std::endl;
-
+#endif
     /* set x = x + t2 * z */
     for (k = 0; k < n; k++)
       x[k] += t2 * z[k];

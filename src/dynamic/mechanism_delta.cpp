@@ -355,6 +355,20 @@ namespace aris::dynamic {
 			for (auto &m : model()->motionPool()) m.updP();
 			return 0;
 		}
+		auto virtual kinPosPure(const double* output, double* input, int which_root)->int override {
+			double current_input_pos[4]{}, root_mem[4]{};
+			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2};
+
+			for (int i = 0; i < 4; ++i)
+				current_input_pos[i] = model()->motionPool()[i].mpInternal();
+
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+			auto ik = [this, dh](const double* ee_pos, int which_root, double* input)->int {
+				return deltaInverse(dh, ee_pos, which_root, input);
+			};
+
+			return s_ik(4, rootNumber(), ik, which_root, output, input, root_mem, input_period, current_input_pos);
+		}
 
 		DeltaInverseKinematicSolver() = default;
 	};

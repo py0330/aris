@@ -14,7 +14,7 @@
 #include "aris/ext/QuadProg++.hh"
 #include "aris/dynamic/math_matrix.hpp"
 
-#define ARIS_DEBUG_QP
+//#define ARIS_DEBUG_QP
 
 namespace aris::dynamic {
 	auto dlmread(const char* FileName, double* pMatrix)->void {
@@ -126,8 +126,9 @@ namespace aris::dynamic {
 		double* x) -> double 
 	{
 		unsigned int l;
-		//unsigned int i, j, k, l; /* indices */
 		int ip; // this is the index of the constraint to be added to the active set
+		const double* np = nullptr;
+
 
 		double* R = new double[nG * nG];
 		double* J = new double[nG * nG];
@@ -135,7 +136,7 @@ namespace aris::dynamic {
 		double* z = new double[nG];
 		double* r = new double[nCE + nCI];
 		double* d = new double[nG];
-		double* np = new double[nG];
+		
 		double* u = new double[nCE + nCI];
 		double* x_old = new double[nG];
 		double* u_old = new double[nCE + nCI];
@@ -156,12 +157,12 @@ namespace aris::dynamic {
 		for (int i = 0; i < nG; i++)
 			c1 += G[at(i, i, nG)];
 
-		// decompose the matrix G in the form L^T L //
-		s_llt(nG, G, G);
 #ifdef ARIS_DEBUG_QP
 		std::cout << "G:" << std::endl;
 		dsp(nG,nG,G);
 #endif
+		// decompose the matrix G in the form L^T L //
+		s_llt(nG, G, G);
 
 		// init R and R_norm //
 		s_fill(nG, nG, 0.0, R, nG);
@@ -169,8 +170,10 @@ namespace aris::dynamic {
 
 		// compute G^-1, which is init value for H // 
 		std::fill_n(d, nG, 0.0);
-		s_eye(nG, J);
-		s_sov_um(nG, nG, G, J, J);
+		//s_eye(nG, J);
+		//s_sov_um(nG, nG, G, J, J);
+
+		s_inv_um(nG, G, J);
 #ifdef ARIS_DEBUG_QP
 		std::cout << "J:" << std::endl;
 		dsp(nG, nG, J);
@@ -197,19 +200,17 @@ namespace aris::dynamic {
 		dsp(1, nG, x);
 #endif
 
-		static auto add_constraint = [&]()->bool {
+		static auto add_constraint = [](int nG, unsigned int &iq, double &R_norm, double *R, double* J, double* d)->bool {
 #ifdef ARIS_DEBUG_QP
 			std::cout << "Add constraint " << iq << '/';
 #endif
-			unsigned int i, j, k;
 			double cc, ss, h, t1, t2, xny;
 
 			// we have to find the Givens rotation which will reduce the element
 			// d[j] to zero.
 			// if it is already zero we don't have to do anything, except of
 			// decreasing j
-			for (j = nG - 1; j >= iq + 1; j--)
-			{
+			for (int j = nG - 1; j >= iq + 1; j--){
 				// The Givens rotation is done with the matrix (cc cs, cs -cc).
 				// If cc is one, then element (j) of d is zero compared with element
 				// (j - 1). Hence we don't have to do anything.
@@ -238,8 +239,7 @@ namespace aris::dynamic {
 				}
 
 				xny = ss / (1.0 + cc);
-				for (k = 0; k < nG; k++)
-				{
+				for (int k = 0; k < nG; k++){
 					t1 = J[at(k, j - 1, nG)];
 					t2 = J[at(k, j, nG)];
 					J[at(k, j - 1, nG)] = t1 * cc + t2 * ss;
@@ -251,7 +251,7 @@ namespace aris::dynamic {
 			// To update R we have to put the iq components of the d vector
 			// into column iq - 1 of R
 			//
-			for (i = 0; i < iq; i++)
+			for (int i = 0; i < iq; i++)
 				R[at(i, iq - 1, nG)] = d[i];
 #ifdef ARIS_DEBUG_QP
 			std::cout << iq << std::endl;
@@ -270,46 +270,39 @@ namespace aris::dynamic {
 			R_norm = std::max<double>(R_norm, std::abs(d[iq - 1]));
 			return true;
 		};
-		static auto delete_constraint = [&]()->void
+		static auto delete_constraint = [](int nG, int nCE, unsigned int &iq, int l, double *J, double *u, double *R, int* A)->void
 		{
 #ifdef ARIS_DEBUG_QP
 			std::cout << "Delete constraint " << l << ' ' << iq;
 #endif
-			unsigned int i, j, k, qq = 0; // just to prevent warnings from smart compilers
 			double cc, ss, h, xny, t1, t2;
 
-			bool found = false;
-			/* Find the index qq for active constraint l to be removed */
-			for (i = nCI; i < iq; i++)
-				if (A[i] == l)
-				{
-					qq = i;
-					found = true;
-					break;
-				}
-
-			if (!found)
+			// Find the index qq for active constraint l to be removed //
+			int qq = std::find(A + nCE, A + iq, l) - A;
+			if (qq == iq)
 			{
 				std::ostringstream os;
 				os << "Attempt to delete non existing constraint, constraint: " << l;
 				throw std::invalid_argument(os.str());
 			}
-			/* remove the constraint from the active set and the duals */
-			for (i = qq; i < iq - 1; i++)
+
+			// remove the constraint from the active set and the duals //
+			for (int i = qq; i < iq - 1; i++)
 			{
 				A[i] = A[i + 1];
 				u[i] = u[i + 1];
-				for (j = 0; j < nG; j++)
-					R[at(j, i, nG)] = R[at(j, i + 1)];
+				for (int j = 0; j < nG; j++)
+					R[at(j, i, nG)] = R[at(j, i + 1, nG)];
 			}
 
 			A[iq - 1] = A[iq];
 			u[iq - 1] = u[iq];
 			A[iq] = 0;
 			u[iq] = 0.0;
-			for (j = 0; j < iq; j++)
-				R[at(j, iq - 1)] = 0.0;
-			/* constraint has been fully removed */
+			for (int j = 0; j < iq; j++)
+				R[at(j, iq - 1, nG)] = 0.0;
+
+			// constraint has been fully removed //
 			iq--;
 #ifdef ARIS_DEBUG_QP
 			std::cout << '/' << iq << std::endl;
@@ -318,47 +311,45 @@ namespace aris::dynamic {
 			if (iq == 0)
 				return;
 
-			for (j = qq; j < iq; j++)
-			{
-				cc = R[at(j, j)];
-				ss = R[at(j + 1, j)];
+			for (int j = qq; j < iq; j++){
+				cc = R[at(j, j, nG)];
+				ss = R[at(j + 1, j, nG)];
 				h = std::sqrt(cc * cc + ss * ss);
-				if (fabs(h) < std::numeric_limits<double>::epsilon()) // h == 0
+				if (std::abs(h) < std::numeric_limits<double>::epsilon()) // h == 0
 					continue;
 				cc = cc / h;
 				ss = ss / h;
-				R[at(j + 1, j)] = 0.0;
+				R[at(j + 1, j, nG)] = 0.0;
 				if (cc < 0.0)
 				{
-					R[at(j, j)] = -h;
+					R[at(j, j, nG)] = -h;
 					cc = -cc;
 					ss = -ss;
 				}
 				else
-					R[at(j, j)] = h;
+					R[at(j, j, nG)] = h;
 
 				xny = ss / (1.0 + cc);
-				for (k = j + 1; k < iq; k++)
+				for (int k = j + 1; k < iq; k++)
 				{
-					t1 = R[at(j, k)];
-					t2 = R[at(j + 1, k)];
-					R[at(j, k)] = t1 * cc + t2 * ss;
-					R[at(j + 1, k)] = xny * (t1 + R[at(j, k)]) - t2;
+					t1 = R[at(j, k, nG)];
+					t2 = R[at(j + 1, k, nG)];
+					R[at(j, k, nG)] = t1 * cc + t2 * ss;
+					R[at(j + 1, k, nG)] = xny * (t1 + R[at(j, k, nG)]) - t2;
 				}
-				for (k = 0; k < nG; k++)
+				for (int k = 0; k < nG; k++)
 				{
-					t1 = J[at(k, j)];
-					t2 = J[at(k, j + 1)];
-					J[at(k, j)] = t1 * cc + t2 * ss;
-					J[at(k, j + 1)] = xny * (J[at(k, j)] + t1) - t2;
+					t1 = J[at(k, j, nG)];
+					t2 = J[at(k, j + 1, nG)];
+					J[at(k, j, nG)] = t1 * cc + t2 * ss;
+					J[at(k, j + 1, nG)] = xny * (J[at(k, j, nG)] + t1) - t2;
 				}
 			}
 		};
 
 		/////////////////////////////// PART 2, add equality constraints to the working set A ////////////////
-		
 		for (int i = 0; i < nCE; i++){
-			s_vc(nG, CE + at(i, 0, nG), np);
+			np = CE + at(i, 0, nG);
 
 			// d = H^T * np //
 			s_mm(nG, 1, nG, J, T(nG), np, 1, d, 1);
@@ -385,9 +376,9 @@ namespace aris::dynamic {
 			double t2 = 0.0;
 			if (s_vv(nG, z, z) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
 				t2 = (-s_vv(nG, np, x) - ce0[i]) / s_vv(nG, z, np);
-
+#ifdef ARIS_DEBUG_QP
 			std::cout << "t2 : " << t2 << std::endl;
-
+#endif
 			// set x = x + t2 * z 
 			s_va(nG, t2, z, x);
 
@@ -399,7 +390,7 @@ namespace aris::dynamic {
 			f_value += 0.5 * (t2 * t2) * s_vv(nG, z, np);
 			A[i] = -i - 1;
 
-			if (!add_constraint()){
+			if (!add_constraint(nG, iq, R_norm, R, J, d)){
 				// Equality constraints are linearly dependent
 				throw std::runtime_error("Constraints are linearly dependent");
 				return f_value;
@@ -422,22 +413,20 @@ namespace aris::dynamic {
 #endif
 		// step 1: choose a violated constraint //
 		for (int i = nCE; i < iq; i++){
-			ip = A[i];
-			iai[ip] = -1;
+			iai[A[i]] = -1;
 		}
 
 		// compute s[x] = ci^T * x + ci0 for all elements of K \ A //
 		ss = 0.0;
 		psi = 0.0; // this value will contain the sum of all infeasibilities 
 		ip = 0;    // ip will be the index of the chosen violated constraint 
+		
+		s_vc(nCI, ci0, s);
+		s_mma(nCI, 1, nG, CI, x, s);
+		
 		for (int i = 0; i < nCI; i++){
 			iaexcl[i] = true;
-			sum = 0.0;
-			for (int j = 0; j < nG; j++)
-				sum += CI[at(i, j, nG)] * x[j];
-			sum += ci0[i];
-			s[i] = sum;
-			psi += std::min(0.0, sum);
+			psi += std::min(s[i], sum);
 		}
 #ifdef ARIS_DEBUG_QP
 		std::cout << "s:" << std::endl;
@@ -449,15 +438,10 @@ namespace aris::dynamic {
 			return f_value;
 		}
 
-		// save old values for u and A //
-		for (int i = 0; i < iq; i++){
-			u_old[i] = u[i];
-			A_old[i] = A[i];
-		}
-
-		// and for x //
-		for (int i = 0; i < nG; i++)
-			x_old[i] = x[i];
+		// save old values for u and A, and x //
+		std::copy_n(u, iq, u_old);
+		std::copy_n(A, iq, A_old);
+		std::copy_n(x, nG, x_old);
 
 	l2: // Step 2: check for feasibility and determine a new S-pair //
 		for (int i = 0; i < nCI; i++){
@@ -471,8 +455,8 @@ namespace aris::dynamic {
 		}
 
 		// set np = n[ip] //
-		for (int i = 0; i < nG; i++)
-			np[i] = CI[at(ip,i,nG)];
+		np = CI + at(ip, 0, nG);
+		
 		// set u = [u 0]^T //
 		u[iq] = 0.0;
 		// add ip to the active set A //
@@ -554,7 +538,7 @@ namespace aris::dynamic {
 				u[k] -= t * r[k];
 			u[iq] += t;
 			iai[l] = l;
-			delete_constraint();
+			delete_constraint(nG, nCE, iq, l, J, u, R, A);
 #ifdef ARIS_DEBUG_QP
 			std::cout << " in dual space: "	<< f_value << std::endl;
 
@@ -600,16 +584,16 @@ namespace aris::dynamic {
 #endif
 			// full step has taken //
 			// add constraint ip to the active set //
-			if (!add_constraint()){
+			if (!add_constraint(nG, iq, R_norm, R, J, d)){
 				iaexcl[ip] = false;
-				delete_constraint();
+				delete_constraint(nG, nCE, iq, l, J, u, R, A);
 #ifdef ARIS_DEBUG_QP
 				std::cout << "R:" << std::endl;
 				dsp(iq, iq, R, nG);
 				std::cout << "A:" << std::endl;
 				dsp(1, iq + 1, A);
 				std::cout << "iai:" << std::endl;
-				dsp(1, iq + 1, iai);
+				dsp(1, nCI+ nCE, iai);
 #endif
 				for (int i = 0; i < nCI; i++)
 					iai[i] = i;
@@ -630,7 +614,7 @@ namespace aris::dynamic {
 			std::cout << "A:" << std::endl;
 			dsp(1, iq + 1, A);
 			std::cout << "iai:" << std::endl;
-			dsp(1, iq + 1, iai);
+			dsp(1, nCI + nCE, iai);
 #endif
 			goto l1;
 		}
@@ -643,7 +627,7 @@ namespace aris::dynamic {
 #endif
 		/* drop constraint l */
 		iai[l] = l;
-		delete_constraint();
+		delete_constraint(nG, nCE, iq, l, J, u, R, A);
 #ifdef ARIS_DEBUG_QP
 		std::cout << "R:" << std::endl;
 		dsp(iq, iq, R, nG);
@@ -651,11 +635,8 @@ namespace aris::dynamic {
 		dsp(1, iq + 1, A);
 #endif
 
-		/* update s[ip] = CI * x + ci0 */
-		sum = 0.0;
-		for (int k = 0; k < nG; k++)
-			sum += CI[at(ip, k)] * x[k];
-		s[ip] = sum + ci0[ip];
+		// update s[ip] = CI * x + ci0 //
+		s[ip] = s_vv(nG, CI + at(ip, 0, nG), x) + ci0[ip];
 
 #ifdef ARIS_DEBUG_QP
 		std::cout << "s:" << std::endl;
