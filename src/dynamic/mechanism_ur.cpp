@@ -104,7 +104,9 @@ namespace aris::dynamic
 		// 开始求1轴 //
 		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
 		// 事实上这里可以有2个解
-		if (W1 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return false;
+		if (W1 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) 
+			return -1;
+
 		if (which_root & 0x04) {
 			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(W1 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
 		}
@@ -149,7 +151,8 @@ namespace aris::dynamic
 
 		double l_square = B_pos[0] * B_pos[0] + B_pos[2] * B_pos[2];
 		double l = std::sqrt(l_square);
-		if (l > (L1 + L2) || l < (std::max(std::abs(L1), std::abs(L2)) - std::min(std::abs(L1), std::abs(L2))))return false;
+		if (l > (L1 + L2) || l < (std::max(std::abs(L1), std::abs(L2)) - std::min(std::abs(L1), std::abs(L2))))
+			return -2;
 
 
 		if (which_root & 0x01)
@@ -182,7 +185,7 @@ namespace aris::dynamic
 
 		// 将q copy到input中
 		s_vc(6, q, input);
-		return true;
+		return 0;
 	}
 
 	struct UrInverseKinematicSolver::Imp{
@@ -451,6 +454,8 @@ namespace aris::dynamic
 		for (aris::Size i = 0; i < 6; ++i) {
 			imp_->motions[i]->setMpInternal(input_pos[i]);
 		}
+
+		return 0;
 	};
 	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
 		double current_input_pos[6]{}, ee_pos[16]{}, root_mem[6]{};

@@ -101,13 +101,12 @@ void test_ur_forward_solver(){
 }
 void test_ur_inverse_solver(){
 	auto m = createUrModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
-	
-	auto &inv = dynamic_cast<aris::dynamic::UrInverseKinematicSolver&>(m->solverPool().at(0));
-	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
-	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
-	
+	auto& ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
+	ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	m->init();
+
 	double ee_pm[16];
-	aris::dynamic::s_pe2pm(std::array<double, 7>{0.4, 0.2, 0.5, 0.0, 0.0, 0.0}.data(), ee_pm);
+	aris::dynamic::s_pe2pm(std::array<double, 7>{0.4, 0.2, 0.4, 0.0, 0.0, 0.0}.data(), ee_pm);
 
 	const double input_series[5]{ aris::PI * 0 / 2.5, aris::PI * 1 / 2.5, aris::PI * 2 / 2.5, aris::PI * 3 / 2.5, aris::PI * 4 / 2.5 };
 	for (int i = 0; i < 5 * 5 * 5 * 5 * 5 * 5; ++i){
@@ -118,17 +117,19 @@ void test_ur_inverse_solver(){
 			input_series[(i / 125) % 5],
 			input_series[(i / 625) % 5],
 			input_series[(i / 3125) % 5],
-			//
-			//input_series[(i / 25) % 5],
-			//input_series[(i / 125) % 5],
-			//input_series[(i / 625) % 5],
-			//input_series[(i / 3125) % 5],
 		};
 
+		m->setInputPos(q);
+		if (m->forwardKinematics())
+			std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
-		for (int i = 0; i < 6; ++i)m->motionPool().at(i).setMp(q[i]);
-
-		if (fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		double result[6];
+		m->getInputPos(result);
+		if (!s_is_equal(6, result, q, 1e-9)) {
+			std::cout << __FILE__ << __LINE__ << " failed inverse kinematics" << std::endl;
+			dsp(1, 6, q);
+			dsp(1, 6, result);
+		}
 
 		double j_pos[6][3], j_axis[6][3], pe_ee_i[6], pe_ee_j[6];
 		for (int i = 0; i < 6; ++i){
@@ -138,20 +139,22 @@ void test_ur_inverse_solver(){
 		ee.makI()->getPe(pe_ee_i);
 		ee.makJ()->getPe(pe_ee_j);
 
-		//dsp(1, 6, q);
-
 		auto new_m = createUrModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::UrInverseKinematicSolver&>(new_m->solverPool().at(0));
-		auto &new_fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(new_m->solverPool().at(1));
 		auto &new_ee = dynamic_cast<aris::dynamic::GeneralMotion&>(new_m->generalMotionPool().at(0));
+		new_ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+		new_m->init();
 
-		for (int i = 0; i < 8; ++i)
-		{
+		for (int i = 0; i < 8; ++i){
 			new_ee.setMpm(ee_pm);
 			new_inv.setWhichRoot(i);
-			if (new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+			if (new_m->inverseKinematics()) {
+				new_m->inverseKinematics();
+				std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+			}
+				
 
-			if (new_fwd.kinPos())std::cout << "forward failed" << std::endl;
+			if (new_m->forwardKinematics())std::cout << "forward failed" << std::endl;
 			new_ee.updP();
 			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
 			{
