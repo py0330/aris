@@ -86,7 +86,6 @@ namespace aris::server{
 		TerminalInterface(const std::string& name = "Terminal") : Interface(name) {}
 	};
 
-
 	auto ARIS_API parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	class ARIS_API WebInterface :public Interface
 	{
@@ -128,6 +127,7 @@ namespace aris::server{
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
 }
 
 #endif

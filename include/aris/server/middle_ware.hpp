@@ -10,8 +10,6 @@
 
 namespace aris::server {
 
-
-
 	class ARIS_API MiddleWare {
 	public:
 		MiddleWare() {}

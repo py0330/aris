@@ -180,8 +180,6 @@ namespace aris::server{
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
-
-
 }
 
 #endif
