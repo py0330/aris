@@ -13,13 +13,9 @@
 #include <aris/dynamic/dynamic.hpp>
 #include <aris/plan/plan.hpp>
 
-namespace aris::server
-{
-	class ARIS_API InterfaceRoot
-	{
-	};
-	class ARIS_API Interface : public aris::core::NamedObject
-	{
+namespace aris::server{
+
+	class ARIS_API Interface : public aris::core::NamedObject{
 	public:
 		auto virtual open()->void = 0;
 		auto virtual close()->void = 0;
@@ -65,6 +61,32 @@ namespace aris::server
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
+	class ARIS_API InternalInterface : public Interface {
+	public:
+		auto virtual open()->void override { is_open_ = true; }
+		auto virtual close()->void override { is_open_ = false; }
+		auto virtual isConnected() const->bool override { return is_open_; }
+
+	private:
+		bool is_open_{true};
+
+	public:
+		InternalInterface(const std::string& name = "Internal") : Interface(name) {}
+	};
+	class ARIS_API TerminalInterface : public Interface {
+	public:
+		auto virtual open()->void override { is_open_ = true; }
+		auto virtual close()->void override { is_open_ = false; }
+		auto virtual isConnected() const->bool override { return is_open_; }
+
+	private:
+		bool is_open_{true};
+
+	public:
+		TerminalInterface(const std::string& name = "Terminal") : Interface(name) {}
+	};
+
+
 	auto ARIS_API parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	class ARIS_API WebInterface :public Interface
 	{

@@ -2726,18 +2726,9 @@ namespace aris::dynamic{
 			{
 				// 计算 U //
 				{
-					//std::cout << "U1:" << std::endl;
-					//dsp(h + 1, h, U1, u1_t);
-
-
-					//dsp(h + 1, 1, q1, q_t);
-					//dsp(m == n ? n - h - 1 : n - h, 1, q2, q_t);
-
 					// 计算ui所产生的U（不经过householder变换）
 					for (Size i = 0; i < n; ++i) {
 						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[n - i - 1]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, 1);
-
-						//dsp(1, 3, ui);
 
 						// 生成 U，基于U1 //
 						s_mc(h + 1, 1, c0 * ui[0], q1, q_t, U + at(0, i, u_t), u_t);
@@ -2869,13 +2860,10 @@ namespace aris::dynamic{
 					for (Size i = 0; i < n; ++i) {
 						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
 
-						//dsp(m, m, U, u_t);
 						// 生成 U，基于U2 //
 						auto real_m_of_u2 = m == n ? n - h - 1 : n - h;
 						s_mc(real_m_of_u2, 1, s0 * ui[at(0, 0, ui_t)], q2, q_t, U + at(h + 1, i, u_t), u_t);
 						s_mma(real_m_of_u2, 1, n - h - 1, U2 + at(0, 0, u2_t), u2_t, ui + at(h + 1, 0, ui_t), ui_t, U + at(h + 1, i, u_t), u_t);
-
-						//dsp(m, m, U, u_t);
 					}
 
 					// 计算q2所产生的q //
@@ -2909,12 +2897,10 @@ namespace aris::dynamic{
 					// 计算U1所产生的U（不经过householder变换）
 					for (Size i = 0; i < n; ++i) {
 						make_ui(n, static_cast<Size>(mn), static_cast<Size>(p2[at(0, n - i - 1, p2_t)]), dn, d, d_t, z, z_t, p, p_t, mu, mu_t, ui, ui_t);
-						//dsp(m, m, U, u_t);
+
 						// 生成 U，基于U1 //
 						s_mc(h + 1, 1, c0 * ui[at(0, 0, ui_t)], q1, q_t, U + at(0, i, u_t), u_t);
 						s_mma(h + 1, 1, h, U1 + at(0, 0, u1_t), u1_t, ui + at(1, 0, ui_t), ui_t, U + at(0, i, u_t), u_t);
-
-						//dsp(m, m, U, u_t);
 					}
 					// 计算q1所产生的q //
 					if (m > n) {
@@ -3069,21 +3055,21 @@ namespace aris::dynamic{
 	}
 
 
-	//	The problem is in the form:
+	// The problem is in the form:
 	//
-	//min 0.5 x G x + g0 x
-	//s.t.
+	// min 0.5 x G x + g0 x
+	// s.t.
 	//    CE x  = ce0
 	//    CI x <= ci0
 	//	 
 	// The matrix and vectors dimensions are as follows:
 	//    G : nG * nG
-	//	  g0: nG
+	//    g0: nG
 	//				
 	//    CE: nCE * nCE
-	//	 ce0: nCE
+	//   ce0: nCE
 	//				
-	//	  CI: nCI * nCI
+	//    CI: nCI * nCI
 	//   ci0: nCI
 	//
 	//     x: nG

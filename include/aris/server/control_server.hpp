@@ -16,174 +16,13 @@
 #include "aris/server/interface.hpp"
 #include "aris/server/middle_ware.hpp"
 #include "aris/server/control_server_error.hpp"
+#include "aris/server/transfer_model_controller.hpp"
 
 namespace aris::server{
 	class ARIS_API CustomModule {
 	public:
 		CustomModule() = default;
 		virtual ~CustomModule() = default;
-	};
-
-	class TerminalInterface : public Interface {
-	public:
-		auto virtual open()->void override { is_open_ = true; }
-		auto virtual close()->void override { is_open_ = false; }
-		auto virtual isConnected() const->bool override { return is_open_; }
-
-	private:
-		bool is_open_{true};
-
-	public:
-		TerminalInterface(const std::string &name = "Terminal") : Interface(name) {}
-	};
-
-	class ARIS_API TransferModelController {
-	public:
-		auto virtual updateDataController2Model(
-			const std::vector<std::uint64_t>& options, 
-			const aris::control::Controller *controller, 
-			aris::dynamic::ModelBase *model)->void;
-		auto virtual updateDataModel2Controller(
-			const std::vector<std::uint64_t>& options, 
-			const aris::dynamic::ModelBase* model,
-			aris::control::Controller* controller)->void;
-	};
-
-	class ARIS_API ScaraTransferModelController:public TransferModelController {
-	public:
-		auto updateDataController2Model(
-			const std::vector<std::uint64_t>& options,
-			const aris::control::Controller* controller,
-			aris::dynamic::ModelBase* model)->void override
-		{
-			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
-				auto& cm = controller->motorPool()[i];
-				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
-					model->setInputPosAt(cm.targetPos(), i);
-				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_VEL_FROM_CONTROLLER))
-					model->setInputVelAt(cm.targetVel(), i);
-			}
-
-			if (options[2] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER)
-				model->setInputPosAt(controller->motorPool()[2].targetPos() + pitch_ / 2 / aris::PI * model->inputPosAt(3), 2);
-		}
-		auto updateDataModel2Controller(
-			const std::vector<std::uint64_t>& options,
-			const aris::dynamic::ModelBase* model,
-			aris::control::Controller* controller)->void override
-		{
-			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
-				auto& cm = controller->motorPool()[i];
-				if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
-					cm.setTargetPos(model->inputPosAt(i));
-				if ((options[i] & aris::plan::Plan::USE_TARGET_VEL))
-					cm.setTargetVel(model->inputVelAt(i));
-				if ((options[i] & aris::plan::Plan::USE_TARGET_TOQ))
-					cm.setTargetToq(model->inputFceAt(i));
-				if ((options[i] & aris::plan::Plan::USE_OFFSET_VEL))
-					cm.setOffsetVel(model->inputVelAt(i));
-				if ((options[i] & aris::plan::Plan::USE_OFFSET_TOQ))
-					cm.setOffsetToq(model->inputFceAt(i));
-			}
-
-			if(options[2] & aris::plan::Plan::USE_TARGET_POS)
-				controller->motorPool()[2].setTargetPos(model->inputPosAt(2) - pitch_/2/aris::PI * model->inputPosAt(3));
-		}
-
-		ScaraTransferModelController(double pitch = 0.0) {
-			pitch_ = pitch;
-		}
-
-		auto pitch()const noexcept->double { return pitch_; }
-		auto setPitch(double pitch)noexcept->void { pitch_ = pitch; }
-
-	private:
-		double pitch_;
-	};
-
-	// mat 应该是从 model 到 controller 的转换矩阵
-	//
-	// 
-	class ARIS_API GeneralTransferModelController :public TransferModelController {
-	public:
-		auto updateDataController2Model(
-			const std::vector<std::uint64_t>& options,
-			const aris::control::Controller* controller,
-			aris::dynamic::ModelBase* model)->void override
-		{
-			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
-				auto& cm = controller->motorPool()[i];
-				controller_pos_[i] = cm.targetPos();
-				controller_vel_[i] = cm.targetVel();
-			}
-
-			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_pos_.data(), model_pos_.data());
-			aris::dynamic::s_mm(inv_mat_.m(), 1, inv_mat_.m(), inv_mat_.data(), controller_vel_.data(), model_vel_.data());
-			
-			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
-				auto& cm = controller->motorPool()[i];
-				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
-					model->setInputPosAt(model_pos_[i], i);
-				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_VEL_FROM_CONTROLLER))
-					model->setInputVelAt(model_vel_[i], i);
-			}
-		}
-		auto updateDataModel2Controller(
-			const std::vector<std::uint64_t>& options,
-			const aris::dynamic::ModelBase* model,
-			aris::control::Controller* controller)->void override
-		{
-			model->getInputPos(model_pos_.data());
-			model->getInputVel(model_vel_.data());
-			model->getInputFce(model_toq_.data());
-
-			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), model_pos_.data(), controller_pos_.data());
-			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), model_vel_.data(), controller_vel_.data());
-			aris::dynamic::s_mm(mat_.m(), 1, mat_.m(), mat_.data(), model_toq_.data(), controller_toq_.data());
-
-			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
-				auto& cm = controller->motorPool()[i];
-				if ((options[i] & aris::plan::Plan::USE_TARGET_POS))
-					cm.setTargetPos(controller_pos_[i]);
-				if ((options[i] & aris::plan::Plan::USE_TARGET_VEL))
-					cm.setTargetVel(controller_vel_[i]);
-				if ((options[i] & aris::plan::Plan::USE_TARGET_TOQ))
-					cm.setTargetToq(controller_toq_[i]);
-				if ((options[i] & aris::plan::Plan::USE_OFFSET_VEL))
-					cm.setOffsetVel(controller_vel_[i]);
-				if ((options[i] & aris::plan::Plan::USE_OFFSET_TOQ))
-					cm.setOffsetToq(controller_toq_[i]);
-			}
-		}
-
-		auto mat()const->aris::core::Matrix { return mat_; }
-		auto setMat(aris::core::Matrix mat)->void { 
-			if (mat.m() != mat.n()) {
-				THROW_FILE_LINE("invalid mat for GeneralTransferModelContrller");
-			}
-			
-			std::vector<double> u(mat.m()*mat.n()), t(mat.m()), t2(mat.m());
-			std::vector<aris::Size> p(mat.m());
-			aris::Size r;
-			aris::dynamic::s_householder_utp(mat.m(), mat.n(), mat.data(), u.data(), t.data(), p.data(), r);
-			if (r != mat.m())
-				THROW_FILE_LINE("invalid mat for GeneralTransferModelContrller, singular mat");
-
-			mat_ = mat;
-			inv_mat_.resize(mat.m(), mat.n());
-			aris::dynamic::s_householder_utp2pinv(mat.m(), mat.n(), r, u.data(), t.data(), p.data(), inv_mat_.data(), t2.data());
-
-			model_pos_.resize(mat_.m());
-			model_vel_.resize(mat_.m());
-			model_toq_.resize(mat_.m());
-			controller_pos_.resize(mat_.m());
-			controller_vel_.resize(mat_.m());
-			controller_toq_.resize(mat_.m());
-		}
-
-	private:
-		aris::core::Matrix mat_, inv_mat_;
-		std::vector<double> model_pos_, model_vel_, model_toq_, controller_pos_, controller_vel_, controller_toq_;
 	};
 
 	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
@@ -306,9 +145,6 @@ namespace aris::server{
 		auto setAutoLogActive(bool auto_log)noexcept->void; // 为每个 plan 自动创建日志
 		auto autoLogActive()noexcept->bool;
 
-
-
-
 		// operation in NRT context //
 		auto init()->void;
 		auto start()->void;
@@ -344,29 +180,6 @@ namespace aris::server{
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
-
-	class ARIS_API ProgramMiddleware : public MiddleWare{
-	public:
-		auto isAutoMode()->bool;
-		auto isAutoRunning()->bool;
-		auto isAutoPaused()->bool;
-		auto isAutoStopped()->bool;
-		auto lastError()->std::string;
-		auto lastErrorCode()->int;
-		auto lastErrorLine()->int;
-		auto currentFileLine()->std::tuple<std::string, int>;
-		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface *interface)->int override;
-		~ProgramMiddleware();
-
-		ProgramMiddleware();
-		ProgramMiddleware(ProgramMiddleware && other);
-		ProgramMiddleware& operator=(ProgramMiddleware&& other);
-
-	private:
-		struct Imp;
-		std::unique_ptr<Imp> imp_;
-	};
-
 
 
 }

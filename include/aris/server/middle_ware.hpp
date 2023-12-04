@@ -10,18 +10,7 @@
 
 namespace aris::server {
 
-	class InternalInterface : public Interface {
-	public:
-		auto virtual open()->void override { is_open_ = true; }
-		auto virtual close()->void override { is_open_ = false; }
-		auto virtual isConnected() const->bool override { return is_open_; }
 
-	private:
-		bool is_open_{true};
-
-	public:
-		InternalInterface(const std::string &name = "Internal") : Interface(name) {}
-	};
 
 	class ARIS_API MiddleWare {
 	public:
@@ -35,6 +24,28 @@ namespace aris::server {
 
 	protected:
 		static std::uint64_t cmd_id_;
+	};
+
+	class ARIS_API ProgramMiddleware : public MiddleWare {
+	public:
+		auto isAutoMode() -> bool;
+		auto isAutoRunning() -> bool;
+		auto isAutoPaused() -> bool;
+		auto isAutoStopped() -> bool;
+		auto lastError() -> std::string;
+		auto lastErrorCode() -> int;
+		auto lastErrorLine() -> int;
+		auto currentFileLine() -> std::tuple<std::string, int>;
+		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface* interface) -> int override;
+		~ProgramMiddleware();
+
+		ProgramMiddleware();
+		ProgramMiddleware(ProgramMiddleware&& other);
+		ProgramMiddleware& operator=(ProgramMiddleware&& other);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
 	};
 
 }   // namespace aris::server
