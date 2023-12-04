@@ -648,19 +648,21 @@ namespace aris::dynamic{
 	template<typename AType, typename LType>
 	auto inline s_llt(Size m, const double *A, AType a_t, double *L, LType l_t) noexcept->void{
 		for (Size j(-1), ajj{ 0 }, ljj{ 0 }, lj0{ 0 }; ++j < m; ajj = next_d(ajj, a_t), ljj = next_d(ljj, l_t), lj0 = next_r(lj0, l_t)){
+			double eps = 10.0 * A[ajj] * std::numeric_limits<double>::epsilon();
+			
 			L[ljj] = A[ajj];
 			for (Size k(-1), ljk{ lj0 }; ++k < j; ljk = next_c(ljk, l_t)){
 				L[ljj] -= L[ljk] * L[ljk];
 			}
-			L[ljj] = std::sqrt(L[ljj]);
+			L[ljj] = std::sqrt(std::max(L[ljj], eps));
 
-
+			double safe_Ljj = std::max<double>({ L[ljj], 10.0 * std::numeric_limits<double>::min() });
 			for (Size i(j), li0{ next_r(lj0,l_t) }, lji{ next_c(ljj, l_t) }, lij{ next_r(ljj, l_t) }, a_ij{ next_r(ajj,a_t) }; ++i < m; li0 = next_r(li0, l_t), lji = next_c(lji, l_t), lij = next_r(lij, l_t), a_ij = next_r(a_ij, a_t)){
 				L[lij] = A[a_ij];
 				for (Size k(-1), l_ik{ li0 }, ljk{ lj0 }; ++k < j; l_ik = next_c(l_ik, l_t), ljk = next_c(ljk, l_t)){
 					L[lij] -= L[l_ik] * L[ljk];
 				}
-				L[lij] /= L[ljj];
+				L[lij] /= safe_Ljj;
 				L[lji] = L[lij];
 			}
 		}
@@ -1270,7 +1272,7 @@ namespace aris::dynamic{
 	//    U :        m x n
 	//    p : max(m,n) x 1
 	//
-	//    U can be the same address with A
+	//    U can be the same address with A, U has same definition with s_householder_utp
 	template<typename AType, typename UType>
 	auto inline s_householder_up(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void {
 		rank = 0;
@@ -3066,20 +3068,6 @@ namespace aris::dynamic{
 		s_svd(m, n, A, n, U, m, S, n, V, n, zero_check);
 	}
 
-	// using quadprog to solve the qp problem
-	// // G, CE, CI, g, ce, ci, n = 2 is torque and m = 3 is accelerate.
-	//  min x^T*G*x + g^T*x    G is (n*n), g is (n*1)
-	//      CE^T*x + ce = 0;  CE is (n*p), ce is (p*1)
-	//		CI^T x + ci >= 0; ci is (n*m), ci is (m*1);
-	//auto inline s_qp(const Eigen::MatrixXd& dataG, const Eigen::MatrixXd& dataCE, const Eigen::MatrixXd& dataCI,
-	//	const Eigen::VectorXd& datag, const Eigen::VectorXd& datace, const Eigen::VectorXd& dataci,
-	//	const int n, const int m)->void;
-	//template<typename GType, typename gType, typename CEType, typename ceType, typename CIType, typename ciType, typename xType>
-	//auto inline s_qp(Size n, Size m, Size p,
-	//	const double *G, const double *g, 
-	//	const double *CE, const double *ce, 
-	//	const double *CI, const double *ci,
-	//	double *x)->void;
 
 	//	The problem is in the form:
 	//
@@ -3099,16 +3087,23 @@ namespace aris::dynamic{
 	//   ci0: nCI
 	//
 	//     x: nG
+	auto ARIS_API s_quadprog(Size nG, Size nCE, Size nCI,
+		const double* G, const double* g,
+		const double* CE, const double* ce,
+		const double* CI, const double* ci,
+		double* x, double *mem)->double;
+
+	// not support //
 	auto ARIS_API s_qp(Size nG, Size nCE, Size nCI,
 		const double* G, const double* g,
 		const double* CE, const double* ce,
 		const double* CI, const double* ci,
 		double* x)->double;
-
-	auto ARIS_API s_qp2(Size nG, Size nCE, Size nCI,
-		double* G, double* g,
-		double* CE, double* ce,
-		double* CI, double* ci,
+	// not support //
+	auto ARIS_API s_qp3(Size nG, Size nCE, Size nCI,
+		double* G, const double* g0,
+		const double* CE, const double* ce0,
+		const double* CI, const double* ci0,
 		double* x)->double;
 
 	// find plane using point clouds //

@@ -130,18 +130,25 @@ auto calibModelYuejiang()->std::unique_ptr<aris::dynamic::Model>
 auto calibFromControlServerXml() {
 	auto& cs = aris::server::ControlServer::instance();
 
-	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\calib\\kaanh.xml");
+	//aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\calib\\kaanh.xml");
+	//auto& multi = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
+	//auto& model = dynamic_cast<aris::dynamic::Model&>(multi.subModels()[0]);
+
+
+	aris::dynamic::Model model;
+	aris::core::fromXmlFile(model, "D:/Private/mcode/test_dynamic_calibrator/model_calibrate_before.xml");
+
 	std::cout << "verify" << std::endl;
-
-	auto& multi = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
-	auto& model = dynamic_cast<aris::dynamic::Model&>(multi.subModels()[0]);
-
 	model.init();
-
 	auto& clb = model.calibratorPool()[0];
 
 	clb.clbFiles({
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-38-31.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-39-04.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-39-42.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-40-07.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-40-45.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-41-05.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
@@ -149,11 +156,15 @@ auto calibFromControlServerXml() {
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par5.txt",
 		});
 
-	clb.setVerifyOutputFileDir("C:\\Users\\py033\\Desktop\\calib\\data_after");
+	clb.setVerifyOutputFileDir("D:/Private/mcode/test_dynamic_calibrator/data_after");
 
 	clb.verifyFiles({
-		"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par.txt",
-		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par1.txt",
+//		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-38-31.txt",
+//		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-39-04.txt",
+//		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-39-42.txt",
+		//"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-40-07.txt",
+		"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-40-45.txt",
+		//"D:/Private/mcode/test_dynamic_calibrator/data/dynamics_param_identify_real_2023-11-22--23-41-05.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par2.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par3.txt",
 		//"C:\\Users\\py033\\Desktop\\calib\\calib_dyn_par4.txt",

@@ -1602,10 +1602,10 @@ void test_svd() {
 }
 void test_qp() {
 	auto test_qp = [](aris::Size nG, aris::Size nCE, aris::Size nCI, double* G, double* g, double* CE, double *ce, double *CI, double *ci, double *x) {
-		std::vector<double> result(nG);
+		std::vector<double> result(nG), mem(nG*nG*2 + 8*(nCE+ nCI));
 
 		auto r = aris::dynamic::s_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data());
-		r = aris::dynamic::s_qp2(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data());
+		r = aris::dynamic::s_quadprog(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data(), mem.data());
 
 		if (!s_is_equal(1, nG, result.data(), x, 1e-10)) {
 			std::cout << "qp error : wrong x!" << std::endl;
@@ -1730,8 +1730,8 @@ void test_qp() {
 			s_mm(nG, nG, nG, L.data(), nG, L.data(), T(nG), G.data(), nG);
 		};
 
-
-		for (int i = 0; i < 1000000; ++i) {
+		std::vector<double> mem(nG* nG * 2 + 12 * (nCE + nCI));
+		for (int i = 0; i < 10000000; ++i) {
 			if (i % 1000 == 0)
 				std::cout << i << std::endl;
 
@@ -1764,13 +1764,33 @@ void test_qp() {
 
 #endif
 
-
 			
-			auto r1 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
-			auto r2 = aris::dynamic::s_qp2(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
 
-			if (std::abs(r1 - r2) > 1e-5*(std::abs(r1) + std::abs(r2))) {
-				std::cout << "error"<< r1 <<"  " << r2 << std::endl;
+			//auto r1 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
+			//G = G_store;
+			double rrrrr[6];
+			auto r2 = aris::dynamic::s_quadprog(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data(), mem.data());
+			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rrrrr);
+			auto r3 = 0.5 * aris::dynamic::s_vv(6, rrrrr, x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
+			
+			//std::cout << std::endl << "-------------------------" << std::endl;
+
+			auto r4 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
+			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rrrrr);
+			auto r5 = 0.5 * aris::dynamic::s_vv(6, rrrrr, x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
+
+			if (std::abs(r2 - r4) > 1e-6 * (std::abs(r2) + std::abs(r4))
+				|| std::abs(r3 - r5) > 1e-6 * (std::abs(r3) + std::abs(r5))) {
+
+				aris::dynamic::dlmwrite(nG, nG, G.data(), "C:\\Users\\py033\\Desktop\\test_data\\G.txt");
+				aris::dynamic::dlmwrite(nG, 1, g.data(), "C:\\Users\\py033\\Desktop\\test_data\\g0.txt");
+				aris::dynamic::dlmwrite(nCE, nG, CE.data(), "C:\\Users\\py033\\Desktop\\test_data\\CE.txt");
+				aris::dynamic::dlmwrite(nCE, 1, ce.data(), "C:\\Users\\py033\\Desktop\\test_data\\ce0.txt");
+				aris::dynamic::dlmwrite(nCI, nG, CI.data(), "C:\\Users\\py033\\Desktop\\test_data\\CI.txt");
+				aris::dynamic::dlmwrite(nCI, 1, ci.data(), "C:\\Users\\py033\\Desktop\\test_data\\ci0.txt");
+
+
+				std::cout << "error" << r2 << "  " << r3 << std::endl;
 				//std::exit(0);
 			}
 
