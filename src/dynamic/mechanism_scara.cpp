@@ -324,7 +324,7 @@ namespace aris::dynamic{
 	}
 	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root)->int {
 		double current_input_pos[4]{}, root_mem[4]{};
-		const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,std::numeric_limits<double>::infinity()};
+		const double input_period[4]{ aris::PI * 2, aris::PI * 2,std::numeric_limits<double>::infinity(),aris::PI * 2 };
 
 		for (int i = 0; i < 4; ++i)
 			current_input_pos[i] = model()->motionPool()[i].mpInternal();

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	//aris::dynamic::s_rq2re(rq, re, "123");
 	//aris::dynamic::dsp(1, 3, re);
 
-	test_matrix();
+	//test_matrix();
 	//test_screw();
 	//test_spline();
 	//test_plan();
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	//test_model_interaction();
 	//test_model_solver();
 	//test_model_solver_universal();
-	//test_model_solver_scara();
+	test_model_solver_scara();
 	//test_model_solver_puma();
 	//test_model_solver_ur();
 	//test_model_solver_delta();
