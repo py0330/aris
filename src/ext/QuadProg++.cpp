@@ -21,7 +21,7 @@ File $Id: QuadProg++.cc 232 2007-06-21 12:29:00Z digasper $
 #include "aris/dynamic/math_matrix.hpp"
 
 
-//#define TRACE_SOLVER
+#define TRACE_SOLVER
 
 using namespace aris::dynamic;
 

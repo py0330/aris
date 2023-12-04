@@ -14,7 +14,7 @@
 #include "aris/ext/QuadProg++.hh"
 #include "aris/dynamic/math_matrix.hpp"
 
-//#define ARIS_DEBUG_QP
+#define ARIS_DEBUG_QP
 
 namespace aris::dynamic {
 	auto dlmread(const char* FileName, double* pMatrix)->void {
@@ -427,7 +427,7 @@ namespace aris::dynamic {
 		int ip = 0;    // ip will be the index of the chosen violated constraint 
 		
 		s_vc(nCI, ci0, s);
-		s_mma(nCI, 1, nG, CI, x, s);
+		s_mms(nCI, 1, nG, CI, x, s);
 		
 		for (int i = 0; i < nCI; i++){
 			iaexcl[i] = true;
@@ -481,7 +481,7 @@ namespace aris::dynamic {
 		// update_r(R, r, d, iq);
 
 		// d = H^T * np //
-		s_mm(nG, 1, nG, J, T(nG), np, 1, d, 1);
+		s_mmi(nG, 1, nG, J, T(nG), np, 1, d, 1);
 		// z = H * d
 		s_mm(nG, 1, nG - iq, J + at(0, iq, nG), nG, d + iq, 1, z, 1);
 		// r = R^-1 * d //
@@ -516,7 +516,7 @@ namespace aris::dynamic {
 		// Compute t2: full step length (minimum step in primal space such that the constraint ip becomes feasible */
 		if (std::abs(s_vv(nG, z, z)) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
 		{
-			t2 = -s[ip] / s_vv(nG, z, np);
+			t2 = s[ip] / s_vv(nG, z, np);
 			if (t2 < 0) // patch suggested by Takano Akio for handling numerical inconsistencies
 				t2 = inf;
 		}
@@ -561,7 +561,7 @@ namespace aris::dynamic {
 		// set x = x + t * z //
 		s_va(nG, t, z, x);
 		// update the solution value //
-		f_value += t * s_vv(nG, z, np) * (0.5 * t + u[iq]);
+		f_value -= t * s_vv(nG, z, np) * (0.5 * t + u[iq]);
 		// u = u + t * [-r 1] //
 		s_va(iq, -t, r, u);
 		u[iq] += t;
@@ -639,7 +639,7 @@ namespace aris::dynamic {
 #endif
 
 		// update s[ip] = CI * x + ci0 //
-		s[ip] = s_vv(nG, CI + at(ip, 0, nG), x) + ci0[ip];
+		s[ip] = -s_vv(nG, CI + at(ip, 0, nG), x) + ci0[ip];
 
 #ifdef ARIS_DEBUG_QP
 		std::cout << "s:" << std::endl;

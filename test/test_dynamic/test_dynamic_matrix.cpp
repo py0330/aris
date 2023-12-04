@@ -1697,6 +1697,9 @@ void test_qp() {
 		aris::Size nG = 6, nCE = 1, nCI = 7;
 		std::vector<double> G(nG*nG), g(nG), CE(nCE*nG), ce(nCE), CI(nCI*nG), ci(nCI), x(nG);
 
+		std::vector<double> mem(nG * nG * 2 + nG * 2 + 8 * (nCE + nCI));
+		std::vector<double> rr(nG), rr2(nCE), rr3(nCI);
+
 		auto drand = []()->double {
 			static std::random_device rd;
 			static std::mt19937 gen(rd());
@@ -1730,7 +1733,7 @@ void test_qp() {
 			s_mm(nG, nG, nG, L.data(), nG, L.data(), T(nG), G.data(), nG);
 		};
 
-		std::vector<double> mem(nG* nG * 2 + 12 * (nCE + nCI));
+		
 		for (int i = 0; i < 10000000; ++i) {
 			if (i % 1000 == 0)
 				std::cout << i << std::endl;
@@ -1753,12 +1756,12 @@ void test_qp() {
 			aris::dynamic::s_vc(nCI, data.data(), ci.data());
 #else
 			generate_rand_mtx();
-			//aris::dynamic::dlmwrite(nG, nG, G.data(), "C:\\Users\\py033\\Desktop\\test_data\\G.txt");
-			//aris::dynamic::dlmwrite(nG, 1, g.data(), "C:\\Users\\py033\\Desktop\\test_data\\g0.txt");
-			//aris::dynamic::dlmwrite(nCE, nG, CE.data(), "C:\\Users\\py033\\Desktop\\test_data\\CE.txt");
-			//aris::dynamic::dlmwrite(nCE, 1, ce.data(), "C:\\Users\\py033\\Desktop\\test_data\\ce0.txt");
-			//aris::dynamic::dlmwrite(nCI, nG, CI.data(), "C:\\Users\\py033\\Desktop\\test_data\\CI.txt");
-			//aris::dynamic::dlmwrite(nCI, 1, ci.data(), "C:\\Users\\py033\\Desktop\\test_data\\ci0.txt");
+			aris::dynamic::dlmwrite(nG, nG, G.data(), "C:\\Users\\py033\\Desktop\\test_data\\G.txt");
+			aris::dynamic::dlmwrite(nG, 1, g.data(), "C:\\Users\\py033\\Desktop\\test_data\\g0.txt");
+			aris::dynamic::dlmwrite(nCE, nG, CE.data(), "C:\\Users\\py033\\Desktop\\test_data\\CE.txt");
+			aris::dynamic::dlmwrite(nCE, 1, ce.data(), "C:\\Users\\py033\\Desktop\\test_data\\ce0.txt");
+			aris::dynamic::dlmwrite(nCI, nG, CI.data(), "C:\\Users\\py033\\Desktop\\test_data\\CI.txt");
+			aris::dynamic::dlmwrite(nCI, 1, ci.data(), "C:\\Users\\py033\\Desktop\\test_data\\ci0.txt");
 
 
 
@@ -1768,16 +1771,23 @@ void test_qp() {
 
 			//auto r1 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
 			//G = G_store;
-			double rrrrr[6];
+			
 			auto r2 = aris::dynamic::s_quadprog(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data(), mem.data());
-			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rrrrr);
-			auto r3 = 0.5 * aris::dynamic::s_vv(6, rrrrr, x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
+			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rr.data());
+			auto r3 = 0.5 * aris::dynamic::s_vv(6, rr.data(), x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
 			
 			//std::cout << std::endl << "-------------------------" << std::endl;
 
 			auto r4 = aris::dynamic::s_qp(nG, nCE, nCI, G.data(), g.data(), CE.data(), ce.data(), CI.data(), ci.data(), x.data());
-			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rrrrr);
-			auto r5 = 0.5 * aris::dynamic::s_vv(6, rrrrr, x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
+			aris::dynamic::s_mm(6, 1, 6, G.data(), x.data(), rr.data());
+			auto r5 = 0.5 * aris::dynamic::s_vv(6, rr.data(), x.data()) + aris::dynamic::s_vv(6, g.data(), x.data());
+
+
+			s_mm(nCE, 1, nG, CE.data(), x.data(), rr2.data());
+			s_vs(nCE, ce.data(), rr2.data());
+
+			s_mm(nCI, 1, nG, CI.data(), x.data(), rr3.data());
+			s_vs(nCI, ci.data(), rr3.data());
 
 			if (std::abs(r2 - r4) > 1e-6 * (std::abs(r2) + std::abs(r4))
 				|| std::abs(r3 - r5) > 1e-6 * (std::abs(r3) + std::abs(r5))) {

@@ -3071,10 +3071,10 @@ namespace aris::dynamic{
 
 	//	The problem is in the form:
 	//
-	//min 0.5 x G x + g0 x
+	//min 0.5 * x G x + g0 x
 	//s.t.
-	//    CE x  = ce0
-	//    CI x <= ci0
+	//    CE^T x + ce0 =  0
+	//    CI^T x + ci0 >= 0
 	//	 
 	// The matrix and vectors dimensions are as follows:
 	//    G : nG * nG
