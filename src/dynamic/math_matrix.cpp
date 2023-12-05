@@ -14,7 +14,7 @@
 #include "aris/ext/QuadProg++.hh"
 #include "aris/dynamic/math_matrix.hpp"
 
-#define ARIS_DEBUG_QP
+//#define ARIS_DEBUG_QP
 
 namespace aris::dynamic {
 	auto dlmread(const char* FileName, double* pMatrix)->void {
@@ -147,13 +147,15 @@ namespace aris::dynamic {
 		double* R = mem;
 		double* J = mem + nG * nG;
 		double* z = J + nG * nG;
-		double* d = z + nG * nG;
+		double* d = z + nG;
 		double* x_old = d + nG;
 
 		double* s = x_old + nG;
 		double* r = s + nCE + nCI;
 		double* u = r + nCE + nCI;
 		double* u_old = u + nCE + nCI;
+
+		
 
 		int* A = reinterpret_cast<int*>(u_old + nCE + nCI);
 		int* A_old = A + nCE + nCI;

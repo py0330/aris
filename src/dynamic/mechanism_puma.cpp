@@ -172,6 +172,7 @@ namespace aris::dynamic{
 		return 0;
 	}
 	
+
 	struct PumaInverseKinematicSolver::Imp {
 		PumaParamLocal puma_param;
 		union {
@@ -187,222 +188,225 @@ namespace aris::dynamic{
 			Motion* motions[6]{ nullptr };
 		};
 		GeneralMotion* EE{ nullptr };
+
+		auto deducePumaParam(Model* model) -> void {
+			this->GR = &model->partPool().at(0);
+			this->L1 = &model->partPool().at(1);
+			this->L2 = &model->partPool().at(2);
+			this->L3 = &model->partPool().at(3);
+			this->L4 = &model->partPool().at(4);
+			this->L5 = &model->partPool().at(5);
+			this->L6 = &model->partPool().at(6);
+
+			this->J1 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(0));
+			this->J2 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(1));
+			this->J3 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(2));
+			this->J4 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(3));
+			this->J5 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(4));
+			this->J6 = dynamic_cast<RevoluteJoint*>(&model->jointPool().at(5));
+
+			this->M1 = &model->motionPool().at(0);
+			this->M2 = &model->motionPool().at(1);
+			this->M3 = &model->motionPool().at(2);
+			this->M4 = &model->motionPool().at(3);
+			this->M5 = &model->motionPool().at(4);
+			this->M6 = &model->motionPool().at(5);
+
+			this->EE = dynamic_cast<GeneralMotion*>(&model->generalMotionPool().at(0));
+
+			auto J1_mak_on_GR = &this->J1->makI()->fatherPart() == this->GR ? this->J1->makI() : this->J1->makJ();
+			auto J1_mak_on_L1 = &this->J1->makI()->fatherPart() == this->L1 ? this->J1->makI() : this->J1->makJ();
+			auto J2_mak_on_L1 = &this->J2->makI()->fatherPart() == this->L1 ? this->J2->makI() : this->J2->makJ();
+			auto J2_mak_on_L2 = &this->J2->makI()->fatherPart() == this->L2 ? this->J2->makI() : this->J2->makJ();
+			auto J3_mak_on_L2 = &this->J3->makI()->fatherPart() == this->L2 ? this->J3->makI() : this->J3->makJ();
+			auto J3_mak_on_L3 = &this->J3->makI()->fatherPart() == this->L3 ? this->J3->makI() : this->J3->makJ();
+			auto J4_mak_on_L3 = &this->J4->makI()->fatherPart() == this->L3 ? this->J4->makI() : this->J4->makJ();
+			auto J4_mak_on_L4 = &this->J4->makI()->fatherPart() == this->L4 ? this->J4->makI() : this->J4->makJ();
+			auto J5_mak_on_L4 = &this->J5->makI()->fatherPart() == this->L4 ? this->J5->makI() : this->J5->makJ();
+			auto J5_mak_on_L5 = &this->J5->makI()->fatherPart() == this->L5 ? this->J5->makI() : this->J5->makJ();
+			auto J6_mak_on_L5 = &this->J6->makI()->fatherPart() == this->L5 ? this->J6->makI() : this->J6->makJ();
+			auto J6_mak_on_L6 = &this->J6->makI()->fatherPart() == this->L6 ? this->J6->makI() : this->J6->makJ();
+			auto EE_mak_on_GR = &this->EE->makI()->fatherPart() == this->GR ? this->EE->makI() : this->EE->makJ();
+			auto EE_mak_on_L6 = &this->EE->makI()->fatherPart() == this->L6 ? this->EE->makI() : this->EE->makJ();
+			
+			// get A pm //
+			{
+				// 构建A坐标系相对于R1 mak的坐标系，它的y轴是R2在R1下的 z 轴，z轴是R1的z轴[0,0,1],x轴为他俩叉乘
+				// 它的xy坐标为0，z坐标为R2在R1 mak下坐标系的z
+				//
+				// 获得R2相对于R1的位姿矩阵
+				double pm[16], pm_A_in_R1[16];
+				s_eye(4, pm_A_in_R1);
+
+				J2_mak_on_L1->getPm(*J1_mak_on_L1, pm);
+				s_vc(3, pm + 2, 4, pm_A_in_R1 + 1, 4);
+				s_c3(pm_A_in_R1 + 1, 4, pm_A_in_R1 + 2, 4, pm_A_in_R1, 4);
+				pm_A_in_R1[11] = pm[11];
+
+				// 把 A_in_R1 换算到 A in ground，这里的ground是指EE 的 makJ
+				J1_mak_on_GR->getPm(*EE_mak_on_GR, pm);
+				s_pm_dot_pm(pm, pm_A_in_R1, this->puma_param.pm_A_in_Ground);
+			}
+
+			// get D pm //
+			{
+				// 构建D坐标系相对于R6 mak的坐标系，它的 x 轴是R6的 z 轴，y轴是R5的转轴（z轴）
+				// 它的xyz坐标和两轴的交点重合
+				//
+				// 获得R5相对于R6的位姿矩阵
+				double pm[16];
+				J5_mak_on_L5->getPm(*J6_mak_on_L5, pm);
+				double pm_D_in_R6[16]{ 0,0,0,0, 0,0,0,0, 1,0,0,pm[11], 0,0,0,1 };
+				s_vc(3, pm + 2, 4, pm_D_in_R6 + 1, 4);
+				s_c3(pm_D_in_R6, 4, pm_D_in_R6 + 1, 4, pm_D_in_R6 + 2, 4);
+
+				// 把 D_in_R6 换算出 pm_EE_in_D
+				EE_mak_on_L6->getPm(*J6_mak_on_L6, pm);
+				s_inv_pm_dot_pm(pm_D_in_R6, pm, this->puma_param.pm_EE_in_D);
+			}
+
+			// get d1 //
+			{
+				// 得到 R2_mak_on_L1 相对于 R1_mak_on_L1 的位置
+				double pm[16];
+				J2_mak_on_L1->getPm(*J1_mak_on_L1, pm);
+
+				// 求取这个位置分量在 A 坐标系下的 x 分量,首先去掉 z 分量，然后用y轴叉乘它，y 叉 x 得到的 z 分量是它的负值
+				pm[11] = 0;//去掉 z 分量
+				double pp[3];
+				s_c3(pm + 2, 4, pm + 3, 4, pp, 1);
+
+				this->puma_param.d1 = -pp[2];
+			}
+
+			// get d2 //
+			{
+				double pm[16];
+				J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
+				this->puma_param.d2 = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
+			}
+
+			// get d3\d4\d5 //
+			{
+				// 取得4轴和5轴的交点
+				double pm[16];
+				J5_mak_on_L4->getPm(*J4_mak_on_L4, pm);
+				double pp_in_R4_mak[3]{ 0.0,0.0,pm[11] };
+
+				double pp_in_R3_mak[3];
+				J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
+				s_pp2pp(pm, pp_in_R4_mak, pp_in_R3_mak);
+
+				// 将原点的偏移叠加到该变量上
+				J1_mak_on_L1->getPm(*J2_mak_on_L1, pm);
+				double R1_pp_in_R2_mak[3]{ pm[3],pm[7],pm[11] };
+				J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
+				double R1_pp_in_R3_mak[3];
+				s_pp2pp(pm, R1_pp_in_R2_mak, R1_pp_in_R3_mak);
+
+				pp_in_R3_mak[2] -= R1_pp_in_R3_mak[2];
+
+				// 将方向矫正一下,需要将pp_in_R3_mak 变到如下坐标系: x轴为4轴的转轴z，y轴为2轴的转轴z(因为2轴3轴可能反向，而二轴又定义了A)
+				double rm[9];// y轴是0，0，1
+				J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
+				s_vc(3, pm + 2, 4, rm, 3);
+				J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
+				s_vc(3, pm + 2, 4, rm + 1, 3);
+				s_c3(rm, 3, rm + 1, 3, rm + 2, 3);
+
+				double final_pp[3];
+				s_mm(3, 1, 3, rm, T(3), pp_in_R3_mak, 1, final_pp, 1);
+
+				this->puma_param.d3 = final_pp[2];
+				this->puma_param.d4 = final_pp[1];
+				this->puma_param.d5 = final_pp[0];
+			}
+
+			// get mp_offset and mp_factor //
+			{
+				auto& param = this->puma_param;
+
+				// mp_offset[0] 始终为0，因为A是在关节角度为0时定义出来的
+				this->puma_param.mp_offset[0] = 0.0;
+				this->puma_param.mp_factor[0] = J1_mak_on_L1 == this->J1->makI() ? 1.0 : -1.0;
+
+				// mp_offset[1] 应该能把 R2R3 连线转到延x轴正向的位置
+				// 先把A坐标系的x轴转到R2坐标系下
+				double Ax_axis_in_EE[3], Ax_axis_in_R1[3], Ax_axis_in_R2[3];
+				double pm[16];
+				s_vc(3, this->puma_param.pm_A_in_Ground, 4, Ax_axis_in_EE, 1);
+				EE_mak_on_GR->getPm(*J1_mak_on_GR, pm);
+				s_pm_dot_v3(pm, Ax_axis_in_EE, Ax_axis_in_R1);
+				J1_mak_on_L1->getPm(*J2_mak_on_L1, pm);
+				s_pm_dot_v3(pm, Ax_axis_in_R1, Ax_axis_in_R2);
+
+				// 再看R2R3连线和以上x轴的夹角
+				J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
+
+				double s = Ax_axis_in_R2[0] * pm[7] - Ax_axis_in_R2[1] * pm[3];// x cross R2R3
+				double c = Ax_axis_in_R2[0] * pm[3] + Ax_axis_in_R2[1] * pm[7];
+
+				this->puma_param.mp_offset[1] = std::atan2(s, c);
+				this->puma_param.mp_factor[1] = J2_mak_on_L2 == this->J2->makI() ? 1.0 : -1.0;
+
+				// mp_offset[2] 应该能让R3把R4轴线转到 R2R3 连线方向（x轴）
+				double R4_axis_in_R3[3], R4_axis_in_R2[3];
+				J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
+				s_vc(3, pm + 2, 4, R4_axis_in_R3, 1);
+				J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
+				s_pm_dot_v3(pm, R4_axis_in_R3, R4_axis_in_R2);
+
+				// 获取 R2R3 连线，在R2下
+				J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
+
+				// R4的z轴和 x_axis_in_R3 的夹角就是offset
+				s = pm[3] * R4_axis_in_R2[1] - pm[7] * R4_axis_in_R2[0];// x cross R2R3
+				c = pm[3] * R4_axis_in_R2[0] + pm[7] * R4_axis_in_R2[1];
+
+				this->puma_param.mp_offset[2] = std::atan2(s, c);
+				this->puma_param.mp_factor[2] = J3_mak_on_L3 == this->J3->makI() ? 1.0 : -1.0;
+
+				// 看看2轴和3轴是否反向 //
+				bool is_23axes_the_same;
+				J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
+				is_23axes_the_same = pm[10] > 0.0 ? true : false;
+				this->puma_param.mp_factor[2] *= is_23axes_the_same ? 1.0 : -1.0;
+
+				// mp_offset[3] 应该能让R4把R5轴线转到和R2轴一致
+				double R2_z_axis_in_R3[3], R2_z_axis_in_R4[3];
+				J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
+				s_vc(3, pm + 2, 4, R2_z_axis_in_R3, 1);
+				J3_mak_on_L3->getPm(*J4_mak_on_L3, pm);
+				s_pm_dot_v3(pm, R2_z_axis_in_R3, R2_z_axis_in_R4);
+				J5_mak_on_L4->getPm(*J4_mak_on_L4, pm);
+
+				s = R2_z_axis_in_R4[0] * pm[6] - R2_z_axis_in_R4[1] * pm[2];// x cross R2R3
+				c = R2_z_axis_in_R4[0] * pm[2] + R2_z_axis_in_R4[1] * pm[6];
+
+				this->puma_param.mp_offset[3] = std::atan2(s, c);
+				this->puma_param.mp_factor[3] = J4_mak_on_L4 == this->J4->makI() ? 1.0 : -1.0;
+
+				// mp_offset[4] 应该能让R5把R6轴线转到和R4轴一致
+				double R6_z_axis_in_R5[3], R4_z_axis_in_R5[3];
+				J6_mak_on_L5->getPm(*J5_mak_on_L5, pm);
+				s_vc(3, pm + 2, 4, R6_z_axis_in_R5, 1);
+				J4_mak_on_L4->getPm(*J5_mak_on_L4, pm);
+				s_vc(3, pm + 2, 4, R4_z_axis_in_R5, 1);
+				s = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[1] - R4_z_axis_in_R5[1] * R6_z_axis_in_R5[0];// x cross R2R3
+				c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
+
+				this->puma_param.mp_offset[4] = std::atan2(s, c);
+				this->puma_param.mp_factor[4] = J5_mak_on_L5 == this->J5->makI() ? 1.0 : -1.0;
+
+				// mp_offset[5] 应该为 0，因为 EE_in_D是在其为0 时定义出来的
+				this->puma_param.mp_offset[5] = 0.0;
+				this->puma_param.mp_factor[5] = J6_mak_on_L6 == this->J6->makI() ? 1.0 : -1.0;
+			}
+		}
 	};
 	auto PumaInverseKinematicSolver::allocateMemory()->void {
 		InverseKinematicSolver::allocateMemory();
-
-		imp_->GR = &model()->partPool().at(0);
-		imp_->L1 = &model()->partPool().at(1);
-		imp_->L2 = &model()->partPool().at(2);
-		imp_->L3 = &model()->partPool().at(3);
-		imp_->L4 = &model()->partPool().at(4);
-		imp_->L5 = &model()->partPool().at(5);
-		imp_->L6 = &model()->partPool().at(6);
-
-		imp_->J1 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(0));
-		imp_->J2 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(1));
-		imp_->J3 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(2));
-		imp_->J4 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(3));
-		imp_->J5 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(4));
-		imp_->J6 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(5));
-
-		imp_->M1 = &model()->motionPool().at(0);
-		imp_->M2 = &model()->motionPool().at(1);
-		imp_->M3 = &model()->motionPool().at(2);
-		imp_->M4 = &model()->motionPool().at(3);
-		imp_->M5 = &model()->motionPool().at(4);
-		imp_->M6 = &model()->motionPool().at(5);
-
-		imp_->EE = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
-
-		auto J1_mak_on_GR = &imp_->J1->makI()->fatherPart() == imp_->GR ? imp_->J1->makI() : imp_->J1->makJ();
-		auto J1_mak_on_L1 = &imp_->J1->makI()->fatherPart() == imp_->L1 ? imp_->J1->makI() : imp_->J1->makJ();
-		auto J2_mak_on_L1 = &imp_->J2->makI()->fatherPart() == imp_->L1 ? imp_->J2->makI() : imp_->J2->makJ();
-		auto J2_mak_on_L2 = &imp_->J2->makI()->fatherPart() == imp_->L2 ? imp_->J2->makI() : imp_->J2->makJ();
-		auto J3_mak_on_L2 = &imp_->J3->makI()->fatherPart() == imp_->L2 ? imp_->J3->makI() : imp_->J3->makJ();
-		auto J3_mak_on_L3 = &imp_->J3->makI()->fatherPart() == imp_->L3 ? imp_->J3->makI() : imp_->J3->makJ();
-		auto J4_mak_on_L3 = &imp_->J4->makI()->fatherPart() == imp_->L3 ? imp_->J4->makI() : imp_->J4->makJ();
-		auto J4_mak_on_L4 = &imp_->J4->makI()->fatherPart() == imp_->L4 ? imp_->J4->makI() : imp_->J4->makJ();
-		auto J5_mak_on_L4 = &imp_->J5->makI()->fatherPart() == imp_->L4 ? imp_->J5->makI() : imp_->J5->makJ();
-		auto J5_mak_on_L5 = &imp_->J5->makI()->fatherPart() == imp_->L5 ? imp_->J5->makI() : imp_->J5->makJ();
-		auto J6_mak_on_L5 = &imp_->J6->makI()->fatherPart() == imp_->L5 ? imp_->J6->makI() : imp_->J6->makJ();
-		auto J6_mak_on_L6 = &imp_->J6->makI()->fatherPart() == imp_->L6 ? imp_->J6->makI() : imp_->J6->makJ();
-		auto EE_mak_on_GR = &imp_->EE->makI()->fatherPart() == imp_->GR ? imp_->EE->makI() : imp_->EE->makJ();
-		auto EE_mak_on_L6 = &imp_->EE->makI()->fatherPart() == imp_->L6 ? imp_->EE->makI() : imp_->EE->makJ();
-
-		// get A pm //
-		{
-			// 构建A坐标系相对于R1 mak的坐标系，它的y轴是R2在R1下的 z 轴，z轴是R1的z轴[0,0,1],x轴为他俩叉乘
-			// 它的xy坐标为0，z坐标为R2在R1 mak下坐标系的z
-			//
-			// 获得R2相对于R1的位姿矩阵
-			double pm[16], pm_A_in_R1[16];
-			s_eye(4, pm_A_in_R1);
-
-			J2_mak_on_L1->getPm(*J1_mak_on_L1, pm);
-			s_vc(3, pm + 2, 4, pm_A_in_R1 + 1, 4);
-			s_c3(pm_A_in_R1 + 1, 4, pm_A_in_R1 + 2, 4, pm_A_in_R1, 4);
-			pm_A_in_R1[11] = pm[11];
-
-			// 把 A_in_R1 换算到 A in ground，这里的ground是指EE 的 makJ
-			J1_mak_on_GR->getPm(*EE_mak_on_GR, pm);
-			s_pm_dot_pm(pm, pm_A_in_R1, imp_->puma_param.pm_A_in_Ground);
-		}
-
-		// get D pm //
-		{
-			// 构建D坐标系相对于R6 mak的坐标系，它的 x 轴是R6的 z 轴，y轴是R5的转轴（z轴）
-			// 它的xyz坐标和两轴的交点重合
-			//
-			// 获得R5相对于R6的位姿矩阵
-			double pm[16];
-			J5_mak_on_L5->getPm(*J6_mak_on_L5, pm);
-			double pm_D_in_R6[16]{ 0,0,0,0, 0,0,0,0, 1,0,0,pm[11], 0,0,0,1 };
-			s_vc(3, pm + 2, 4, pm_D_in_R6 + 1, 4);
-			s_c3(pm_D_in_R6, 4, pm_D_in_R6 + 1, 4, pm_D_in_R6 + 2, 4);
-
-			// 把 D_in_R6 换算出 pm_EE_in_D
-			EE_mak_on_L6->getPm(*J6_mak_on_L6, pm);
-			s_inv_pm_dot_pm(pm_D_in_R6, pm, imp_->puma_param.pm_EE_in_D);
-		}
-
-		// get d1 //
-		{
-			// 得到 R2_mak_on_L1 相对于 R1_mak_on_L1 的位置
-			double pm[16];
-			J2_mak_on_L1->getPm(*J1_mak_on_L1, pm);
-
-			// 求取这个位置分量在 A 坐标系下的 x 分量,首先去掉 z 分量，然后用y轴叉乘它，y 叉 x 得到的 z 分量是它的负值
-			pm[11] = 0;//去掉 z 分量
-			double pp[3];
-			s_c3(pm + 2, 4, pm + 3, 4, pp, 1);
-
-			imp_->puma_param.d1 = -pp[2];
-		}
-
-		// get d2 //
-		{
-			double pm[16];
-			J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
-			imp_->puma_param.d2 = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
-		}
-
-		// get d3\d4\d5 //
-		{
-			// 取得4轴和5轴的交点
-			double pm[16];
-			J5_mak_on_L4->getPm(*J4_mak_on_L4, pm);
-			double pp_in_R4_mak[3]{ 0.0,0.0,pm[11] };
-
-			double pp_in_R3_mak[3];
-			J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
-			s_pp2pp(pm, pp_in_R4_mak, pp_in_R3_mak);
-
-			// 将原点的偏移叠加到该变量上
-			J1_mak_on_L1->getPm(*J2_mak_on_L1, pm);
-			double R1_pp_in_R2_mak[3]{ pm[3],pm[7],pm[11] };
-			J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
-			double R1_pp_in_R3_mak[3];
-			s_pp2pp(pm, R1_pp_in_R2_mak, R1_pp_in_R3_mak);
-
-			pp_in_R3_mak[2] -= R1_pp_in_R3_mak[2];
-
-			// 将方向矫正一下,需要将pp_in_R3_mak 变到如下坐标系: x轴为4轴的转轴z，y轴为2轴的转轴z(因为2轴3轴可能反向，而二轴又定义了A)
-			double rm[9];// y轴是0，0，1
-			J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
-			s_vc(3, pm + 2, 4, rm, 3);
-			J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
-			s_vc(3, pm + 2, 4, rm + 1, 3);
-			s_c3(rm, 3, rm + 1, 3, rm + 2, 3);
-
-			double final_pp[3];
-			s_mm(3, 1, 3, rm, T(3), pp_in_R3_mak, 1, final_pp, 1);
-
-			imp_->puma_param.d3 = final_pp[2];
-			imp_->puma_param.d4 = final_pp[1];
-			imp_->puma_param.d5 = final_pp[0];
-		}
-
-		// get mp_offset and mp_factor //
-		{
-			auto& param = imp_->puma_param;
-
-			// mp_offset[0] 始终为0，因为A是在关节角度为0时定义出来的
-			imp_->puma_param.mp_offset[0] = 0.0;
-			imp_->puma_param.mp_factor[0] = J1_mak_on_L1 == imp_->J1->makI() ? 1.0 : -1.0;
-
-			// mp_offset[1] 应该能把 R2R3 连线转到延x轴正向的位置
-			// 先把A坐标系的x轴转到R2坐标系下
-			double Ax_axis_in_EE[3], Ax_axis_in_R1[3], Ax_axis_in_R2[3];
-			double pm[16];
-			s_vc(3, imp_->puma_param.pm_A_in_Ground, 4, Ax_axis_in_EE, 1);
-			EE_mak_on_GR->getPm(*J1_mak_on_GR, pm);
-			s_pm_dot_v3(pm, Ax_axis_in_EE, Ax_axis_in_R1);
-			J1_mak_on_L1->getPm(*J2_mak_on_L1, pm);
-			s_pm_dot_v3(pm, Ax_axis_in_R1, Ax_axis_in_R2);
-
-			// 再看R2R3连线和以上x轴的夹角
-			J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
-
-			double s = Ax_axis_in_R2[0] * pm[7] - Ax_axis_in_R2[1] * pm[3];// x cross R2R3
-			double c = Ax_axis_in_R2[0] * pm[3] + Ax_axis_in_R2[1] * pm[7];
-
-			imp_->puma_param.mp_offset[1] = std::atan2(s, c);
-			imp_->puma_param.mp_factor[1] = J2_mak_on_L2 == imp_->J2->makI() ? 1.0 : -1.0;
-
-			// mp_offset[2] 应该能让R3把R4轴线转到 R2R3 连线方向（x轴）
-			double R4_axis_in_R3[3], R4_axis_in_R2[3];
-			J4_mak_on_L3->getPm(*J3_mak_on_L3, pm);
-			s_vc(3, pm + 2, 4, R4_axis_in_R3, 1);
-			J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
-			s_pm_dot_v3(pm, R4_axis_in_R3, R4_axis_in_R2);
-
-			// 获取 R2R3 连线，在R2下
-			J3_mak_on_L2->getPm(*J2_mak_on_L2, pm);
-
-			// R4的z轴和 x_axis_in_R3 的夹角就是offset
-			s = pm[3] * R4_axis_in_R2[1] - pm[7] * R4_axis_in_R2[0];// x cross R2R3
-			c = pm[3] * R4_axis_in_R2[0] + pm[7] * R4_axis_in_R2[1];
-
-			imp_->puma_param.mp_offset[2] = std::atan2(s, c);
-			imp_->puma_param.mp_factor[2] = J3_mak_on_L3 == imp_->J3->makI() ? 1.0 : -1.0;
-
-			// 看看2轴和3轴是否反向 //
-			bool is_23axes_the_same;
-			J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
-			is_23axes_the_same = pm[10] > 0.0 ? true : false;
-			imp_->puma_param.mp_factor[2] *= is_23axes_the_same ? 1.0 : -1.0;
-
-			// mp_offset[3] 应该能让R4把R5轴线转到和R2轴一致
-			double R2_z_axis_in_R3[3], R2_z_axis_in_R4[3];
-			J2_mak_on_L2->getPm(*J3_mak_on_L2, pm);
-			s_vc(3, pm + 2, 4, R2_z_axis_in_R3, 1);
-			J3_mak_on_L3->getPm(*J4_mak_on_L3, pm);
-			s_pm_dot_v3(pm, R2_z_axis_in_R3, R2_z_axis_in_R4);
-			J5_mak_on_L4->getPm(*J4_mak_on_L4, pm);
-
-			s = R2_z_axis_in_R4[0] * pm[6] - R2_z_axis_in_R4[1] * pm[2];// x cross R2R3
-			c = R2_z_axis_in_R4[0] * pm[2] + R2_z_axis_in_R4[1] * pm[6];
-
-			imp_->puma_param.mp_offset[3] = std::atan2(s, c);
-			imp_->puma_param.mp_factor[3] = J4_mak_on_L4 == imp_->J4->makI() ? 1.0 : -1.0;
-
-			// mp_offset[4] 应该能让R5把R6轴线转到和R4轴一致
-			double R6_z_axis_in_R5[3], R4_z_axis_in_R5[3];
-			J6_mak_on_L5->getPm(*J5_mak_on_L5, pm);
-			s_vc(3, pm + 2, 4, R6_z_axis_in_R5, 1);
-			J4_mak_on_L4->getPm(*J5_mak_on_L4, pm);
-			s_vc(3, pm + 2, 4, R4_z_axis_in_R5, 1);
-			s = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[1] - R4_z_axis_in_R5[1] * R6_z_axis_in_R5[0];// x cross R2R3
-			c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
-
-			imp_->puma_param.mp_offset[4] = std::atan2(s, c);
-			imp_->puma_param.mp_factor[4] = J5_mak_on_L5 == imp_->J5->makI() ? 1.0 : -1.0;
-
-			// mp_offset[5] 应该为 0，因为 EE_in_D是在其为0 时定义出来的
-			imp_->puma_param.mp_offset[5] = 0.0;
-			imp_->puma_param.mp_factor[5] = J6_mak_on_L6 == imp_->J6->makI() ? 1.0 : -1.0;
-		}
+		imp_->deducePumaParam(model());
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int {
 		double output_pos[16], input_pos[6], current_input_pos[6];

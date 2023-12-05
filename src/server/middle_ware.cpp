@@ -11,7 +11,6 @@ namespace aris::server {
 	std::uint64_t MiddleWare::cmd_id_ = 0;
 
 	auto MiddleWare::executeCmd(std::string_view str, std::function<void(std::string)> send_ret, Interface* interface)->int {
-		(void)(interface);
 
 		std::string cmd(str);
 
