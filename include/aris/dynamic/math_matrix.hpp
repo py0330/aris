@@ -3073,7 +3073,7 @@ namespace aris::dynamic{
 	//   ci0: nCI
 	//
 	//     x: nG
-	//   mem: 2*nG*nG + 2*nG + 8*(nCE+nCI)
+	//   mem: 2*nG*nG + 3*nG + 8*(nCE+nCI)
 	auto ARIS_API s_quadprog(Size nG, Size nCE, Size nCI,
 		const double* G, const double* g,
 		const double* CE, const double* ce,
