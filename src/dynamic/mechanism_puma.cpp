@@ -78,7 +78,7 @@ namespace aris::dynamic{
 		double mp_offset[6];// mp_real = (mp_theoretical - mp_offset) * mp_factor
 		double mp_factor[6];
 	};
-	auto pumaInverse(const PumaParamLocal& param, const double* ee_pm, int which_root, double* input)->int {
+	auto pumaInverse(const PumaParamLocal& param, const double* ee_pm, int which_root, const double *current_input, double* input, double zero_check = 1e-10)->int {
 		const double& d1 = param.d1;
 		const double& d2 = param.d2;
 		const double& d3 = param.d3;
@@ -91,7 +91,12 @@ namespace aris::dynamic{
 		const double* offset = param.mp_offset;
 		const double* factor = param.mp_factor;
 
-		double q[6]{ 0 };
+		double q[6]{ 0 }, current_q[6];
+
+		// 添加所有的偏移 //
+		for (int i = 0; i < 6; ++i) {
+			current_q[i] = current_input[i] / factor[i] + offset[i];
+		}
 
 		// 将末端设置成D坐标系，同时得到它在A中的表达 //
 		double E_in_A[16];
@@ -102,12 +107,18 @@ namespace aris::dynamic{
 		// 开始求1轴 //
 		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
 		// 事实上这里可以有2个解
-		if (std::abs(d4) > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return -1;//工作空间以外
-		if (which_root & 0x04) {
-			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
+
+		double xy_square_sum = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]);
+		if (std::abs(d4) > xy_square_sum) return -1;//工作空间以外
+
+		if (xy_square_sum < zero_check) {
+			q[0] = current_q[0];
+		}
+		else if (which_root & 0x04) {
+			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / xy_square_sum);
 		}
 		else {
-			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
+			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / xy_square_sum);
 		}
 
 		// 开始求2，3轴 //
@@ -145,7 +156,17 @@ namespace aris::dynamic{
 
 		s_pm2pe(R456_pm, R456_pe, "121");
 
-		if (which_root & 0x01) {
+		if (R456_pe[4] < zero_check) {
+			q[3] = current_q[3];
+			q[4] = R456_pe[4];
+			q[5] = R456_pe[3] + R456_pe[5] - q[3];
+		}
+		else if (R456_pe[4] > aris::PI - zero_check) {
+			q[3] = current_q[3];
+			q[4] = R456_pe[4];
+			q[5] = -((R456_pe[3] - R456_pe[5]) - q[3]);
+		}
+		else if (which_root & 0x01) {
 			q[3] = R456_pe[3] > PI ? R456_pe[3] - PI : R456_pe[3] + PI;
 			q[4] = 2 * PI - R456_pe[4];
 			q[5] = R456_pe[5] > PI ? R456_pe[5] - PI : R456_pe[5] + PI;
@@ -158,16 +179,8 @@ namespace aris::dynamic{
 
 		// 添加所有的偏移 //
 		for (int i = 0; i < 6; ++i) {
-			q[i] -= offset[i];
-			q[i] *= factor[i];
+			input[i] = (q[i] - offset[i]) * factor[i];// mp_real = (mp_theoretical - mp_offset) * mp_factor
 		}
-		// 将q copy到input中
-		s_vc(6, q, input);
-
-
-
-		// 如果奇异，则计算解空间 //
-
 
 		return 0;
 	}
@@ -461,8 +474,8 @@ namespace aris::dynamic{
 		for (int i = 0; i < 6; ++i)
 			current_input_pos[i] = model()->motionPool()[i].mpInternal();
 
-		auto ik = [this](const double* ee_pos, int which_root, double* input)->int {
-			return pumaInverse(this->imp_->puma_param, ee_pos, which_root, input);
+		auto ik = [this, current_input_pos](const double* ee_pos, int which_root, double* input)->int {
+			return pumaInverse(this->imp_->puma_param, ee_pos, which_root, current_input_pos, input);
 		};
 
 		return s_ik(6, rootNumber(), ik, which_root, ee_pos, input, root_mem, input_period, current_input_pos);

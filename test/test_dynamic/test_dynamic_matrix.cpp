@@ -1604,8 +1604,13 @@ void test_qp() {
 	auto test_qp = [](aris::Size nG, aris::Size nCE, aris::Size nCI, double* G, double* g, double* CE, double *ce, double *CI, double *ci, double *x) {
 		std::vector<double> result(nG), mem(nG*nG*2 + 8*(nCE+ nCI));
 
-		auto r = aris::dynamic::s_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data());
-		r = aris::dynamic::s_quadprog(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data(), mem.data());
+		auto r = aris::dynamic::s_quadprog(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data(), mem.data());
+		//r = aris::dynamic::s_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, result.data());
+		
+
+		std::vector<double> ce_left(nCE), ci_left(nCI);
+		
+
 
 		if (!s_is_equal(1, nG, result.data(), x, 1e-10)) {
 			std::cout << "qp error : wrong x!" << std::endl;
@@ -1635,6 +1640,29 @@ void test_qp() {
 
 		//test_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, x);
 	}
+
+	{
+		const aris::Size nG = 3, nCE = 0, nCI = 3;
+
+		double G[nG * nG]{ 1, 0,  0,
+		0, 1, 0,
+		0, 0, 0 };
+
+		double g[nG]{ 2, 3, 4 };
+
+		double CE[3]{ 0.0357116785741896, 0.933993247757551, 0.757740130578333 };
+		double ce[1]{ 0.392227019534168 };
+
+		double CI[nCI*nG]{ 1, 0, 0,
+		0,1,0,
+		1,1,0};
+		double ci[nCI]{ -3,-9,-12 };
+
+		double x[nG]{ -0.729005053385393,	 -1.36004915704643,  1.19313161257671 };
+
+		test_qp(nG, nCE, nCI, G, g, CE, ce, CI, ci, x);
+	}
+
 
 	{
 		const aris::Size nG = 6, nCE = 3, nCI = 4;

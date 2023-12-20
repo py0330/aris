@@ -212,6 +212,7 @@ namespace aris::dynamic
 		// tbd //
 		auto clbFile(const std::string &file_path)->void;
 		auto clbFiles(const std::vector<std::string> &file_paths)->int;
+		auto clbFiles2(const std::vector<std::string>& file_paths) -> int;
 		
 		auto updateInertiaParam(const double* inertia_param)->void;
 

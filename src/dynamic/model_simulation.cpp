@@ -478,7 +478,105 @@ namespace aris::dynamic{
 		updateInertiaParam(x.data());
 		return 0;
 	}
-	
+	auto Calibrator::clbFiles2(const std::vector<std::string>& file_paths)->int {
+		// init some values //
+		if (imp_->torque_constant_.empty())imp_->torque_constant_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_ratio_.empty()) imp_->velocity_ratio_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->torque_weight_.empty())  imp_->torque_weight_.resize(model()->motionPool().size(), 1.0);
+		if (imp_->velocity_dead_zone_.empty())imp_->velocity_dead_zone_.resize(model()->motionPool().size(), 0.1);
+
+		// make datasets //
+		std::vector<std::vector<double> > pos(model()->motionPool().size());
+		std::vector<std::vector<double> > vel(model()->motionPool().size());
+		std::vector<std::vector<double> > acc(model()->motionPool().size());
+		std::vector<std::vector<double> > fce(model()->motionPool().size());
+
+		for (auto& file : file_paths) {
+			std::cout << "clb----loading file:" << file << std::endl;
+			auto mtx = aris::dynamic::dlmread(file.c_str());
+			std::vector<std::vector<std::vector<double> >*> dataset{ &pos, & vel, & acc, & fce };
+			makeDataset(this, mtx, dataset);
+		}
+
+		// make calibration matrix //
+		std::cout << "clb----computing data" << std::endl;
+		this->allocateMemory();
+
+		auto num = pos[0].size();
+		std::vector<double> A(num * m() * n()), b(num * m(), 0.0), tau(num * m(), 0.0), x(num * m(), 0.0);
+		std::vector<aris::Size> p(num * m());
+
+		Size rows{ 0 }, cols{ n() };
+		for (int i = 0; i < num; ++i) {
+			for (int j = 0; j < model()->motionPool().size(); ++j) {
+				this->model()->motionPool()[j].setP(&pos[j][i]);
+				this->model()->motionPool()[j].setV(&vel[j][i]);
+				this->model()->motionPool()[j].setA(&acc[j][i]);
+			}
+
+			this->model()->solverPool().at(1).kinPos();
+			this->model()->solverPool().at(1).kinVel();
+			this->model()->solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < model()->motionPool().size(); ++j) {
+				this->model()->motionPool()[j].setF(&fce[j][i]);
+			}
+			this->clb();
+
+			for (int j = 0; j < model()->motionPool().size(); ++j) {
+				// 考虑速度死区 //
+				if (std::abs(this->model()->motionPool()[j].mv()) < velocityDeadZone()[j])continue;
+
+				// 考虑电机扭矩权重 //
+				s_vc(n(), 1.0 / torqueWeight()[j], this->A() + j * n(), A.data() + rows * n());
+				b[rows] = this->b()[j] * 1.0 / torqueWeight()[j];
+				rows++;
+			}
+		}
+		auto max_value = *std::max_element(A.begin(), A.begin() + rows * n());
+		auto min_value = *std::min_element(A.begin(), A.begin() + rows * n());
+		auto real_max = std::max(std::abs(max_value), std::abs(min_value));
+		std::cout << "clb----A size:" << rows << "x" << cols << std::endl;
+		std::cout << "clb----max value of A:" << real_max << std::endl;
+
+		
+		dlmwrite(rows, n(), A.data(), (imp_->verify_result_path + "/A.txt").data());
+		dlmwrite(rows, 1, b.data(), (imp_->verify_result_path + "/b.txt").data());
+		
+
+		// solve calibration matrix //
+		std::vector<double> U(rows * n());
+		aris::Size rank;
+		double zero_check = 1e-6;
+
+		s_nv(rows * n(), 1.0 / real_max, A.data());
+		s_nv(rows, 1.0 / real_max, b.data());
+		s_householder_utp(rows, n(), A.data(), U.data(), tau.data(), p.data(), rank, zero_check);
+		s_householder_utp_sov(rows, n(), 1, rank, U.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
+		std::cout << "clb----rank:" << rank << std::endl;
+
+		std::cout << "clb----inertia result:" << std::endl;
+		dsp(model()->partPool().size() - 1, 10, x.data());
+		std::cout << "clb----friction result:" << std::endl;
+		dsp(model()->motionPool().size(), 3, x.data() + (model()->partPool().size() - 1) * 10);
+
+
+		// check variance //
+		s_mms(rows, 1, n(), A.data(), x.data(), b.data());
+		auto variance = std::sqrt(s_vv(n(), b.data(), b.data()) / n());
+		std::cout << "clb----variance:" << variance << std::endl;
+
+		if (variance > imp_->tolerable_variance_) return -1;
+
+		// update inertias //
+		updateInertiaParam(x.data());
+
+		dlmwrite(n(), 1, x.data(), (imp_->verify_result_path + "/x.txt").data());
+
+		return 0;
+	}
+
+
 	auto Calibrator::setVerifyOutputFileDir(std::string file_path)->void {
 		imp_->verify_result_path = file_path;
 	}
