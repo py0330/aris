@@ -121,7 +121,7 @@ int main(int argc, char *argv[]){
 	cs.resetModel(scara.release());
 
 	cs.resetPlanRoot(aris::plan::createDefaultPlanRoot().release());
-	cs.resetTransferModelController(new aris::server::ScaraTransferModelController(0.16));
+	//cs.resetTransferModelController(new aris::server::ScaraTransferModelController(0.16));
 	std::cout << aris::core::toXmlString(cs.model()) << std::endl;
 	//cs.resetModel(new aris::dynamic::Model);
 	//cs.resetPlanRoot(new aris::plan::PlanRoot);

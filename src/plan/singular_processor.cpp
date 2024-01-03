@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/singular_processor.hpp"
 #include"aris/plan/function.hpp"
 
-//#define ARIS_DEBUG_SINGULAR_PROCESSOR
+#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
 namespace aris::plan {
 	struct ThirdPolynomialParam {
@@ -247,19 +247,6 @@ namespace aris::plan {
 
 
 		std::vector<char> mem_;
-		//std::vector<double> max_vels_, 
-		//	                max_accs_, 
-		//	                input_pos_begin_,
-		//					input_vel_begin_,
-		//					input_acc_begin_,
-		//	                input_pos_end_,
-		//					input_vel_end_,
-		//					input_acc_end_,
-		//					input_pos_last_,
-		//					input_pos_this_,
-		//	                output_pos_begin_,
-		//	                output_pos_end_;
-
 		double* max_vels_,
 			* max_accs_,
 			* input_pos_begin_,
@@ -274,6 +261,8 @@ namespace aris::plan {
 			* input_vel_this_,
 			* input_acc_this_,
 			* input_acc_ratio_,
+			* input_acc_max_consider_ratio_,
+			* input_acc_min_consider_ratio_,
 			* output_pos_;
 
 		std::int64_t singular_ret_{ 0 };
@@ -288,9 +277,10 @@ namespace aris::plan {
 		double max_acc_ratio_{ 0.9 };
 		double current_ds_{ 1.0 }, // 类似 tg 中的 ds，但是在降速的时候，它其实是系统的上界，真实的 tg 里的ds 并不一定是这个值
 			current_dds_{ 0.0 }, // 类似 tg 中的 dds
-			current_ddds_{ 0.0 }, // 类似 tg 中的 ddds
 			target_ds_{ 1.0 },  // 类似 tg 中的 target_ds，它是ds 追赶的目标
-			last_dds{ 0.0 };
+			last_dds{ 0.0 },
+			last_last_ds{0.0};
+		
 		aris::dynamic::ModelBase* model_{ nullptr };
 		aris::plan::TrajectoryGenerator* tg_{ nullptr };
 
@@ -335,6 +325,8 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->input_vel_this_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->input_acc_this_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->input_acc_ratio_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_max_consider_ratio_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_min_consider_ratio_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->output_pos_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->curve_params_, imp_->input_size_);
 
@@ -354,6 +346,8 @@ namespace aris::plan {
 		imp_->input_vel_this_ = core::getMem(imp_->mem_.data(), imp_->input_vel_this_);
 		imp_->input_acc_this_ = core::getMem(imp_->mem_.data(), imp_->input_acc_this_);
 		imp_->input_acc_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_ratio_);
+		imp_->input_acc_max_consider_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_max_consider_ratio_);
+		imp_->input_acc_min_consider_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_min_consider_ratio_);
 		imp_->output_pos_ = core::getMem(imp_->mem_.data(), imp_->output_pos_);
 		imp_->curve_params_ = core::getMem(imp_->mem_.data(), imp_->curve_params_);
 	}
@@ -365,6 +359,13 @@ namespace aris::plan {
 		std::fill_n(imp_->input_vel_this_, imp_->input_size_, 0.0);
 		std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
 		std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
+
+		imp_->current_ds_ = 1.0;
+		imp_->current_dds_ = 0.0;
+		imp_->target_ds_ = 1.0,  // 类似 tg 中的 target_ds，它是ds 追赶的目标
+		imp_->last_last_ds = 1.0;
+		imp_->last_dds = 0.0;
+		imp_->state_ = Imp::SingularState::NORMAL;
 	}
 	auto SingularProcessor::setDs(double ds)->void {
 		imp_->current_ds_ = ds;
@@ -396,7 +397,10 @@ namespace aris::plan {
 
 
 		// move tg step //
+		// max_vel_ratio 和 max_acc_ratio 会触发正常降速
 		auto move_tg_step = [this, get_max_ratio]()->std::int64_t {
+			double zero_check = 1e-10;
+			
 			// 当前处于非奇异状态，正常求反解 //
 			auto ret = imp_->tg_->getEePosAndMoveDt(imp_->output_pos_);
 			if (imp_->inv_func_) {
@@ -405,13 +409,10 @@ namespace aris::plan {
 			else {
 				imp_->model_->setOutputPos(imp_->output_pos_);
 				if (imp_->model_->inverseKinematics())
-					std::cout << "failed to kinematics" << std::endl;
+					return -1;
 			}
 
-
-			auto tg_ds = imp_->tg_->currentDs();
-			auto tg_max_dds = imp_->tg_->maxDds();
-			auto tg_max_ddds = imp_->tg_->maxDdds();
+			auto last_ds = imp_->current_ds_;
 
 			// 取出位置
 			std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
@@ -428,51 +429,151 @@ namespace aris::plan {
 			aris::dynamic::s_vs(imp_->input_size_, imp_->input_vel_last_, imp_->input_acc_this_);
 			aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->dt_, imp_->input_acc_this_);
 
-			// 计算去除 dds 项所影响的加速度
+			//t0       t1         t2
+			//
+			//p0       p1         p2
+			//   dp1        dp2
+			//        d2p2
+			//
+			//         s1         s2
+			//   ds1        ds2
+			//        d2s2
+			//
+			//         ds(t1)    ds(t2)
+			//        d2s(t1)    d2s(t2)
+			//
+			//
+			//at point 1:
+			//
+			//dp(t1)  = dp_ds(t1) * ds(t1)
+			//d2p(t1) = d2p_ds2(t1) * ds(t1)^2 + dp_ds(t1) * d2s(t1)
+			//        = d2p_ds2(t1) * ds(t1)^2 + (dp1+dp2)/2 / ((ds1+ds2)/2)
+
+			// 计算去除 dds 项所影响的加速度，因此以下为 ds 不变时，速度和加速度的比例
+			// dp  = dp_ds * ds
 			// d2p = d2p_ds2 * ds^2 + dp_ds * d2s
+			//     = d2p_ds2 * ds^2 + dp * d2s / ds
+			// =>
+			// d2p_ds2 * ds^2 = d2p - dp * d2s / ds
+			double ds_real = ((last_ds - imp_->last_dds * imp_->dt_) + last_ds) / 2;
 			aris::dynamic::s_vc(imp_->input_size_, imp_->input_acc_this_, imp_->input_acc_ratio_);
-			aris::dynamic::s_va(imp_->input_size_, -imp_->last_dds / tg_ds, imp_->input_vel_this_, imp_->input_acc_ratio_);
+			aris::dynamic::s_va(imp_->input_size_, -0.5 * imp_->last_dds / ds_real, imp_->input_vel_this_, imp_->input_acc_ratio_);
+			aris::dynamic::s_va(imp_->input_size_, -0.5 * imp_->last_dds / ds_real, imp_->input_vel_last_, imp_->input_acc_ratio_);
 
 			// 正常情况下，可能需改变规划器中ds //
-			auto vel_ratio = get_max_ratio(imp_->input_size_, imp_->max_vels_, imp_->input_vel_this_);
-			auto acc_ratio = get_max_ratio(imp_->input_size_, imp_->max_accs_, imp_->input_acc_ratio_);
+			auto vel_ratio = get_max_ratio(imp_->input_size_, imp_->max_vels_, imp_->input_vel_this_) / imp_->max_vel_ratio_;
+			auto acc_ratio = std::sqrt(get_max_ratio(imp_->input_size_, imp_->max_accs_, imp_->input_acc_ratio_) / imp_->max_acc_ratio_);
 
-			// 判断是否要改 ds_ratio //
+			// 判断是否要改 ds_ratio，用以判断是否需要减速 //
 			auto ds_ratio = std::max({
-				vel_ratio / imp_->max_vel_ratio_,
-				std::sqrt(acc_ratio / imp_->max_acc_ratio_)
+				vel_ratio ,
+				acc_ratio
 				});
 
-			// 追赶 current_ds，该值为 tg 中 ds 的上界
-			aris::Size total_count;
-			moveAbsolute2(imp_->current_ds_, imp_->current_dds_, imp_->current_ddds_, imp_->target_ds_, 0.0, 0.0,
-				tg_max_dds, tg_max_ddds, tg_max_dds, imp_->dt_, 1e-10,
-				imp_->current_ds_, imp_->current_dds_, imp_->current_ddds_, total_count);
+			// 需要根据当前的速度情况，计算max_dds min_dds  //
+			//
+			// d2p_min < d2p < d2p_max
+			// =>
+			// d2p_min < d2p_ds2 * ds ^ 2 + dp / ds * d2s < d2p_max
+			// =>
+			// d2p_min - d2p_ds2 * ds ^ 2 < dp / ds * d2s < d2p_max - d2p_ds2 * ds ^ 2 
+			// 
+			// 其中 d2p_ds2 * ds ^ 2 在上文中计算过
+			//
+			// 因此若 dp < 0
+			// [d2p_max - (d2p_ds2 * ds^2)]*ds/dp  < d2s < [d2p_min - (d2p_ds2 * ds^2)]*ds/dp
+			// 否则
+			// [d2p_min - (d2p_ds2 * ds^2)]*ds/dp  < d2s < [d2p_max - (d2p_ds2 * ds^2)]*ds/dp
+			// 
+			for (int i = 0; i < imp_->input_size_; ++i) {
+				if (std::abs(imp_->input_vel_this_[i]) < zero_check) {
+					imp_->input_acc_max_consider_ratio_[i] = 1e10;
+					imp_->input_acc_min_consider_ratio_[i] = -1e10;
+				}
+				else {
+					imp_->input_acc_max_consider_ratio_[i] = (0.99*imp_->max_accs_[i] - imp_->input_acc_ratio_[i]) * last_ds / imp_->input_vel_this_[i];
+					imp_->input_acc_min_consider_ratio_[i] = (-0.99*imp_->max_accs_[i] - imp_->input_acc_ratio_[i]) * last_ds / imp_->input_vel_this_[i];
+					if (imp_->input_vel_this_[i] < 0)
+						std::swap(imp_->input_acc_max_consider_ratio_[i], imp_->input_acc_min_consider_ratio_[i]);
+				}
+			}
+			double max_dds = *std::min_element(imp_->input_acc_max_consider_ratio_, imp_->input_acc_max_consider_ratio_ + imp_->input_size_);
+			double min_dds = *std::max_element(imp_->input_acc_min_consider_ratio_, imp_->input_acc_min_consider_ratio_ + imp_->input_size_);
 
-			// 接管 tg 的 ds 设置
-			// 【注意】：tg 中的 ds dds ddds 的设置事实上不生效
-			auto ds = tg_ds / ds_ratio;
-			ds = std::max(imp_->current_ds_ * 0.01, ds); // 最低降到当前 ds 的 百分之一
-			ds = std::min(imp_->current_ds_, ds);
-			imp_->tg_->setCurrentDs(ds);
+			// 确保 max_dds > min_dds
+			double mid = (max_dds + min_dds) / 2;
+			max_dds = std::max(mid, max_dds);
+			min_dds = std::min(mid, min_dds);
+
+			// 进行调速 //
+			double target_ds = std::min(imp_->target_ds_, (vel_ratio > acc_ratio ? last_ds : ds_real) / ds_ratio); // 注意，这里的速度/加速度降速的比较基准不一样
+			target_ds = std::max(0.01, target_ds);
+			target_ds = std::min(1.0, target_ds);
+			if (target_ds - last_ds > imp_->dt_ * max_dds) {
+				imp_->current_ds_ = last_ds + imp_->dt_ * max_dds;
+			}
+			else if (target_ds - last_ds < imp_->dt_ * min_dds) {
+				imp_->current_ds_ = last_ds + imp_->dt_ * min_dds;
+			}
+			else {
+				imp_->current_ds_ = target_ds;
+			}
+
+			imp_->current_ds_ = std::max(0.01, imp_->current_ds_);
+			imp_->current_ds_ = std::min(1.0, imp_->current_ds_);
+
+			imp_->tg_->setCurrentDs(imp_->current_ds_);
 			imp_->tg_->setCurrentDds(0.0);
-			imp_->tg_->setTargetDs(ds);
-			imp_->last_dds = (ds - tg_ds) / imp_->dt_;
+			imp_->tg_->setTargetDs(imp_->current_ds_);
+			imp_->last_dds = (imp_->current_ds_ - last_ds) / imp_->dt_;
 
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 			static int print_count = 0;
 
-			//if(print_count++ < 2000)
+			if (print_count++ > 200 && print_count < 220)
+			{
+				std::cout << print_count << ": ds:" << last_ds << "  ds_ratio" << ds_ratio
+					<< "  vel_ratio" << vel_ratio << "  acc_ratio" << acc_ratio << "  dds:" << imp_->last_dds << std::endl;
+				
+				
 
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					std::cout << std::abs(imp_->input_acc_ratio_[i]/ imp_->max_accs_[i]) << "  ";
+				}
+				std::cout << std::endl;
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					std::cout << std::sqrt(std::abs(imp_->input_acc_ratio_[i] / imp_->max_accs_[i])) << "  ";
+				}
+				std::cout << std::endl;
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					std::cout << std::sqrt(std::abs(imp_->input_acc_ratio_[i] / imp_->max_accs_[i]) / imp_->max_acc_ratio_) << "  ";
+				}
+				std::cout << std::endl;
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					std::cout << ds_real / std::sqrt(std::abs(imp_->input_acc_ratio_[i] / imp_->max_accs_[i]) / imp_->max_acc_ratio_) << "  ";
+				}
+				std::cout << std::endl;
+
+				aris::dynamic::dsp(1, imp_->input_size_, imp_->input_acc_ratio_);
+				aris::dynamic::s_nv(imp_->input_size_, 1.0 / ds_real / ds_real, imp_->input_acc_ratio_);
+				aris::dynamic::dsp(1, imp_->input_size_, imp_->input_acc_ratio_);
+
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					std::cout << 1.0/std::sqrt(std::abs(imp_->input_acc_ratio_[i] / imp_->max_accs_[i]) / imp_->max_acc_ratio_) << "  ";
+				}
+				std::cout << std::endl;
+
+				std::cout << "------------------" << std::endl;
+			}
 			//if (ds_ratio > 1.0)
-			std::cout << print_count++ << ": ds:" << tg_ds << "  ds_ratio" << ds_ratio
-				<< "  vel_ratio" << vel_ratio << "  acc_ratio" << acc_ratio << std::endl;
+
 #endif
 
 			return ret;
 		};
 
 		// move in singular state
+		// 不考虑 max_vel_ratio 与 max_acc_ratio，奇异降速时，只考虑真实电机限制
 		auto move_in_singular = [this]()->std::int64_t {
 			// 取出位置
 			std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
@@ -530,7 +631,7 @@ namespace aris::plan {
 			int while_count{ 0 };
 			do {
 				while_count++;
-				move_tg_step();
+				imp_->singular_ret_ = move_tg_step();
 				idx = check_if_singular(imp_->input_size_, imp_->max_vels_, imp_->max_accs_, imp_->input_vel_this_, imp_->input_acc_this_);
 
 				// 尝试处理奇异情况 //

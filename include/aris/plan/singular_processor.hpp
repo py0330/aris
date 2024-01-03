@@ -24,7 +24,7 @@ namespace aris::plan{
 	public:
 		using InverseKinematicMethod = std::function<void(aris::dynamic::ModelBase& model, const double *ee_pos)>;
 
-		// 需要设置模型、TG、最大速度与最大加速度
+		// 需要设置模型、TG、电机的最大速度与最大加速度
 		auto setModel(aris::dynamic::ModelBase& model)->void;
 		auto setTrajectoryGenerator(TrajectoryGenerator& tg)->void;
 		auto setMaxVels(const double* max_vels)->void;
@@ -32,12 +32,12 @@ namespace aris::plan{
 		auto init()->void;
 		
 		// 设置速度百分比，类似 TG 中 setTargetDs
-		
+		// 用以下参数后，不能再设置tg中的对应参数
 		auto setTargetDs(double ds)->void;
 		auto setDs(double ds)->void;
 		auto setDds(double dds)->void;
 
-		// 每个实时周期调用这个函数，确保不超速
+		// 每个实时周期调用这个函数，确保不超速，
 		auto setModelPosAndMoveDt()->std::int64_t;
 
 		// 设置方法
