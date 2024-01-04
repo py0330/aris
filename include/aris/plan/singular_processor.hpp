@@ -35,9 +35,13 @@ namespace aris::plan{
 		// 用以下参数后，不能再设置tg中的对应参数
 		auto setTargetDs(double ds)->void;
 		auto setDs(double ds)->void;
-		auto setDds(double dds)->void;
+		auto currentDs() -> double;
 
-		// 每个实时周期调用这个函数，确保不超速，
+		// 每个实时周期调用这个函数，确保不超速
+		// return
+		//        0 : 全部运行结束
+		//  node_id : 当前节点的 id 号，对应插入时的 id
+		//     负数 : 反解计算错误
 		auto setModelPosAndMoveDt()->std::int64_t;
 
 		// 设置方法

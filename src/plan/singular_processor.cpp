@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/singular_processor.hpp"
 #include"aris/plan/function.hpp"
 
-#define ARIS_DEBUG_SINGULAR_PROCESSOR
+//#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
 namespace aris::plan {
 	struct ThirdPolynomialParam {
@@ -276,10 +276,8 @@ namespace aris::plan {
 		double max_vel_ratio_{ 0.95 };
 		double max_acc_ratio_{ 0.9 };
 		double current_ds_{ 1.0 }, // 类似 tg 中的 ds，但是在降速的时候，它其实是系统的上界，真实的 tg 里的ds 并不一定是这个值
-			current_dds_{ 0.0 }, // 类似 tg 中的 dds
 			target_ds_{ 1.0 },  // 类似 tg 中的 target_ds，它是ds 追赶的目标
-			last_dds{ 0.0 },
-			last_last_ds{0.0};
+			last_dds{ 0.0 };
 		
 		aris::dynamic::ModelBase* model_{ nullptr };
 		aris::plan::TrajectoryGenerator* tg_{ nullptr };
@@ -360,18 +358,15 @@ namespace aris::plan {
 		std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
 		std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
 
-		imp_->current_ds_ = 1.0;
-		imp_->current_dds_ = 0.0;
-		imp_->target_ds_ = 1.0,  // 类似 tg 中的 target_ds，它是ds 追赶的目标
-		imp_->last_last_ds = 1.0;
+		imp_->current_ds_ = imp_->target_ds_;
 		imp_->last_dds = 0.0;
 		imp_->state_ = Imp::SingularState::NORMAL;
 	}
 	auto SingularProcessor::setDs(double ds)->void {
 		imp_->current_ds_ = ds;
 	}
-	auto SingularProcessor::setDds(double dds)->void {
-		imp_->current_dds_ = dds;
+	auto SingularProcessor::currentDs() -> double {
+		return imp_->current_ds_;
 	}
 	auto SingularProcessor::setTargetDs(double ds)->void {
 		imp_->target_ds_ = ds;
