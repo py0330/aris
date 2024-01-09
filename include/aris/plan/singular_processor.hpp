@@ -22,7 +22,7 @@
 namespace aris::plan{
 	class ARIS_API SingularProcessor {
 	public:
-		using InverseKinematicMethod = std::function<void(aris::dynamic::ModelBase& model, const double *ee_pos)>;
+		using InverseKinematicMethod = std::function<std::int64_t(aris::dynamic::ModelBase& model, const double *ee_pos)>;
 
 		// 需要设置模型、TG、电机的最大速度与最大加速度
 		auto setModel(aris::dynamic::ModelBase& model)->void;
@@ -41,7 +41,7 @@ namespace aris::plan{
 		// return
 		//        0 : 全部运行结束
 		//  node_id : 当前节点的 id 号，对应插入时的 id
-		//     负数 : 反解计算错误
+		//     负数 : 反解计算错误 id，在默认的反解计算中，若反解无解，则返回 -1
 		auto setModelPosAndMoveDt()->std::int64_t;
 
 		// 设置方法
