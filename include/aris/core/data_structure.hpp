@@ -111,7 +111,7 @@ namespace aris::core {
             while (true) {
                 front = front_.exchange(kExclude_);
                 rear = rear_.exchange(kExclude_);
-                if (front != kExclude_ && rear_ != kExclude_)
+                if (front != kExclude_ && rear != kExclude_)
                     break;
 
                 switch (strategy) {
