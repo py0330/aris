@@ -125,7 +125,6 @@ namespace aris::core {
                 }
             }
 
-            data_.clear();
             size_.store(0, std::memory_order_release);
             front_.store(0, std::memory_order_release);
             rear_.store(0, std::memory_order_release);
