@@ -116,6 +116,8 @@ namespace aris::core {
 
                 switch (strategy) {
                 case AccessStrategy::kAbandon :
+                    if (front != kExclude_) front_.exchange(front);
+                    if (rear != kExclude_) rear_.exchange(rear);
                     return false;
                 case AccessStrategy::kYield :
                     std::this_thread::yield();
