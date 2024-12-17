@@ -107,10 +107,10 @@ namespace aris::core {
         }
 
         auto virtual clear(AccessStrategy strategy = AccessStrategy::kYield)->bool {
-            int front{-1}, rear{-1};
+            int front{kExclude_}, rear{kExclude_};
             while (true) {
-                front = front_.exchange(kExclude_);
-                rear = rear_.exchange(kExclude_);
+                if (front == kExclude_) front = front_.exchange(kExclude_);
+                if (rear == kExclude_) rear = rear_.exchange(kExclude_);
                 if (front != kExclude_ && rear != kExclude_)
                     break;
 
