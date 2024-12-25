@@ -1,6 +1,7 @@
 ﻿#include <aris/dynamic/math_matrix.hpp>
 #include <aris/dynamic/math_spline.hpp>
 #include <aris/dynamic/math_optimization.hpp>
+#include <aris/dynamic/math_solver.hpp>
 
 #include <aris/dynamic/kinematics.hpp>
 #include <aris/dynamic/pose.hpp>

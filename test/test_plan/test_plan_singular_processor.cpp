@@ -229,8 +229,7 @@ struct TestSmoothResult {
 	double s_end;
 };
 
-auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult
-{
+auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 	TestSmoothResult result;
 
 	auto dim = param.dim;
@@ -282,11 +281,15 @@ auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult
 		s_smooth_curve3(p, ret);
 
 		
-		if (i > 1349 && i < 1360) {
+		if (i > 3240 && i < 3300) 
+		{
 			std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
-			std::cout << "debug" << std::endl;
 			std::cout << "ds:" << ret.next_ds << std::endl;
-			std::cout << std::endl;
+		}
+		if (i > 3300 && i < 6000)
+		{
+			std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
+			std::cout << "ds:" << ret.next_ds << std::endl;
 		}
 
 
@@ -348,18 +351,22 @@ auto test_smooth_cond_3_1() -> void {
 		return 0;
 		};
 
-	TestSmoothParam param;
-	//param = TestSmoothParam {6000, 1, 0.01, func,
-	//	{100},{-100},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
-	//	0.0, 0.1
-	//};
-	param = TestSmoothParam{ 6000, 1, 0.001, func,
+	TestSmoothParam param1 = TestSmoothParam {6000, 1, 0.01, func,
+		{100},{-100},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+		0.0, 0.1
+	};
+	TestSmoothParam param2 = TestSmoothParam{ 6000, 1, 0.001, func,
 	{100},{-100},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	TestSmoothParam param3 = TestSmoothParam{ 6000, 1, 0.001, func,
+	{100},{-0.8},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
 	0.0, 0.1
 	};
 
 	int n = 6000;
 
+	auto& param = param3;
 	auto result = test_smooth_func(param);
 
 	std::cout << "s end:"<< result.s_end << std::endl;

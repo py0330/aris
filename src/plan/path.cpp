@@ -1,119 +1,8 @@
-﻿#include"aris/plan/path.hpp"
+﻿#include "aris/plan/path.hpp"
+
+#include <aris/dynamic/dynamic.hpp>
 
 namespace aris::plan{
-	auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper)->double;
-	
-	auto s_poly2_solve(double k2, double k1, double k0, double* x) -> int {
-		if (std::abs(k2) < 1e-10) {
-			x[0] = -k0 / k1;
-			return 1;
-		}
-
-		auto b2_4ac = k1 * k1 - 4 * k2 * k0;
-		if (b2_4ac < 0) {
-			return 0;
-		}
-
-		x[0] = (-k1 - std::sqrt(b2_4ac)) / (2 * k2);
-		x[1] = (-k1 + std::sqrt(b2_4ac)) / (2 * k2);
-
-		if (k2 < 0)
-			std::swap(x[0], x[1]);
-
-	}
-
-	// solve k3*x^3 + k2*x^2 + k1*x + k0 == 0
-	//
-	// return solution num
-	auto s_poly3_solve(double k3, double k2, double k1, double k0, double *x) -> int {
-		
-		// diff is:
-		// 3*k3*x^2 + 2*k2*x + k1
-
-		double A = 3 * k3;
-		double B = 2 * k2;
-		double C = k1;
-
-		auto func = [k3, k2, k1, k0](double x) -> double {
-			return k3 * x * x * x + k2 * x * x + k1 * x + k0;
-		};
-
-
-		double ext[2]{};
-		if (auto ext_num = s_poly2_solve(A, B, C, ext); ext_num == 0) {
-			double lhs = -1.0, rhs = 1.0;
-			while (func(lhs) * func(rhs) > 0) {
-				lhs *= 2;
-				rhs *= 2;
-			}
-
-			x[0] = newton_raphson_binary_search(func, lhs, rhs);
-
-			return 1;
-		}
-		else if (ext_num == 1) {
-			x[0] = ext[0];
-			return ext_num;
-		
-		}
-		else {
-			
-
-			double fe1 = func(ext[0]);
-			double fe2 = func(ext[1]);
-
-			
-
-			// 1个根 //
-			if (fe1 * fe2 > 0.0) {
-				double value = aris::dynamic::s_sgn2(k3 * fe1);
-				double last_bound = ext[0];
-				double bound(last_bound - value);
-				while (func(bound) * fe1 > 0) {
-					value *= 2;
-					bound -= value;
-					last_bound = bound;
-				}
-
-				x[0] = newton_raphson_binary_search(func, std::min(bound, last_bound), std::max(bound, last_bound));
-				return 1;
-			
-			}
-			else {
-				// 3个根
-				double lhs(ext[0] - 1), rhs(ext[1] + 1);
-				
-				double value = 1.0;
-				while (func(lhs) * fe1 > 0) {
-					value *= 2;
-					lhs -= value;
-				}
-
-				value = 1.0;
-				while (func(rhs) * fe2 > 0) {
-					value *= 2;
-					rhs += value;
-				}
-
-				x[0] = newton_raphson_binary_search(func, lhs, ext[0]);
-				x[1] = newton_raphson_binary_search(func, ext[0], ext[1]);
-				x[2] = newton_raphson_binary_search(func, ext[1], rhs);
-				return 3;
-			}
-		
-		}
-
-
-
-
-
-
-
-
-	}
-
-
-
 	// 使用3阶bezier曲线，控制点为：[p0, p1, p1, p2]
 	auto s_bezier3_blend_line_line(double s,
 		const double* p0, const double* p1, const double* p2,
@@ -592,7 +481,7 @@ namespace aris::plan{
 
 	
 	auto s_bezier3_arc2s(double arc, double darc, double d2arc, const EstimateBezierArcParam& param, double& s, double& ds, double& d2s)noexcept->void {
-		s = newton_raphson_binary_search([&param,arc](double s)->double {
+		s = aris::dynamic::s_newton_raphson_binary_search([&param,arc](double s)->double {
 			double lx = std::max(std::log((s - 0.5) * (s - 0.5) + param.h * param.h), -100.0);
 			double at = std::atan2(s - 0.5, param.h);
 			return param.A * s * s * s * s + param.B * s * s * s + param.C * s * s + param.D * s + param.E * lx * s + param.F * lx + param.G * at * s * s - param.G * at * s + param.H * at + param.I * std::sin(2.0 * aris::PI * s) + param.X - arc;

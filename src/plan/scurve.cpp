@@ -7,65 +7,7 @@ namespace aris::plan {
     auto inline safe_sqrt(double v)->double {
         return v > 0.0 ? std::sqrt(v) : 0.0;
     }
-    auto newton_raphson_binary_search(std::function<double(double)> f, double x_below, double x_upper) -> double {
-        double f_upper = f(x_upper);
-        double f_below = f(x_below);
-
-        double fsig = aris::dynamic::s_sgn2(f_upper - f_below);
-        double xsig = aris::dynamic::s_sgn2(x_upper - x_below);
-
-        if (aris::dynamic::s_sgn2(f_upper * f_below) >= 0)
-            return std::abs(f_upper) < std::abs(f_below) ? x_upper : x_below;
-
-        double diff = std::abs(x_upper - x_below);
-        double diff_last = 10 * diff;
-
-        while (diff < diff_last) {
-            diff_last = diff;
-
-            double x_mid = x_below + (x_upper - x_below) / 2;
-            double f_mid = f(x_mid);
-
-            if (aris::dynamic::s_sgn2(f_mid) == fsig) {
-                x_upper = x_mid;
-                f_upper = f_mid;
-            }
-            else {
-                x_below = x_mid;
-                f_below = f_mid;
-            }
-
-            double x1 = (x_mid * f_below - x_below * f_mid) / (f_below - f_mid);
-            if (xsig * x1 <= xsig * x_upper && xsig * x1 >= xsig * x_below) {
-                double fx1 = f(x1);
-                if (aris::dynamic::s_sgn2(fx1) == fsig) {
-                    x_upper = x1;
-                    f_upper = fx1;
-                }
-                else {
-                    x_below = x1;
-                    f_below = fx1;
-                }
-            }
-
-            double x2 = (x_mid * f_upper - x_upper * f_mid) / (f_upper - f_mid);
-            if (xsig * x2 <= xsig * x_upper && xsig * x2 >= xsig * x_below) {
-                double fx2 = f(x2);
-                if (aris::dynamic::s_sgn2(fx2) == fsig) {
-                    x_upper = x2;
-                    f_upper = fx2;
-                }
-                else {
-                    x_below = x2;
-                    f_below = fx2;
-                }
-
-            }
-
-            diff = std::abs(x_upper - x_below);
-        }
-        return (x_below + x_upper) / 2;
-    }
+   
 
     struct TRange {
         double below_, upper_;
@@ -511,7 +453,7 @@ namespace aris::plan {
                 //% r2 = (2*a + 3*T*j)/(3*j)
                 //%
                 //% 均大于T，因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x){
+                Ta = aris::dynamic::s_newton_raphson_binary_search([k3, k2, k1, k0](double x){
                     return ((k3 * x + k2) * x + k1) * x + k0;
                     }, 0, T_va_to_vcmin);
 
@@ -586,7 +528,7 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                Ta = aris::dynamic::s_newton_raphson_binary_search([k3, k2, k1, k0](double x) {
                     return ((k3 * x + k2) * x + k1) * x + k0;
                     }, 0, T_va_to_vcmin);
 
@@ -903,7 +845,7 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                Ta = aris::dynamic::s_newton_raphson_binary_search([k3, k2, k1, k0](double x) {
                     return ((k3 * x + k2) * x + k1) * x + k0;
                     }, 0, T_va_to_vcmax);
 
@@ -972,7 +914,7 @@ namespace aris::plan {
                 //% 于是
                 //% r1 >= 4 / 3 * T - 1 / 3 * T = T
                 //% 因此其上下界为[0, T]
-                Ta = newton_raphson_binary_search([k3, k2, k1, k0](double x) {
+                Ta = aris::dynamic::s_newton_raphson_binary_search([k3, k2, k1, k0](double x) {
                     return ((k3 * x + k2) * x + k1) * x + k0;
                     }, 0, T_va_to_vcmax);
 
@@ -1193,7 +1135,7 @@ namespace aris::plan {
 
             //%%%%%%%%%%%%%%%%% METHOD2 %%%%%%%%%%%%%%%%% 
             //% newton raphson %
-            vb = newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((x - va) / j) * (va + x) - pt; }
+            vb = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x) {return safe_sqrt((x - va) / j) * (va + x) - pt; }
             , va, vb_max);
             return s_acc_time(va, vb, a, j);
         }
@@ -1252,7 +1194,7 @@ namespace aris::plan {
             //  考虑到sqrt在0附近数值求解的稳定性，因此设置 x = v-v1，以防在 v 接近 v1 的情况下
             //  ，sqrt(x - v1)精度不够
             // 
-            double v_minus_v1 = newton_raphson_binary_search([v1, v2, j, pt](double x) {
+            double v_minus_v1 = aris::dynamic::s_newton_raphson_binary_search([v1, v2, j, pt](double x) {
                 return safe_sqrt(x / j) * (2.0 * v1 + x) + safe_sqrt((v1 - v2 + x) / j) * (v1 + v2 + x) - pt;
                 }
             , 0.0, v_upper - v_below);
@@ -1297,7 +1239,7 @@ namespace aris::plan {
             //  考虑到sqrt在0附近数值求解的稳定性，因此设置 x = v-v1，以防在 v 接近 v1 的情况下
             //  ，sqrt(x - v1)精度不够
             // 
-            double v_minus_v1 = newton_raphson_binary_search([v1, v2, a, j, pt](double x)->double {
+            double v_minus_v1 = aris::dynamic::s_newton_raphson_binary_search([v1, v2, a, j, pt](double x)->double {
                 return safe_sqrt(x / j) * (x + 2.0 * v1) + ((v1 - v2 + x) / a + a / j) * (v1 + v2 + x) / 2 - pt;
                 }
             , v_below - v1, v_upper - v1);
@@ -1386,7 +1328,7 @@ namespace aris::plan {
             //% l = T * (vb + va) / 2;
             //% collect(l, T)
             //% solve(l == pt, T)
-            double T = newton_raphson_binary_search([j, vb_max, pt](double T) { return j * T * T * T + 8 * vb_max * T - 8 * pt; }, 0, 2 * a / j);
+            double T = aris::dynamic::s_newton_raphson_binary_search([j, vb_max, pt](double T) { return j * T * T * T + 8 * vb_max * T - 8 * pt; }, 0, 2 * a / j);
             va_upper = std::min(param.va_upper_, vb_max + j * T * T / 4);
         }
         else {
@@ -1534,7 +1476,7 @@ namespace aris::plan {
                 else if (l_va_to_0 <= pt + lcons) {
                     vb_solution_num = 2;
                     if (l_va_to_vk > pt) {
-                        vb_solution[0] = newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
+                        vb_solution[0] = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
                         , vk, va);
                     }
                     else {
@@ -1558,7 +1500,7 @@ namespace aris::plan {
                 else {
                     vb_solution_num = 1;
                     if (l_va_to_vk > pt) {
-                        vb_solution[0] = newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
+                        vb_solution[0] = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
                         , vk, va);
                     }
                     else {
@@ -1582,12 +1524,12 @@ namespace aris::plan {
                 }
                 else if (l_va_to_0 <= pt + lcons) {
                     vb_solution_num = 2;
-                    vb_solution[0] = newton_raphson_binary_search([va, j, pt](double x)->double { 
+                    vb_solution[0] = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x)->double {
                         return safe_sqrt((va - x) / j) * (va + x) - pt; 
                     }, vp1, va);
 
                     if (l_va_to_vk <= pt) {
-                        vb_solution[1] = newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
+                        vb_solution[1] = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
                         , std::max(vk, 0.0), vp1);
                     }
                     else {
@@ -1610,7 +1552,7 @@ namespace aris::plan {
                 }
                 else {
                     vb_solution_num = 1;
-                    vb_solution[0] = newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
+                    vb_solution[0] = aris::dynamic::s_newton_raphson_binary_search([va, j, pt](double x)->double { return safe_sqrt((va - x) / j) * (va + x) - pt; }
                     , vp1, va);
 
 #ifdef DEBUG_ARIS_PLAN_TRAJECTORY
@@ -1646,7 +1588,7 @@ namespace aris::plan {
                     t_set.push_back(TRange{ s_acc_time(va,vb_solution[1],a,j),std::numeric_limits<double>::infinity() });
                 }
                 else {
-                    t_set.push_back(TRange{ s_acc_time(va,vb_max,a,j),std::numeric_limits<double>::infinity() });
+                    t_set.push_back(TRange{ T_below,std::numeric_limits<double>::infinity() });
                 }
 
 //#ifdef DEBUG_ARIS_PLAN_TRAJECTORY
@@ -1705,7 +1647,7 @@ namespace aris::plan {
             double vc_upper;
             s_scurve_cpt_vc_upper_by_va_vb_T(va, vb, T, a, j, &vc_upper);
 
-            vc = newton_raphson_binary_search([va, vb, a, j, pt, T](double vc) {
+            vc = aris::dynamic::s_newton_raphson_binary_search([va, vb, a, j, pt, T](double vc) {
                 return s_acc_time(va, vc, a, j) * (va + vc) / 2
                     + s_acc_time(vb, vc, a, j) * (vb + vc) / 2
                     + std::max(T - s_acc_time(va, vc, a, j) - s_acc_time(vb, vc, a, j), 0.0) * vc
@@ -1776,7 +1718,7 @@ namespace aris::plan {
             double vc_below;
             s_scurve_cpt_vc_below_by_va_vb_T(va, vb, T, a, j, &vc_below);
 
-            vc = newton_raphson_binary_search([va, vb, a, j, pt, T](double vc){
+            vc = aris::dynamic::s_newton_raphson_binary_search([va, vb, a, j, pt, T](double vc){
                 return s_acc_time(va, vc, a, j)* (va + vc) / 2  
                     + s_acc_time(vb, vc, a, j) * (vb + vc) / 2  
                     + (T - s_acc_time(va, vc, a, j) - s_acc_time(vb, vc, a, j)) * vc 
@@ -1871,7 +1813,7 @@ namespace aris::plan {
                 //% 3.1.2
                 //% va * (T - Tb) + (va + vb) / 2 * Tb == pt
                 //%
-                va = newton_raphson_binary_search([vb, a, j, pt, T](double va) {
+                va = aris::dynamic::s_newton_raphson_binary_search([vb, a, j, pt, T](double va) {
                     return s_acc_time(vb, va, a, j)* (va + vb) / 2  
                         + (T - s_acc_time(va, vb, a, j)) * va 
                         - pt;
@@ -1908,7 +1850,7 @@ namespace aris::plan {
                 //% 3.2.2
                 //% va * (T - Tb) + (va + vb) / 2 * Tb == pt
                 //%
-                va = newton_raphson_binary_search([vb, a, j, pt, T](double va) {
+                va = aris::dynamic::s_newton_raphson_binary_search([vb, a, j, pt, T](double va) {
                     return s_acc_time(vb, va, a, j)* (va + vb) / 2  
                         + (T - s_acc_time(va, vb, a, j)) * va 
                         - pt;
@@ -1923,7 +1865,7 @@ namespace aris::plan {
 
         }
         else {
-            va = newton_raphson_binary_search([vb, a, j, pt, T](double va) {
+            va = aris::dynamic::s_newton_raphson_binary_search([vb, a, j, pt, T](double va) {
                 return s_acc_time(vb, va, a, j)* (va + vb) / 2
                     + (T - s_acc_time(va, vb, a, j)) * va - pt;
                 },
