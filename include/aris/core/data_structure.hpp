@@ -107,15 +107,17 @@ namespace aris::core {
         }
 
         auto virtual clear(AccessStrategy strategy = AccessStrategy::kYield)->bool {
-            int front{-1}, rear{-1};
+            int front{kExclude_}, rear{kExclude_};
             while (true) {
-                front = front_.exchange(kExclude_);
-                rear = rear_.exchange(kExclude_);
-                if (front != kExclude_ && rear_ != kExclude_)
+                if (front == kExclude_) front = front_.exchange(kExclude_);
+                if (rear == kExclude_) rear = rear_.exchange(kExclude_);
+                if (front != kExclude_ && rear != kExclude_)
                     break;
 
                 switch (strategy) {
                 case AccessStrategy::kAbandon :
+                    if (front != kExclude_) front_.exchange(front);
+                    if (rear != kExclude_) rear_.exchange(rear);
                     return false;
                 case AccessStrategy::kYield :
                     std::this_thread::yield();
@@ -125,7 +127,6 @@ namespace aris::core {
                 }
             }
 
-            data_.clear();
             size_.store(0, std::memory_order_release);
             front_.store(0, std::memory_order_release);
             rear_.store(0, std::memory_order_release);
