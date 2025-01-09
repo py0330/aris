@@ -6,6 +6,192 @@
 #include <random>
 using namespace aris::plan;
 
+auto test_s_smooth3_a_range() {
+	auto p_max = 0.55;
+	auto p_min = -10.0;
+	auto v_max = 10.0;
+	auto v_min = -10.0;
+	auto a_max = 10.0;
+	auto a_min = -10.0;
+	auto j_max = 15.0;
+	auto j_min = -15.0;
+	auto dt = 1e-3;
+
+	auto p = 0.5;
+	auto v = 1.5;
+	auto a = 0.1;
+
+	double a_upper, a_below;
+
+	auto ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_upper - (-22.1686981556106)) > 1e-10 || std::abs(a_below - (-22.1686981556106)) > 1e-10)
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+
+	p_max = 0.62;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_upper - (-8.58149320825049)) > 1e-10 || std::abs(a_below - (-10)) > 1e-10)
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+
+	p_max = 1.5;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_upper - (3.28669092032092)) > 1e-10 || std::abs(a_below - (-10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 4.2;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (8.56369443603907)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 5.59;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (10)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+
+	p_max = 0.61175125-1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (-10.000000008889)) >1e-10 || std::abs(a_below - (-10.000000008889)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 0.61175125+1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (-9.99999866232704)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 0.634829342120835-1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (-7.42370228620955)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 0.634829342120835+1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (-7.42370227272833)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 3.32663362334213-1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (7.40870227932057)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 3.32663362334213+1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (7.40870227961728)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 5.58288087962963-1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (9.99999999990828)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_max = 5.58288087962963+1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if(std::abs(a_upper - (10)) >1e-10 || std::abs(a_below - (-10)) >1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	v = 5.0;
+	p_max = 5.59;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_upper - (4.69225187829757)) > 1e-10 || std::abs(a_below - (-10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+
+	v = -1.5;
+	p_max = 10;
+	j_min = -5;
+	p_min = 1.0 - 0.62;
+
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (8.58149320825049)) > 1e-10 || std::abs(a_upper - a_max) > 1e-10)
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+
+	p_min = 1.0 - 1.5;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-3.28669092032092)) > 1e-10 || std::abs(a_upper - a_max) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 4.2;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-8.56369443603907)) > 1e-10 || std::abs(a_upper - a_max) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 5.59;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-10)) > 1e-10 || std::abs(a_upper - a_max) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 0.61175125 + 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (10.000000008889)) > 1e-10 || std::abs(a_upper - (10.000000008889)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 0.61175125 - 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (9.99999866232704)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 0.634829342120835 + 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (7.42370228620955)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 0.634829342120835 - 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (7.42370227272833)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 3.32663362334213 + 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-7.40870227932057)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 3.32663362334213 - 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-7.40870227961728)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 5.58288087962963 + 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-9.99999999990828)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	p_min = 1.0 - 5.58288087962963 - 1e-10;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-10)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+
+	v = -5.0;
+	p_min = 1.0 - 5.59;
+	ret = s_smooth3_a_range(p_max, p_min, v_max, v_min, a_max, a_min, j_max, j_min, dt, p, v, a, a_upper, a_below);
+	if (std::abs(a_below - (-4.69225187829757)) > 1e-10 || std::abs(a_upper - (10)) > 1e-10) {
+		std::cout << "\"s_smooth3_a_range\" failed" << std::endl;
+	}
+}
+
+
+
 auto test_singular_processor_1()->void {
 	// 构造 TG //
 	aris::plan::TrajectoryGenerator tg;
@@ -130,7 +316,7 @@ auto test_singular_processor_1()->void {
 		else
 			sp.setTargetDs(1.0);
 
-		if (m == 6000) {
+		if (m == 592) {
 			std::cout << "debug" << std::endl;
 		}
 
@@ -149,71 +335,6 @@ auto test_singular_processor_1()->void {
 
 }
 
-auto test_smooth2() -> void {
-	auto func = [](double s, double* p)->int {
-		p[0] = s * s;
-		return 0;
-		};
-
-	const double dt = 0.001;
-	const int dim = 1;
-
-	double min_p[dim]{ -100 };
-	double max_p[dim]{ 100 };
-	double min_dp[dim]{ -0.25 };
-	double max_dp[dim]{ 1.0 };
-	double min_d2p[dim]{ -2.0 };
-	double max_d2p[dim]{ 2.0 };
-	double min_d3p[dim]{ -10.0 };
-	double max_d3p[dim]{ 10.0 };
-
-	double p0[dim];
-	double p1[dim];
-	double p2[dim];
-	double p3[dim];
-
-	double s0 = 0.5 * dt * 0, s1 = 0.5 * dt * 1, s2 = 0.5 * dt * 2, s3 = 0.5 * dt * 3;
-
-	func(s0, p0);
-	func(s1, p1);
-	func(s2, p2);
-	func(s3, p3);
-
-	std::vector<double> poss{p0[0], p1[0], p2[0], p3[0]};
-	int n = 200;
-	for (int i = 0; i < n; ++i) {
-		SmoothParam p{
-			dt,
-			dim,
-			min_p, max_p, min_dp, max_dp, min_d2p, max_d2p, min_d3p, max_d3p,
-			0.005, 1.0, -1000, 1000, -100000, 1000000,
-			(s1-s0)/dt, (s2-s1)/dt, (s3-s2)/dt,
-			p0, p1, p2, p3,
-			1.0
-		};
-		SmoothRet ret;
-		s_smooth_curve2(p, ret);
-		
-		std::swap(p0[0], p1[0]);
-		std::swap(p1[0], p2[0]);
-		std::swap(p2[0], p3[0]);
-
-		std::swap(s0, s1);
-		std::swap(s1, s2);
-		std::swap(s2, s3);
-		
-		if (i == 100)
-			std::cout << "debug" << std::endl;	
-
-		s3 = s2 + ret.next_ds * dt;
-		func(s3, p3);
-
-		poss.push_back(p3[0]);
-	}
-
-	aris::dynamic::dlmwrite(n+4, 1, poss.data(), "C:\\Users\\py033\\Desktop\\test_data\\poss.txt");
-}
-
 struct TestSmoothParam {
 	int n;
 	int dim;
@@ -222,13 +343,14 @@ struct TestSmoothParam {
 	std::vector<double> max_p, min_p, max_dp, min_dp, max_d2p, min_d2p, max_d3p, min_d3p;
 	double s_begin;
 	double ds_begin;
+	double max_permit_jerk_times_{ 6 };
+	double min_s_end{ 5 };
 };
 struct TestSmoothResult {
 	std::vector<double> poss;
 	std::vector<double> max_p, max_dp, max_d2p, max_d3p, min_p, min_dp, min_d2p, min_d3p;
 	double s_end;
 };
-
 auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 	TestSmoothResult result;
 
@@ -280,17 +402,20 @@ auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 		SmoothRet ret;
 		s_smooth_curve3(p, ret);
 
+		if (ret.state) {
+			std::cout << "count:" << i << "  ret:" << ret.state <<"  ds:"<<ret.next_ds << std::endl;
+		}
 		
-		if (i > 3240 && i < 3300) 
-		{
-			std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
-			std::cout << "ds:" << ret.next_ds << std::endl;
-		}
-		if (i > 3300 && i < 6000)
-		{
-			std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
-			std::cout << "ds:" << ret.next_ds << std::endl;
-		}
+		//if (i > 703 && i < 1000) 
+		//{
+		//	std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
+		//	std::cout << "ds:" << ret.next_ds << std::endl;
+		//}
+		//if (i > 1585 && i < 2000)
+		//{
+		//	std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
+		//	std::cout << "ds:" << ret.next_ds << std::endl;
+		//}
 
 
 		std::swap(p0, p1);
@@ -325,49 +450,82 @@ auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 			result.max_d3p[i] = std::max(result.max_d3p[i], d3p0);
 			result.min_d3p[i] = std::min(result.min_d3p[i], d3p0);
 		}
-			
 	}
+
+	for (int i = 0; i < param.dim; ++i) {
+		if (result.max_d3p[i] > param.max_d3p[i] * param.max_permit_jerk_times_)
+			std::cout << "error" << std::endl;
+		if (result.min_d3p[i] < param.min_d3p[i] * param.max_permit_jerk_times_)
+			std::cout << "error" << std::endl;
+	}
+	
+
 
 	result.s_end = s3;
 
 	return result;
 }
 
+template<int a, int b>
+auto sin_func(double s, double* p) ->int{
+	double d_a = a;
+	double d_b = b;
+	// 
+	// p   = a * sin(b*s)
+	// dp  = a*b * cos(b*s)
+	// d2p = -a*b*b* sin(b*s)
+	// d3p = -a*b*b*b*cos(b*s)
+	p[0] = d_a * std::sin(d_b * s - aris::PI / 2);
 
+
+	return 0;
+}
 
 // 
-auto test_smooth_cond_3_1() -> void {
-	auto func = [](double s, double* p)->int {
-		double a = 1.0;
-		double b = 2.0;
-		// 
-		// p   = a * sin(b*s)
-		// dp  = a*b * cos(b*s)
-		// d2p = -a*b*b* sin(b*s)
-		// d3p = -a*b*b*b*cos(b*s)
-		p[0] = a*std::sin(b*s - aris::PI/2);
+auto test_smooth_cond_pos_violate() -> void {
+	TestSmoothParam param;
+	TestSmoothResult result;
+	
+	//param = TestSmoothParam {6000, 1, 0.001, sin_func<1,2>,
+	//	{0.5},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//	0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
 
+	//param = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{1.5},{-0.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
 
-		return 0;
-		};
-
-	TestSmoothParam param1 = TestSmoothParam {6000, 1, 0.01, func,
-		{100},{-100},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
-		0.0, 0.1
-	};
-	TestSmoothParam param2 = TestSmoothParam{ 6000, 1, 0.001, func,
-	{100},{-100},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	{1.5},{-0.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
 	0.0, 0.1
 	};
-	TestSmoothParam param3 = TestSmoothParam{ 6000, 1, 0.001, func,
-	{100},{-0.8},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	result = test_smooth_func(param);
+
+	param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	{0.5},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
 	0.0, 0.1
 	};
+	result = test_smooth_func(param);
+
+	param = TestSmoothParam{ 6000, 1, 0.01, sin_func<-1,2>,
+	{0.99},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	result = test_smooth_func(param);
+
+	param = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+	{1.5},{-0.99},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	result = test_smooth_func(param);
 
 	int n = 6000;
 
-	auto& param = param3;
-	auto result = test_smooth_func(param);
+	
+	
 
 	std::cout << "s end:"<< result.s_end << std::endl;
 	std::cout << "max p:" << std::endl;
@@ -391,63 +549,215 @@ auto test_smooth_cond_3_1() -> void {
 	aris::dynamic::dlmwrite(n, 1, result.poss.data(), "C:\\Users\\py033\\Desktop\\test_data\\poss.txt");
 }
 
-auto test_smooth() -> void {
-	
+auto test_smooth_cond_vel_violate() -> void {
+	TestSmoothParam param;
+	TestSmoothResult result;
 
-
-
-
-	const double dt = 0.001;
-
-	double a0 = 5.0;
-	double v0 = 1.0 - a0 * dt * 2;
-	double v1 = v0 + a0 * dt;
-	double v2 = v1 + a0 * dt;
-
-	double pos0 = 0.0;
-	double pos1 = pos0 + v0 * dt;
-	double pos2 = pos1 + v1 * dt;
-	double pos3 = pos2 + v2 * dt;
-
-
-	const int dim = 1;
-
-	double min_p[dim]{ -100 };
-	double max_p[dim]{ 100 };
-	double min_dp[dim]{ -0.25 };
-	double max_dp[dim]{ 2.25 };
-	double min_d2p[dim]{ -5.0 };
-	double max_d2p[dim]{ 5.0 };
-	double min_d3p[dim]{ -10.0 };
-	double max_d3p[dim]{ 10.0 };
-	
-	double p0[dim]{ pos0 };
-	double p1[dim]{ pos1 };
-	double p2[dim]{ pos2 };
-	double p3[dim]{ pos3 };
-
-	SmoothParam p{
-		dt,
-		dim,
-		min_p, max_p, min_dp, max_dp, min_d2p, max_d2p, min_d3p, max_d3p,
-		0.005, 1.0, -10, 10, -10000, 10000,
-		0.1, 0.1, 0.1,
-		p0, p1, p2, p3,
-		1.0
+	param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	{100},{-100},{1.5},{-1.5},{3.0},{-3.0},{10.0},{-10.0},
+	0.0, 0.1
 	};
+	result = test_smooth_func(param);
 
-	SmoothRet ret;
+	//param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	//{0.5},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
 
-	s_smooth_curve2(p, ret);
+	//param = TestSmoothParam{ 6000, 1, 0.01, sin_func<-1,2>,
+	//{0.99},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
 
+	//param = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+	//{1.5},{-0.99},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
+
+
+
+	//TestSmoothParam param1 = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+	//	{100},{-100},{1.5},{-1.5},{5.0},{-5.0},{10.0},{-10.0},
+	//	0.0, 0.1
+	//};
+	//TestSmoothParam param2 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-100},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//TestSmoothParam param3 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-1.5},{1.0},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//TestSmoothParam param4 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-1.5},{5.0},{-5},{5.0},{-5.0},{50.0},{-40.0},
+	//0.0, 0.1
+	//};
+	//auto& param = param3;
+	//auto result = test_smooth_func(param);
+	int n = 6000;
+
+
+
+	std::cout << "s end:" << result.s_end << std::endl;
+	std::cout << "max p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_p.data());
+	std::cout << "min p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_p.data());
+	std::cout << "max dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_dp.data());
+	std::cout << "min dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_dp.data());
+	std::cout << "max d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d2p.data());
+	std::cout << "min d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d2p.data());
+	std::cout << "max d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d3p.data());
+	std::cout << "min d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d3p.data());
+
+
+	aris::dynamic::dlmwrite(n, 1, result.poss.data(), "C:\\Users\\py033\\Desktop\\test_data\\poss.txt");
 }
 
+auto test_smooth_cond_acc_violate() -> void {
+
+	TestSmoothParam param1 = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+		{100},{-100},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+		0.0, 0.1
+	};
+	TestSmoothParam param2 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	{100},{-100},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	TestSmoothParam param3 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	{100},{-1.5},{1.0},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	TestSmoothParam param4 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	{100},{-1.5},{5.0},{-5},{5.0},{-5.0},{50.0},{-40.0},
+	0.0, 0.1
+	};
+
+	int n = 6000;
+
+	auto& param = param3;
+	auto result = test_smooth_func(param);
+
+	std::cout << "s end:" << result.s_end << std::endl;
+	std::cout << "max p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_p.data());
+	std::cout << "min p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_p.data());
+	std::cout << "max dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_dp.data());
+	std::cout << "min dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_dp.data());
+	std::cout << "max d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d2p.data());
+	std::cout << "min d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d2p.data());
+	std::cout << "max d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d3p.data());
+	std::cout << "min d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d3p.data());
+
+
+	aris::dynamic::dlmwrite(n, 1, result.poss.data(), "C:\\Users\\py033\\Desktop\\test_data\\poss.txt");
+}
+
+auto test_smooth_cond_discontinue() -> void {
+	TestSmoothParam param;
+	TestSmoothResult result;
+
+	param = TestSmoothParam{ 6000, 1, 0.001,[](double s, double* p)->int {
+		if (s < 0.5) {
+			return sin_func<1, 2>(s, p);
+		}
+		else {
+			return sin_func<2, 2>(s, p);
+		}
+		
+		},
+	{100},{-100},{1.5},{-1.5},{3.0},{-3.0},{10.0},{-10.0},
+	0.0, 0.1
+	};
+	result = test_smooth_func(param);
+
+	//param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	//{0.5},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
+
+	//param = TestSmoothParam{ 6000, 1, 0.01, sin_func<-1,2>,
+	//{0.99},{-1.5},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
+
+	//param = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+	//{1.5},{-0.99},{3.0},{-3.0},{3.0},{-3.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//result = test_smooth_func(param);
+
+
+
+	//TestSmoothParam param1 = TestSmoothParam{ 6000, 1, 0.01, sin_func<1,2>,
+	//	{100},{-100},{1.5},{-1.5},{5.0},{-5.0},{10.0},{-10.0},
+	//	0.0, 0.1
+	//};
+	//TestSmoothParam param2 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-100},{1.5},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//TestSmoothParam param3 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-1.5},{1.0},{-1.5},{10.0},{-10.0},{10.0},{-10.0},
+	//0.0, 0.1
+	//};
+	//TestSmoothParam param4 = TestSmoothParam{ 6000, 1, 0.001, sin_func<1,2>,
+	//{100},{-1.5},{5.0},{-5},{5.0},{-5.0},{50.0},{-40.0},
+	//0.0, 0.1
+	//};
+	//auto& param = param3;
+	//auto result = test_smooth_func(param);
+	int n = 6000;
+
+
+
+	std::cout << "s end:" << result.s_end << std::endl;
+	std::cout << "max p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_p.data());
+	std::cout << "min p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_p.data());
+	std::cout << "max dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_dp.data());
+	std::cout << "min dp:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_dp.data());
+	std::cout << "max d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d2p.data());
+	std::cout << "min d2p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d2p.data());
+	std::cout << "max d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.max_d3p.data());
+	std::cout << "min d3p:" << std::endl;
+	aris::dynamic::dsp(1, param.dim, result.min_d3p.data());
+
+
+	aris::dynamic::dlmwrite(n, 1, result.poss.data(), "C:\\Users\\py033\\Desktop\\test_data\\poss.txt");
+}
 
 void test_singular_processor(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_smooth_cond_3_1();
-	//test_singular_processor_1();
+	test_s_smooth3_a_range();
+
+	//test_smooth_cond_discontinue();
+	test_singular_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }

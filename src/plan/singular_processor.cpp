@@ -263,7 +263,7 @@ namespace aris::plan {
 		//%  p(t) = p + v*t + 0.5*a_min*t*t
 		//%  其极值为 
 		//%  t          = -v/a_min
-		//%  p(v/a_max) = p - v^2/(2*a_min) < p_max
+		//%  p(v/a_min) = p - v^2/(2*a_min) < p_max
 		//%
 		//%  => v <  sqrt(-2*a_min*(p_max-p))
 		//%  同理：
@@ -292,10 +292,17 @@ namespace aris::plan {
 		if (v > 0) {
 			double value2 = ((a_min * a_min * dt * dt) / 16 + 2 * a_min * p - 2 * a_min * p_max + (v * a_min * dt) / 2);
 			v_upper = a_min > 0.0 ? 0.0 : std::min(std::sqrt(value2) + a_min * dt / 4, v_max);
+
+			//double v35_upper = std::sqrt(-2 * a_min * (p_max - p));
+			//v_upper = a_min > 0.0 ? 0.0 : v35_upper + a_min * dt / 2;
+			//v_upper = a_min > 0.0 ? 0.0 : v35_upper + a_min * dt;
 		}
 		else {
 			double value1 = ((a_max * a_max * dt * dt) / 16 + 2 * a_max * p - 2 * a_max * p_min + (v * a_max * dt) / 2);
 			v_below = a_max < 0.0 ? 0.0 : std::max(-std::sqrt(value1) + a_max * dt / 4, v_min);
+
+			//double v35_upper = -std::sqrt(2 * a_max * (p - p_min));
+			//v_below = a_max < 0.0 ? 0.0 : v35_upper + a_max * dt / 2;
 		}
 
 		return 0;
@@ -322,60 +329,105 @@ namespace aris::plan {
 
 		double a_max_real = a_max, a_min_real = a_min;
 
-		if (v > 0) {
-			double k3 = -j_min / 12;
-			double k2 = 0.0;
-			double k1 = v / 2;
-			double k0 = p - p_max;
+		if (v < 0) {
+			auto ret = s_smooth3_a_range(-p_min, -p_max, -v_min, -v_max, -a_min, -a_max, -j_min, -j_max
+				, dt, -p, -v, -a, a_below, a_upper);
+		
+			a_upper = -a_upper;
+			a_below = -a_below;
 
-			double x[3];
-			aris::dynamic::s_poly3_solve(k3, k2, k1, k0, x);
+			return ret;
+		}
 
-			double t = x[0];
+		auto pb = p_max;
 
-			double d2p_permit = -0.5 * j_min * t * t - v / t;
+		auto A = -1 / (2 * j_min);
+		auto B = dt / 2;
+		auto C = a_min*a_min / (2 * j_min) + v;
 
+		double a_ans1, a_ans2, p_case0, p_case1, p_case2, p_case3;
 
-
-			//a_max_real = d2p_permit;
+		{
+			auto L1 = (v + (a_min * dt) / 2);
+			p_case0 = p - (L1 * L1 / 2) / a_min;
+			auto L4 = (a_min - a_max);
+			auto L5 = (v + (a_max * dt) / 2 + (a_max * L4) / j_min + (L4 * L4 / 2) / j_min);
+			p_case3 = p - L5*L5 / (2 * a_min) + L4 / j_min / j_min * ((a_max * L4) / 2 + ((v + (a_max * dt) / 2)) * j_min + (L4*L4 / 6));
+		}
+		if (B * B - 4 * A * C >= 0) {
+			a_ans1 = (-B - std::sqrt(B * B - 4 * A * C)) / (2 * A);
+			a_ans2 = (-B + std::sqrt(B * B - 4 * A * C)) / (2 * A);
+			auto L2 = (a_ans1 - a_min);
+			p_case1 = p + L2 / j_min / j_min * ((a_ans1 * L2) / 2 - (v + (a_ans1 * dt) / 2) * j_min - (L2 * L2 / 6));
+			auto L3 = (a_ans2 - a_min);
+			p_case2 = p + L3 / j_min / j_min * ((a_ans2 * L3) / 2 - (v + (a_ans2 * dt) / 2) * j_min - (L3 * L3 / 6));
 		}
 		else {
-			double t1 = (a_max - a) / j_max;
+			a_ans1 = a_min;
+			a_ans2 = a_min;
+			p_case1 = p_case0;
+			p_case2 = p_case0;
+		}
+		
+		if (pb < p_case0) {
+		    // branch 1.1
+			auto k2 = v/2;
+			auto k1 = p - pb;
+			auto k0 = (dt*(p - pb))/2;
+        
+			auto t = (-k1 + std::sqrt(k1*k1-4*k0*k2))/(2*k2);
+			a_upper = -(2*v)/(dt + 2*t);
+			a_below = a_upper;
+		}
+		else if (pb < p_case1) {
+			auto lhs = a_min;
+			auto rhs = a_ans1;
+			// branch 1.2
+			auto k4 = -1 / (8 * a_min * j_min * j_min);
+			auto k3 = 1 / (3 * j_min * j_min) + dt / (4 * a_min * j_min);
+			auto k2 = -a_min / (2 * j_min * j_min) - (dt * dt / 4 - (v + a_min * a_min / (2 * j_min)) / j_min) / (2 * a_min) - dt / (2 * j_min);
+			auto k1 = (a_min * dt) / (2 * j_min) - (dt * (a_min * a_min / (2 * j_min) + v)) / (2 * a_min) - v / j_min;
+			auto k0 = p - (a_min * a_min / (2 * j_min) + v) * (a_min * a_min / (2 * j_min) + v) / (2 * a_min) + a_min * a_min * a_min / (6 * j_min * j_min) + (a_min * v) / j_min - pb;
 
-
-
-
-			double k3 = -j_max / 12;
-			double k2 = 0.0;
-			double k1 = v / 2;
-			double k0 = p - p_min;
-
-			double x[3];
-			aris::dynamic::s_poly3_solve(k3, k2, k1, k0, x);
-
-			double t2 = x[0];
-			std::cout << "t: " << x[0] << "  " << x[1] << "  " << x[2] << std::endl;
-
-			if (t2 < t1) {
-				double d2p_permit = -0.5 * j_max * t2 - v / t2;
-
-				std::cout << "d2p_permit1:" << d2p_permit << std::endl;
-
-				//double value1 = ((a_max * a_max * dt * dt) / 16 + 2 * a_max * p - 2 * a_max * p_min + (dp * a_max * dt) / 2);
-				//a_min_real = a_max < 0.0 ? 0.0 : std::max(-std::sqrt(value1) + a_max * dt / 4, v_min);
-				a_min_real = d2p_permit;
-			}
-			else {
-				double pa = p + v * t1 + 0.5 * a * t1 * t1 + (1.0 / 6) * j_max * t1 * t1 * t1;
-				double va = v + a * t1 + 0.5 * j_max * t1 * t1;
-
-
-			}
-
+			a_upper = aris::dynamic::s_newton_raphson_binary_search([k0,k1,k2,k3,k4](double x){
+				return k4 * x * x * x * x + k3 * x * x * x + k2 * x * x + k1 * x + k0;
+			}, lhs, rhs);
+			a_below = a_min;
 		}
 
+		else if (pb < p_case2) {
+		    // branch 1.3
+			auto k4 = -j_min/12;
+			auto k3 = -j_min*dt/6;
+			auto k2 = v/2;
+			auto k1 = p-pb;
+			auto k0 = (dt*(p - pb))/2;
+			auto t = a_upper = aris::dynamic::s_newton_raphson_binary_search([k0, k1, k2, k3, k4](double x) {
+				return k4 * x * x * x * x + k3 * x * x * x + k2 * x * x + k1 * x + k0;
+				}, (a_min - a_ans1) / j_min, (a_min - a_ans2) / j_min);
 
+			a_upper = -((j_min*t*t)/2 + v)/(t+dt/2);
+			a_below = a_min;
+		}
+		else if (pb < p_case3) {
+			auto lhs = a_ans2;
+			auto rhs = a_max;
+			// branch 1.2
+			auto k4 = -1 / (8 * a_min * j_min * j_min);
+			auto k3 = 1 / (3 * j_min * j_min) + dt / (4 * a_min * j_min);
+			auto k2 = -a_min / (2 * j_min * j_min) - (dt * dt / 4 - (v + a_min * a_min / (2 * j_min)) / j_min) / (2 * a_min) - dt / (2 * j_min);
+			auto k1 = (a_min * dt) / (2 * j_min) - (dt * (a_min * a_min / (2 * j_min) + v)) / (2 * a_min) - v / j_min;
+			auto k0 = p - (a_min * a_min / (2 * j_min) + v) * (a_min * a_min / (2 * j_min) + v) / (2 * a_min) + a_min * a_min * a_min / (6 * j_min * j_min) + (a_min * v) / j_min - pb;
 
+			a_upper = aris::dynamic::s_newton_raphson_binary_search([k0, k1, k2, k3, k4](double x) {
+				return k4 * x * x * x * x + k3 * x * x * x + k2 * x * x + k1 * x + k0;
+				}, lhs, rhs);
+			a_below = a_min;
+		}
+		else {
+			a_upper = a_max;
+			a_below = a_min;
+		}
 		return 0;
 	}
 
@@ -1580,125 +1632,6 @@ namespace aris::plan {
 		// 
 		// 其中 不等式1 和 2 左右需要根据dp_ds_t25 的符号进行切换
 		
-		auto cpt_v_bound = [](double p_max, double p_min, double v_max, double v_min, double a_max, double a_min, double dt, double p, double dp)->std::tuple<double, double> {
-			//
-			// 
-			// 
-			// t0        t1   t15   t2   t25   t3
-			//
-			// p0        p1         p2         p3
-			//      v1         v2         v3
-			//           a2         a3
-			//                 j3
-			// 
-			// 
-			// 
-			//%  当前状态为 p,v > 0, 当前最大加速度为a_max，全力减速时
-			//%  p(t) = p + v*t + 0.5*a_min*t*t
-			//%  其极值为 
-			//%  t          = -v/a_min
-			//%  p(v/a_max) = p - v^2/(2*a_min) < p_max
-			//%
-			//%  => v <  sqrt(-2*a_min*(p_max-p))
-			//%  同理：
-			//%     v > -sqrt( 2*a_max*(p-p_min))
-			//%  
-			//%  a4  = a_t3 
-			//%  v_t3 = v3 + (a4 + a3)/2*dt/2
-			//%
-			//%  于是：
-			//%  a4 < sqrt(-2*a_min*(v_max-v_t3))
-			//%  => -a4^2 /2 / a_min < v_max - v_t3
-			//%  => -a4^2 /2 / a_min < v_max - v3 - (a4 + a3)/2*dt/2
-			//%  => (a4-a_min*dt/4)^2 -((a_min^2*dt^2)/16 + 2*a_min*v3 - 2*a_min*v_max + (a3*a_min*dt)/2) < 0
-			//%  
-			//%  => a4 < sqrt(value2) + a_min*dt/4
-			//%  其中：
-			//%  value2 = ((a_min^2*dt^2)/16 + 2*a_min*v3 - 2*a_min*v_max + (a3*a_min*dt)/2)
-			//
-			//%
-			//%  同理可求：
-			//%  a4 > -sqrt(value1) + a_max*dt/4
-			//%  其中：
-			//%  value1 = ((d3p_max^2*dt^2)/16 + 2*d3p_max*dp3 - 2*d3p_max*dp_min + (d2p3*d3p_max*dt)/2)
-			double v_max_real = v_max, v_min_real = v_min;
-
-			if (dp > 0) {
-				double value2 = ((a_min*a_min*dt*dt) / 16 + 2 * a_min * p - 2 * a_min * p_max + (dp * a_min * dt) / 2);
-				v_max_real = a_min > 0.0 ? 0.0 : std::min(std::sqrt(value2) + a_min * dt / 4, v_max);
-			}
-			else {
-				double value1 = ((a_max * a_max * dt * dt) / 16 + 2 * a_max * p - 2 * a_max * p_min + (dp * a_max * dt) / 2);
-				v_min_real = a_max < 0.0 ? 0.0 : std::max(-std::sqrt(value1) + a_max * dt / 4, v_min);
-			}
-
-			return std::make_tuple(v_min_real, v_max_real);
-		};
-		auto cpt_v_bound2 = [](double p_max, double p_min, double v_max, double v_min, double a_max, double a_min, double j_max, double j_min, double dt, double p, double dp, double d2p)->std::tuple<double, double> {
-			// t0        t1   t15   t2   t25   t3
-			//
-			// p0        p1         p2         p3
-			//      v1         v2         v3
-			//           a2         a3
-			//                 j3
-			
-			double a_max_real = a_max, a_min_real = a_min;
-
-			if (dp > 0) {
-				double k3 = -j_min / 12;
-				double k2 = 0.0;
-				double k1 = dp / 2;
-				double k0 = p - p_max;
-
-				double x[3];
-				aris::dynamic::s_poly3_solve(k3, k2, k1, k0, x);
-
-				double t = x[0];
-
-				double d2p_permit = - 0.5 * j_min * t * t - dp / t;
-
-				
-
-				//a_max_real = d2p_permit;
-			}
-			else {
-				double t1 = (a_max - d2p) / j_max;
-
-				
-
-
-				double k3 = -j_max / 12;
-				double k2 = 0.0;
-				double k1 = dp / 2;
-				double k0 = p - p_min;
-
-				double x[3];
-				aris::dynamic::s_poly3_solve(k3, k2, k1, k0, x);
-
-				double t2 = x[0];
-				std::cout << "t: " << x[0] << "  " << x[1] << "  " << x[2] << std::endl;
-
-				if (t2 < t1) {
-					double d2p_permit = -0.5 * j_max * t2 - dp / t2;
-
-					std::cout << "d2p_permit1:" << d2p_permit << std::endl;
-
-					//double value1 = ((a_max * a_max * dt * dt) / 16 + 2 * a_max * p - 2 * a_max * p_min + (dp * a_max * dt) / 2);
-					//a_min_real = a_max < 0.0 ? 0.0 : std::max(-std::sqrt(value1) + a_max * dt / 4, v_min);
-					a_min_real = d2p_permit;
-				}
-				else {
-					double pa = p + dp * t1 + 0.5 * d2p * t1 * t1 + (1.0 / 6) * j_max * t1 * t1 * t1;
-					double va = dp + d2p * t1 + 0.5 * j_max * t1 * t1;
-
-				
-				}
-				
-			}
-
-			return std::make_tuple(a_min_real, a_max_real);
-			};
-
 		double zero_check = 1e-10;
 
 		const double MAX_DS = std::max(param.max_ds, param.target_ds);
@@ -1707,10 +1640,6 @@ namespace aris::plan {
 		const double MIN_D2S = param.min_d2s;
 		const double MAX_D3S = param.max_d3s;
 		const double MIN_D3S = param.min_d3s;
-
-		const double VEL_BOUND_RATIO = 1.0;
-		const double ACC_BOUND_RATIO = 1.0;
-		const double JERK_BOUND_RATIO = 1.0;
 
 		double dt = param.dt;
 		auto dim = param.dim;
@@ -1798,25 +1727,6 @@ namespace aris::plan {
 		//%  -- COND 3.4 跃度不超的前提下，当前速度不能太快，否则未来位置可能超出边界
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%tbd
 
-		double level31_value1 = ((MIN_D3S * MIN_D3S * dt * dt) / 16 + 2 * MIN_D3S * ds3 - 2 * MIN_D3S * MAX_DS + (d2s3 * MIN_D3S * dt) / 2);
-		double level31_value2 = ((MAX_D3S * MAX_D3S * dt * dt) / 16 + 2 * MAX_D3S * ds3 - 2 * MAX_D3S * MIN_DS + (d2s3 * MAX_D3S * dt) / 2);
-		double
-			lhs01{ -1e10 }, rhs01{ 1e10 },
-			lhs10{ (MIN_DS - ds3 - d2s3 * dt) / dt / dt }, rhs10{ (MAX_DS - ds3 - d2s3 * dt) / dt / dt },
-			lhs11{ -1e10 }, rhs11{ 1e10 },
-			lhs20{ (MIN_D2S - d2s3) / dt }, rhs20{ (MAX_D2S - d2s3) / dt },
-			lhs205{ lhs10 }, rhs205{ rhs10 },
-			lhs21{ -1e10 }, rhs21{ 1e10 },
-			lhs22{ -1e10 }, rhs22{ 1e10 },
-			lhs23{ -1e10 }, rhs23{ 1e10 },
-			lhs24{ -1e10 }, rhs24{ 1e10 },
-			lhs30{ MIN_D3S }, rhs30{ MAX_D3S },
-			lhs31{ -std::sqrt(std::max(0.0, level31_value1)) + MIN_D3S * dt / 4 }, rhs31{ std::sqrt(std::max(0.0, level31_value2)) + MAX_D3S * dt / 4 },
-			lhs32{ -1e10 }, rhs32{ 1e10 },
-			lhs33{ -1e10 }, rhs33{ 1e10 },
-			lhs34{ -1e10 }, rhs34{ 1e10 }
-		;
-
 		double 
 			lhs_s{ -1e10 }, rhs_s{1e10},
 			lhs_ds{ MIN_DS }, rhs_ds{ MAX_DS },
@@ -1864,16 +1774,16 @@ namespace aris::plan {
 
 			if (std::abs(k) > zero_check) {
 				auto lhs1_local = (p_min[i] - e1) / f1;
-				auto rhs1_local = (p_max[i] - e2) / f1;
+				auto rhs1_local = (p_max[i] - e1) / f1;
 
-				auto lhs2_local = (dp_min[i] * VEL_BOUND_RATIO - e2) / f2;
-				auto rhs2_local = (dp_max[i] * VEL_BOUND_RATIO - e2) / f2;
+				auto lhs2_local = (dp_min[i] - e2) / f2;
+				auto rhs2_local = (dp_max[i] - e2) / f2;
 
-				auto lhs3_local = (d2p_min[i] * ACC_BOUND_RATIO - e3) / f3;
-				auto rhs3_local = (d2p_max[i] * ACC_BOUND_RATIO - e3) / f3;
+				auto lhs3_local = (d2p_min[i] - e3) / f3;
+				auto rhs3_local = (d2p_max[i] - e3) / f3;
 
-				auto lhs4_local = (d3p_min[i] * JERK_BOUND_RATIO - e4) / f4;
-				auto rhs4_local = (d3p_max[i] * JERK_BOUND_RATIO - e4) / f4;
+				auto lhs4_local = (d3p_min[i] - e4) / f4;
+				auto rhs4_local = (d3p_max[i] - e4) / f4;
 
 				if (k < 0) {
 					std::swap(lhs1_local, rhs1_local);
@@ -1972,8 +1882,8 @@ namespace aris::plan {
 				{
 					double d2p_below, d2p_upper;
 					s_smooth2_v_range(dp_max[i], dp_min[i], d2p_max[i], d2p_min[i], d3p_max[i], d3p_min[i], dt, dp3, d2p3, d2p_upper, d2p_below);
-					auto lhs3_local = (d2p_below * ACC_BOUND_RATIO - e3) / f3;
-					auto rhs3_local = (d2p_upper * ACC_BOUND_RATIO - e3) / f3;
+					auto lhs3_local = (d2p_below - e3) / f3;
+					auto rhs3_local = (d2p_upper - e3) / f3;
 
 					if (k < 0) {
 						std::swap(lhs3_local, rhs3_local);
@@ -1986,9 +1896,10 @@ namespace aris::plan {
 				// 修正3：在到位置极限前，提前降低速度
 				double rhs_d2s_local4 = rhs_d2s_local, lhs_d2s_local4 = lhs_d2s_local;
 				{
-					auto [d2p_min2, d2p_max2] = cpt_v_bound2(p_max[i], p_min[i], dp_max[i], dp_min[i], d2p_max[i], d2p_min[i], d3p_max[i], d3p_min[i], dt, p3[i], dp3, d2p3);
-					auto lhs4_local = (d2p_min2 * ACC_BOUND_RATIO - e3) / f3;
-					auto rhs4_local = (d2p_max2 * ACC_BOUND_RATIO - e3) / f3;
+					double d2p_min2, d2p_max2;
+					s_smooth3_a_range(p_max[i], p_min[i], dp_max[i], dp_min[i], d2p_max[i], d2p_min[i], d3p_max[i], d3p_min[i], dt, p3[i], dp3, d2p3, d2p_max2, d2p_min2);
+					auto lhs4_local = (d2p_min2 - e3) / f3;
+					auto rhs4_local = (d2p_max2 - e3) / f3;
 
 					if (k < 0) {
 						std::swap(lhs4_local, rhs4_local);
@@ -2013,8 +1924,9 @@ namespace aris::plan {
 		}
 
 		// 违反位置约束 //
-		if (lhs_s > rhs_s) {
-			ret.next_ds = 0.0;
+		if (lhs_s > rhs_s || rhs_s < 0.0) {
+			auto next_ds = std::min(MIN_DS, target_ds);
+			ret.next_ds = next_ds;
 			ret.state = -1;
 			return ret.state;
 		}
@@ -2036,9 +1948,12 @@ namespace aris::plan {
 
 		{
 			double d2s_min2, d2s_max2;
-			s_smooth2_v_range(1.0, 0.05, rhs_d2s, lhs_d2s, rhs_d3s, lhs_d3s, dt, ds3, d2s3, d2s_min2, d2s_max2);
+			s_smooth2_v_range(1.0, 0.005, rhs_d2s, lhs_d2s, rhs_d3s, lhs_d3s, dt, ds3, d2s3, d2s_max2, d2s_min2);
+
 			d2s_min = std::max(d2s_min, d2s_min2);
 			d2s_max = std::min(d2s_max, d2s_max2);
+
+			//std::cout << "  d2s_min2: " << d2s_min2 << "   d2s_max2:" << d2s_max2 << std::endl;
 		}
 
 		// 违反加速度约束 //
@@ -2050,9 +1965,16 @@ namespace aris::plan {
 			else if (ds3 < ds_min) {
 				next_d2s = std::max(d2s_min, d2s_max);
 			}
-			else {
-				next_d2s = (d2s_max + d2s_min) / 2;
+			else if(std::abs(ds_max - ds_min) > zero_check) {
+				auto l = std::min(d2s_min, d2s_max);
+				auto r = std::max(d2s_min, d2s_max);
+				next_d2s = l + (r-l)*(ds3 - ds_min)/(ds_max - ds_min);
 			}
+			else {
+				next_d2s = (d2s_min + d2s_max)/2;
+			}
+
+			//std::cout << "  d2s_min: " << d2s_min << "   d2s_max:" << d2s_max << std::endl;
 
 			ret.next_ds = ds3 + next_d2s * dt;
 			ret.next_ds = std::min(ret.next_ds, std::max(MAX_DS, target_ds));
@@ -2309,7 +2231,7 @@ namespace aris::plan {
 	auto SingularProcessor::setModelPosAndMoveDt()->std::int64_t {
 
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
-		static int count{ 0 };
+		static int count{ 0 }, tg_count{0};
 		count++;
 		if (count % 1000 == 0)
 			std::cout << "count: " << count++ << std::endl;
@@ -2328,6 +2250,11 @@ namespace aris::plan {
 		// move tg step //
 		// max_vel_ratio 和 max_acc_ratio 会触发正常降速
 		auto move_tg_step = [this]()->std::int64_t {
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+			tg_count++;
+#endif
+			
+			
 			// 当前处于非奇异状态，正常求反解 //
 			auto ret = imp_->tg_->getEePosAndMoveDt(imp_->output_pos_);
 			if (imp_->inv_func_) {
@@ -2351,17 +2278,34 @@ namespace aris::plan {
 			std::swap(imp_->p2_, imp_->p3_);
 			imp_->model_->getInputPos(imp_->p3_);
 
+
+			//double dt;
+			//int dim;
+			//const double* min_p, * max_p, * min_dp, * max_dp, * min_d2p, * max_d2p, * min_d3p, * max_d3p;
+			//double min_ds, max_ds, min_d2s, max_d2s, min_d3s, max_d3s;
+			//double ds1, ds2, ds3;
+			//double* p0, * p1, * p2, * p3;
+
+			//double target_ds;
+
+
 			SmoothParam param{
 				imp_->tg_->dt(),
 				imp_->input_size_,
-				imp_->max_poss_, imp_->min_poss_, imp_->min_vels_, imp_->max_vels_, imp_->min_accs_, imp_->max_accs_, imp_->min_jerks_, imp_->max_jerks_,
-				imp_->ds1_, imp_->ds2_, imp_->ds3_,
+				imp_->min_poss_, imp_->max_poss_, imp_->min_vels_, imp_->max_vels_, imp_->min_accs_, imp_->max_accs_, imp_->min_jerks_, imp_->max_jerks_,
 				0.005,1.0,-10.0,10.0,-10000.0,10000.0,
+				imp_->ds1_, imp_->ds2_, imp_->ds3_,
 				imp_->p0_, imp_->p1_, imp_->p2_, imp_->p3_,
 				imp_->target_ds_
 			};
 			SmoothRet smooth_ret;
-			s_smooth_curve2(param, smooth_ret);
+			s_smooth_curve3(param, smooth_ret);
+
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+			if(smooth_ret.state)
+				std::cout << "count:"<<count <<" tg:" << tg_count<<"  smooth ret : " << smooth_ret.state <<"  ds : " << smooth_ret.next_ds << std::endl;
+#endif
+
 
 			imp_->tg_->setCurrentDs(smooth_ret.next_ds);
 			imp_->tg_->setCurrentDds(0.0);
@@ -2381,6 +2325,32 @@ namespace aris::plan {
 			for (int i = 0; i < imp_->input_size_; ++i) {
 				imp_->input_pos_this_[i] = s_tcurve_value(imp_->curve_params_[i], imp_->current_singular_count_ * dt);
 			}
+
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+			auto curve_param = imp_->curve_params_[5];
+			std::cout << curve_param.a << std::endl;
+
+			auto pos_11 = imp_->input_pos_end_[5];
+			auto vel_11 = imp_->input_vel_end_[5];
+
+			auto v1 = (imp_->p3_[5] - imp_->p2_[5])/dt;
+			auto v0 = (imp_->p2_[5] - imp_->p1_[5])/dt;
+
+			auto a1 = (v1 - v0) / dt;
+
+			static double last_p5 = imp_->input_pos_this_[5], last_last_p5 = imp_->input_pos_this_[5];
+
+
+			double this_p5 = imp_->input_pos_this_[5];
+			double last_v5 = (last_p5 - last_last_p5) / dt;
+			double this_v5 = (this_p5 - last_p5) / dt;
+			double this_a5 = (this_v5 - last_v5) / dt;
+
+			last_last_p5 = last_p5;
+			last_p5 = this_p5;
+
+			//auto acc_11 = imp_->input_acc_end_[5];
+#endif
 
 			imp_->model_->setInputPos(imp_->input_pos_this_);
 			imp_->model_->forwardKinematics();
@@ -2413,7 +2383,7 @@ namespace aris::plan {
 
 				if (v2 > max_vel[idx] || v2 < -max_vel[idx] || a > max_acc[idx] || a < -max_acc[idx]) {
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
-					//std::cout << "singular idx" << idx << " vel:" << vel[idx] << "  max_vel:" << max_vel[idx] << "  acc:" << acc[idx] << "  max_acc:" << max_acc[idx] << std::endl;
+					//std::cout << "singular idx" << idx << " vel:" << v2 << "  max_vel:" << max_vel[idx] << "  acc:" << a << "  max_acc:" << max_acc[idx] << std::endl;
 #endif
 					return idx;
 				}
@@ -2423,7 +2393,7 @@ namespace aris::plan {
 
 		auto prepare_singular = [&]()->std::int64_t {
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
-			std::cout << "singular parpare" << std::endl;
+			std::cout << "count:" << count << " singular prepare : " << std::endl;
 #endif
 			imp_->state_ = Imp::SingularState::SINGULAR_PREPARE;
 
@@ -2541,9 +2511,12 @@ namespace aris::plan {
 
 					// 判断是否满足完全修复条件
 					auto& singular_param = imp_->curve_params_[imp_->singular_idx];
-					if (idx == imp_->input_size_ && 
+					if (imp_->total_singular_count_ > 1 && idx == imp_->input_size_ &&
 						((singular_param.vb * singular_param.ve < 0.0) || (singular_param.v * singular_param.vb >= 0)))
 					{
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+						std::cout <<"count:" << count <<" tg:" << tg_count << " singular prepare end:" << imp_->total_singular_count_ << std::endl;
+#endif
 						imp_->state_ = Imp::SingularState::SINGULAR;
 					}
 				}
@@ -2558,9 +2531,6 @@ namespace aris::plan {
 			return move_in_singular();
 		}
 		else if (imp_->state_ == Imp::SingularState::SINGULAR_PREPARE) {
-#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
-			std::cout << "singular prepare" << std::endl;
-#endif
 			return prepare_singular();
 		}
 		else {

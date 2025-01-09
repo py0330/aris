@@ -83,6 +83,10 @@ namespace aris::plan{
 	};
 
 
+	auto ARIS_API s_smooth3_a_range(double p_max, double p_min, double v_max, double v_min, double a_max, double a_min, double j_max, double j_min
+		, double dt, double p, double v, double a, double& a_upper, double& a_below) -> int;
+
+
 	struct SmoothParam {
 		double dt;
 		int dim;
