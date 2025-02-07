@@ -308,7 +308,14 @@ auto test_singular_processor_1()->void {
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{};
-	while (sp.setModelPosAndMoveDt()) {
+	while (auto ret = sp.setModelPosAndMoveDt()) {
+		static auto last_ret = -1;
+		if (ret != last_ret) {
+			std::cout << "cmd:" << ret << std::endl;
+			last_ret = ret;
+		}
+			
+		
 		m++;
 
 		if (m > 3000 && m < 6000)
@@ -316,7 +323,7 @@ auto test_singular_processor_1()->void {
 		else
 			sp.setTargetDs(1.0);
 
-		if (m == 592) {
+		if (m == 12793) {
 			std::cout << "debug" << std::endl;
 		}
 

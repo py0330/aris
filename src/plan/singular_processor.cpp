@@ -1,11 +1,9 @@
 ﻿#include"aris/plan/singular_processor.hpp"
 #include"aris/plan/function.hpp"
 
-#define ARIS_DEBUG_SINGULAR_PROCESSOR
+//#define ARIS_DEBUG_SINGULAR_PROCESSOR
 
 namespace aris::plan {
-	//auto s_poly3_solve(double k3, double k2, double k1, double k0, double* x) -> int;
-
 	struct ThirdPolynomialParam {
 		double a, b, c, d;
 	};
@@ -86,22 +84,20 @@ namespace aris::plan {
 	}
 
 	struct TcurveParam {
-		double pb, pe, vb, ve, vmax, amax;
-		double T, Ta, Tb, v, a;
-		int mode;
+		double pb_, pe_, vb_, ve_, vmax_, amax_;
+		double T_, Ta_, Tb_, v_, a_;
+		int mode_;
 	};
 	// 计算可行的时间域
 	// (T1 T2), (T3,inf)
 	auto s_tcurve_T_range(const TcurveParam& param, double& T1, double& T2, double& T3)->void {
-		// 
-		const double pb = param.pb;
-		const double pe = param.pe;
-		const double vb = param.vb;
-		const double ve = param.ve;
-		const double vmax = param.vmax;
-		const double amax = param.amax;
+		const double pb = param.pb_;
+		const double pe = param.pe_;
+		const double vb = param.vb_;
+		const double ve = param.ve_;
+		const double vmax = param.vmax_;
+		const double amax = param.amax_;
 
-		// 
 		const double pt = pe - pb;
 		const double Tb2e = std::abs(vb - ve) / amax;
 		const double pb2e = (vb + ve) / 2 * Tb2e;
@@ -151,19 +147,19 @@ namespace aris::plan {
 	}
 	// 计算param
 	auto s_tcurve_param(TcurveParam& param)->void {
-		const auto pb = param.pb;
-		const auto pe = param.pe;
-		const auto vb = param.vb;
-		const auto ve = param.ve;
-		const auto vmax = param.vmax;
-		const auto amax = param.amax;
-		const auto T = param.T;
+		const auto pb = param.pb_;
+		const auto pe = param.pe_;
+		const auto vb = param.vb_;
+		const auto ve = param.ve_;
+		const auto vmax = param.vmax_;
+		const auto amax = param.amax_;
+		const auto T = param.T_;
 
-		auto& a = param.a;
-		auto& v = param.v;
-		auto& Ta = param.Ta;
-		auto& Tb = param.Tb;
-		auto& mode = param.mode;
+		auto& a = param.a_;
+		auto& v = param.v_;
+		auto& Ta = param.Ta_;
+		auto& Tb = param.Tb_;
+		auto& mode = param.mode_;
 
 		double pt = pe - pb;
 		double Tb2e = std::abs(vb - ve) / amax;
@@ -171,55 +167,55 @@ namespace aris::plan {
 
 
 		if ((pt - pb2e) > (T - Tb2e) * std::max(vb, ve)) {
-			param.mode = 0;
-			param.a = amax;
+			param.mode_ = 0;
+			param.a_ = amax;
 
 			double A = 1;
 			double B = -T * a - vb - ve;
 			double C = (vb * vb + ve * ve) / 2 + pt * a;
 
-			param.v = (-B - std::sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
-			param.Ta = (v - vb) / a;
-			param.Tb = (v - ve) / a;
+			param.v_ = (-B - std::sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
+			param.Ta_ = (v - vb) / a;
+			param.Tb_ = (v - ve) / a;
 		}
 
 		else if ((pt - pb2e) > (T - Tb2e) * std::min(vb, ve)) {
-			param.mode = 1;
-			param.v = (pt - pb2e) / (T - Tb2e);
+			param.mode_ = 1;
+			param.v_ = (pt - pb2e) / (T - Tb2e);
 			Ta = (pt - pb2e) / (vb - ve) - ve / (vb - ve) * (T - Tb2e);
 			Ta = std::max(0.0, Ta);
-			param.Ta = std::min(Ta, T - Tb2e);
-			param.Tb = T - Tb2e - Ta;
-			param.a = aris::dynamic::s_sgn2(ve - vb) * amax;
+			param.Ta_ = std::min(Ta, T - Tb2e);
+			param.Tb_ = T - Tb2e - Ta;
+			param.a_ = aris::dynamic::s_sgn2(ve - vb) * amax;
 		}
 
 		else {
-			param.mode = 0;
-			param.a = -amax;
+			param.mode_ = 0;
+			param.a_ = -amax;
 			double A = 1;
 			double B = -T * a - vb - ve;
 			double C = (vb * vb + ve * ve) / 2 + pt * a;
 
-			param.v = (-B + std::sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
-			param.Ta = (v - vb) / a;
-			param.Tb = (v - ve) / a;
+			param.v_ = (-B + std::sqrt(std::abs(B * B - 4 * A * C))) / (2 * A);
+			param.Ta_ = (v - vb) / a;
+			param.Tb_ = (v - ve) / a;
 		}
 	}
 	// 计算值
 	auto s_tcurve_value(const TcurveParam& param, double t)->double {
-		const auto pb = param.pb;
-		const auto pe = param.pe;
-		const auto vb = param.vb;
-		const auto ve = param.ve;
-		const auto vmax = param.vmax;
-		const auto amax = param.amax;
-		const auto T = param.T;
+		const auto pb = param.pb_;
+		const auto pe = param.pe_;
+		const auto vb = param.vb_;
+		const auto ve = param.ve_;
+		const auto vmax = param.vmax_;
+		const auto amax = param.amax_;
+		const auto T = param.T_;
 
-		const auto a = param.a;
-		const auto v = param.v;
-		const auto Ta = param.Ta;
-		const auto Tb = param.Tb;
-		const auto mode = param.mode;
+		const auto a = param.a_;
+		const auto v = param.v_;
+		const auto Ta = param.Ta_;
+		const auto Tb = param.Tb_;
+		const auto mode = param.mode_;
 
 
 		if (mode == 0)
@@ -229,13 +225,21 @@ namespace aris::plan {
 				return pb + vb * Ta + a * Ta * Ta / 2 + v * (t - Ta);
 			else
 				return pe - ve * (T - t) - a * (T - t) * (T - t) / 2;
-		else
+		else {
+
+			const double Ta = param.Ta_ - std::min(param.Ta_, param.Tb_);
+			const double Tb = param.Tb_ - std::min(param.Ta_, param.Tb_);
+			const double lower_ratio = (param.T_ - Ta - Tb) < 1e-9 ? 1.0 : (param.T_ - param.Ta_ - param.Tb_) / (param.T_ - Ta - Tb);
+			const double a = param.a_ * lower_ratio;
+
 			if (t < Ta)
 				return pb + vb * t;
 			else if (t < T - Tb)
 				return pb + vb * t + a * (t - Ta) * (t - Ta) / 2;
 			else
 				return  pe - ve * (T - t);
+		}
+			
 	}
 
 	// t1   t15   t2   t25   t3            t4
@@ -307,7 +311,6 @@ namespace aris::plan {
 
 		return 0;
 	};
-
 	
 	// t0        t1   t15   t2   t25   t3
 	//
@@ -1952,8 +1955,6 @@ namespace aris::plan {
 
 			d2s_min = std::max(d2s_min, d2s_min2);
 			d2s_max = std::min(d2s_max, d2s_max2);
-
-			//std::cout << "  d2s_min2: " << d2s_min2 << "   d2s_max2:" << d2s_max2 << std::endl;
 		}
 
 		// 违反加速度约束 //
@@ -2010,7 +2011,7 @@ namespace aris::plan {
 
 		double next_ds, next_d2s, next_d3s{ 0.0 };
 		aris::Size total_count;
-		s_follow_x(ds3, d2s3, target_ds, MAX_D2S, MIN_D2S, d3s_max, d3s_min, dt, zero_check, next_ds, next_d2s, next_d3s, total_count);
+		s_follow_x(ds3, d2s3, target_ds, rhs_d2s, lhs_d2s, rhs_d3s, lhs_d3s, dt, zero_check, next_ds, next_d2s, next_d3s, total_count);
 		next_ds = std::min(next_ds, std::max(MAX_DS, target_ds));
 		next_ds = std::max(next_ds, std::min(MIN_DS, target_ds));
 
@@ -2036,6 +2037,14 @@ namespace aris::plan {
 			* min_vels_,
 			* min_accs_,
 			* min_jerks_,
+			* smooth_max_poss_,
+			* smooth_max_vels_,
+			* smooth_max_accs_,
+			* smooth_max_jerks_,
+			* smooth_min_poss_,
+			* smooth_min_vels_,
+			* smooth_min_accs_,
+			* smooth_min_jerks_,
 			* input_pos_begin_,// 奇异状态的起始值
 			* input_vel_begin_,
 			* input_acc_begin_,
@@ -2056,17 +2065,15 @@ namespace aris::plan {
 			* p2_,
 			* p3_;
 
-		std::int64_t singular_ret_{ 0 };
+		std::int32_t *Ts_count_;
+
+		std::int64_t tg_ret_{ 0 }, tg_ret_begin_{0};
 		aris::Size total_singular_count_{ 0 }, current_singular_count_{ 0 };
 		CurveParam* curve_params_;
 
-		double max_vel_ratio_{ 0.99 };
-		double max_acc_ratio_{ 0.95 };
-		double max_jerk_ratio_{ 0.95 };
-
 		double target_ds_{ 1.0 };
 		double ds1_{ 1.0 }, ds2_{ 1.0 }, ds3_{ 1.0 };
-		
+
 		aris::dynamic::ModelBase* model_{ nullptr };
 		aris::plan::TrajectoryGenerator* tg_{ nullptr };
 
@@ -2091,6 +2098,10 @@ namespace aris::plan {
 			for (int i = 0; i < imp_->input_size_; ++i)
 				imp_->min_poss_[i] = -imp_->max_poss_[i];
 		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, imp_->max_poss_, imp_->smooth_max_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->min_poss_, imp_->smooth_min_poss_);
 	}
 	auto SingularProcessor::setMaxVels(const double* max_vels, const double* min_vels)->void {
 		std::copy(max_vels, max_vels + imp_->input_size_, imp_->max_vels_);
@@ -2101,6 +2112,10 @@ namespace aris::plan {
 			for (int i = 0; i < imp_->input_size_; ++i)
 				imp_->min_vels_[i] = -imp_->max_vels_[i];
 		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_vels_, imp_->smooth_max_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_vels_, imp_->smooth_min_vels_);
 	}
 	auto SingularProcessor::setMaxAccs(const double* max_accs, const double* min_accs)->void {
 		std::copy(max_accs, max_accs + imp_->input_size_, imp_->max_accs_);
@@ -2111,6 +2126,10 @@ namespace aris::plan {
 			for (int i = 0; i < imp_->input_size_; ++i)
 				imp_->min_accs_[i] = -imp_->max_accs_[i];
 		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_accs_, imp_->smooth_max_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_accs_, imp_->smooth_min_accs_);
 	}
 	auto SingularProcessor::setMaxJerks(const double* max_jerks, const double* min_jerks) -> void {
 		std::copy(max_jerks, max_jerks + imp_->input_size_, imp_->max_jerks_);
@@ -2121,12 +2140,16 @@ namespace aris::plan {
 			for (int i = 0; i < imp_->input_size_; ++i)
 				imp_->min_jerks_[i] = -imp_->max_jerks_[i];
 		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_jerks_, imp_->smooth_max_jerks_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_jerks_, imp_->smooth_min_jerks_);
 	}
 	auto SingularProcessor::setMaxVelRatio(double vel_ratio)->void {
-		imp_->max_vel_ratio_ = vel_ratio;
+		//imp_->max_vel_ratio_ = vel_ratio;
 	}
 	auto SingularProcessor::setMaxAccRatio(double acc_ratio)->void {
-		imp_->max_acc_ratio_ = acc_ratio;
+		//imp_->max_acc_ratio_ = acc_ratio;
 	}
 	auto SingularProcessor::setModel(aris::dynamic::ModelBase& model)->void {
 		imp_->model_ = &model;
@@ -2141,6 +2164,14 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->min_vels_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->min_accs_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->min_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_jerks_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->input_pos_begin_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->input_vel_begin_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->input_pos_end_, imp_->input_size_);
@@ -2159,6 +2190,7 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->p1_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->p2_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->p3_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->Ts_count_, imp_->input_size_ * 3);
 
 		imp_->mem_.resize(mem_size, char(0));
 
@@ -2170,6 +2202,14 @@ namespace aris::plan {
 		imp_->min_vels_ = core::getMem(imp_->mem_.data(), imp_->min_vels_);
 		imp_->min_accs_ = core::getMem(imp_->mem_.data(), imp_->min_accs_);
 		imp_->min_jerks_ = core::getMem(imp_->mem_.data(), imp_->min_jerks_);
+		imp_->smooth_max_poss_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_poss_);
+		imp_->smooth_max_vels_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_vels_);
+		imp_->smooth_max_accs_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_accs_);
+		imp_->smooth_max_jerks_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_jerks_);
+		imp_->smooth_min_poss_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_poss_);
+		imp_->smooth_min_vels_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_vels_);
+		imp_->smooth_min_accs_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_accs_);
+		imp_->smooth_min_jerks_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_jerks_);
 		imp_->input_pos_begin_ = core::getMem(imp_->mem_.data(), imp_->input_pos_begin_);
 		imp_->input_vel_begin_ = core::getMem(imp_->mem_.data(), imp_->input_vel_begin_);
 		imp_->input_acc_begin_ = core::getMem(imp_->mem_.data(), imp_->input_acc_begin_);
@@ -2190,7 +2230,7 @@ namespace aris::plan {
 		imp_->p1_ = core::getMem(imp_->mem_.data(), imp_->p1_);
 		imp_->p2_ = core::getMem(imp_->mem_.data(), imp_->p2_);
 		imp_->p3_ = core::getMem(imp_->mem_.data(), imp_->p3_);
-
+		imp_->Ts_count_ = core::getMem(imp_->mem_.data(), imp_->Ts_count_);
 
 		std::fill_n(imp_->max_poss_, imp_->input_size_, 1e10);
 		std::fill_n(imp_->min_poss_, imp_->input_size_, -1e10);
@@ -2200,6 +2240,15 @@ namespace aris::plan {
 		std::fill_n(imp_->min_accs_, imp_->input_size_, -10.0);
 		std::fill_n(imp_->max_jerks_, imp_->input_size_, 1000.0);
 		std::fill_n(imp_->min_jerks_, imp_->input_size_, -1000.0);
+
+		aris::dynamic::s_vc(imp_->input_size_, imp_->max_poss_, imp_->smooth_max_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->min_poss_, imp_->smooth_min_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_vels_, imp_->smooth_max_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_vels_, imp_->smooth_min_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_accs_, imp_->smooth_max_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_accs_, imp_->smooth_min_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_jerks_, imp_->smooth_max_jerks_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_jerks_, imp_->smooth_min_jerks_);
 	}
 	auto SingularProcessor::setTrajectoryGenerator(TrajectoryGenerator& tg)->void {
 		imp_->tg_ = &tg;
@@ -2234,7 +2283,7 @@ namespace aris::plan {
 		static int count{ 0 }, tg_count{0};
 		count++;
 		if (count % 1000 == 0)
-			std::cout << "count: " << count++ << std::endl;
+			std::cout << "count: " << count << std::endl;
 		if (count == 125)
 			std::cout << "debug" << std::endl;
 #endif
@@ -2253,18 +2302,27 @@ namespace aris::plan {
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 			tg_count++;
 #endif
-			
-			
+
 			// 当前处于非奇异状态，正常求反解 //
 			auto ret = imp_->tg_->getEePosAndMoveDt(imp_->output_pos_);
 			if (imp_->inv_func_) {
-				if (auto ret = imp_->inv_func_(*imp_->model_, imp_->output_pos_); ret)
+				if (auto ret = imp_->inv_func_(*imp_->model_, imp_->output_pos_); ret) {
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+					std::cout << "inverse kin failed" << ret << std::endl;
+#endif
 					return ret;
+				}
+					
 			}
 			else {
 				imp_->model_->setOutputPos(imp_->output_pos_);
-				if (auto ret = imp_->model_->inverseKinematics(); ret)
+				if (auto ret = imp_->model_->inverseKinematics(); ret) {
+#ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
+					std::cout << "inverse kin failed" << ret << std::endl;
+#endif
 					return ret;
+				
+				}
 			}
 			
 			// update ds //
@@ -2278,22 +2336,14 @@ namespace aris::plan {
 			std::swap(imp_->p2_, imp_->p3_);
 			imp_->model_->getInputPos(imp_->p3_);
 
-
-			//double dt;
-			//int dim;
-			//const double* min_p, * max_p, * min_dp, * max_dp, * min_d2p, * max_d2p, * min_d3p, * max_d3p;
-			//double min_ds, max_ds, min_d2s, max_d2s, min_d3s, max_d3s;
-			//double ds1, ds2, ds3;
-			//double* p0, * p1, * p2, * p3;
-
-			//double target_ds;
-
-
 			SmoothParam param{
 				imp_->tg_->dt(),
 				imp_->input_size_,
-				imp_->min_poss_, imp_->max_poss_, imp_->min_vels_, imp_->max_vels_, imp_->min_accs_, imp_->max_accs_, imp_->min_jerks_, imp_->max_jerks_,
-				0.005,1.0,-10.0,10.0,-10000.0,10000.0,
+				imp_->smooth_min_poss_, imp_->smooth_max_poss_, 
+				imp_->smooth_min_vels_, imp_->smooth_max_vels_, 
+				imp_->smooth_min_accs_, imp_->smooth_max_accs_, 
+				imp_->smooth_min_jerks_, imp_->smooth_max_jerks_,
+				0.005,1.0,-100.0,100.0,-10000.0,10000.0,
 				imp_->ds1_, imp_->ds2_, imp_->ds3_,
 				imp_->p0_, imp_->p1_, imp_->p2_, imp_->p3_,
 				imp_->target_ds_
@@ -2305,7 +2355,6 @@ namespace aris::plan {
 			if(smooth_ret.state)
 				std::cout << "count:"<<count <<" tg:" << tg_count<<"  smooth ret : " << smooth_ret.state <<"  ds : " << smooth_ret.next_ds << std::endl;
 #endif
-
 
 			imp_->tg_->setCurrentDs(smooth_ret.next_ds);
 			imp_->tg_->setCurrentDds(0.0);
@@ -2320,15 +2369,25 @@ namespace aris::plan {
 			auto dt = imp_->tg_->dt();
 			
 			// 取出位置
-			std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
-			std::swap(imp_->input_vel_this_, imp_->input_vel_last_);
-			for (int i = 0; i < imp_->input_size_; ++i) {
-				imp_->input_pos_this_[i] = s_tcurve_value(imp_->curve_params_[i], imp_->current_singular_count_ * dt);
+			if (imp_->current_singular_count_ > imp_->total_singular_count_) {
+				std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
+				std::swap(imp_->input_vel_this_, imp_->input_vel_last_);
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					imp_->input_pos_this_[i] = imp_->p3_[i];
+				}
 			}
+			else {
+				std::swap(imp_->input_pos_this_, imp_->input_pos_last_);
+				std::swap(imp_->input_vel_this_, imp_->input_vel_last_);
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					imp_->input_pos_this_[i] = s_tcurve_value(imp_->curve_params_[i], imp_->current_singular_count_ * dt);
+				}
+			}
+			
 
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 			auto curve_param = imp_->curve_params_[5];
-			std::cout << curve_param.a << std::endl;
+			//std::cout << curve_param.a << std::endl;
 
 			auto pos_11 = imp_->input_pos_end_[5];
 			auto vel_11 = imp_->input_vel_end_[5];
@@ -2366,10 +2425,12 @@ namespace aris::plan {
 			aris::dynamic::s_nv(imp_->input_size_, 1.0 / dt, imp_->input_acc_this_);
 
 			imp_->current_singular_count_++;
-			if (imp_->current_singular_count_ > imp_->total_singular_count_)
+			if (imp_->current_singular_count_ > imp_->total_singular_count_ + 1) {
 				imp_->state_ = Imp::SingularState::NORMAL;
+				return imp_->tg_ret_;
+			}
 
-			return imp_->singular_ret_;
+			return imp_->tg_ret_begin_;
 		};
 
 		// check if singular //
@@ -2410,35 +2471,75 @@ namespace aris::plan {
 			auto dt = imp_->tg_->dt();
 			do {
 				while_count++;
-				imp_->singular_ret_ = move_tg_step();
+
+				// 处理速度突变 //
+				/*
+				double vel_ratio = 1.0;
+				for (int i = 0; i < imp_->input_size_; ++i) {
+					aris::dynamic::s_vc(imp_->input_size_, imp_->p3_, imp_->input_vel_end_);
+					aris::dynamic::s_vs(imp_->input_size_, imp_->p2_, imp_->input_vel_end_);
+					aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->tg_->dt(), imp_->input_vel_end_);
+
+					aris::dynamic::s_vc(imp_->input_size_, imp_->p2_, imp_->input_pos_end_);
+
+					double pt = imp_->input_pos_end_[i] - imp_->input_pos_begin_[i];
+					double vb = imp_->input_vel_begin_[i];
+					double ve = imp_->input_vel_end_[i];
+					
+					if (ve > imp_->max_accs_[i] * dt || ve < imp_->min_accs_[i] * dt) {
+						if ((vb >= 0 && ve >= 0 && pt < 0) || (vb <= 0 && ve <= 0 && pt > 0)) {
+							vel_ratio = 0.0;
+							break;
+						}
+
+						// pt / T = (vb + ve)/2
+						// T = (ve - vb)/a
+						//
+						// => pt*a*2 = ve*ve - vb*vb
+						double ve_max;
+						if (pt >= 0)
+							ve_max = std::sqrt(2.0 * pt * imp_->max_accs_[i] + vb * vb);
+						else
+							ve_max = -std::sqrt(2.0 * pt * imp_->min_accs_[i] + vb * vb);
+
+						if (std::abs(ve) > 1e-10)
+							vel_ratio = std::min(vel_ratio, std::abs(ve_max / ve));
+					}
+				}
+				double ds_should_be = std::max(std::min(imp_->ds3_ * vel_ratio, imp_->tg_->currentDs()), 0.005);
+				//ds_should_be = std::min(ds_should_be, imp_->tg_->currentDs());
+				imp_->tg_->setCurrentDs(ds_should_be);
+				imp_->tg_->setCurrentDds(0.0);
+				imp_->tg_->setTargetDs(ds_should_be);*/
+
+				// 迭代1步 //
+				auto target_ds_store = imp_->target_ds_;
+				imp_->target_ds_ = 0.005;
+				imp_->tg_ret_ = move_tg_step();
+				imp_->target_ds_ = target_ds_store;
+
 				idx = check_if_singular(imp_->input_size_, dt, imp_->max_vels_, imp_->max_accs_, imp_->p1_, imp_->p2_, imp_->p3_);
 
 				// 尝试处理奇异情况 //
 				if (idx == imp_->input_size_ || while_count >= MAX_ITER_COUNT) {
 					// 保存终止时刻的位置与速度 //
-					aris::dynamic::s_vc(imp_->input_size_, imp_->p3_, imp_->input_pos_end_);
+					aris::dynamic::s_vc(imp_->input_size_, imp_->p2_, imp_->input_pos_end_);
 
 					aris::dynamic::s_vc(imp_->input_size_, imp_->p3_, imp_->input_vel_end_);
 					aris::dynamic::s_vs(imp_->input_size_, imp_->p2_, imp_->input_vel_end_);
 					aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->tg_->dt(), imp_->input_vel_end_);
 
-					// 考虑结束条件可能是循环次数到了，因此将终止速度保护
-					for (int i = 0; i < imp_->input_size_; ++i) {
-						imp_->input_vel_end_[i] = std::max(-imp_->max_vels_[i] * imp_->max_vel_ratio_, imp_->input_vel_end_[i]);
-						imp_->input_vel_end_[i] = std::min(imp_->max_vels_[i] * imp_->max_vel_ratio_, imp_->input_vel_end_[i]);
-					}
-
 					// 计算每根轴所需要的时间 //
-					std::int64_t Ts_count[100];
+					auto Ts_count = imp_->Ts_count_;
 					for (int i = 0; i < imp_->input_size_; ++i) {
 						auto& tcurve_param = imp_->curve_params_[i];
 
-						tcurve_param.pb = imp_->input_pos_begin_[i];
-						tcurve_param.pe = imp_->input_pos_end_[i];
-						tcurve_param.vb = imp_->input_vel_begin_[i];
-						tcurve_param.ve = imp_->input_vel_end_[i];
-						tcurve_param.vmax = imp_->max_vels_[i];
-						tcurve_param.amax = imp_->max_accs_[i];
+						tcurve_param.pb_ = imp_->input_pos_begin_[i];
+						tcurve_param.pe_ = imp_->input_pos_end_[i];
+						tcurve_param.vb_ = imp_->input_vel_begin_[i];
+						tcurve_param.ve_ = imp_->input_vel_end_[i];
+						tcurve_param.vmax_ = imp_->max_vels_[i];
+						tcurve_param.amax_ = imp_->max_accs_[i];
 
 						double T1, T2, T3;
 						s_tcurve_T_range(tcurve_param, T1, T2, T3);
@@ -2502,23 +2603,34 @@ namespace aris::plan {
 
 					// 根据 Tmin 生成曲线
 					for (int i = 0; i < imp_->input_size_; ++i) {
-						imp_->curve_params_[i].T = Tmin_count * dt;
+						imp_->curve_params_[i].T_ = Tmin_count * dt;
 						s_tcurve_param(imp_->curve_params_[i]);
 					}
 
 					imp_->total_singular_count_ = Tmin_count;
 					imp_->current_singular_count_ = 1;
 
-					// 判断是否满足完全修复条件
-					auto& singular_param = imp_->curve_params_[imp_->singular_idx];
-					if (imp_->total_singular_count_ > 1 && idx == imp_->input_size_ &&
-						((singular_param.vb * singular_param.ve < 0.0) || (singular_param.v * singular_param.vb >= 0)))
+
+
+					if (imp_->tg_ret_ && imp_->total_singular_count_ > 1)
 					{
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 						std::cout <<"count:" << count <<" tg:" << tg_count << " singular prepare end:" << imp_->total_singular_count_ << std::endl;
 #endif
-						imp_->state_ = Imp::SingularState::SINGULAR;
+						bool is_singular_prepared = true;
+						for (int i = 0; i < imp_->input_size_; ++i) {
+							auto& tparam = imp_->curve_params_[i];
+							if (!((tparam.vb_ >= 0 && tparam.ve_ >= 0 && tparam.v_ >= 0) || (tparam.vb_ <= 0 && tparam.ve_ <= 0 && tparam.v_ <= 0)))
+								is_singular_prepared = false;
+
+						}
+
+						if(is_singular_prepared)
+							imp_->state_ = Imp::SingularState::SINGULAR;
 					}
+					else
+						imp_->state_ = Imp::SingularState::SINGULAR;
+
 				}
 			} while (imp_->state_ != Imp::SingularState::SINGULAR && while_count < MAX_ITER_COUNT);
 
@@ -2534,7 +2646,7 @@ namespace aris::plan {
 			return prepare_singular();
 		}
 		else {
-			imp_->singular_ret_ = move_tg_step();
+			imp_->tg_ret_ = move_tg_step();
 
 			if ((imp_->singular_idx = check_if_singular(imp_->input_size_, imp_->tg_->dt(), imp_->max_vels_, imp_->max_accs_, imp_->p1_, imp_->p2_, imp_->p3_)) == imp_->input_size_) {
 				// 正常保存位置 //
@@ -2552,12 +2664,13 @@ namespace aris::plan {
 				aris::dynamic::s_vs(imp_->input_size_, imp_->input_vel_last_, imp_->input_acc_this_);
 				aris::dynamic::s_nv(imp_->input_size_, 1.0 / imp_->tg_->dt(), imp_->input_acc_this_);
 				
-				return imp_->singular_ret_;
+				return imp_->tg_ret_;
 			}
 			else {
 #ifdef ARIS_DEBUG_SINGULAR_PROCESSOR
 				std::cout << "singular" << std::endl;
 #endif
+				imp_->tg_ret_begin_ = imp_->tg_ret_;
 				return prepare_singular();
 			}
 		}
