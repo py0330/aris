@@ -409,15 +409,14 @@ auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 		SmoothRet ret;
 		s_smooth_curve3(p, ret);
 
-		if (ret.state) {
-			std::cout << "count:" << i << "  ret:" << ret.state <<"  ds:"<<ret.next_ds << std::endl;
-		}
-		
-		//if (i > 703 && i < 1000) 
-		//{
-		//	std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
-		//	std::cout << "ds:" << ret.next_ds << std::endl;
+		//if (ret.state) {
+		//	std::cout << "count:" << i << "  ret:" << ret.state <<"  ds:"<<ret.next_ds << std::endl;
 		//}
+		
+		if (i > 1885 && i < 2000) 
+		{
+			std::cout << "count:" << i << "  ret:" << ret.state << "  ds:" << ret.next_ds << std::endl;
+		}
 		//if (i > 1585 && i < 2000)
 		//{
 		//	std::cout << "count:" << i << "  ret:" << ret.state << std::endl;
@@ -763,8 +762,9 @@ void test_singular_processor(){
 
 	test_s_smooth3_a_range();
 
+	test_smooth_cond_vel_violate();
 	//test_smooth_cond_discontinue();
-	test_singular_processor_1();
+	//test_singular_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }

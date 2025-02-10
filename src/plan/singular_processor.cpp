@@ -1969,13 +1969,13 @@ namespace aris::plan {
 			else if(std::abs(ds_max - ds_min) > zero_check) {
 				auto l = std::min(d2s_min, d2s_max);
 				auto r = std::max(d2s_min, d2s_max);
-				next_d2s = l + (r-l)*(ds3 - ds_min)/(ds_max - ds_min);
+				next_d2s = r + (l-r)*(ds3 - ds_min)/(ds_max - ds_min);
 			}
 			else {
 				next_d2s = (d2s_min + d2s_max)/2;
 			}
 
-			//std::cout << "  d2s_min: " << d2s_min << "   d2s_max:" << d2s_max << std::endl;
+			//std::cout <<"next_d2s:  "<< next_d2s << "  d2s_min: " << d2s_min << "   d2s_max:" << d2s_max << std::endl;
 
 			ret.next_ds = ds3 + next_d2s * dt;
 			ret.next_ds = std::min(ret.next_ds, std::max(MAX_DS, target_ds));
@@ -2011,10 +2011,24 @@ namespace aris::plan {
 
 		double next_ds, next_d2s, next_d3s{ 0.0 };
 		aris::Size total_count;
+		//  
+		// s_follow_x 在加速时会考虑减速能力，例如没有减速能力的时候，就不会再加速
+		//  
+		// 但是当 d3s_max 和 d3s_min 等会根据 d2s 的极限，来确定大小，例如当前 d2s 已经在最小值，此时 d3s_min 为 0，由于没有
+		// 减速能力，所以 s_follow_x 也不会做加速
+		//  
+		// 因而 s_follow_x 使用 rhs 和 lhs 来做判定标准 
+		//  
 		s_follow_x(ds3, d2s3, target_ds, rhs_d2s, lhs_d2s, rhs_d3s, lhs_d3s, dt, zero_check, next_ds, next_d2s, next_d3s, total_count);
+		
+		next_d3s = std::min(next_d3s, d3s_max);
+		next_d3s = std::max(next_d3s, d3s_min);
+		
 		next_ds = std::min(next_ds, std::max(MAX_DS, target_ds));
 		next_ds = std::max(next_ds, std::min(MIN_DS, target_ds));
 
+		next_d2s = d2s3 + next_d3s * dt;
+		next_ds = ds3 + next_d2s * dt;
 		ret.next_ds = next_ds;
 		ret.state = 0;
 		return 0;
