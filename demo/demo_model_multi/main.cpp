@@ -300,7 +300,7 @@ int main(){
 	model.subModels().push_back(aris::dynamic::createModelPuma(param).release());
 
 	std::cout << aris::core::toXmlString(model) << std::endl;
-
+	
 
 	// 添加 tools 和 wobjs，以下信息可以与xml进行反射
 	model.tools().push_back(model.findMarker("PumaModel.EE.tool0"));

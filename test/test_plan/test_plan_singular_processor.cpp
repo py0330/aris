@@ -413,9 +413,13 @@ auto test_smooth_func(TestSmoothParam param) -> TestSmoothResult{
 		//	std::cout << "count:" << i << "  ret:" << ret.state <<"  ds:"<<ret.next_ds << std::endl;
 		//}
 		
-		if (i > 1885 && i < 2000) 
+		if (i > 2000 && i < 2050) 
 		{
-			std::cout << "count:" << i << "  ret:" << ret.state << "  ds:" << ret.next_ds << std::endl;
+			static double last_ds = 0;
+
+			
+			std::cout << "count:" << i << "  ret:" << ret.state << "  ds:" << ret.next_ds << "  d2s:" << (ret.next_ds - last_ds)/1e-3 << std::endl;
+			last_ds = ret.next_ds;
 		}
 		//if (i > 1585 && i < 2000)
 		//{
@@ -559,7 +563,7 @@ auto test_smooth_cond_vel_violate() -> void {
 	TestSmoothParam param;
 	TestSmoothResult result;
 
-	param = TestSmoothParam{ 6000, 1, 0.001, sin_func<-1,2>,
+	param = TestSmoothParam{ 3000, 1, 0.001, sin_func<-1,2>,
 	{100},{-100},{1.5},{-1.5},{3.0},{-3.0},{10.0},{-10.0},
 	0.0, 0.1
 	};
@@ -603,7 +607,7 @@ auto test_smooth_cond_vel_violate() -> void {
 	//};
 	//auto& param = param3;
 	//auto result = test_smooth_func(param);
-	int n = 6000;
+	int n = 3000;
 
 
 
@@ -764,6 +768,7 @@ void test_singular_processor(){
 
 	test_smooth_cond_vel_violate();
 	//test_smooth_cond_discontinue();
+	//for(int i =0; i <1000; ++i)
 	//test_singular_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;

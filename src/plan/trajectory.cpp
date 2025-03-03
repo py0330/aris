@@ -122,7 +122,7 @@ namespace aris::plan {
 		}
 	};
 
-	auto internal_pos_to_outpos(const std::vector<aris::dynamic::EEType>& ee_types, const double* internal_pos, double* out_pos) {
+	auto internal_pos_to_outpos(const std::vector<aris::dynamic::EEType>& ee_types, const double* internal_pos, double* out_pos) -> void {
 		aris::Size internal_idx{ 0 }, out_idx{ 0 };
 		for (auto ee_type : ee_types) {
 			switch (ee_type) {
@@ -241,7 +241,7 @@ namespace aris::plan {
 			}
 		}
 	}
-	auto outpos_to_internal_pos(const std::vector<aris::dynamic::EEType>& ee_types, const double* out_pos, double* internal_pos) {
+	auto outpos_to_internal_pos(const std::vector<aris::dynamic::EEType>& ee_types, const double* out_pos, double* internal_pos) -> void {
 		aris::Size internal_idx{ 0 }, out_idx{ 0 };
 		for (auto ee_type : ee_types) {
 			switch (ee_type) {
@@ -362,7 +362,7 @@ namespace aris::plan {
 	}
 
 	// make & compute raw data // 
-	auto s_make_line3(const double* p0, const double* p1, double* dir, double& length) {
+	auto s_make_line3(const double* p0, const double* p1, double* dir, double& length) -> void {
 		length = std::sqrt(
 			(p1[0] - p0[0]) * (p1[0] - p0[0]) + (p1[1] - p0[1]) * (p1[1] - p0[1]) + (p1[2] - p0[2]) * (p1[2] - p0[2])
 		);
@@ -372,7 +372,7 @@ namespace aris::plan {
 		aris::dynamic::s_vs(3, p0, dir);
 		aris::dynamic::s_nv(3, 1.0 / std::max(length, 1e-10), dir);
 	}
-	auto s_compute_line3_at(const double* p0, const double* dir, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr) {
+	auto s_compute_line3_at(const double* p0, const double* dir, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr) -> void {
 		// pos //
 		xyz[0] = p0[0] + dir[0] * l;
 		xyz[1] = p0[1] + dir[1] * l;
@@ -393,7 +393,7 @@ namespace aris::plan {
 		}
 	}
 
-	auto s_make_line2(const double* p0, const double* p1, double* dir, double& length) {
+	auto s_make_line2(const double* p0, const double* p1, double* dir, double& length) -> void {
 		length = std::sqrt(
 			(p1[0] - p0[0]) * (p1[0] - p0[0]) + (p1[1] - p0[1]) * (p1[1] - p0[1])
 		);
@@ -403,7 +403,7 @@ namespace aris::plan {
 		aris::dynamic::s_vs(2, p0, dir);
 		aris::dynamic::s_nv(2, 1.0 / std::max(length, 1e-10), dir);
 	}
-	auto s_compute_line2_at(const double* p0, const double* dir, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr) {
+	auto s_compute_line2_at(const double* p0, const double* dir, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr) -> void {
 		// pos //
 		xyz[0] = p0[0] + dir[0] * l;
 		xyz[1] = p0[1] + dir[1] * l;
@@ -421,7 +421,7 @@ namespace aris::plan {
 		}
 	}
 
-	auto s_make_circle3(const double* p0, const double* p1, const double* p2, double* center, double* axis, double& radius, double& length)
+	auto s_make_circle3(const double* p0, const double* p1, const double* p2, double* center, double* axis, double& radius, double& length) -> void
 	{
 		// see https://www.jianshu.com/p/f99246170561
 		double
@@ -509,7 +509,7 @@ namespace aris::plan {
 			length = dir < 0.0 ? radius * (2.0 * aris::PI - std::atan2(s, c)) : radius * std::atan2(s, c);
 		}
 	}
-	auto s_compute_circle3_at(const double* p0, const double* center, const double* axis, double radius, double total_length, double l, double* xyz, double dl =0.0, double *dxyz = nullptr, double d2l = 0.0, double *d2xyz = nullptr)
+	auto s_compute_circle3_at(const double* p0, const double* center, const double* axis, double radius, double total_length, double l, double* xyz, double dl =0.0, double *dxyz = nullptr, double d2l = 0.0, double *d2xyz = nullptr) -> void
 	{
 		l = std::min(l, total_length);
 		l = std::max(l, 0.0);
@@ -557,7 +557,7 @@ namespace aris::plan {
 		double p0_[3]{ p0[0],p0[1],0.0 }, p1_[3]{ p1[0],p1[1],0.0 }, p2_[3]{ p2[0],p2[1],0.0 };
 		s_make_circle3(p0_, p1_, p2_, center, axis, radius, length);
 	}
-	auto s_compute_circle2_at(const double* p0, const double* center, const double* axis, double radius, double total_length, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr){
+	auto s_compute_circle2_at(const double* p0, const double* center, const double* axis, double radius, double total_length, double l, double* xyz, double dl = 0.0, double* dxyz = nullptr, double d2l = 0.0, double* d2xyz = nullptr) -> void {
 		const double p0_[3]{ p0[0],p0[1],0.0 };
 		double xyz_[3], dxyz_[3], d2xyz_[3];
 		s_compute_circle3_at(p0_, center, axis, radius, total_length, l, xyz_, dl, dxyz_, d2l, d2xyz_);
@@ -569,7 +569,7 @@ namespace aris::plan {
 			aris::dynamic::s_vc(2, d2xyz_, d2xyz);
 	}
 
-	auto s_make_quaternion_data(const double* q0, const double* q1, double& length) {
+	auto s_make_quaternion_data(const double* q0, const double* q1, double& length) -> void {
 		double c = aris::dynamic::s_vv(4, q0, q1);
 		double q_diff[4];
 		aris::dynamic::s_vc(4, -c, q0, q_diff);
@@ -579,7 +579,7 @@ namespace aris::plan {
 		
 		length = 2.0 * std::atan2(s, std::abs(c));
 	}
-	auto s_compute_quaternion_at(const double* q0, const double* q1, double total_length, double l, double* q, double dl = 0.0, double* dq = nullptr, double d2l = 0.0, double* d2q = nullptr) {
+	auto s_compute_quaternion_at(const double* q0, const double* q1, double total_length, double l, double* q, double dl = 0.0, double* dq = nullptr, double d2l = 0.0, double* d2q = nullptr) -> void {
 		l = std::min(l, total_length);
 		l = std::max(l, 0.0);
 
@@ -678,7 +678,7 @@ namespace aris::plan {
 
 
 	// init unit //
-	auto init_unit_l3(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_l3(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		// move type //
 		unit.type_ = Node::UnitType::Line3;
 		
@@ -719,12 +719,12 @@ namespace aris::plan {
 		unit.scurve_.j_ = jerk;
 		unit.scurve_.t0_ = 0.0;
 	}
-	auto init_unit_l2(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_l2(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		const double p0_[3]{ p0[0], p0[1], 0.0}, p1_[3]{ p1[0], p1[1], 0.0 };
 		init_unit_l3(p0_, p1_, vel, acc, jerk, zone, unit);
 		unit.type_ = Node::UnitType::Line2;
 	}
-	auto init_unit_c3(const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_c3(const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		// move type //
 		unit.type_ = Node::UnitType::Circle3;
 		
@@ -771,12 +771,12 @@ namespace aris::plan {
 		unit.scurve_.j_ = jerk;
 		unit.scurve_.t0_ = 0.0;
 	}
-	auto init_unit_c2(const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_c2(const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		const double p0_[3]{ p0[0], p0[1], 0.0 }, p1_[3]{ p1[0], p1[1], 0.0 }, p2_[3]{ p2[0], p2[1], 0.0 };
 		init_unit_c3(p0_, p1_, p2_, vel, acc, jerk, zone, unit);
 		unit.type_ = Node::UnitType::Circle2;
 	}
-	auto init_unit_q3(const double* q0, const double* q1, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_q3(const double* q0, const double* q1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		// move type //
 		unit.type_ = Node::UnitType::Rotate3;
 		
@@ -816,7 +816,7 @@ namespace aris::plan {
 		unit.scurve_.j_ = jerk;
 		unit.scurve_.t0_ = 0.0;
 	}
-	auto init_unit_l1(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) {
+	auto init_unit_l1(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		const double p0_[3]{ p0[0], 0.0, 0.0}, p1_[3]{ p1[0], 0.0, 0.0};
 		init_unit_l3(p0_, p1_, vel, acc, jerk, zone, unit);
 		unit.type_ = Node::UnitType::Line1;
@@ -1852,7 +1852,7 @@ namespace aris::plan {
 			}
 		}
 	}
-	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end) {
+	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
 		// 构造 scurve list //
 		std::list<SCurveNode> ins_scurve_list, ins_scurve_origin_list;
 		LargeNum t0;
@@ -2057,7 +2057,7 @@ namespace aris::plan {
 		return 0;
 	}
 	auto get_node_data(const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, LargeNum s, double ds, double dds, double ddds,
-		double* internal_pos, double* internal_vel, double* internal_acc) 
+		double* internal_pos, double* internal_vel, double* internal_acc) -> void
 	{
 		int idx = 0;
 		for (int i = 0; i < ee_types.size(); ++i) {
