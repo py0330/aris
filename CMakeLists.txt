@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 2.3.12.241225 DESCRIPTION "fix which root error of puma")
+project(aris VERSION 2.3.13.250402 DESCRIPTION "fix bug of seven_axis_2")
 
 # version
 configure_file(${PROJECT_SOURCE_DIR}/config/aris_version.h.in aris_version.h)

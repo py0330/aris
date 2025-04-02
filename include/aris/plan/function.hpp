@@ -10,8 +10,14 @@
 #include <limits>
 #include <aris/core/core.hpp>
 
-namespace aris::plan
-{
+namespace aris::plan{
+
+
+
+
+
+
+
 	auto inline acc_up(double n, double i)noexcept->double { return (-1.0 / 2 / n / n / n * i * i * i + 3.0 / 2.0 / n / n * i * i); }
 	auto inline acc_down(double n, double i)noexcept->double { return (-1.0 * i * i * i / 2.0 / n / n / n + 3.0 * i * i / 2.0 / n / n); }
 	auto inline dec_up(double n, double i)noexcept->double { return 1.0 - (-1.0 / 2.0 / n / n / n * (n - i) * (n - i) * (n - i) + 3.0 / 2.0 / n / n * (n - i) * (n - i)); }

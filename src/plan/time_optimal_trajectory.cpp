@@ -1,6 +1,8 @@
 ﻿#include"aris/plan/time_optimal_trajectory.hpp"
 #include"aris/plan/function.hpp"
 
+#include "aris/core/core.hpp"
+
 namespace aris::plan {
 	struct Node {
 		enum class NodeType {
@@ -176,6 +178,484 @@ namespace aris::plan {
 	auto get_node_data(const std::vector<aris::dynamic::EEType> &ee_types, const Node* current_node, LargeNum s, double ds, double dds, double ddds,
 		double* internal_pos, double* internal_vel, double* internal_acc) -> void;
 
+
+	struct LookAheadParam {
+		enum NodeType {
+			DEC,
+			ACC
+		};
+		struct Node {
+			double s_, ds_, d2s_;
+			NodeType type_;
+		};
+
+		std::list<Node> nodes_;
+
+
+	};
+
+	struct LookAheadProcessor::Imp {
+		LookAheadParam param_;
+
+		InverseKinematicMethod inv_func_;
+
+		aris::Size input_size_{ 0 };
+
+		std::vector<char> mem_;
+		double
+			* max_poss_,
+			* max_vels_,
+			* max_accs_,
+			* max_jerks_,
+			* min_poss_,
+			* min_vels_,
+			* min_accs_,
+			* min_jerks_,
+			* smooth_max_poss_,
+			* smooth_max_vels_,
+			* smooth_max_accs_,
+			* smooth_max_jerks_,
+			* smooth_min_poss_,
+			* smooth_min_vels_,
+			* smooth_min_accs_,
+			* smooth_min_jerks_,
+			* input_pos_begin_,// 奇异状态的起始值
+			* input_vel_begin_,
+			* input_acc_begin_,
+			* input_pos_end_,  // 奇异状态的终止值
+			* input_vel_end_,
+			* input_acc_end_,
+			* input_pos_last_, // 真实状态值
+			* input_vel_last_,
+			* input_pos_this_,
+			* input_vel_this_,
+			* input_acc_this_,
+			* input_acc_ratio_,
+			* input_acc_max_consider_ratio_,
+			* input_acc_min_consider_ratio_,
+			* output_pos_,
+			* p0_,             // 理想的位置值，仅仅在 move_in_tg 中改变
+			* p1_,
+			* p2_,
+			* p3_;
+
+		std::int32_t* Ts_count_;
+
+		std::int64_t tg_ret_{ 0 }, tg_ret_begin_{ 0 };
+		aris::Size total_singular_count_{ 0 }, current_singular_count_{ 0 };
+		//CurveParam* curve_params_;
+
+		double target_ds_{ 1.0 };
+		double ds1_{ 1.0 }, ds2_{ 1.0 }, ds3_{ 1.0 };
+		double s0_{ 0.0 }, s1_{ 0.0 }, s2_{ 0.0 }, s3_{ 0.0 };
+		double u0_{ 0.0 }, u1_{ 0.0 }, u2_{ 0.0 }, u3_{ 0.0 };
+
+		aris::dynamic::ModelBase* model_{ nullptr };
+		aris::plan::TimeOptimalTrajectoryGenerator* tg_{ nullptr };
+
+		// 是否已经处于奇异状态，或者是否还在继续准备处理奇异情况 //
+		int singular_idx;
+
+		enum class SingularState {
+			SINGULAR,
+			SINGULAR_PREPARE,
+			NORMAL
+		};
+
+		SingularState state_{ SingularState::NORMAL };
+
+	};
+	
+	auto s_cpt_d3u_lr(int p_size, const double* p0, const double* p1, const double* p2, const double* p3,
+		const double* p_min, const double* p_max, const double* dp_min, const double* dp_max,
+		const double* d2p_min, const double* d2p_max, const double* d3p_min, const double* d3p_max,
+		double s_diff, double u0, double u1, double u2, double& d3u_ds3_3_L, double & d3u_ds3_3_R, double zero_check)-> void
+	{
+		const double MAX_DS = 1;
+		const double MIN_DS = 0;
+		const double MAX_D2S = 1;
+		const double MIN_D2S = 1;
+		const double MAX_D3S = 1;
+		const double MIN_D3S = 1;
+
+		double
+			lhs_s{ -1e10 }, rhs_s{ 1e10 },
+			lhs_ds{ MIN_DS }, rhs_ds{ MAX_DS },
+			lhs_d2s{ MIN_D2S }, rhs_d2s{ MAX_D2S },
+			lhs_d3s{ MIN_D3S }, rhs_d3s{ MAX_D3S }
+		;
+
+		auto u_diff_1 = u1 - u0;
+		auto u_diff_2 = u2 - u1;
+		//auto u_diff_diff = u_diff_2 - u_diff_1;
+		//auto u_diff_3 = u2 + (u_diff_2 + u_diff_diff);
+		auto u_diff_3 = u_diff_2;
+
+		auto du_ds_1 = u_diff_1 / s_diff;
+		auto du_ds_2 = u_diff_2 / s_diff;
+		auto du_ds_15 = (du_ds_1 + du_ds_2) / 2.0;
+
+		auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
+
+		auto ds_du_1 = 1.0 / du_ds_1;
+		auto ds_du_2 = 1.0 / du_ds_2;
+		auto ds_du_15 = (ds_du_1 + ds_du_2) / 2;
+
+		auto d2s_du2_2 = -d2u_ds2_2 / (du_ds_15* du_ds_15* du_ds_15);
+
+		auto d3s_du3_3_L = std::numeric_limits<double>::lowest();
+		auto d3s_du3_3_R = std::numeric_limits<double>::max();
+
+		for (int i = 0; i < p_size; ++i) {
+			auto dp_ds_3 = (p3[i] - p2[i]) / s_diff;
+			auto dp_ds_2 = (p2[i] - p1[i]) / s_diff;
+			auto dp_ds_1 = (p1[i] - p0[i]) / s_diff;
+			auto dp_ds_15 = (dp_ds_1 + dp_ds_2) / 2;
+
+			auto d2p_ds2_2 = (dp_ds_2 - dp_ds_1) / s_diff;
+			auto d2p_ds2_3 = (dp_ds_3 - dp_ds_2) / s_diff;
+			auto d2p_ds2_25 = (d2p_ds2_2 + d2p_ds2_3) / 2;
+
+			auto d3p_ds3_3 = (d2p_ds2_3 - d2p_ds2_2) / s_diff;
+
+			auto dp_du_2 = dp_ds_2 * ds_du_2;
+			auto d2p_du2_2 = d2p_ds2_2 * ds_du_15* ds_du_15 + dp_ds_15 * d2s_du2_2;
+			
+			auto k = (dp_ds_2 + (3 * d2p_ds2_25 * ds_du_2 * u_diff_2) / 2);
+			auto g = d3p_ds3_3 * (ds_du_2*ds_du_2*ds_du_2) + 3 * d2p_ds2_25 * ds_du_2 * d2s_du2_2;
+
+			auto f1 = k * u_diff_3 * u_diff_3 * u_diff_3;
+			auto f2 = k * u_diff_3 * u_diff_3;
+			auto f3 = k * u_diff_3;
+			auto f4 = k;
+
+			auto e1 = p2[i] + dp_du_2 * u_diff_3 + d2p_du2_2 * u_diff_3 * u_diff_3 + g * u_diff_3 * u_diff_3 * u_diff_3;
+			auto e2 = dp_du_2 + d2p_du2_2 * u_diff_3 + g * u_diff_3 * u_diff_3;
+			auto e3 = d2p_du2_2 + g * u_diff_3;
+			auto e4 = g;
+
+			if (std::abs(k) > zero_check &&
+				// 本条件也在限制 dp_ds 不能太小，如果 k 递增，或者 d2p_ds2_t25 产生的效应超过其他项
+				(std::abs(k) > std::abs(dp_ds_2) || std::abs(dp_ds_2) > std::abs(3 * d2p_ds2_25 * ds_du_2 * u_diff_2))
+				) 
+			{
+				auto lhs1_local = (p_min[i] - e1) / f1;
+				auto rhs1_local = (p_max[i] - e1) / f1;
+
+				auto lhs2_local = (dp_min[i] - e2) / f2;
+				auto rhs2_local = (dp_max[i] - e2) / f2;
+
+				auto lhs3_local = (d2p_min[i] - e3) / f3;
+				auto rhs3_local = (d2p_max[i] - e3) / f3;
+
+				auto lhs4_local = (d3p_min[i] - e4) / f4;
+				auto rhs4_local = (d3p_max[i] - e4) / f4;
+
+				if (k < 0) {
+					std::swap(lhs1_local, rhs1_local);
+					std::swap(lhs2_local, rhs2_local);
+					std::swap(lhs3_local, rhs3_local);
+					std::swap(lhs4_local, rhs4_local);
+				}
+
+				d3s_du3_3_L = std::max({ d3s_du3_3_L, lhs1_local, lhs2_local, lhs3_local, lhs4_local });
+				d3s_du3_3_R = std::min({ d3s_du3_3_R, rhs1_local, rhs2_local, rhs3_local, rhs4_local });
+			}
+		}
+
+		// 限制 ds_du 在 0~1内
+		// d2s_du2_3 = d2s_du2_2 + d3s_du3_3*u_diff
+		// ds_du_3 = ds_du_2 + d2s_du2_3*u_diff
+		//         = ds_du_2 + d2s_du2_2*u_diff + d3s_du3_3*u_diff*u_diff
+		// 
+		d3s_du3_3_L = std::max({ d3s_du3_3_L, (MIN_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
+		d3s_du3_3_R = std::min({ d3s_du3_3_R, (MAX_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
+
+
+		//% dx_dt   = 1/dt_dx
+		//% d2x_dt2 = -1/(dt_dx)^2 * d2t_dx2 * dx_dt
+		//%         = -d2t_dx2 / (dt_dx)^3
+		//% d3x_dt3 = (3*(d2t_dx2)^2 - dt_dx * d3t_dx3) / (dt_dx)^5
+
+		auto d2s_du2_25_L = d2s_du2_2 + d3s_du3_3_L * u_diff_2 / 2;
+		auto d2s_du2_25_R = d2s_du2_2 + d3s_du3_3_R * u_diff_2 / 2;
+
+		d3u_ds3_3_L = (3 * (d2s_du2_25_R * d2s_du2_25_R) - ds_du_2 * d3s_du3_3_R) / std::pow(ds_du_2, 5);
+		d3u_ds3_3_R = (3 * (d2s_du2_25_L * d2s_du2_25_L) - ds_du_2 * d3s_du3_3_L) / std::pow(ds_du_2, 5);
+	
+	}
+	
+	auto LookAheadProcessor::lookAhead(double s_begin) -> int {
+		auto nodes = imp_->param_.nodes_;
+
+		auto node_beg = std::prev(std::find_if(nodes.begin(), nodes.end(), [s_begin](LookAheadParam::Node &node)->bool {
+			return node.s_ < s_begin;
+			}));
+
+		nodes.erase(std::next(node_beg), nodes.end());
+
+		auto interval = imp_->tg_->dt();
+
+		double s_init = s_begin;
+		double ds_du_init = 1.0;
+		double d2s_du2_init = 0.0;
+
+		double s_diff = imp_->tg_->dt();
+
+		imp_->s0_ = 0 * s_diff;
+		imp_->s1_ = 1 * s_diff;
+		imp_->s2_ = 2 * s_diff;
+		imp_->s3_ = 3 * s_diff;
+
+		imp_->tg_->getEePosByS(imp_->s0_, imp_->p0_);
+		imp_->tg_->getEePosByS(imp_->s1_, imp_->p1_);
+		imp_->tg_->getEePosByS(imp_->s2_, imp_->p2_);
+		imp_->tg_->getEePosByS(imp_->s3_, imp_->p3_);
+
+		imp_->u0_ = 0 * s_diff;
+		imp_->u1_ = 1 * s_diff;
+		imp_->u2_ = 2 * s_diff;
+		imp_->u3_ = 3 * s_diff;
+
+		for (;;) {
+			
+			
+			
+			
+			
+			
+			break;
+		}
+
+
+
+
+
+
+
+
+
+
+
+		return 0;
+	}
+	
+	
+	
+	auto LookAheadProcessor::setMaxPoss(const double* max_poss, const double* min_poss)->void {
+		std::copy(max_poss, max_poss + imp_->input_size_, imp_->max_poss_);
+		if (min_poss) {
+			std::copy(min_poss, min_poss + imp_->input_size_, imp_->min_poss_);
+		}
+		else {
+			for (int i = 0; i < imp_->input_size_; ++i)
+				imp_->min_poss_[i] = -imp_->max_poss_[i];
+		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, imp_->max_poss_, imp_->smooth_max_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->min_poss_, imp_->smooth_min_poss_);
+	}
+	auto LookAheadProcessor::setMaxVels(const double* max_vels, const double* min_vels)->void {
+		std::copy(max_vels, max_vels + imp_->input_size_, imp_->max_vels_);
+		if (min_vels) {
+			std::copy(min_vels, min_vels + imp_->input_size_, imp_->min_vels_);
+		}
+		else {
+			for (int i = 0; i < imp_->input_size_; ++i)
+				imp_->min_vels_[i] = -imp_->max_vels_[i];
+		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_vels_, imp_->smooth_max_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_vels_, imp_->smooth_min_vels_);
+	}
+	auto LookAheadProcessor::setMaxAccs(const double* max_accs, const double* min_accs)->void {
+		std::copy(max_accs, max_accs + imp_->input_size_, imp_->max_accs_);
+		if (min_accs) {
+			std::copy(min_accs, min_accs + imp_->input_size_, imp_->min_accs_);
+		}
+		else {
+			for (int i = 0; i < imp_->input_size_; ++i)
+				imp_->min_accs_[i] = -imp_->max_accs_[i];
+		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_accs_, imp_->smooth_max_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_accs_, imp_->smooth_min_accs_);
+	}
+	auto LookAheadProcessor::setMaxJerks(const double* max_jerks, const double* min_jerks) -> void {
+		std::copy(max_jerks, max_jerks + imp_->input_size_, imp_->max_jerks_);
+		if (min_jerks) {
+			std::copy(min_jerks, min_jerks + imp_->input_size_, imp_->min_jerks_);
+		}
+		else {
+			for (int i = 0; i < imp_->input_size_; ++i)
+				imp_->min_jerks_[i] = -imp_->max_jerks_[i];
+		}
+
+		// for smooth //
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_jerks_, imp_->smooth_max_jerks_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_jerks_, imp_->smooth_min_jerks_);
+	}
+	auto LookAheadProcessor::setMaxVelRatio(double vel_ratio)->void {
+		//imp_->max_vel_ratio_ = vel_ratio;
+	}
+	auto LookAheadProcessor::setMaxAccRatio(double acc_ratio)->void {
+		//imp_->max_acc_ratio_ = acc_ratio;
+	}
+	auto LookAheadProcessor::setModel(aris::dynamic::ModelBase& model)->void {
+		imp_->model_ = &model;
+		imp_->input_size_ = model.inputPosSize();
+
+		Size mem_size = 0;
+		core::allocMem(mem_size, imp_->max_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->max_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->max_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->max_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->min_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->min_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->min_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->min_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_max_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_poss_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_vels_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_accs_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->smooth_min_jerks_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_pos_begin_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_vel_begin_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_pos_end_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_vel_end_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_pos_last_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_vel_last_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_pos_this_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_vel_this_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_this_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_ratio_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_max_consider_ratio_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->input_acc_min_consider_ratio_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->output_pos_, imp_->input_size_);
+		//core::allocMem(mem_size, imp_->curve_params_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->p0_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->p1_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->p2_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->p3_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->Ts_count_, imp_->input_size_ * 3);
+
+		imp_->mem_.resize(mem_size, char(0));
+
+		imp_->max_poss_ = core::getMem(imp_->mem_.data(), imp_->max_poss_);
+		imp_->max_vels_ = core::getMem(imp_->mem_.data(), imp_->max_vels_);
+		imp_->max_accs_ = core::getMem(imp_->mem_.data(), imp_->max_accs_);
+		imp_->max_jerks_ = core::getMem(imp_->mem_.data(), imp_->max_jerks_);
+		imp_->min_poss_ = core::getMem(imp_->mem_.data(), imp_->min_poss_);
+		imp_->min_vels_ = core::getMem(imp_->mem_.data(), imp_->min_vels_);
+		imp_->min_accs_ = core::getMem(imp_->mem_.data(), imp_->min_accs_);
+		imp_->min_jerks_ = core::getMem(imp_->mem_.data(), imp_->min_jerks_);
+		imp_->smooth_max_poss_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_poss_);
+		imp_->smooth_max_vels_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_vels_);
+		imp_->smooth_max_accs_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_accs_);
+		imp_->smooth_max_jerks_ = core::getMem(imp_->mem_.data(), imp_->smooth_max_jerks_);
+		imp_->smooth_min_poss_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_poss_);
+		imp_->smooth_min_vels_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_vels_);
+		imp_->smooth_min_accs_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_accs_);
+		imp_->smooth_min_jerks_ = core::getMem(imp_->mem_.data(), imp_->smooth_min_jerks_);
+		imp_->input_pos_begin_ = core::getMem(imp_->mem_.data(), imp_->input_pos_begin_);
+		imp_->input_vel_begin_ = core::getMem(imp_->mem_.data(), imp_->input_vel_begin_);
+		imp_->input_acc_begin_ = core::getMem(imp_->mem_.data(), imp_->input_acc_begin_);
+		imp_->input_pos_end_ = core::getMem(imp_->mem_.data(), imp_->input_pos_end_);
+		imp_->input_vel_end_ = core::getMem(imp_->mem_.data(), imp_->input_vel_end_);
+		imp_->input_acc_end_ = core::getMem(imp_->mem_.data(), imp_->input_acc_end_);
+		imp_->input_pos_last_ = core::getMem(imp_->mem_.data(), imp_->input_pos_last_);
+		imp_->input_vel_last_ = core::getMem(imp_->mem_.data(), imp_->input_vel_last_);
+		imp_->input_pos_this_ = core::getMem(imp_->mem_.data(), imp_->input_pos_this_);
+		imp_->input_vel_this_ = core::getMem(imp_->mem_.data(), imp_->input_vel_this_);
+		imp_->input_acc_this_ = core::getMem(imp_->mem_.data(), imp_->input_acc_this_);
+		imp_->input_acc_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_ratio_);
+		imp_->input_acc_max_consider_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_max_consider_ratio_);
+		imp_->input_acc_min_consider_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_min_consider_ratio_);
+		imp_->output_pos_ = core::getMem(imp_->mem_.data(), imp_->output_pos_);
+		//imp_->curve_params_ = core::getMem(imp_->mem_.data(), imp_->curve_params_);
+		imp_->p0_ = core::getMem(imp_->mem_.data(), imp_->p0_);
+		imp_->p1_ = core::getMem(imp_->mem_.data(), imp_->p1_);
+		imp_->p2_ = core::getMem(imp_->mem_.data(), imp_->p2_);
+		imp_->p3_ = core::getMem(imp_->mem_.data(), imp_->p3_);
+		imp_->Ts_count_ = core::getMem(imp_->mem_.data(), imp_->Ts_count_);
+
+		std::fill_n(imp_->max_poss_, imp_->input_size_, 1e10);
+		std::fill_n(imp_->min_poss_, imp_->input_size_, -1e10);
+		std::fill_n(imp_->max_vels_, imp_->input_size_, 1.0);
+		std::fill_n(imp_->min_vels_, imp_->input_size_, -1.0);
+		std::fill_n(imp_->max_accs_, imp_->input_size_, 10.0);
+		std::fill_n(imp_->min_accs_, imp_->input_size_, -10.0);
+		std::fill_n(imp_->max_jerks_, imp_->input_size_, 1000.0);
+		std::fill_n(imp_->min_jerks_, imp_->input_size_, -1000.0);
+
+		aris::dynamic::s_vc(imp_->input_size_, imp_->max_poss_, imp_->smooth_max_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->min_poss_, imp_->smooth_min_poss_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_vels_, imp_->smooth_max_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_vels_, imp_->smooth_min_vels_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_accs_, imp_->smooth_max_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_accs_, imp_->smooth_min_accs_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->max_jerks_, imp_->smooth_max_jerks_);
+		aris::dynamic::s_vc(imp_->input_size_, 0.99, imp_->min_jerks_, imp_->smooth_min_jerks_);
+	}
+	auto LookAheadProcessor::setTrajectoryGenerator(TimeOptimalTrajectoryGenerator& tg)->void {
+		imp_->tg_ = &tg;
+	}
+	auto LookAheadProcessor::init()->void {
+		imp_->model_->getInputPos(imp_->input_pos_this_);
+		std::fill_n(imp_->input_vel_this_, imp_->input_size_, 0.0);
+		std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
+		std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
+
+		imp_->model_->getInputPos(imp_->p0_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p1_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p2_);
+		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p3_);
+
+		imp_->ds1_ = imp_->ds2_ = imp_->ds3_ = 1.0;
+
+		imp_->state_ = Imp::SingularState::NORMAL;
+	}
+	auto LookAheadProcessor::setDs(double ds)->void {
+		imp_->ds3_ = imp_->ds2_ = imp_->ds1_ = ds;
+	}
+	auto LookAheadProcessor::currentDs() -> double {
+		return imp_->ds3_;
+	}
+	auto LookAheadProcessor::setTargetDs(double ds)->void {
+		imp_->target_ds_ = ds;
+	}
+	auto LookAheadProcessor::setModelPosAndMoveDt()->std::int64_t {
+
+
+
+		return 0;
+	}
+	auto LookAheadProcessor::setInverseKinematicMethod(InverseKinematicMethod func)->void {
+		imp_->inv_func_ = func;
+	}
+	LookAheadProcessor::~LookAheadProcessor() = default;
+	LookAheadProcessor::LookAheadProcessor() :imp_(new Imp) {
+		imp_->param_.nodes_.push_back(LookAheadParam::Node{ 0.0,1.0,0.0,LookAheadParam::NodeType::DEC });
+	}
+
+
+
+
+
+
+
+	//auto try_look_ahead()->void {
+		
+	//}
+
+
+
 	// 关于 tg 的并发：
 	//
 	// tg 中包含一系列 node ：
@@ -271,10 +751,17 @@ namespace aris::plan {
 					nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
 					make_node(0, &ins_node, &*std::prev(nodes_.end(), 2), ee_types_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 					replan_nodes((int)scurve_size, ee_types_, std::prev(nodes_.end(), 2), std::prev(nodes_.end(), 1), nodes_.end());
+					
+					
+					
 					std::prev(nodes_.end(), 2)->next_node_.exchange(&ins_node);
 					insert_success = true;
 				}
 				else {
+
+
+
+
 					// 并发设置
 					insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
 
@@ -503,6 +990,36 @@ namespace aris::plan {
 		
 		return current_node->id_;
 	}
+	auto TimeOptimalTrajectoryGenerator::getEePosByS(double s, double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
+		auto current_node = imp_->current_node_.load();
+		auto next_node = current_node->next_node_.load();
+
+		auto target_ds = imp_->target_ds_.load();
+
+		// 需要切换或结束
+		while (current_node->s_end_ - s < 0.0 && current_node != next_node && next_node->type_ != Node::NodeType::ResetInitPos) {
+			current_node = current_node->next_node_.exchange(nullptr);
+			next_node = current_node->next_node_.load();
+		}
+
+		s = std::min(s, (double)current_node->s_end_);
+
+		get_node_data(eeTypes(), current_node, s, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
+		if (ee_acc) {
+			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
+			aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
+			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
+		}
+		if (ee_vel) {
+			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
+			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
+		}
+
+
+		return current_node->id_;
+	}
+
 	auto TimeOptimalTrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 

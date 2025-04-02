@@ -19,6 +19,13 @@
 /// 
 /// 
 namespace aris::plan{
+
+	auto ARIS_API s_cpt_d3u_lr(int p_size, const double* p0, const double* p1, const double* p2, const double* p3,
+		const double* p_min, const double* p_max, const double* dp_min, const double* dp_max,
+		const double* d2p_min, const double* d2p_max, const double* d3p_min, const double* d3p_max,
+		double s_diff, double u0, double u1, double u2, double& d3u_ds3_3_L, double& d3u_ds3_3_R, double zero_check = 1e-10) -> void;
+
+
 	class ARIS_API TimeOptimalTrajectoryGenerator {
 	public:
 		// 配置末端类型 //
@@ -61,6 +68,11 @@ namespace aris::plan{
 		//  node_id: 当前节点的 id 号，对应插入时的 id
 		auto getEePosAndMoveDt(double *ee_pos = nullptr, double *ee_vel = nullptr, double *ee_acc = nullptr)->std::int64_t;
 
+		// 根据 s 获得数据
+		// s 必须大于当前执行到的节点的起始 s
+		auto getEePosByS(double s, double* ee_pos = nullptr, double* ee_vel = nullptr, double* ee_acc = nullptr)-> std::int64_t;
+
+
 		// 插入新的数据，并重规划 //
 		auto insertInitPos(std::int64_t id, const double* ee_pos)->void;
 
@@ -85,6 +97,52 @@ namespace aris::plan{
 		~TimeOptimalTrajectoryGenerator();
 		TimeOptimalTrajectoryGenerator();
 		ARIS_DELETE_BIG_FOUR(TimeOptimalTrajectoryGenerator);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	};
+
+
+	class ARIS_API LookAheadProcessor {
+	public:
+		using InverseKinematicMethod = std::function<std::int64_t(aris::dynamic::ModelBase& model, const double* ee_pos)>;
+
+		// 需要设置模型、TG、电机的最大速度与最大加速度
+		auto setModel(aris::dynamic::ModelBase& model) -> void;
+		auto setTrajectoryGenerator(TimeOptimalTrajectoryGenerator& tg) -> void;
+		auto setMaxPoss(const double* max_poss, const double* min_poss = nullptr) -> void;
+		auto setMaxVels(const double* max_vels, const double* min_vels = nullptr) -> void;
+		auto setMaxAccs(const double* max_accs, const double* min_accs = nullptr) -> void;
+		auto setMaxJerks(const double* max_jerks, const double* min_jerks = nullptr) -> void;
+		auto init() -> void;
+
+		auto lookAhead(double s_begin) -> int;
+
+
+		// 设置速度百分比，类似 TG 中 setTargetDs
+		// 用以下参数后，不能再设置tg中的对应参数
+		auto setTargetDs(double ds) -> void;
+		auto setDs(double ds) -> void;
+		auto currentDs() -> double;
+
+		// 每个实时周期调用这个函数，确保不超速
+		// return
+		//        0 : 全部运行结束
+		//  node_id : 当前节点的 id 号，对应插入时的 id
+		//     负数 : 反解计算错误 id，在默认的反解计算中，若反解无解，则返回 -1
+		auto setModelPosAndMoveDt() -> std::int64_t;
+
+		// 设置方法
+		auto setInverseKinematicMethod(InverseKinematicMethod) -> void;
+
+		// 设置最大的速度比和加速度比
+		auto setMaxVelRatio(double vel_ratio) -> void;
+		auto setMaxAccRatio(double acc_ratio) -> void;
+
+		~LookAheadProcessor();
+		LookAheadProcessor();
+		ARIS_DELETE_BIG_FOUR(LookAheadProcessor);
 
 	private:
 		struct Imp;

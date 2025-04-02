@@ -6,6 +6,94 @@
 #include <random>
 using namespace aris::plan;
 
+auto test_s_cpt_d3u_lr()->void {
+	int p_size = 2;
+	double p_min[]{ -1.5,-2.5 };
+	double p_max[]{ 1.5,2.5 };
+	double dp_min[]{ -4, -4 };
+	double dp_max[]{ 3, 3  };
+	double d2p_min[]{ -2,-2 };
+	double d2p_max[]{ 3, 3 };
+	double d3p_min[]{ -8.0, -25 };
+	double d3p_max[]{ 10.0, 20.0 };
+
+	double p0[]{ 0, 0 };
+	double p1[]{ 0, 0 };
+	double p2[]{ 0, 0 };
+	double p3[]{ 0, 0 };
+
+	double s_diff = 1e-2;
+	double u0{ 0 }, u1{ 0.0099 }, u2{ 0.0198 };
+
+	double d3u_ds3_3_L, d3u_ds3_3_R;
+
+	s_cpt_d3u_lr(p_size, p0, p1, p2, p3,
+		p_min, p_max, dp_min, dp_max,
+		d2p_min, d2p_max, d3p_min, d3p_max,
+		s_diff, u0, u1, u2, d3u_ds3_3_L, d3u_ds3_3_R);
+
+	
+	
+	double du_ds_1 = (u1 - u0) / s_diff;
+	double du_ds_2 = (u2 - u1) / s_diff;
+
+	double d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
+
+	double d2u_ds2_3_L = d2u_ds2_2 + d3u_ds3_3_L * s_diff;
+	double du_ds_3_L = du_ds_2 + d2u_ds2_3_L * s_diff;
+	double u3_L = u2 + du_ds_3_L * s_diff;
+
+	double d2u_ds2_3_R = d2u_ds2_2 + d3u_ds3_3_R * s_diff;
+	double du_ds_3_R = du_ds_2 + d2u_ds2_3_R * s_diff;
+	double u3_R = u2 + du_ds_3_R * s_diff;
+
+	std::cout << "L:" << d3u_ds3_3_L << "    R:" << d3u_ds3_3_R << std::endl;
+	std::cout << "u3R:" << u3_L << "    R:" << u3_R << std::endl;
+
+	double s0 = 0;
+	double s1 = 1 * s_diff;
+	double s2 = 2 * s_diff;
+	double s3 = 3 * s_diff;
+	double M_L[4 * 4]{
+		u0* u0* u0, u0* u0, u0, 1,
+		u1* u1* u1, u1* u1, u1, 1,
+		u2* u2* u2, u2* u2, u2, 1,
+		u3_L* u3_L* u3_L, u3_L* u3_L, u3_L, 1,
+	};
+
+	double U[16];
+	aris::Size p[4], rank;
+	aris::dynamic::s_householder_up(4, 4, M_L, U, p, rank);
+
+	double k[4];
+	double u3 = 0.0099*3;
+	u3 = (u3 + u2) / 2;
+
+	double b[4]{s0,s1,s2,s3};
+	aris::dynamic::s_householder_up_sov(4, 4, 1, rank, U, p, b, k);
+
+	aris::dynamic::dsp(1, 4, k);
+	
+	std::cout << 3 * k[0] * u2 * u2 + 2 * k[1] * u2 + k[2] << std::endl;
+	std::cout << 3 * k[0] * u3 * u3 + 2 * k[1] * u3 + k[2] << std::endl;
+
+
+	double M_R[4 * 4]{
+	u0 * u0 * u0, u0 * u0, u0, 1,
+	u1 * u1 * u1, u1 * u1, u1, 1,
+	u2 * u2 * u2, u2 * u2, u2, 1,
+	u3_R * u3_R * u3_R, u3_R * u3_R, u3_R, 1,
+	};
+	double b2[4]{ s0,s1,s2,s3 };
+	aris::dynamic::s_householder_up(4, 4, M_R, U, p, rank);
+	aris::dynamic::s_householder_up_sov(4, 4, 1, rank, U, p, b2, k);
+
+	aris::dynamic::dsp(1, 4, k);
+	u3 = 0.0475;
+	std::cout << k[0] * u3 * u3*u3 + k[1] * u3*u3 + k[2]*u3+k[3] << std::endl;
+	std::cout << 3 * k[0] * u3 * u3 + 2 * k[1] * u3 + k[2] << std::endl;
+
+}
 
 auto test_time_optimal_processor_1()->void {
 	// 构造 TG //
@@ -162,7 +250,8 @@ auto test_time_optimal_processor_1()->void {
 void test_time_optimal(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_time_optimal_processor_1();
+	test_s_cpt_d3u_lr();
+	//test_time_optimal_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }

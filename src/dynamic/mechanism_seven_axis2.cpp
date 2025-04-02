@@ -313,7 +313,10 @@ namespace aris::dynamic
 		auto &p = imp_->seven_axis_param;
 		
 		//  config seven axis param, tbd.....//
-		imp_->seven_axis_param.d1 = imp_->R1->makJ()->prtPm()[2][3];
+		double r1_pos_wrt_base[3];
+		s_vc(3, &imp_->R1->makJ()->prtPm()[0][3], 4, r1_pos_wrt_base, 1);
+		s_vs(3, &imp_->ee->makJ()->prtPm()[0][3], 4, r1_pos_wrt_base, 1);
+		imp_->seven_axis_param.d1 = s_vv(3, r1_pos_wrt_base, 1, &imp_->ee->makJ()->prtPm()[0][2], 4);
 
 		double diff_p[3];
 		s_vc(3, &imp_->R4->makJ()->prtPm()[0][3], 4, diff_p, 1);

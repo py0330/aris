@@ -13,10 +13,36 @@
 
 #include "aris/dynamic/math_spline.hpp"
 
-namespace aris::dynamic
-{
-	auto s_akima(Size n, const double *x, const double *y, double *p1, double *p2, double *p3, double zero_check)->void
-	{
+namespace aris::dynamic{
+	auto s_scurve_p2p(double T, double p0, double p1, double t_at, double* p_at, double* v_at, double* a_at) -> void {
+		double j = 32 /(T*T*T) * (p1 - p0);
+		double temp;
+
+		if (t_at < T / 4) {
+			*(p_at ? p_at : &temp) = p0 + j / 6 * t_at * t_at * t_at;
+			*(v_at ? v_at : &temp) = j / 2 * t_at * t_at;
+			*(a_at ? a_at : &temp) = j * t_at;
+		}
+		else if (t_at < T * 3 / 4) {
+			*(p_at ? p_at : &temp) = p0 + j*((T*T*T)/192 - (T*T*t_at)/16 + (T*t_at*t_at)/4 - (t_at*t_at*t_at)/6);
+			*(v_at ? v_at : &temp) = j*(-(T*T)/16 + (T*t_at)/2 - (t_at*t_at)/2);
+			*(a_at ? a_at : &temp) = j*(T/2 - t_at);
+		}
+		else {
+			*(p_at ? p_at : &temp) = p1 - j/6* (T - t_at)* (T - t_at)* (T - t_at);
+			*(v_at ? v_at : &temp) = j/2*(T - t_at)*(T - t_at);
+			*(a_at ? a_at : &temp) = -j*(T - t_at);
+		}
+	}
+	auto s_scurve_v2v(double T, double v0, double v1, double t_at, double* p_at, double* v_at, double* a_at) -> void {
+		
+	}
+	auto s_scurve_a2a(double T, double a0, double a1, double t_at, double* p_at, double* v_at, double* a_at) -> void {
+		
+	}
+	
+	
+	auto s_akima(Size n, const double *x, const double *y, double *p1, double *p2, double *p3, double zero_check)->void	{
 		// using p2 to store s //
 		// using p3 to store ds //
 
@@ -65,8 +91,7 @@ namespace aris::dynamic
 		}
 		p2[n - 2] = (3 * p2[n - 2] - 2 * p1[n - 2] - t) / (x[n - 1] - x[n - 2]);
 	}
-	auto s_akima_at(Size n, const double *x, const double *y, const double *p1, const double *p2, const double *p3, double xt, const char order)->double
-	{
+	auto s_akima_at(Size n, const double *x, const double *y, const double *p1, const double *p2, const double *p3, double xt, const char order)->double{
 		// 寻找第一个大于x的位置 //
 		auto pos = std::upper_bound(x, x + n - 1, xt);
 		Size id = pos == x ? 0 : pos - x - 1;
