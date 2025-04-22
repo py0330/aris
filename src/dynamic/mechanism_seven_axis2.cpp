@@ -373,10 +373,20 @@ namespace aris::dynamic
 		//imp_->seven_axis_param.tool0_pe_type = "321";
 		//s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
 		
-		double ee_i_pm[16];
-		s_inv_pm(*imp_->R7->makI()->pm(), ee_i_pm);
+		double ee_i_pm[16], axis_7_pm[16], pm3[16];
+		//s_inv_pm(*imp_->R7->makJ()->prtPm(), axis_7_pm);
+		s_inv_pm(*imp_->R7->makI()->prtPm(), ee_i_pm);
+		//aris::dynamic::dsp(4, 4, *imp_->R7->makJ()->prtPm());
+		//aris::dynamic::dsp(4, 4, ee_i_pm);
+		s_vc(16, ee_i_pm, pm3);
+
+		s_mm(3,3,3,*imp_->R7->makJ()->prtPm(), 4, ee_i_pm, 4, pm3, 4);
+
 		imp_->seven_axis_param.tool0_pe_type = "321";
-		s_pm2pe(ee_i_pm, imp_->seven_axis_param.tool0_pe, "321");
+		s_pm2pe(pm3, imp_->seven_axis_param.tool0_pe, "321");
+
+		//aris::dynamic::dsp(1, 6, imp_->seven_axis_param.tool0_pe);
+
 	}
 	auto SevenAxisInverseKinematicSolver2::kinPos()->int
 	{

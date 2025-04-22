@@ -116,10 +116,11 @@ void test_seven_axis_inverse_solver2()
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
 	double input[7]{ 0.1, 0.2, 0.3, -0.8, 0.5, 0.6, 0.7 };
+	//double input[7]{ 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0 };
 	m->setInputPos(input);
 	m->forwardKinematics();
 	gm.updP();
-	gm.getMpe(pe);
+	gm.getMpe(pe, "321");
 
 	std::cout << "init pe:";
 	aris::dynamic::dsp(1, 6, pe);
@@ -133,7 +134,7 @@ void test_seven_axis_inverse_solver2()
 	for (int i = 0; i < 9; ++i)
 	{
 		dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver2&>(m->solverPool()[0]).setWhichRoot(i);
-		arm_mot.setMp(0.1*i);
+		arm_mot.setMp(0.3);
 
 		double result[7];
 
@@ -221,7 +222,7 @@ void test_model_solver_seven_axis()
 {
 	
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
-	test_seven_axis_inverse_solver();
+	test_seven_axis_inverse_solver2();
 	//test_seven_axis_inverse_solver3();
 
 
