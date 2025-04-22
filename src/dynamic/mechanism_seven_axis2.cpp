@@ -362,16 +362,21 @@ namespace aris::dynamic
 		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
 
 		// config tool0 //
-		const double axis_7_pe[]{ 0.0, 0.0, imp_->seven_axis_param.d1 + imp_->seven_axis_param.d3 + imp_->seven_axis_param.d5, 0.0, 0.0 ,0.0 };
-		double axis_7_pm[16];
-		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
-		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		//const double axis_7_pe[]{ 0.0, 0.0, imp_->seven_axis_param.d1 + imp_->seven_axis_param.d3 + imp_->seven_axis_param.d5, 0.0, 0.0 ,0.0 };
+		//double axis_7_pm[16];
+		//double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
+		//double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
-		s_vc(16, static_cast<const double*>(*imp_->ee->makI()->prtPm()), ee_i_pm);
-		s_pe2pm(axis_7_pe, axis_7_pm, "321");
-		s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
+		//s_vc(16, static_cast<const double*>(*imp_->ee->makI()->prtPm()), ee_i_pm);
+		//s_pe2pm(axis_7_pe, axis_7_pm, "321");
+		//s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
+		//imp_->seven_axis_param.tool0_pe_type = "321";
+		//s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
+		
+		double ee_i_pm[16];
+		s_inv_pm(*imp_->R7->makI()->pm(), ee_i_pm);
 		imp_->seven_axis_param.tool0_pe_type = "321";
-		s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
+		s_pm2pe(ee_i_pm, imp_->seven_axis_param.tool0_pe, "321");
 	}
 	auto SevenAxisInverseKinematicSolver2::kinPos()->int
 	{
