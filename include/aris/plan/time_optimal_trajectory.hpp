@@ -70,7 +70,10 @@ namespace aris::plan{
 
 		// 根据 s 获得数据
 		// s 必须大于当前执行到的节点的起始 s
-		auto getEePosByS(double s, double* ee_pos = nullptr, double* ee_vel = nullptr, double* ee_acc = nullptr)-> std::int64_t;
+		auto getEePosByS(double s, double* ee_pos = nullptr, double* ee_vel = nullptr, double* ee_acc = nullptr, std::int64_t = 0)-> std::int64_t;
+		auto clearNodesBefore(std::int64_t id)->int;
+
+
 
 
 		// 插入新的数据，并重规划 //
@@ -117,6 +120,7 @@ namespace aris::plan{
 		auto setMaxJerks(const double* max_jerks, const double* min_jerks = nullptr) -> void;
 		auto init() -> void;
 
+		auto lookAheadOneStep() -> int;
 		auto lookAhead(double s_begin) -> int;
 
 

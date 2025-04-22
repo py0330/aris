@@ -264,6 +264,75 @@ namespace aris::plan {
 
 		SingularState state_{ SingularState::NORMAL };
 
+		auto test_future_plan_success() -> int {
+			double s_diff = tg_->dt();
+			
+			std::vector<double> p0(input_size_), p1(input_size_), p2(input_size_), p3(input_size_), output_pos(model_->outputPosSize());
+			
+			std::copy_n(this->p0_, input_size_, p0.data());
+			std::copy_n(this->p1_, input_size_, p1.data());
+			std::copy_n(this->p2_, input_size_, p2.data());
+			std::copy_n(this->p3_, input_size_, p3.data());
+
+			double u0 = u0_;
+			double u1 = u1_;
+			double u2 = u2_;
+			double u3 = u3_;
+			double s0 = s0_;
+			double s1 = s1_;
+			double s2 = s2_;
+			double s3 = s3_;
+
+			for (int i = 0;i<1000;++i) {
+				std::swap(s0, s1);
+				std::swap(s1, s2);
+				std::swap(s2, s3);
+				s3 = s2 + s_diff;
+
+				std::swap(p0, p1);
+				std::swap(p1, p2);
+				std::swap(p2, p3);
+				tg_->getEePosByS(s3, p3.data());
+				model_->inverseKinematics(output_pos_, p3.data(), model_->inverseRootNumber());
+
+				std::swap(u0, u1);
+				std::swap(u1, u2);
+				std::swap(u2, u3);
+
+				// 准备计算 d3u_l 和 d3u_r
+				double d3u_r, d3u_l;
+				s_cpt_d3u_lr(input_size_, p0_, p1_, p2_, p3_,
+					min_poss_, max_poss_, min_vels_, max_vels_, min_accs_, max_accs_, min_accs_, max_accs_,
+					s_diff, u0_, u1_, u2_, d3u_l, d3u_r);
+				
+
+				if (d3u_l >= d3u_r)
+					return -1;
+
+
+
+				auto d3u = d3u_r;
+
+				auto u_diff_1 = u1 - u0;
+				auto u_diff_2 = u2 - u1;
+				auto du_ds_1 = u_diff_1 / s_diff;
+				auto du_ds_2 = u_diff_2 / s_diff;
+
+				auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
+
+				auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
+				auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
+				u3 = u2 + du_ds_3 * s_diff;
+
+
+				if ((u3 - u2) / s_diff > 100)
+					return 1;
+
+				//std::cout << "u3:" << u3 <<"  u2:" << u2 << "  :" << (u3 - u2) / s_diff << std::endl;
+			}
+
+			return 1;
+		}
 	};
 	
 	auto s_cpt_d3u_lr(int p_size, const double* p0, const double* p1, const double* p2, const double* p3,
@@ -385,47 +454,98 @@ namespace aris::plan {
 	
 	}
 	
-	auto LookAheadProcessor::lookAhead(double s_begin) -> int {
-		auto nodes = imp_->param_.nodes_;
 
-		auto node_beg = std::prev(std::find_if(nodes.begin(), nodes.end(), [s_begin](LookAheadParam::Node &node)->bool {
-			return node.s_ < s_begin;
-			}));
-
-		nodes.erase(std::next(node_beg), nodes.end());
-
-		auto interval = imp_->tg_->dt();
-
-		double s_init = s_begin;
-		double ds_du_init = 1.0;
-		double d2s_du2_init = 0.0;
-
+	auto LookAheadProcessor::lookAheadOneStep() -> int {
 		double s_diff = imp_->tg_->dt();
+		
+		auto& s0 = imp_->s0_;
+		auto& s1 = imp_->s1_;
+		auto& s2 = imp_->s2_;
+		auto& s3 = imp_->s3_;
+		auto& u0 = imp_->u0_;
+		auto& u1 = imp_->u1_;
+		auto& u2 = imp_->u2_;
+		auto& u3 = imp_->u3_;
+		auto& p0 = imp_->p0_;
+		auto& p1 = imp_->p1_;
+		auto& p2 = imp_->p2_;
+		auto& p3 = imp_->p3_;
 
-		imp_->s0_ = 0 * s_diff;
-		imp_->s1_ = 1 * s_diff;
-		imp_->s2_ = 2 * s_diff;
-		imp_->s3_ = 3 * s_diff;
+		// 更新数据 //
+		std::swap(s0, s1);
+		std::swap(s1, s2);
+		std::swap(s2, s3);
+		s3 = s2 + s_diff;
 
-		imp_->tg_->getEePosByS(imp_->s0_, imp_->p0_);
-		imp_->tg_->getEePosByS(imp_->s1_, imp_->p1_);
-		imp_->tg_->getEePosByS(imp_->s2_, imp_->p2_);
-		imp_->tg_->getEePosByS(imp_->s3_, imp_->p3_);
+		std::swap(p0, p1);
+		std::swap(p1, p2);
+		std::swap(p2, p3);
+		imp_->tg_->getEePosByS(s3, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p3_, imp_->model_->inverseRootNumber());
 
-		imp_->u0_ = 0 * s_diff;
-		imp_->u1_ = 1 * s_diff;
-		imp_->u2_ = 2 * s_diff;
-		imp_->u3_ = 3 * s_diff;
+		std::swap(u0, u1);
+		std::swap(u1, u2);
+		std::swap(u2, u3);
 
-		for (;;) {
-			
-			
-			
-			
-			
-			
-			break;
+		// 准备计算 d3u_l 和 d3u_r
+		double d3u_r, d3u_l;
+		s_cpt_d3u_lr(imp_->input_size_, imp_->p0_, imp_->p1_, imp_->p2_, imp_->p3_,
+			imp_->min_poss_, imp_->max_poss_, imp_->min_vels_, imp_->max_vels_, imp_->min_accs_, imp_->max_accs_, imp_->min_accs_, imp_->max_accs_,
+			s_diff, imp_->u0_, imp_->u1_, imp_->u2_, d3u_l, d3u_r);
+
+		// 加速对应 d3u_l, 减速对应 d3u_r
+		auto d3u = d3u_l;
+
+		auto u_diff_1 = imp_->u1_ - imp_->u0_;
+		auto u_diff_2 = imp_->u2_ - imp_->u1_;
+		auto du_ds_1 = u_diff_1 / s_diff;
+		auto du_ds_2 = u_diff_2 / s_diff;
+
+		auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
+
+		auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
+		auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
+		imp_->u3_ = imp_->u2_ + du_ds_3 * s_diff;
+
+		if (d3u_r >= d3u_l && imp_->test_future_plan_success()) {
+
+
 		}
+		else {
+			auto d3u = d3u_r;
+
+			auto u_diff_1 = imp_->u1_ - imp_->u0_;
+			auto u_diff_2 = imp_->u2_ - imp_->u1_;
+			auto du_ds_1 = u_diff_1 / s_diff;
+			auto du_ds_2 = u_diff_2 / s_diff;
+
+			auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
+
+			auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
+			auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
+			imp_->u3_ = imp_->u2_ + du_ds_3 * s_diff;
+
+
+		}
+
+		return 0;
+	}
+
+	auto LookAheadProcessor::lookAhead(double s_begin) -> int {
+		//auto nodes = imp_->param_.nodes_;
+
+		//auto node_beg = std::prev(std::find_if(nodes.begin(), nodes.end(), [s_begin](LookAheadParam::Node &node)->bool {
+		//	return node.s_ < s_begin;
+		//	}));
+
+		//nodes.erase(std::next(node_beg), nodes.end());
+
+		//auto interval = imp_->tg_->dt();
+
+		//double s_init = s_begin;
+		//double ds_du_init = 1.0;
+		//double d2s_du2_init = 0.0;
+
 
 
 
@@ -607,19 +727,44 @@ namespace aris::plan {
 		imp_->tg_ = &tg;
 	}
 	auto LookAheadProcessor::init()->void {
-		imp_->model_->getInputPos(imp_->input_pos_this_);
-		std::fill_n(imp_->input_vel_this_, imp_->input_size_, 0.0);
-		std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
-		std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
+		//imp_->model_->getInputPos(imp_->input_pos_this_);
+		//std::fill_n(imp_->input_vel_this_, imp_->input_size_, 0.0);
+		//std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
+		//std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
 
-		imp_->model_->getInputPos(imp_->p0_);
-		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p1_);
-		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p2_);
-		aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p3_);
+		//imp_->model_->getInputPos(imp_->p0_);
+		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p1_);
+		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p2_);
+		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p3_);
 
-		imp_->ds1_ = imp_->ds2_ = imp_->ds3_ = 1.0;
+		//imp_->ds1_ = imp_->ds2_ = imp_->ds3_ = 1.0;
 
-		imp_->state_ = Imp::SingularState::NORMAL;
+		//imp_->state_ = Imp::SingularState::NORMAL;
+
+
+
+
+		double s_diff = imp_->tg_->dt();
+
+		imp_->s0_ = 0 * s_diff;
+		imp_->s1_ = 1 * s_diff;
+		imp_->s2_ = 2 * s_diff;
+		imp_->s3_ = 3 * s_diff;
+
+		imp_->tg_->getEePosByS(imp_->s0_, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p0_, imp_->model_->inverseRootNumber());
+		imp_->tg_->getEePosByS(imp_->s1_, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p1_, imp_->model_->inverseRootNumber());
+		imp_->tg_->getEePosByS(imp_->s2_, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p2_, imp_->model_->inverseRootNumber());
+		imp_->tg_->getEePosByS(imp_->s3_, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p3_, imp_->model_->inverseRootNumber());
+
+		imp_->u0_ = 0 * s_diff;
+		imp_->u1_ = 1 * s_diff;
+		imp_->u2_ = 2 * s_diff;
+		imp_->u3_ = 3 * s_diff;
+
 	}
 	auto LookAheadProcessor::setDs(double ds)->void {
 		imp_->ds3_ = imp_->ds2_ = imp_->ds1_ = ds;
@@ -990,16 +1135,13 @@ namespace aris::plan {
 		
 		return current_node->id_;
 	}
-	auto TimeOptimalTrajectoryGenerator::getEePosByS(double s, double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
+	auto TimeOptimalTrajectoryGenerator::getEePosByS(double s, double* ee_pos, double* ee_vel, double* ee_acc, std::int64_t id)->std::int64_t {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
-		auto target_ds = imp_->target_ds_.load();
-
 		// 需要切换或结束
 		while (current_node->s_end_ - s < 0.0 && current_node != next_node && next_node->type_ != Node::NodeType::ResetInitPos) {
-			current_node = current_node->next_node_.exchange(nullptr);
-			next_node = current_node->next_node_.load();
+			current_node = current_node->next_node_.load();
 		}
 
 		s = std::min(s, (double)current_node->s_end_);
@@ -1018,6 +1160,9 @@ namespace aris::plan {
 
 
 		return current_node->id_;
+	}
+	auto clearNodesBefore(std::int64_t id) -> int {
+		return 0;
 	}
 
 	auto TimeOptimalTrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {

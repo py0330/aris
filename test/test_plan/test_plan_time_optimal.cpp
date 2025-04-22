@@ -97,7 +97,7 @@ auto test_s_cpt_d3u_lr()->void {
 
 auto test_time_optimal_processor_1()->void {
 	// 构造 TG //
-	aris::plan::TrajectoryGenerator tg;
+	aris::plan::TimeOptimalTrajectoryGenerator tg;
 
 	const int PE_SIZE = 6;
 	const int EE_NUM = 1;
@@ -181,9 +181,8 @@ auto test_time_optimal_processor_1()->void {
 	puma->getOutputPos(pm);
 	aris::dynamic::dsp(1, 16, pm);
 
-
-	//  这里处理 //
-	aris::plan::SingularProcessor sp;
+	// 设置 lookahead //
+	aris::plan::LookAheadProcessor sp;
 
 	// 最大速度、加速度 //
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
@@ -192,43 +191,40 @@ auto test_time_optimal_processor_1()->void {
 
 	// 设置模型等参数 //
 	sp.setModel(*puma);
+	sp.setTrajectoryGenerator(tg);
 	sp.setMaxVels(max_vels.data());
 	sp.setMaxAccs(max_accs.data());
 	sp.setMaxJerks(max_jerks.data());
-	sp.setTrajectoryGenerator(tg);
-	//sp.setInverseKinematicMethod([](aris::dynamic::ModelBase &model, const double *output) {
-	//	model
-	//
-	//
-	//	});
 
 	sp.init();
+	sp.lookAheadOneStep();
 
-	// 设置速度百分比 //
-	//sp.setDs(0.5);
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
-	double out_vel[16]{}, out_acc[16]{};
-	while (auto ret = sp.setModelPosAndMoveDt()) {
+	double out_vel[16]{}, out_acc[16]{}, ee_pos[16];
+	double s = 0;
+	while (auto ret = tg.getEePosByS(s)) {
 		static auto last_ret = -1;
 		if (ret != last_ret) {
 			std::cout << "cmd:" << ret << std::endl;
 			last_ret = ret;
 		}
-			
 		
+		std::cout << "s:" << s << std::endl;
+
+		s += 0.001;
 		m++;
 
-		if (m > 3000 && m < 6000)
-			sp.setTargetDs(0.0);
-		else
-			sp.setTargetDs(1.0);
+		//if (m > 3000 && m < 6000)
+		//	sp.setTargetDs(0.0);
+		//else
+		//	sp.setTargetDs(1.0);
 
-		if (m == 12793) {
-			std::cout << "debug" << std::endl;
-		}
+		//if (m == 12793) {
+		//	std::cout << "debug" << std::endl;
+		//}
 
 
 
@@ -236,10 +232,12 @@ auto test_time_optimal_processor_1()->void {
 		v_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
 		a_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
 		
+		puma->setOutputPos(ee_pos);
+		puma->inverseKinematics();
 		puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 	}
 
-	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
+	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "D:\\Private\\mcode\\smooth\\pes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
@@ -250,8 +248,8 @@ auto test_time_optimal_processor_1()->void {
 void test_time_optimal(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_s_cpt_d3u_lr();
-	//test_time_optimal_processor_1();
+	//test_s_cpt_d3u_lr();
+	test_time_optimal_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }
