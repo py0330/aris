@@ -286,7 +286,7 @@ namespace aris::dynamic{
 	//   which_root : 哪一组解，位于区间 [0 root_num) 时，为特定的解，否则选择最接近 current_root 的这一组解
 	//       ee_pos : 末端位置
 	//    input_pos : 反解最终的结果保存在此
-	//    roots_mem : 计算所需的内存，大小应为 root_size * root_num
+	//    roots_mem : 计算所需的内存，大小应为 root_size
 	// root_periods : 解的周期，例如转动轴周期为 2 PI，如果为 inf 或 nan，则说明没有周期
 	// current_root : 当前解，用于在 which_root < 0 或 >= root_num 时，选择解
 	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc2 func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods = nullptr, const double* current_root = nullptr)->int;
