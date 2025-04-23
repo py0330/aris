@@ -362,31 +362,33 @@ namespace aris::dynamic
 		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
 
 		// config tool0 //
-		//const double axis_7_pe[]{ 0.0, 0.0, imp_->seven_axis_param.d1 + imp_->seven_axis_param.d3 + imp_->seven_axis_param.d5, 0.0, 0.0 ,0.0 };
-		//double axis_7_pm[16];
-		//double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
-		//double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		// 
+		// solve:
+		// P_tool0_wrt_eei
+		// 
+		// eei~P_tool0 = eei~P_L7 * L7~P_tool0
+		//             = eei~P_R7i * R7i~P_L7 * L7~P_tool0
+		//             = eei~P_R7j * R7j~P_R7i * R7i~P_L7 * L7~P_tool0
+		//             = eei~P_L6 * L6~P_R7j * R7j~P_R7i * R7i~P_L7 * L7~P_tool0
+		// 
+		// at init point:
+		// eei~P_L6    = [0,0,-d1-d3-d5,0,0,0]
+		// R7j~P_R7i   = eye(4)
+		// L7~P_tool0  = eye(4)
+		//
+		double pm_temp1[16], pm_temp2[16];
+		const double pm_eei_wrt_L6[16]{
+			1,0,0,0,
+			0,1,0,0,
+			0,0,1,-imp_->seven_axis_param.d1 - imp_->seven_axis_param.d3 - imp_->seven_axis_param.d5,
+			0,0,0,1,
+		};// only z changes
 
-		//s_vc(16, static_cast<const double*>(*imp_->ee->makI()->prtPm()), ee_i_pm);
-		//s_pe2pm(axis_7_pe, axis_7_pm, "321");
-		//s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
-		//imp_->seven_axis_param.tool0_pe_type = "321";
-		//s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
-		
-		double ee_i_pm[16], axis_7_pm[16], pm3[16];
-		//s_inv_pm(*imp_->R7->makJ()->prtPm(), axis_7_pm);
-		s_inv_pm(*imp_->R7->makI()->prtPm(), ee_i_pm);
-		//aris::dynamic::dsp(4, 4, *imp_->R7->makJ()->prtPm());
-		//aris::dynamic::dsp(4, 4, ee_i_pm);
-		s_vc(16, ee_i_pm, pm3);
-
-		s_mm(3,3,3,*imp_->R7->makJ()->prtPm(), 4, ee_i_pm, 4, pm3, 4);
+		s_pm_dot_pm(pm_eei_wrt_L6, *imp_->R7->makJ()->prtPm(), pm_temp1);
+		s_pm_dot_inv_pm(pm_temp1, *imp_->R7->makI()->prtPm(), pm_temp2);
 
 		imp_->seven_axis_param.tool0_pe_type = "321";
-		s_pm2pe(pm3, imp_->seven_axis_param.tool0_pe, "321");
-
-		//aris::dynamic::dsp(1, 6, imp_->seven_axis_param.tool0_pe);
-
+		s_pm2pe(pm_temp2, imp_->seven_axis_param.tool0_pe, "321");
 	}
 	auto SevenAxisInverseKinematicSolver2::kinPos()->int
 	{

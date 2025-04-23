@@ -94,8 +94,12 @@ void test_seven_axis_inverse_solver2()
 	param.a2 = 0.1;
 	param.d3 = 0.330;
 	param.d5 = 0.320;
-	param.tool0_pe[2] = 0;
-
+	param.tool0_pe[0] = 0.01;
+	param.tool0_pe[1] = 0.02;
+	param.tool0_pe[2] = 0.1;
+	param.tool0_pe[3] = 0.01;
+	param.tool0_pe[4] = 0.03;
+	param.tool0_pe[5] = 0.05;
 
 	//param.d1 = 0.203;
 	//param.a2 = -0.138;
