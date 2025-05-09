@@ -197,7 +197,10 @@ auto test_time_optimal_processor_1()->void {
 	sp.setMaxJerks(max_jerks.data());
 
 	sp.init();
-	sp.lookAheadOneStep();
+
+	sp.lookAhead(0.0);
+
+	//sp.lookAheadOneStep();
 
 
 	// 打印数据 //
@@ -205,14 +208,14 @@ auto test_time_optimal_processor_1()->void {
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{}, ee_pos[16];
 	double s = 0;
-	while (auto ret = tg.getEePosByS(s)) {
+	while (auto ret = tg.getEePosByS(s, ee_pos)) {
 		static auto last_ret = -1;
 		if (ret != last_ret) {
 			std::cout << "cmd:" << ret << std::endl;
 			last_ret = ret;
 		}
 		
-		std::cout << "s:" << s << std::endl;
+		//std::cout << "s:" << s << std::endl;
 
 		s += 0.001;
 		m++;

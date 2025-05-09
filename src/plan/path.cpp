@@ -371,6 +371,14 @@ namespace aris::plan{
 		aris::dynamic::s_rq_dot_rq(q1_input, q_, q);
 		aris::dynamic::s_rq_dot_rq(q1_input, dq_, dq);
 		aris::dynamic::s_rq_dot_rq(q1_input, d2q_, d2q);
+
+		if (q[3] < 0) {
+			aris::dynamic::s_iv(4, q);
+			aris::dynamic::s_iv(4, dq);
+			aris::dynamic::s_iv(4, d2q);
+		}
+
+
 	}
 
 	auto s_bezier3_darc_ds(Size dim, const double* dp_ds_input, const double* d2p_ds2_input,

@@ -358,9 +358,11 @@ void test_rq_operation() {
 	//if (!s_is_equal(4, result, rq_dot_rq2_dot_rq3, error))std::cout << "\"s_rq_dot_rq\" failed" << std::endl;
 
 	s_inv_rq_dot_rq(inv_rq, rq2, result);
+	if (result[3] < 0) s_iv(4, result);
 	if (!s_is_equal(4, result, rq_dot_rq2, error))std::cout << "\"s_inv_rq_dot_rq\" failed" << std::endl;
 
 	s_rq_dot_inv_rq(rq, inv_rq2, result);
+	if (result[3] < 0) s_iv(4, result);
 	if (!s_is_equal(4, result, rq_dot_rq2, error))std::cout << "\"s_rq_dot_inv_rq\" failed" << std::endl;
 
 	s_rq_dot_v3(rq, from_v1, result);
@@ -433,9 +435,11 @@ void test_pq_operation() {
 	//if (!s_is_equal(7, result, pq_dot_pq2_dot_pq3, error))std::cout << "\"s_pq_dot_pq\" failed" << std::endl;
 
 	s_inv_pq_dot_pq(inv_pq, pq2, result);
+	if (result[6] < 0) s_iv(4, result + 3);
 	if (!s_is_equal(7, result, pq_dot_pq2, error))std::cout << "\"s_inv_pq_dot_pq\" failed" << std::endl;
 
 	s_pq_dot_inv_pq(pq, inv_pq2, result);
+	if (result[6] < 0) s_iv(4, result + 3);
 	if (!s_is_equal(7, result, pq_dot_pq2, error))std::cout << "\"s_pq_dot_inv_pq\" failed" << std::endl;
 
 	s_pq_dot_v3(pq, from_v1, result);

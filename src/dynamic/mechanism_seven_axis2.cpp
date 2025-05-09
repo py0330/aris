@@ -454,9 +454,6 @@ namespace aris::dynamic
 			return s_ik(7, rootNumber(), &imp_->seven_axis_param, sevenAxisInverse, which_root, ee_pos, input, root_mem, input_period, current_input);
 		}
 	}
-
-	auto SevenAxisInverseKinematicSolver2::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
-	auto SevenAxisInverseKinematicSolver2::whichRoot()->int { return imp_->which_root_; }
 	SevenAxisInverseKinematicSolver2::~SevenAxisInverseKinematicSolver2() = default;
 	SevenAxisInverseKinematicSolver2::SevenAxisInverseKinematicSolver2() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
 		setWhichRoot(8);
@@ -467,7 +464,6 @@ namespace aris::dynamic
 	ARIS_REGISTRATION{
 		aris::core::class_<SevenAxisInverseKinematicSolver2>("SevenAxisInverseKinematicSolver2")
 			.inherit<InverseKinematicSolver>()
-			.prop("which_root", &SevenAxisInverseKinematicSolver2::setWhichRoot, &SevenAxisInverseKinematicSolver2::whichRoot)
 			;
 	}
 }

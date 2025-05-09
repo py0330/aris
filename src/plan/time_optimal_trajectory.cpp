@@ -179,6 +179,221 @@ namespace aris::plan {
 		double* internal_pos, double* internal_vel, double* internal_acc) -> void;
 
 
+	struct SmoothParam2 {
+		double dt;
+		int dim;
+		const double* min_p, * max_p, * min_dp, * max_dp, * min_d2p, * max_d2p, * min_d3p, * max_d3p;
+		double min_ds, max_ds, min_d2s, max_d2s, min_d3s, max_d3s;
+		double ds1, ds2, ds3;
+		double* p0, * p1, * p2, * p3;
+
+		double target_ds;
+	};
+	struct SmoothRet2 {
+		double d3s_lhs0, d3s_rhs0, d3s_lhs1, d3s_rhs1, d3s_lhs2, d3s_rhs2, d3s_lhs3, d3s_rhs3;
+		double d3s_lhs_all, d3s_rhs_all;
+	};
+
+	auto s_smooth_curve4(const SmoothParam2& param, SmoothRet2& ret) -> int {
+
+		///////////////////////////// PART 1 计算 d3s 与 d3p 的关系 ///////////////////////// 
+		//
+		// dp  = dp_ds * ds
+		// d2p = d2p_ds2 * ds^2 + dp_ds * d2s
+		// d3p = d3p_ds3 * ds^3 + 2 * d2p_ds2 * ds * d2s + d2p_ds2 * ds * d2s + dp_ds * d3s
+		//     = d3p_ds3 * ds^3 + 3 * d2p_ds2 * ds * d2s + dp_ds * d3s
+		// 
+		///////////////////////////// PART 2 计算d3s4 ///////////////////////////////// 
+		// t0        t1   t15   t2   t25   t3
+		//
+		// p0        p1         p2         p3
+		//     dp1        dp2        dp3
+		//          d2p2       d2p3
+		//               d3p3
+		//  
+		// s0        s1         s2         s3
+		//     ds1        ds2        ds3
+		//          d2s2       d2s3
+		//               d3s3
+		//
+		// at point t=1.5:
+		//
+		// dp_ds_t15   = dp_t15/ds_t15
+		// d2p_ds2_t15 = (d2p_t15 - dp_ds_t15 * d2s_t15)/ds_t15^2
+		// d3p_ds3_t15 = (d3p_t15 - 3 * d2p_ds2_t15 * ds_t15 * d2s_t15 - dp_ds_t15 * d3s_t15)/ds_t15^3
+		// 
+		// at point t=2.5:
+		// 
+		// ds_t25 = ds3
+		// d2s_t25 = d2s_t15 + (d3s_t15+d3s_25)/2*dt
+		// 
+		// d3p_ds3_t25 = d3p_ds3_t15
+		// d2p_ds2_t25 = d2p_ds2_t15 + d3p_ds3_t15 * (s_25 - s_15)
+		// dp_ds_t25   = dp_ds_t15 + d2p_ds2_t15 * (s_25 - s_15) + 0.5 * d3p_ds3_t15 * (s_25 - s_15)^2
+		// 
+		// 于是：
+		// d3p4 = d3p_ds3_25 * ds_25^3 + 3 * d2p_ds2_25 * ds_25 * d2s_25 + dp_ds_25 * d3s4
+		//      = k * d3s4 + g
+		// 其中:
+		//    k = (dp_ds_t25 + (3 * d2p_ds2_t25 * ds_t25 * dt) / 2)
+		//    g = d3p_ds3_t25 * ds_t25 * ds_t25 * ds_t25 + 3 * d2p_ds2_t25 * ds3 * d2s3
+		//    
+		///////////////////////////// PART 3 列不等式 ///////////////////////////////// 
+		// 
+		// p4   = p3   + dp4  * dt
+		//      = p3   + dp3  * dt + d2p3 * dt^2 + d3p4 * dt^3
+		// dp4  = dp3  + d2p4 * dt
+		//      = dp3  + d2p3 * dt + d3p4 * dt^2
+		// d2p4 = d2p3 + d3p4 * dt
+		// 
+		// 考虑约束：
+		// p_min   <   p4 < p_max
+		// dp_min  <  dp4 < dp_max
+		// d2p_min < d2p4 < d2p_max
+		// d3p_min < d3p4 < d3p_max
+		// 
+		// =>
+		// (p_min   - e1)/f1 < d3s4 < (p_max   - e1)/f1
+		// (dp_min  - e2)/f2 < d3s4 < (dp_max  - e2)/f2
+		// (d2p_min - e3)/f3 < d3s4 < (d2p_max - e3)/f3
+		// (d3p_min - e4)/f4 < d3s4 < (d3p_max - e4)/f4
+		// 
+		// 其中：
+		// f1 = k * dt * dt * dt;
+		// f2 = k * dt * dt;
+		// f3 = k * dt;
+		// f4 = k;
+		// e1 = p3 + dp3 * dt + d2p3 * dt * dt + g * dt * dt * dt;
+		// e2 = dp3 + d2p3 * dt + g * dt * dt;
+		// e3 = d2p3 + g * dt;
+		// e4 = g;
+		// 
+
+		double zero_check = 1e-10;
+
+		const double MAX_DS = param.max_ds;
+		const double MIN_DS = param.min_ds;
+		const double MAX_D2S = param.max_d2s;
+		const double MIN_D2S = param.min_d2s;
+		const double MAX_D3S = param.max_d3s;
+		const double MIN_D3S = param.min_d3s;
+
+		double dt = param.dt;
+		auto dim = param.dim;
+
+		auto ds1 = param.ds1;
+		auto ds2 = param.ds2;
+		auto ds3 = param.ds3;
+
+		auto p3 = param.p3;
+		auto p2 = param.p2;
+		auto p1 = param.p1;
+		auto p0 = param.p0;
+
+		auto p_max = param.max_p;
+		auto p_min = param.min_p;
+		auto dp_max = param.max_dp;
+		auto dp_min = param.min_dp;
+		auto d2p_max = param.max_d2p;
+		auto d2p_min = param.min_d2p;
+		auto d3p_max = param.max_d3p;
+		auto d3p_min = param.min_d3p;
+
+		auto d2s2 = (ds2 - ds1) / dt;
+		auto d2s3 = (ds3 - ds2) / dt;
+		auto d3s3 = (d2s3 - d2s2) / dt;
+
+		double ds_t15 = ds2;
+		double d2s_t15 = (d2s2 + d2s3) / 2;
+		double d3s_t15 = d3s3;
+		double ds_t25 = ds3;
+
+		double d3s_lhs0{ MIN_D3S }, d3s_rhs0{ MAX_D3S },
+			d3s_lhs1{ MIN_D3S }, d3s_rhs1{ MAX_D3S },
+			d3s_lhs2{ MIN_D3S }, d3s_rhs2{ MAX_D3S },
+			d3s_lhs3{ MIN_D3S }, d3s_rhs3{ MAX_D3S };
+
+		for (int i = 0; i < dim; ++i) {
+			auto dp3 = (p3[i] - p2[i]) / dt;
+			auto dp2 = (p2[i] - p1[i]) / dt;
+			auto dp1 = (p1[i] - p0[i]) / dt;
+
+			auto d2p3 = (dp3 - dp2) / dt;
+			auto d2p2 = (dp2 - dp1) / dt;
+
+			auto d3p3 = (d2p3 - d2p2) / dt;
+
+			auto dp_t15 = dp2;
+			auto d2p_t15 = (d2p2 + d2p3) / 2;
+			auto d3p_t15 = d3p3;
+
+			auto dp_ds_t15 = dp_t15 / ds_t15;
+			auto d2p_ds2_t15 = (d2p_t15 - dp_ds_t15 * d2s_t15) / ds_t15 / ds_t15;
+			auto d3p_ds3_t15 = (d3p_t15 - 3 * d2p_ds2_t15 * ds_t15 * d2s_t15 - dp_ds_t15 * d3s_t15) / ds_t15 / ds_t15 / ds_t15;
+
+			auto s25_s15 = (ds2 + ds3) / 2 * dt;
+			auto d3p_ds3_t25 = d3p_ds3_t15;
+			auto d2p_ds2_t25 = d2p_ds2_t15 + d3p_ds3_t15 * s25_s15;
+			auto dp_ds_t25 = dp_ds_t15 + d2p_ds2_t15 * s25_s15 + 0.5 * d3p_ds3_t15 * s25_s15 * s25_s15;
+
+			auto k = (dp_ds_t25 + (3 * d2p_ds2_t25 * ds_t25 * dt) / 2);
+			auto g = d3p_ds3_t25 * ds_t25 * ds_t25 * ds_t25 + 3 * d2p_ds2_t25 * ds3 * d2s3;
+
+			auto f1 = k * dt * dt * dt;
+			auto f2 = k * dt * dt;
+			auto f3 = k * dt;
+			auto f4 = k;
+			auto e1 = p3[i] + dp3 * dt + d2p3 * dt * dt + g * dt * dt * dt;
+			auto e2 = dp3 + d2p3 * dt + g * dt * dt;
+			auto e3 = d2p3 + g * dt;
+			auto e4 = g;
+
+			if (std::abs(k) > zero_check) {
+				auto lhs0_local = (p_min[i] - e1) / f1;
+				auto rhs0_local = (p_max[i] - e1) / f1;
+
+				auto lhs1_local = (dp_min[i] - e2) / f2;
+				auto rhs1_local = (dp_max[i] - e2) / f2;
+
+				auto lhs2_local = (d2p_min[i] - e3) / f3;
+				auto rhs2_local = (d2p_max[i] - e3) / f3;
+
+				auto lhs3_local = (d3p_min[i] - e4) / f4;
+				auto rhs3_local = (d3p_max[i] - e4) / f4;
+
+				if (k < 0) {
+					std::swap(lhs0_local, rhs0_local);
+					std::swap(lhs1_local, rhs1_local);
+					std::swap(lhs2_local, rhs2_local);
+					std::swap(lhs3_local, rhs3_local);
+				}
+
+				d3s_lhs0 = std::max(d3s_lhs0, lhs0_local);
+				d3s_lhs1 = std::max(d3s_lhs1, lhs1_local);
+				d3s_lhs2 = std::max(d3s_lhs2, lhs2_local);
+				d3s_lhs3 = std::max(d3s_lhs3, lhs3_local);
+				d3s_rhs0 = std::min(d3s_rhs0, rhs0_local);
+				d3s_rhs1 = std::min(d3s_rhs1, rhs1_local);
+				d3s_rhs2 = std::min(d3s_rhs2, rhs2_local);
+				d3s_rhs3 = std::min(d3s_rhs3, rhs3_local);
+			}
+		}
+
+		ret.d3s_lhs0 = d3s_lhs0;
+		ret.d3s_lhs1 = d3s_lhs1;
+		ret.d3s_lhs2 = d3s_lhs2;
+		ret.d3s_lhs3 = d3s_lhs3;
+		ret.d3s_rhs0 = d3s_rhs0;
+		ret.d3s_rhs1 = d3s_rhs1;
+		ret.d3s_rhs2 = d3s_rhs2;
+		ret.d3s_rhs3 = d3s_rhs3;
+
+		ret.d3s_lhs_all = std::max({ d3s_lhs0 ,d3s_lhs1 ,d3s_lhs2 ,d3s_lhs3 });
+		ret.d3s_rhs_all = std::min({ d3s_rhs0 ,d3s_rhs1 ,d3s_rhs2 ,d3s_rhs3 });
+
+		return 0;
+	};
+
 	struct LookAheadParam {
 		enum NodeType {
 			DEC,
@@ -234,10 +449,7 @@ namespace aris::plan {
 			* input_acc_max_consider_ratio_,
 			* input_acc_min_consider_ratio_,
 			* output_pos_,
-			* p0_,             // 理想的位置值，仅仅在 move_in_tg 中改变
-			* p1_,
-			* p2_,
-			* p3_;
+			* p_;
 
 		std::int32_t* Ts_count_;
 
@@ -247,8 +459,11 @@ namespace aris::plan {
 
 		double target_ds_{ 1.0 };
 		double ds1_{ 1.0 }, ds2_{ 1.0 }, ds3_{ 1.0 };
-		double s0_{ 0.0 }, s1_{ 0.0 }, s2_{ 0.0 }, s3_{ 0.0 };
-		double u0_{ 0.0 }, u1_{ 0.0 }, u2_{ 0.0 }, u3_{ 0.0 };
+		
+		double s_[5], u_[5];
+		int s_idx_{ 0 };
+		//double s0_{ 0.0 }, s1_{ 0.0 }, s2_{ 0.0 }, s3_{ 0.0 }, s4_{ 0.0 }, s5_{ 0.0 };
+		//double u0_{ 0.0 }, u1_{ 0.0 }, u2_{ 0.0 }, u3_{ 0.0 }, u4_{ 0.0 }, u5_{ 0.0 };
 
 		aris::dynamic::ModelBase* model_{ nullptr };
 		aris::plan::TimeOptimalTrajectoryGenerator* tg_{ nullptr };
@@ -264,76 +479,89 @@ namespace aris::plan {
 
 		SingularState state_{ SingularState::NORMAL };
 
-		auto test_future_plan_success() -> int {
-			double s_diff = tg_->dt();
-			
-			std::vector<double> p0(input_size_), p1(input_size_), p2(input_size_), p3(input_size_), output_pos(model_->outputPosSize());
-			
-			std::copy_n(this->p0_, input_size_, p0.data());
-			std::copy_n(this->p1_, input_size_, p1.data());
-			std::copy_n(this->p2_, input_size_, p2.data());
-			std::copy_n(this->p3_, input_size_, p3.data());
+		std::vector<std::pair<double, double>> su_series_;
 
-			double u0 = u0_;
-			double u1 = u1_;
-			double u2 = u2_;
-			double u3 = u3_;
-			double s0 = s0_;
-			double s1 = s1_;
-			double s2 = s2_;
-			double s3 = s3_;
+		auto test_future_plan_success() -> int {
+			double u_diff = tg_->dt();
+			int s_idx = s_idx_;
+
+			std::vector<double> p(input_size_ * 5), output_pos(model_->outputPosSize());
+			double u[5], s[5];
+
+			auto& s0 = s[(s_idx + 0) % 5];
+			auto& s1 = s[(s_idx + 1) % 5];
+			auto& s2 = s[(s_idx + 2) % 5];
+			auto& s3 = s[(s_idx + 3) % 5];
+			auto& s4 = s[(s_idx + 4) % 5];
+			auto& u0 = u[(s_idx + 0) % 5];
+			auto& u1 = u[(s_idx + 1) % 5];
+			auto& u2 = u[(s_idx + 2) % 5];
+			auto& u3 = u[(s_idx + 3) % 5];
+			auto& u4 = u[(s_idx + 4) % 5];
+
+			auto p0 = p.data() + ((s_idx + 0) % 5) * input_size_;
+			auto p1 = p.data() + ((s_idx + 1) % 5) * input_size_;
+			auto p2 = p.data() + ((s_idx + 2) % 5) * input_size_;
+			auto p3 = p.data() + ((s_idx + 3) % 5) * input_size_;
+			auto p4 = p.data() + ((s_idx + 4) % 5) * input_size_;
+
+			std::copy_n(this->p_, 5 * input_size_, p.data());
+			std::copy_n(u_, 5, u);
+			std::copy_n(s_, 5, s);
+			
 
 			for (int i = 0;i<1000;++i) {
-				std::swap(s0, s1);
-				std::swap(s1, s2);
-				std::swap(s2, s3);
-				s3 = s2 + s_diff;
-
-				std::swap(p0, p1);
-				std::swap(p1, p2);
-				std::swap(p2, p3);
-				tg_->getEePosByS(s3, p3.data());
-				model_->inverseKinematics(output_pos_, p3.data(), model_->inverseRootNumber());
-
-				std::swap(u0, u1);
-				std::swap(u1, u2);
-				std::swap(u2, u3);
-
-				// 准备计算 d3u_l 和 d3u_r
-				double d3u_r, d3u_l;
-				s_cpt_d3u_lr(input_size_, p0_, p1_, p2_, p3_,
-					min_poss_, max_poss_, min_vels_, max_vels_, min_accs_, max_accs_, min_accs_, max_accs_,
-					s_diff, u0_, u1_, u2_, d3u_l, d3u_r);
+				s_idx_ += 1;
+				u4 = u3 + u_diff;
 				
+				SmoothParam2 param{
+					u_diff,
+					input_size_,
+					smooth_min_poss_, smooth_max_poss_,
+					smooth_min_vels_, smooth_max_vels_,
+					smooth_min_accs_, smooth_max_accs_,
+					smooth_min_jerks_, smooth_max_jerks_,
+					0.005,1.0,-100.0,100.0,-10000.0,10000.0,
+					s1 - s0, s2 - s1, s3 - s2,
+					p0, p1, p2, p3,
+					target_ds_
+				};
+				SmoothRet2 smooth_ret;
+				s_smooth_curve4(param, smooth_ret);
 
-				if (d3u_l >= d3u_r)
+
+				auto ds2 = s2 - s1;
+				auto ds3 = s3 - s2;
+				auto d2s3 = ds3 - ds2;
+
+				auto d3s4 = smooth_ret.d3s_lhs_all;
+
+				auto d2s4 = d2s3 + d3s4 * u_diff;
+				auto ds4 = ds3 + d2s4 * u_diff;
+				s4 = s3 + ds4 * u_diff;
+
+
+				auto p4 = p.data() + (s_idx_ + 4) % 5 * input_size_;
+
+				auto ret = tg_->getEePosByS(s[(s_idx_ + 4) % 5], p4);
+
+				if (smooth_ret.d3s_lhs_all > smooth_ret.d3s_rhs_all)
 					return -1;
 
 
+				if (ret == 0)
+					return 0;
 
-				auto d3u = d3u_r;
-
-				auto u_diff_1 = u1 - u0;
-				auto u_diff_2 = u2 - u1;
-				auto du_ds_1 = u_diff_1 / s_diff;
-				auto du_ds_2 = u_diff_2 / s_diff;
-
-				auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
-
-				auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
-				auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
-				u3 = u2 + du_ds_3 * s_diff;
-
-
-				if ((u3 - u2) / s_diff > 100)
-					return 1;
-
-				//std::cout << "u3:" << u3 <<"  u2:" << u2 << "  :" << (u3 - u2) / s_diff << std::endl;
+				model_->inverseKinematics(p3, p4, model_->inverseRootNumber());
 			}
 
-			return 1;
+			return 0;
 		}
 	};
+	
+
+
+
 	
 	auto s_cpt_d3u_lr(int p_size, const double* p0, const double* p1, const double* p2, const double* p3,
 		const double* p_min, const double* p_max, const double* dp_min, const double* dp_max,
@@ -437,8 +665,8 @@ namespace aris::plan {
 		// ds_du_3 = ds_du_2 + d2s_du2_3*u_diff
 		//         = ds_du_2 + d2s_du2_2*u_diff + d3s_du3_3*u_diff*u_diff
 		// 
-		d3s_du3_3_L = std::max({ d3s_du3_3_L, (MIN_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
-		d3s_du3_3_R = std::min({ d3s_du3_3_R, (MAX_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
+		//d3s_du3_3_L = std::max({ d3s_du3_3_L, (MIN_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
+		//d3s_du3_3_R = std::min({ d3s_du3_3_R, (MAX_DS - ds_du_2 - d2s_du2_2 * u_diff_3) / u_diff_3 / u_diff_3 });
 
 
 		//% dx_dt   = 1/dt_dx
@@ -449,103 +677,158 @@ namespace aris::plan {
 		auto d2s_du2_25_L = d2s_du2_2 + d3s_du3_3_L * u_diff_2 / 2;
 		auto d2s_du2_25_R = d2s_du2_2 + d3s_du3_3_R * u_diff_2 / 2;
 
-		d3u_ds3_3_L = (3 * (d2s_du2_25_R * d2s_du2_25_R) - ds_du_2 * d3s_du3_3_R) / std::pow(ds_du_2, 5);
-		d3u_ds3_3_R = (3 * (d2s_du2_25_L * d2s_du2_25_L) - ds_du_2 * d3s_du3_3_L) / std::pow(ds_du_2, 5);
+		d3u_ds3_3_L = (3 * (d2s_du2_2 * d2s_du2_2) - ds_du_2 * d3s_du3_3_R) / std::pow(ds_du_2, 5);
+		d3u_ds3_3_R = (3 * (d2s_du2_2 * d2s_du2_2) - ds_du_2 * d3s_du3_3_L) / std::pow(ds_du_2, 5);
 	
 	}
 	
 
+	auto s_interp_5th(int n, double T, const double* y0, const double* y1, const double* y2, const double* y3, const double* y4, double* dy_at_x2, double* d2y_at_x2, double* d3y_at_x2) -> void {
+		for (int i = 0; i < n; ++i) {
+			dy_at_x2[i] = (y0[i] - 8 * y1[i] + 8 * y3[i] - y4[i]) / (12 * T);
+			d2y_at_x2[i] = (-y0[i] + 16 * y1[i] - 30 * y2[i] + 16 * y3[i] - y4[i]) / (12 * T * T);
+			d3y_at_x2[i] = (-y0[i] + 2 * y1[i] - 2 * y3[i] + y4[i]) / (2 * T*T*T);
+		}
+	};
+
+
+	auto s_cpt_d3u_lr2(int p_size, const double* p0, const double* p1, const double* p2, const double* p3, const double* p4,
+		const double* p_min, const double* p_max, const double* dp_min, const double* dp_max,
+		const double* d2p_min, const double* d2p_max, const double* d3p_min, const double* d3p_max,
+		double s_diff, double u0, double u1, double u2, double u3, double& u4_L, double& u4_R, double zero_check = 1e-10) -> void
+	{
+		double du_ds_2 = (u3 - u1) / 2 / s_diff;
+		double d2u_d2s_2 = (((u3 - u2) / s_diff) - ((u2 - u1) / s_diff))/s_diff;
+
+		//% dx_dt   = 1/dt_dx
+		//% d2x_dt2 = -1/(dt_dx)^2 * d2t_dx2 * dx_dt
+		//%         = -d2t_dx2 / (dt_dx)^3
+		double ds_du_2 = 1.0 / du_ds_2;
+		double d2s_du2_2 = -d2u_d2s_2 / (du_ds_2* du_ds_2* du_ds_2);
+
+		double dp_ds[12], d2p_ds2[12], d3p_ds3[12];
+		s_interp_5th(p_size, s_diff, p0, p1, p2, p3, p4, dp_ds, d2p_ds2, d3p_ds3);
+
+		double ds_l{ -1e10 }, ds_r{ 1e10 }, d2s_l{ -1e10 }, d2s_r{ 1e10 }, d3s_l{ -1e10 }, d3s_r{ 1e10 };
+		for (int i = 0; i < p_size; ++i) {
+			if (std::abs(dp_ds[i]) > zero_check) {
+				//% dp  = dp_ds * ds
+				//% d2p = d2p_ds2 * ds^2 + dp_ds * d2s
+				//% d3p = d3p_ds3 * ds^3 + 2*d2p_ds2*ds*d2s + d2p_ds2*ds*d2s + dp_ds*d3s
+				//%     = d3p_ds3 * ds^3 + 3*d2p_ds2*ds*d2s + dp_ds*d3s
+				auto lhs_ds = dp_min[i] / dp_ds[i];
+				auto rhs_ds = dp_max[i] / dp_ds[i];
+
+				auto lhs_d2s = (d2p_min[i] - d2p_ds2[i] * ds_du_2 * ds_du_2) / dp_ds[i];
+				auto rhs_d2s = (d2p_max[i] - d2p_ds2[i] * ds_du_2 * ds_du_2) / dp_ds[i];
+
+				auto lhs_d3s = (d3p_min[i] - d3p_ds3[i] * ds_du_2 * ds_du_2 * ds_du_2 - 3 * d2p_ds2[i] * ds_du_2 * d2s_du2_2) / dp_ds[i];
+				auto rhs_d3s = (d3p_max[i] - d3p_ds3[i] * ds_du_2 * ds_du_2 * ds_du_2 - 3 * d2p_ds2[i] * ds_du_2 * d2s_du2_2) / dp_ds[i];
+
+				if (dp_ds[i] < 0) {
+					std::swap(lhs_ds, rhs_ds);
+					std::swap(lhs_d2s, rhs_d2s);
+					std::swap(lhs_d3s, rhs_d3s);
+				}
+
+				ds_l = std::max({ ds_l, lhs_ds });
+				ds_r = std::min({ ds_r, rhs_ds });
+				d2s_l = std::max({ d2s_l, lhs_d2s });
+				d2s_r = std::min({ d2s_r, rhs_d2s });
+				d3s_l = std::max({ d3s_l, lhs_d3s });
+				d3s_r = std::min({ d3s_r, rhs_d3s });
+			}
+		}
+
+		u4_L = std::max({
+			-12 * ds_l * s_diff + u0 - 8 * u1 + 8 * u3,
+			-12 * d2s_l * (s_diff * s_diff) - u0 + 16 * u1 - 30 * u2 + 16 * u3, //- 12*d2y*T^2 - y0 + 16*y1 - 30*y2 + 16*y3
+			2 * d3s_l * (s_diff * s_diff * s_diff) + u0 - 2 * u1 + 2 * u3,
+			});
+
+		u4_R = std::min({
+			-12 * ds_r * s_diff  + u0 - 8 * u1 + 8 * u3,
+			-12 * d2s_r * (s_diff * s_diff) - u0 + 16 * u1 - 30 * u2 + 16 * u3, //- 12*d2y*T^2 - y0 + 16*y1 - 30*y2 + 16*y3
+			2 * d3s_r * (s_diff * s_diff * s_diff) + u0 - 2 * u1 + 2 * u3,
+			});
+	}
+
+
 	auto LookAheadProcessor::lookAheadOneStep() -> int {
-		double s_diff = imp_->tg_->dt();
+		double u_diff = imp_->tg_->dt();
 		
-		auto& s0 = imp_->s0_;
-		auto& s1 = imp_->s1_;
-		auto& s2 = imp_->s2_;
-		auto& s3 = imp_->s3_;
-		auto& u0 = imp_->u0_;
-		auto& u1 = imp_->u1_;
-		auto& u2 = imp_->u2_;
-		auto& u3 = imp_->u3_;
-		auto& p0 = imp_->p0_;
-		auto& p1 = imp_->p1_;
-		auto& p2 = imp_->p2_;
-		auto& p3 = imp_->p3_;
+		imp_->s_idx_ += 1;
+		auto& s0 = imp_->s_[(imp_->s_idx_ + 0) % 5];
+		auto& s1 = imp_->s_[(imp_->s_idx_ + 1) % 5];
+		auto& s2 = imp_->s_[(imp_->s_idx_ + 2) % 5];
+		auto& s3 = imp_->s_[(imp_->s_idx_ + 3) % 5];
+		auto& s4 = imp_->s_[(imp_->s_idx_ + 4) % 5];
+		auto& u0 = imp_->u_[(imp_->s_idx_ + 0) % 5];
+		auto& u1 = imp_->u_[(imp_->s_idx_ + 1) % 5];
+		auto& u2 = imp_->u_[(imp_->s_idx_ + 2) % 5];
+		auto& u3 = imp_->u_[(imp_->s_idx_ + 3) % 5];
+		auto& u4 = imp_->u_[(imp_->s_idx_ + 4) % 5];
 
-		// 更新数据 //
-		std::swap(s0, s1);
-		std::swap(s1, s2);
-		std::swap(s2, s3);
-		s3 = s2 + s_diff;
+		auto p0 = imp_->p_ + ((imp_->s_idx_ + 0) % 5) * imp_->input_size_;
+		auto p1 = imp_->p_ + ((imp_->s_idx_ + 1) % 5) * imp_->input_size_;
+		auto p2 = imp_->p_ + ((imp_->s_idx_ + 2) % 5) * imp_->input_size_;
+		auto p3 = imp_->p_ + ((imp_->s_idx_ + 3) % 5) * imp_->input_size_;
+		auto p4 = imp_->p_ + ((imp_->s_idx_ + 4) % 5) * imp_->input_size_;
 
-		std::swap(p0, p1);
-		std::swap(p1, p2);
-		std::swap(p2, p3);
-		imp_->tg_->getEePosByS(s3, imp_->output_pos_);
-		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p3_, imp_->model_->inverseRootNumber());
+		u4 = u3 + u_diff;
 
-		std::swap(u0, u1);
-		std::swap(u1, u2);
-		std::swap(u2, u3);
+		SmoothParam2 param{
+			imp_->tg_->dt(),
+			imp_->input_size_,
+			imp_->smooth_min_poss_, imp_->smooth_max_poss_,
+			imp_->smooth_min_vels_, imp_->smooth_max_vels_,
+			imp_->smooth_min_accs_, imp_->smooth_max_accs_,
+			imp_->smooth_min_jerks_, imp_->smooth_max_jerks_,
+			0.005,1.0,-100.0,100.0,-10000.0,10000.0,
+			s1 - s0, s2 - s1, s3 - s2,
+			p0, p1, p2, p3,
+			imp_->target_ds_
+		};
+		SmoothRet2 smooth_ret;
+		s_smooth_curve4(param, smooth_ret);
 
-		// 准备计算 d3u_l 和 d3u_r
-		double d3u_r, d3u_l;
-		s_cpt_d3u_lr(imp_->input_size_, imp_->p0_, imp_->p1_, imp_->p2_, imp_->p3_,
-			imp_->min_poss_, imp_->max_poss_, imp_->min_vels_, imp_->max_vels_, imp_->min_accs_, imp_->max_accs_, imp_->min_accs_, imp_->max_accs_,
-			s_diff, imp_->u0_, imp_->u1_, imp_->u2_, d3u_l, d3u_r);
+		
+		auto ds2 = s2 - s1;
+		auto ds3 = s3 - s2;
+		auto d2s3 = ds3 - ds2;
 
-		// 加速对应 d3u_l, 减速对应 d3u_r
-		auto d3u = d3u_l;
+		auto d3s4 = smooth_ret.d3s_rhs_all;
+		
+		auto d2s4 = d2s3 + d3s4 * u_diff;
+		auto ds4 = ds3 + d2s4 * u_diff;
+		s4 = s3 + ds4 * u_diff;
 
-		auto u_diff_1 = imp_->u1_ - imp_->u0_;
-		auto u_diff_2 = imp_->u2_ - imp_->u1_;
-		auto du_ds_1 = u_diff_1 / s_diff;
-		auto du_ds_2 = u_diff_2 / s_diff;
+		auto ret = imp_->tg_->getEePosByS(s4, imp_->output_pos_);
+		imp_->model_->inverseKinematics(imp_->output_pos_, p4, imp_->model_->inverseRootNumber());
 
-		auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
-
-		auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
-		auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
-		imp_->u3_ = imp_->u2_ + du_ds_3 * s_diff;
-
-		if (d3u_r >= d3u_l && imp_->test_future_plan_success()) {
+		if (imp_->test_future_plan_success() == 0) {
 
 
 		}
 		else {
-			auto d3u = d3u_r;
-
-			auto u_diff_1 = imp_->u1_ - imp_->u0_;
-			auto u_diff_2 = imp_->u2_ - imp_->u1_;
-			auto du_ds_1 = u_diff_1 / s_diff;
-			auto du_ds_2 = u_diff_2 / s_diff;
-
-			auto d2u_ds2_2 = (du_ds_2 - du_ds_1) / s_diff;
-
-			auto d2u_ds2_3 = d2u_ds2_2 + d3u * s_diff;
-			auto du_ds_3 = du_ds_2 + d2u_ds2_3 * s_diff;
-			imp_->u3_ = imp_->u2_ + du_ds_3 * s_diff;
-
-
+			
 		}
 
-		return 0;
-	}
+		//imp_->u3_ = std::min(imp_->u3_, imp_->u2_ + 100 * s_diff);
+		//imp_->u3_ = std::max(imp_->u3_, imp_->u2_ + s_diff);
 
+		//imp_->su_series_.push_back({ imp_->s3_, imp_->u3_ });
+
+		return ret;
+	}
 	auto LookAheadProcessor::lookAhead(double s_begin) -> int {
-		//auto nodes = imp_->param_.nodes_;
-
-		//auto node_beg = std::prev(std::find_if(nodes.begin(), nodes.end(), [s_begin](LookAheadParam::Node &node)->bool {
-		//	return node.s_ < s_begin;
-		//	}));
-
-		//nodes.erase(std::next(node_beg), nodes.end());
-
-		//auto interval = imp_->tg_->dt();
-
-		//double s_init = s_begin;
-		//double ds_du_init = 1.0;
-		//double d2s_du2_init = 0.0;
-
+		
+		while (lookAheadOneStep())
+		{
+			//if (imp_->s3_ > 1.5)
+			//	std::cout << "debug" << std::endl;
+			//std::cout << "su:" <<imp_->s3_ <<"   " << imp_->u3_ << std::endl;
+		}
 
 
 
@@ -559,9 +842,6 @@ namespace aris::plan {
 
 		return 0;
 	}
-	
-	
-	
 	auto LookAheadProcessor::setMaxPoss(const double* max_poss, const double* min_poss)->void {
 		std::copy(max_poss, max_poss + imp_->input_size_, imp_->max_poss_);
 		if (min_poss) {
@@ -659,10 +939,7 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->input_acc_min_consider_ratio_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->output_pos_, imp_->input_size_);
 		//core::allocMem(mem_size, imp_->curve_params_, imp_->input_size_);
-		core::allocMem(mem_size, imp_->p0_, imp_->input_size_);
-		core::allocMem(mem_size, imp_->p1_, imp_->input_size_);
-		core::allocMem(mem_size, imp_->p2_, imp_->input_size_);
-		core::allocMem(mem_size, imp_->p3_, imp_->input_size_);
+		core::allocMem(mem_size, imp_->p_, imp_->input_size_*6);
 		core::allocMem(mem_size, imp_->Ts_count_, imp_->input_size_ * 3);
 
 		imp_->mem_.resize(mem_size, char(0));
@@ -699,10 +976,7 @@ namespace aris::plan {
 		imp_->input_acc_min_consider_ratio_ = core::getMem(imp_->mem_.data(), imp_->input_acc_min_consider_ratio_);
 		imp_->output_pos_ = core::getMem(imp_->mem_.data(), imp_->output_pos_);
 		//imp_->curve_params_ = core::getMem(imp_->mem_.data(), imp_->curve_params_);
-		imp_->p0_ = core::getMem(imp_->mem_.data(), imp_->p0_);
-		imp_->p1_ = core::getMem(imp_->mem_.data(), imp_->p1_);
-		imp_->p2_ = core::getMem(imp_->mem_.data(), imp_->p2_);
-		imp_->p3_ = core::getMem(imp_->mem_.data(), imp_->p3_);
+		imp_->p_ = core::getMem(imp_->mem_.data(), imp_->p_);
 		imp_->Ts_count_ = core::getMem(imp_->mem_.data(), imp_->Ts_count_);
 
 		std::fill_n(imp_->max_poss_, imp_->input_size_, 1e10);
@@ -727,44 +1001,24 @@ namespace aris::plan {
 		imp_->tg_ = &tg;
 	}
 	auto LookAheadProcessor::init()->void {
-		//imp_->model_->getInputPos(imp_->input_pos_this_);
-		//std::fill_n(imp_->input_vel_this_, imp_->input_size_, 0.0);
-		//std::fill_n(imp_->input_acc_this_, imp_->input_size_, 0.0);
-		//std::fill_n(imp_->input_vel_last_, imp_->input_size_, 0.0);
-
-		//imp_->model_->getInputPos(imp_->p0_);
-		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p1_);
-		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p2_);
-		//aris::dynamic::s_vc(imp_->input_size_, imp_->p0_, imp_->p3_);
-
-		//imp_->ds1_ = imp_->ds2_ = imp_->ds3_ = 1.0;
-
-		//imp_->state_ = Imp::SingularState::NORMAL;
-
-
-
-
 		double s_diff = imp_->tg_->dt();
 
-		imp_->s0_ = 0 * s_diff;
-		imp_->s1_ = 1 * s_diff;
-		imp_->s2_ = 2 * s_diff;
-		imp_->s3_ = 3 * s_diff;
+		imp_->s_idx_ = 0;
+		for (int i = 0; i < 5; ++i) {
+			imp_->s_[i] = i * s_diff * 0.5;
+			imp_->u_[i] = i * s_diff;
+			imp_->tg_->getEePosByS(imp_->s_[i], imp_->output_pos_);
+			imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p_ + i*imp_->input_size_, imp_->model_->inverseRootNumber());
+		}
 
-		imp_->tg_->getEePosByS(imp_->s0_, imp_->output_pos_);
-		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p0_, imp_->model_->inverseRootNumber());
-		imp_->tg_->getEePosByS(imp_->s1_, imp_->output_pos_);
-		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p1_, imp_->model_->inverseRootNumber());
-		imp_->tg_->getEePosByS(imp_->s2_, imp_->output_pos_);
-		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p2_, imp_->model_->inverseRootNumber());
-		imp_->tg_->getEePosByS(imp_->s3_, imp_->output_pos_);
-		imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p3_, imp_->model_->inverseRootNumber());
 
-		imp_->u0_ = 0 * s_diff;
-		imp_->u1_ = 1 * s_diff;
-		imp_->u2_ = 2 * s_diff;
-		imp_->u3_ = 3 * s_diff;
-
+		//imp_->su_series_.clear();
+		//imp_->su_series_.push_back({ imp_->s0_, imp_->u0_ });
+		//imp_->su_series_.push_back({ imp_->s1_, imp_->u1_ });
+		//imp_->su_series_.push_back({ imp_->s2_, imp_->u2_ });
+		//imp_->su_series_.push_back({ imp_->s3_, imp_->u3_ });
+		//imp_->su_series_.push_back({ imp_->s4_, imp_->u4_ });
+		//imp_->su_series_.push_back({ imp_->s5_, imp_->u5_ });
 	}
 	auto LookAheadProcessor::setDs(double ds)->void {
 		imp_->ds3_ = imp_->ds2_ = imp_->ds1_ = ds;
@@ -788,18 +1042,6 @@ namespace aris::plan {
 	LookAheadProcessor::LookAheadProcessor() :imp_(new Imp) {
 		imp_->param_.nodes_.push_back(LookAheadParam::Node{ 0.0,1.0,0.0,LookAheadParam::NodeType::DEC });
 	}
-
-
-
-
-
-
-
-	//auto try_look_ahead()->void {
-		
-	//}
-
-
 
 	// 关于 tg 的并发：
 	//
@@ -829,10 +1071,6 @@ namespace aris::plan {
 	struct TimeOptimalTrajectoryGenerator::Imp {
 		// 时间参数 //
 		double dt_{ 0.001 };
-		LargeNum s_{ 0.0 };
-		double ds_{ 1.0 }, dds_{ 0.0 }, ddds_{ 0.0 };
-		double max_ds_{ 1.0 }, max_dds_{ 10.0 }, max_ddds_{ 100.0 };
-		std::atomic<double> target_ds_{ 1.0 };
 
 		// 末端类型 //
 		std::vector<aris::dynamic::EEType> ee_types_;
@@ -1000,140 +1238,9 @@ namespace aris::plan {
 	auto TimeOptimalTrajectoryGenerator::setDt(double dt)->void {
 		imp_->dt_ = dt;
 	}
-	auto TimeOptimalTrajectoryGenerator::currentDs()const->double {
-		return imp_->ds_;
-	}
-	auto TimeOptimalTrajectoryGenerator::setCurrentDs(double ds)->void {
-		imp_->ds_ = ds;
-	}
-	auto TimeOptimalTrajectoryGenerator::targetDs()const->double {
-		return imp_->target_ds_;
-	}
-	auto TimeOptimalTrajectoryGenerator::setTargetDs(double ds)->void {
-		imp_->target_ds_ = ds;
-	}
-	auto TimeOptimalTrajectoryGenerator::currentDds()const->double {
-		return imp_->dds_;
-	}
-	auto TimeOptimalTrajectoryGenerator::setCurrentDds(double dds)->void {
-		imp_->dds_ = dds;
-	}
-	auto TimeOptimalTrajectoryGenerator::maxDds()const->double {
-		return imp_->max_dds_;
-	}
-	auto TimeOptimalTrajectoryGenerator::setMaxDds(double max_dds)->void {
-		imp_->max_dds_ = max_dds;
-	}
-	auto TimeOptimalTrajectoryGenerator::maxDdds()const->double {
-		return imp_->max_ddds_;
-	}
-	auto TimeOptimalTrajectoryGenerator::setMaxDdds(double max_ddds)->void {
-		imp_->max_ddds_ = max_ddds;
-	}
-	auto TimeOptimalTrajectoryGenerator::leftNodeS()const->double {
-		auto current_node = imp_->current_node_.load();
-		return current_node->s_end_ - imp_->s_;
-	}
-	auto TimeOptimalTrajectoryGenerator::leftTotalS()const->double {
-		return imp_->nodes_.back().s_end_ - imp_->s_;
-	}
 	TimeOptimalTrajectoryGenerator::~TimeOptimalTrajectoryGenerator() = default;
 	TimeOptimalTrajectoryGenerator::TimeOptimalTrajectoryGenerator() :imp_(new Imp) {
 		imp_->current_node_.store(nullptr);
-	}
-	auto TimeOptimalTrajectoryGenerator::getEePosAndMoveDt(double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
-		auto current_node = imp_->current_node_.load();
-		auto next_node = current_node->next_node_.load();
-
-		auto target_ds = imp_->target_ds_.load();
-
-		// 正常运行 //
-		auto& s_ = imp_->s_;
-		s_ = s_ + currentDs() * dt();
-		aris::Size total_count;
-		moveAbsolute2(imp_->ds_, imp_->dds_, imp_->ddds_, target_ds, 0.0, 0.0,
-			imp_->max_dds_, imp_->max_ddds_, imp_->max_ddds_, imp_->dt_, 1e-10,
-			imp_->ds_, imp_->dds_, imp_->ddds_, total_count);
-
-		// 需要切换或结束
-		while (current_node->s_end_ - s_ < 0.0) {
-			// check 是否全局结束，即所有指令都已执行完
-			if (current_node == next_node) {
-				s_ = current_node->s_end_;
-				imp_->ds_ = target_ds;
-				imp_->dds_ = 0.0;
-				imp_->ddds_ = 0.0;
-				get_node_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-				internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
-				if (ee_acc) {
-					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
-					aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
-					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
-				}
-				if (ee_vel) {
-					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
-					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
-				}
-				
-				return 0;
-			}
-			// check 是否局部结束，即下一条指令是 init
-			else if (current_node->type_ != Node::NodeType::ResetInitPos && next_node->type_ == Node::NodeType::ResetInitPos) {
-				s_ = current_node->s_end_;
-				imp_->ds_ = target_ds;
-				imp_->dds_ = 0.0;
-				imp_->ddds_ = 0.0;
-				get_node_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-				internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
-				if (ee_acc) {
-					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
-					aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
-					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
-				}
-				if (ee_vel) {
-					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
-					aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
-				}
-
-				current_node = current_node->next_node_.exchange(nullptr);
-				next_node = current_node->next_node_.load();
-				imp_->current_node_.store(current_node);
-				imp_->ds_ = 0.0;
-				return current_node->id_;
-			}
-			// check 是否仅存一条 init 指令
-			else if (current_node->type_ == Node::NodeType::ResetInitPos) {
-				imp_->s_ = target_ds * dt();
-				imp_->ds_ = target_ds;
-				imp_->dds_ = 0.0;
-				imp_->ddds_ = 0.0;
-				
-				current_node = current_node->next_node_.exchange(nullptr);
-				next_node = current_node->next_node_.load();
-				imp_->current_node_.store(current_node);
-			}
-			// 下一条指令是运动指令，正常切换
-			else {
-				current_node = current_node->next_node_.exchange(nullptr);
-				next_node = current_node->next_node_.load();
-				imp_->current_node_.store(current_node);
-			}
-		}
-
-		get_node_data(eeTypes(), current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
-		if (ee_acc) {
-			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
-			aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
-			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
-		}
-		if (ee_vel) {
-			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
-			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
-		}
-		
-		
-		return current_node->id_;
 	}
 	auto TimeOptimalTrajectoryGenerator::getEePosByS(double s, double* ee_pos, double* ee_vel, double* ee_acc, std::int64_t id)->std::int64_t {
 		auto current_node = imp_->current_node_.load();
@@ -1141,25 +1248,26 @@ namespace aris::plan {
 
 		// 需要切换或结束
 		while (current_node->s_end_ - s < 0.0 && current_node != next_node && next_node->type_ != Node::NodeType::ResetInitPos) {
-			current_node = current_node->next_node_.load();
+			current_node = next_node;
+			next_node = current_node->next_node_.load();
 		}
 
-		s = std::min(s, (double)current_node->s_end_);
+		auto real_s = std::min(s, (double)current_node->s_end_);
 
-		get_node_data(eeTypes(), current_node, s, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+		get_node_data(eeTypes(), current_node, real_s, 1.0, 0.0, 0.0, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
 		internal_pos_to_outpos(eeTypes(), imp_->internal_pos_, ee_pos);
 		if (ee_acc) {
-			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
-			aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
+			aris::dynamic::s_nv(imp_->internal_pos_size, 1.0, imp_->internal_acc_);
+			aris::dynamic::s_va(imp_->internal_pos_size, 0.0, imp_->internal_vel_, imp_->internal_acc_);
 			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_acc_, ee_acc);
 		}
 		if (ee_vel) {
-			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
+			aris::dynamic::s_nv(imp_->internal_pos_size, 1.0, imp_->internal_vel_);
 			aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
 		}
 
 
-		return current_node->id_;
+		return current_node->s_end_ - s < 0.0 ? 0 : current_node->id_;
 	}
 	auto clearNodesBefore(std::int64_t id) -> int {
 		return 0;

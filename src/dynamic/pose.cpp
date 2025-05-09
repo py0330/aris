@@ -304,9 +304,6 @@ namespace aris::dynamic{
 		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] + q1[3] * q2[2] + q2[3] * q1[2];
 		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] + q1[3] * q2[3];
 
-		if (q3[3] < 0)
-			s_iv(4, q3);
-
 		return q3;
 	}
 	auto s_inv_rq_dot_rq(const double* q1, const double* q2, double* q3)noexcept->double* {
@@ -316,9 +313,6 @@ namespace aris::dynamic{
 		q3[1] = q1[2] * q2[0] - q1[0] * q2[2] - q1[3] * q2[1] + q2[3] * q1[1];
 		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] - q1[3] * q2[2] + q2[3] * q1[2];
 		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
-
-		if (q3[3] < 0)
-			s_iv(4, q3);
 
 		return q3;
 	}
@@ -330,9 +324,6 @@ namespace aris::dynamic{
 		q3[2] = -q1[1] * q2[0] + q1[0] * q2[1] + q1[3] * q2[2] - q2[3] * q1[2];
 		q3[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
 
-		if (q3[3] < 0)
-			s_iv(4, q3);
-
 		return q3;
 	}
 	auto s_inv_rq(const double* q, double* inv_q)noexcept->double* {
@@ -340,9 +331,6 @@ namespace aris::dynamic{
 		inv_q[1] = -q[1];
 		inv_q[2] = -q[2];
 		inv_q[3] = q[3];
-
-		if (inv_q[3] < 0)
-			s_iv(4, inv_q);
 
 		return inv_q;
 	}
@@ -633,7 +621,7 @@ namespace aris::dynamic{
 		for (auto m : jkl)rq_out[m] = (rm_in[P[i][m] * rm_ld + Q[i][m]] + T[i][m] * rm_in[Q[i][m] * rm_ld + P[i][m]]) / 4.0 / rq_out[i];
 
 		// 将rq[3]置为正
-		for (auto m = 0; m < 4; ++m)rq_out[m] = rq_out[3] < 0 ? -rq_out[m] : rq_out[m];
+		if (rq_out[3] < 0) s_iv(4, rq_out);
 
 		return rq_out;
 	}

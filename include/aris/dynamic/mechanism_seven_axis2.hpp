@@ -51,14 +51,11 @@ namespace aris::dynamic{
 	};
 	auto ARIS_API createModelSevenAxis2(const SevenAxisParam2 &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class ARIS_API SevenAxisInverseKinematicSolver2 :public aris::dynamic::InverseKinematicSolver
-	{
+	class ARIS_API SevenAxisInverseKinematicSolver2 :public aris::dynamic::InverseKinematicSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto virtual kinPosPure(const double* output, double* input, int which_root, const double* current_input = nullptr)->int override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
-		auto whichRoot()->int;
 
 		virtual ~SevenAxisInverseKinematicSolver2();
 		explicit SevenAxisInverseKinematicSolver2();
