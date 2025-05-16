@@ -336,7 +336,7 @@ auto test_singular_processor_1()->void {
 		puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 	}
 
-	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\pes.txt");
+	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "D:\\Private\\mcode\\smooth\\pes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 
@@ -918,7 +918,7 @@ void test_singular_processor(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
 
-	test_singular_processor_2();
+	test_singular_processor_1();
 	//test_s_smooth3_a_range();
 
 	//test_smooth_cond_vel_violate();

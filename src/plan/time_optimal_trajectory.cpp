@@ -268,6 +268,22 @@ namespace aris::plan {
 		// e3 = d2p3 + g * dt;
 		// e4 = g;
 		// 
+		///////////////////////////// PART 4 ds 的限制 /////////////////////////////////
+		// 
+		// 应有：
+		//       0 <  ds  < 1
+		// MIN_D2S <  d2s < MAX_D2S
+		// MIN_D3S <  d3s < MAX_D3S
+		// 
+		// ds4  = ds3  + d2s3 * dt + d3s4 * dt^2
+		// d2s4 = d2s3 + d3s4 * dt
+		// 
+		// =>
+		// 
+		// (MIN_DS - ds3 - d2s3 * dt)/dt^2 < d3s4 < (MAX_DS - ds3 - d2s3 * dt)/dt^2
+		//             (MIN_D2S - d2s3)/dt < d3s4 < (MAX_D2S - d2s3)/dt
+		//                         MIN_D3S < d3s4 < MAX_D3S
+		//
 
 		double zero_check = 1e-10;
 
@@ -308,10 +324,24 @@ namespace aris::plan {
 		double d3s_t15 = d3s3;
 		double ds_t25 = ds3;
 
-		double d3s_lhs0{ MIN_D3S }, d3s_rhs0{ MAX_D3S },
-			d3s_lhs1{ MIN_D3S }, d3s_rhs1{ MAX_D3S },
-			d3s_lhs2{ MIN_D3S }, d3s_rhs2{ MAX_D3S },
-			d3s_lhs3{ MIN_D3S }, d3s_rhs3{ MAX_D3S };
+		/////// ds 起始值 //////
+
+		double MIN_d3s4 = std::max({
+				(MIN_DS - ds3 - d2s3 * dt) / dt / dt, (MIN_D2S - d2s3) / dt , MIN_D3S
+			});
+
+		double MAX_d3s4 = std::min({
+				(MAX_DS - ds3 - d2s3 * dt) / dt / dt, (MAX_D2S - d2s3) / dt , MAX_D3S
+			});
+
+		////////////
+
+
+
+		double d3s_lhs0{ MIN_d3s4 }, d3s_rhs0{ MAX_d3s4 },
+			d3s_lhs1{ MIN_d3s4 }, d3s_rhs1{ MAX_d3s4 },
+			d3s_lhs2{ MIN_d3s4 }, d3s_rhs2{ MAX_d3s4 },
+			d3s_lhs3{ MIN_d3s4 }, d3s_rhs3{ MAX_d3s4 };
 
 		for (int i = 0; i < dim; ++i) {
 			auto dp3 = (p3[i] - p2[i]) / dt;
@@ -449,7 +479,11 @@ namespace aris::plan {
 			* input_acc_max_consider_ratio_,
 			* input_acc_min_consider_ratio_,
 			* output_pos_,
-			* p_;
+			* p_, 
+			* u_,
+			* s_;
+
+		std::int64_t* cmd_ids_;
 
 		std::int32_t* Ts_count_;
 
@@ -460,10 +494,9 @@ namespace aris::plan {
 		double target_ds_{ 1.0 };
 		double ds1_{ 1.0 }, ds2_{ 1.0 }, ds3_{ 1.0 };
 		
-		double s_[5], u_[5];
-		int s_idx_{ 0 };
-		//double s0_{ 0.0 }, s1_{ 0.0 }, s2_{ 0.0 }, s3_{ 0.0 }, s4_{ 0.0 }, s5_{ 0.0 };
-		//double u0_{ 0.0 }, u1_{ 0.0 }, u2_{ 0.0 }, u3_{ 0.0 }, u4_{ 0.0 }, u5_{ 0.0 };
+		int p_mem_size_{ 6 }, p_pop_idx_{ 0 }, p_push_idx_{ 0 };
+		
+		std::int64_t current_cmd_id_{ 0 };
 
 		aris::dynamic::ModelBase* model_{ nullptr };
 		aris::plan::TimeOptimalTrajectoryGenerator* tg_{ nullptr };
@@ -483,35 +516,41 @@ namespace aris::plan {
 
 		auto test_future_plan_success() -> int {
 			double u_diff = tg_->dt();
-			int s_idx = s_idx_;
+			int idx = 4;
 
 			std::vector<double> p(input_size_ * 5), output_pos(model_->outputPosSize());
 			double u[5], s[5];
 
-			auto& s0 = s[(s_idx + 0) % 5];
-			auto& s1 = s[(s_idx + 1) % 5];
-			auto& s2 = s[(s_idx + 2) % 5];
-			auto& s3 = s[(s_idx + 3) % 5];
-			auto& s4 = s[(s_idx + 4) % 5];
-			auto& u0 = u[(s_idx + 0) % 5];
-			auto& u1 = u[(s_idx + 1) % 5];
-			auto& u2 = u[(s_idx + 2) % 5];
-			auto& u3 = u[(s_idx + 3) % 5];
-			auto& u4 = u[(s_idx + 4) % 5];
+			for (int i = 0; i < 5; ++i) {
+				std::copy_n(this->p_ + ((p_push_idx_ + p_mem_size_ + i - 4) % p_mem_size_) * input_size_, input_size_, p.data() + input_size_ * i);
+				u[i] = u_[(p_push_idx_ + p_mem_size_ + i - 4) % p_mem_size_];
+				s[i] = s_[(p_push_idx_ + p_mem_size_ + i - 4) % p_mem_size_];
+			}
 
-			auto p0 = p.data() + ((s_idx + 0) % 5) * input_size_;
-			auto p1 = p.data() + ((s_idx + 1) % 5) * input_size_;
-			auto p2 = p.data() + ((s_idx + 2) % 5) * input_size_;
-			auto p3 = p.data() + ((s_idx + 3) % 5) * input_size_;
-			auto p4 = p.data() + ((s_idx + 4) % 5) * input_size_;
-
-			std::copy_n(this->p_, 5 * input_size_, p.data());
-			std::copy_n(u_, 5, u);
-			std::copy_n(s_, 5, s);
-			
 
 			for (int i = 0;i<1000;++i) {
-				s_idx_ += 1;
+				idx = (idx + 1)%5;
+
+				auto& s0 = s[(idx + 5 - 4) % 5];
+				auto& s1 = s[(idx + 5 - 3) % 5];
+				auto& s2 = s[(idx + 5 - 2) % 5];
+				auto& s3 = s[(idx + 5 - 1) % 5];
+				auto& s4 = s[(idx + 5 - 0) % 5];
+				auto& u0 = u[(idx + 5 - 4) % 5];
+				auto& u1 = u[(idx + 5 - 3) % 5];
+				auto& u2 = u[(idx + 5 - 2) % 5];
+				auto& u3 = u[(idx + 5 - 1) % 5];
+				auto& u4 = u[(idx + 5 - 0) % 5];
+
+				auto p0 = p.data() + ((idx + 5 - 4) % 5) * input_size_;
+				auto p1 = p.data() + ((idx + 5 - 3) % 5) * input_size_;
+				auto p2 = p.data() + ((idx + 5 - 2) % 5) * input_size_;
+				auto p3 = p.data() + ((idx + 5 - 1) % 5) * input_size_;
+				auto p4 = p.data() + ((idx + 5 - 0) % 5) * input_size_;
+
+				//aris::dynamic::dsp(5, 6, p.data());
+
+				
 				u4 = u3 + u_diff;
 				
 				SmoothParam2 param{
@@ -522,7 +561,7 @@ namespace aris::plan {
 					smooth_min_accs_, smooth_max_accs_,
 					smooth_min_jerks_, smooth_max_jerks_,
 					0.005,1.0,-100.0,100.0,-10000.0,10000.0,
-					s1 - s0, s2 - s1, s3 - s2,
+					(s1 - s0)/u_diff, (s2 - s1)/u_diff, (s3 - s2)/u_diff,
 					p0, p1, p2, p3,
 					target_ds_
 				};
@@ -530,9 +569,15 @@ namespace aris::plan {
 				s_smooth_curve4(param, smooth_ret);
 
 
-				auto ds2 = s2 - s1;
-				auto ds3 = s3 - s2;
-				auto d2s3 = ds3 - ds2;
+				auto ds2 = (s2 - s1) / u_diff;
+				auto ds3 = (s3 - s2) / u_diff;
+				auto d2s3 = (ds3 - ds2) / u_diff;
+
+				if ((s3 - s2) / u_diff + d2s3 * u_diff < 0.01)
+					return 0;
+
+				if (smooth_ret.d3s_lhs_all > smooth_ret.d3s_rhs_all)
+					return -1;
 
 				auto d3s4 = smooth_ret.d3s_lhs_all;
 
@@ -541,18 +586,12 @@ namespace aris::plan {
 				s4 = s3 + ds4 * u_diff;
 
 
-				auto p4 = p.data() + (s_idx_ + 4) % 5 * input_size_;
-
-				auto ret = tg_->getEePosByS(s[(s_idx_ + 4) % 5], p4);
-
-				if (smooth_ret.d3s_lhs_all > smooth_ret.d3s_rhs_all)
-					return -1;
-
+				auto ret = tg_->getEePosByS(s4, output_pos.data());
 
 				if (ret == 0)
 					return 0;
 
-				model_->inverseKinematics(p3, p4, model_->inverseRootNumber());
+				model_->inverseKinematics(output_pos.data(), p4, model_->inverseRootNumber(), p3);
 			}
 
 			return 0;
@@ -757,23 +796,24 @@ namespace aris::plan {
 	auto LookAheadProcessor::lookAheadOneStep() -> int {
 		double u_diff = imp_->tg_->dt();
 		
-		imp_->s_idx_ += 1;
-		auto& s0 = imp_->s_[(imp_->s_idx_ + 0) % 5];
-		auto& s1 = imp_->s_[(imp_->s_idx_ + 1) % 5];
-		auto& s2 = imp_->s_[(imp_->s_idx_ + 2) % 5];
-		auto& s3 = imp_->s_[(imp_->s_idx_ + 3) % 5];
-		auto& s4 = imp_->s_[(imp_->s_idx_ + 4) % 5];
-		auto& u0 = imp_->u_[(imp_->s_idx_ + 0) % 5];
-		auto& u1 = imp_->u_[(imp_->s_idx_ + 1) % 5];
-		auto& u2 = imp_->u_[(imp_->s_idx_ + 2) % 5];
-		auto& u3 = imp_->u_[(imp_->s_idx_ + 3) % 5];
-		auto& u4 = imp_->u_[(imp_->s_idx_ + 4) % 5];
+		auto& s0 = imp_->s_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 4) % imp_->p_mem_size_];
+		auto& s1 = imp_->s_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 3) % imp_->p_mem_size_];
+		auto& s2 = imp_->s_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 2) % imp_->p_mem_size_];
+		auto& s3 = imp_->s_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 1) % imp_->p_mem_size_];
+		auto& s4 = imp_->s_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 0) % imp_->p_mem_size_];
+		auto& u0 = imp_->u_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 4) % imp_->p_mem_size_];
+		auto& u1 = imp_->u_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 3) % imp_->p_mem_size_];
+		auto& u2 = imp_->u_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 2) % imp_->p_mem_size_];
+		auto& u3 = imp_->u_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 1) % imp_->p_mem_size_];
+		auto& u4 = imp_->u_[(imp_->p_push_idx_ + imp_->p_mem_size_ - 0) % imp_->p_mem_size_];
 
-		auto p0 = imp_->p_ + ((imp_->s_idx_ + 0) % 5) * imp_->input_size_;
-		auto p1 = imp_->p_ + ((imp_->s_idx_ + 1) % 5) * imp_->input_size_;
-		auto p2 = imp_->p_ + ((imp_->s_idx_ + 2) % 5) * imp_->input_size_;
-		auto p3 = imp_->p_ + ((imp_->s_idx_ + 3) % 5) * imp_->input_size_;
-		auto p4 = imp_->p_ + ((imp_->s_idx_ + 4) % 5) * imp_->input_size_;
+		auto p0 = imp_->p_ + ((imp_->p_push_idx_ + imp_->p_mem_size_ - 4) % imp_->p_mem_size_) * imp_->input_size_;
+		auto p1 = imp_->p_ + ((imp_->p_push_idx_ + imp_->p_mem_size_ - 3) % imp_->p_mem_size_) * imp_->input_size_;
+		auto p2 = imp_->p_ + ((imp_->p_push_idx_ + imp_->p_mem_size_ - 2) % imp_->p_mem_size_) * imp_->input_size_;
+		auto p3 = imp_->p_ + ((imp_->p_push_idx_ + imp_->p_mem_size_ - 1) % imp_->p_mem_size_) * imp_->input_size_;
+		auto p4 = imp_->p_ + ((imp_->p_push_idx_ + imp_->p_mem_size_ - 0) % imp_->p_mem_size_) * imp_->input_size_;
+
+		auto& cmd_id4 = imp_->cmd_ids_[((imp_->p_push_idx_ + imp_->p_mem_size_ - 0) % imp_->p_mem_size_)];
 
 		u4 = u3 + u_diff;
 
@@ -785,7 +825,7 @@ namespace aris::plan {
 			imp_->smooth_min_accs_, imp_->smooth_max_accs_,
 			imp_->smooth_min_jerks_, imp_->smooth_max_jerks_,
 			0.005,1.0,-100.0,100.0,-10000.0,10000.0,
-			s1 - s0, s2 - s1, s3 - s2,
+			(s1 - s0)/u_diff, (s2 - s1) / u_diff, (s3 - s2)/u_diff,
 			p0, p1, p2, p3,
 			imp_->target_ds_
 		};
@@ -793,38 +833,51 @@ namespace aris::plan {
 		s_smooth_curve4(param, smooth_ret);
 
 		
-		auto ds2 = s2 - s1;
-		auto ds3 = s3 - s2;
-		auto d2s3 = ds3 - ds2;
+		auto ds2 = (s2 - s1) / u_diff;
+		auto ds3 = (s3 - s2) / u_diff;
+		auto d2s3 = (ds3 - ds2) / u_diff;
 
 		auto d3s4 = smooth_ret.d3s_rhs_all;
 		
 		auto d2s4 = d2s3 + d3s4 * u_diff;
-		auto ds4 = ds3 + d2s4 * u_diff;
+		auto ds4 = std::max(ds3 + d2s4 * u_diff, 0.005);
 		s4 = s3 + ds4 * u_diff;
 
-		auto ret = imp_->tg_->getEePosByS(s4, imp_->output_pos_);
+		cmd_id4 = imp_->tg_->getEePosByS(s4, imp_->output_pos_);
 		imp_->model_->inverseKinematics(imp_->output_pos_, p4, imp_->model_->inverseRootNumber());
 
 		if (imp_->test_future_plan_success() == 0) {
-
+			//std::cout << "success:" << s4 << std::endl;
 
 		}
 		else {
-			
+			d3s4 = smooth_ret.d3s_lhs_all;
+
+			d2s4 = d2s3 + d3s4 * u_diff;
+			ds4 = std::max(ds3 + d2s4 * u_diff, 0.005);
+			s4 = s3 + ds4 * u_diff;
+
+			cmd_id4 = imp_->tg_->getEePosByS(s4, imp_->output_pos_);
+			imp_->model_->inverseKinematics(imp_->output_pos_, p4, imp_->model_->inverseRootNumber());
+
+			std::cout << "failed:" << s4 <<"  ds:" << ds4  << "  ret:" << imp_->current_cmd_id_ << std::endl;
 		}
+
+		if(cmd_id4 == 0)
+			std::cout << "  ret2:" << imp_->current_cmd_id_ << std::endl;
 
 		//imp_->u3_ = std::min(imp_->u3_, imp_->u2_ + 100 * s_diff);
 		//imp_->u3_ = std::max(imp_->u3_, imp_->u2_ + s_diff);
 
 		//imp_->su_series_.push_back({ imp_->s3_, imp_->u3_ });
-
-		return ret;
+		imp_->p_push_idx_ += 1;
+		return imp_->current_cmd_id_;
 	}
 	auto LookAheadProcessor::lookAhead(double s_begin) -> int {
 		
-		while (lookAheadOneStep())
+		while ((imp_->p_push_idx_ - imp_->p_pop_idx_ + imp_->p_mem_size_) % imp_->p_mem_size_ > 0)
 		{
+			lookAheadOneStep();
 			//if (imp_->s3_ > 1.5)
 			//	std::cout << "debug" << std::endl;
 			//std::cout << "su:" <<imp_->s3_ <<"   " << imp_->u3_ << std::endl;
@@ -939,7 +992,10 @@ namespace aris::plan {
 		core::allocMem(mem_size, imp_->input_acc_min_consider_ratio_, imp_->input_size_);
 		core::allocMem(mem_size, imp_->output_pos_, imp_->input_size_);
 		//core::allocMem(mem_size, imp_->curve_params_, imp_->input_size_);
-		core::allocMem(mem_size, imp_->p_, imp_->input_size_*6);
+		core::allocMem(mem_size, imp_->p_, imp_->input_size_ * imp_->p_mem_size_);
+		core::allocMem(mem_size, imp_->u_, imp_->p_mem_size_);
+		core::allocMem(mem_size, imp_->s_, imp_->p_mem_size_);
+		core::allocMem(mem_size, imp_->cmd_ids_, imp_->p_mem_size_);
 		core::allocMem(mem_size, imp_->Ts_count_, imp_->input_size_ * 3);
 
 		imp_->mem_.resize(mem_size, char(0));
@@ -977,6 +1033,9 @@ namespace aris::plan {
 		imp_->output_pos_ = core::getMem(imp_->mem_.data(), imp_->output_pos_);
 		//imp_->curve_params_ = core::getMem(imp_->mem_.data(), imp_->curve_params_);
 		imp_->p_ = core::getMem(imp_->mem_.data(), imp_->p_);
+		imp_->u_ = core::getMem(imp_->mem_.data(), imp_->u_);
+		imp_->s_ = core::getMem(imp_->mem_.data(), imp_->s_);
+		imp_->cmd_ids_ = core::getMem(imp_->mem_.data(), imp_->cmd_ids_);
 		imp_->Ts_count_ = core::getMem(imp_->mem_.data(), imp_->Ts_count_);
 
 		std::fill_n(imp_->max_poss_, imp_->input_size_, 1e10);
@@ -1003,14 +1062,15 @@ namespace aris::plan {
 	auto LookAheadProcessor::init()->void {
 		double s_diff = imp_->tg_->dt();
 
-		imp_->s_idx_ = 0;
+		imp_->p_pop_idx_ = 0;
 		for (int i = 0; i < 5; ++i) {
 			imp_->s_[i] = i * s_diff * 0.5;
 			imp_->u_[i] = i * s_diff;
-			imp_->tg_->getEePosByS(imp_->s_[i], imp_->output_pos_);
+			imp_->cmd_ids_[i] = imp_->tg_->getEePosByS(imp_->s_[i], imp_->output_pos_);
+
 			imp_->model_->inverseKinematics(imp_->output_pos_, imp_->p_ + i*imp_->input_size_, imp_->model_->inverseRootNumber());
 		}
-
+		imp_->p_push_idx_ = 5;
 
 		//imp_->su_series_.clear();
 		//imp_->su_series_.push_back({ imp_->s0_, imp_->u0_ });
@@ -1019,6 +1079,24 @@ namespace aris::plan {
 		//imp_->su_series_.push_back({ imp_->s3_, imp_->u3_ });
 		//imp_->su_series_.push_back({ imp_->s4_, imp_->u4_ });
 		//imp_->su_series_.push_back({ imp_->s5_, imp_->u5_ });
+	}
+	auto LookAheadProcessor::getNextInput(double* p) -> int {
+		auto cmd_id = imp_->cmd_ids_[imp_->p_pop_idx_];
+		
+		std::copy_n(imp_->p_ + imp_->p_pop_idx_ * imp_->input_size_, imp_->input_size_, p);
+		imp_->p_pop_idx_ = (imp_->p_pop_idx_ + 1)%imp_->p_mem_size_;
+
+		
+		static int count_ = 0;
+		if (count_++ < 3000) {
+			std::cout << "count:" << count_ << " s:" << imp_->s_[imp_->p_pop_idx_] << std::endl;
+		
+		}
+
+		// left planed num: 
+		// (imp_->p_push_idx_ - imp_->p_pop_idx_)%imp_->p_mem_size_
+
+		return cmd_id;
 	}
 	auto LookAheadProcessor::setDs(double ds)->void {
 		imp_->ds3_ = imp_->ds2_ = imp_->ds1_ = ds;
@@ -1068,6 +1146,33 @@ namespace aris::plan {
 	//   n-1    o      n        
 	//          |
 	//   n      o      n       【end】
+	// 关于 tg 的并发：
+	//
+	// tg 中包含一系列 node ：
+	// 
+	//             next node              
+	// 
+	//   0      o      NULL    【begin】
+	//                  
+	//   1      o      NULL    
+	// 
+	//   ...    ...    ...
+	//                   
+	// 	 m-1    o      NULL   
+	// 
+	//   m      o      m+1     【current】   
+	//          |
+	//   m+1    o      m+2
+	//          |
+	//   m+2    o      m+3
+	// 
+	//   ...    ...    ...
+	//
+	//   n-1    o      n        
+	//          |
+	//   n      o      n       【end】
+
+
 	struct TimeOptimalTrajectoryGenerator::Imp {
 		// 时间参数 //
 		double dt_{ 0.001 };

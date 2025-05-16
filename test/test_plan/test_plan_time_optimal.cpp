@@ -206,9 +206,9 @@ auto test_time_optimal_processor_1()->void {
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
-	double out_vel[16]{}, out_acc[16]{}, ee_pos[16];
+	double out_vel[16]{}, out_acc[16]{}, ee_pos[16], input_pos[6];
 	double s = 0;
-	while (auto ret = tg.getEePosByS(s, ee_pos)) {
+	while (auto ret = sp.getNextInput(input_pos)) {
 		static auto last_ret = -1;
 		if (ret != last_ret) {
 			std::cout << "cmd:" << ret << std::endl;
@@ -217,7 +217,7 @@ auto test_time_optimal_processor_1()->void {
 		
 		//std::cout << "s:" << s << std::endl;
 
-		s += 0.001;
+		//s += 0.001;
 		m++;
 
 		//if (m > 3000 && m < 6000)
@@ -229,15 +229,17 @@ auto test_time_optimal_processor_1()->void {
 		//	std::cout << "debug" << std::endl;
 		//}
 
-
+		sp.lookAhead(0.0);
 
 		vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
-		v_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
-		a_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
+		std::copy_n(input_pos, 6, vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 		
-		puma->setOutputPos(ee_pos);
-		puma->inverseKinematics();
-		puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
+		//v_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
+		//a_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
+		
+		//puma->setOutputPos(ee_pos);
+		//puma->inverseKinematics();
+		//puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 	}
 
 	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "D:\\Private\\mcode\\smooth\\pes.txt");

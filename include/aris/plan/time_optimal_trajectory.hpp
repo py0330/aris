@@ -94,7 +94,7 @@ namespace aris::plan{
 
 		auto lookAheadOneStep() -> int;
 		auto lookAhead(double s_begin) -> int;
-
+		auto getNextInput(double* p) -> int;
 
 		// 设置速度百分比，类似 TG 中 setTargetDs
 		// 用以下参数后，不能再设置tg中的对应参数

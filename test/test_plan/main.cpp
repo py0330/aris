@@ -61,8 +61,10 @@ int main(int argc, char *argv[]){
 	//test_move_follower();
 	//test_function();
 	//test_time_optimal();
-	//test_singular_processor();
-	test_trajectory();
+	test_singular_processor();
+	return 0;
+	
+	//test_trajectory();
 	
 
 	//test_scurve();

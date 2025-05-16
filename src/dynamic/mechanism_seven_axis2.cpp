@@ -432,13 +432,28 @@ namespace aris::dynamic
 		double ee_pos[17]{}, root_mem[7]{};
 
 		switch (imp_->EE->poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, ee_pos, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, ee_pos, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, ee_pos, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, ee_pos); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, ee_pos); break;
+		case GeneralMotion::PoseType::EULER123:
+			s_pe2pm(output, ee_pos, "123");
+			ee_pos[16] = output[6];
+			break;
+		case GeneralMotion::PoseType::EULER321:
+			s_pe2pm(output, ee_pos, "321");
+			ee_pos[16] = output[6];
+			break;
+		case GeneralMotion::PoseType::EULER313:
+			s_pe2pm(output, ee_pos, "313");
+			ee_pos[16] = output[6];
+			break;
+		case GeneralMotion::PoseType::QUATERNION:
+			s_pq2pm(output, ee_pos);
+			ee_pos[16] = output[7];
+			break;
+		case GeneralMotion::PoseType::POSE_MATRIX:
+			s_vc(16, output, ee_pos);
+			ee_pos[16] = output[16];
+			break;
 		}
-		ee_pos[16] = *this->model()->generalMotionPool()[1].p();
+		
 
 		constexpr double input_period[7]{
 			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,
