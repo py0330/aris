@@ -1,4 +1,6 @@
 ﻿#include <aris/dynamic/math_matrix.hpp>
+#include <aris/dynamic/math_interval.hpp>
+#include <aris/dynamic/math_poly.hpp>
 #include <aris/dynamic/math_spline.hpp>
 #include <aris/dynamic/math_optimization.hpp>
 #include <aris/dynamic/math_solver.hpp>

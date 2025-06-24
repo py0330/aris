@@ -171,7 +171,6 @@ elseif(WIN32)
 	
 endif()
 
-
 ################################### build tests for aris ####################################
 option(BUILD_TESTS "build aris tests" OFF)
 if(BUILD_TESTS)

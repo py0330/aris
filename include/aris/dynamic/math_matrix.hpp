@@ -1425,8 +1425,7 @@ namespace aris::dynamic{
 	//    p : max(m,n) x 1
 	//    x :        n x m
 	template<typename UType, typename XType>
-	auto inline s_householder_up2pinv(aris::Size m, aris::Size n, aris::Size rank, const double* U, UType u_t, const aris::Size* p, double* x, XType x_t, double zero_check = 1e-10)noexcept->void
-	{
+	auto inline s_householder_up2pinv(aris::Size m, aris::Size n, aris::Size rank, const double* U, UType u_t, const aris::Size* p, double* x, XType x_t, double zero_check = 1e-10)noexcept->void{
 		// X 是 A 的 moore penrose 逆，为 n x m 维
 		//
 		// A 的qr分解:
@@ -1657,6 +1656,367 @@ namespace aris::dynamic{
 		s_permutate_inv(n, m, p, x, x_t);
 	}
 	auto inline s_householder_up2pinv(aris::Size m, aris::Size n, aris::Size rank, const double* U, const aris::Size* p, double* x, double zero_check = 1e-10)noexcept->void { s_householder_up2pinv(m, n, rank, U, n, p, x, m, zero_check); }
+
+
+	// G = [  c s  ]
+	//     [ -s c  ]
+	//
+	// find theta that 
+	// 
+	// G * [ p ] = [ k ]
+	//     [ q ]   [ 0 ]
+	//
+	auto inline s_givens_make(double p, double q, double& theta) {
+		theta = std::atan2(q, p);
+	}
+
+	// G = [  c s  ]
+	//     [ -s c  ]
+	//
+	// np1 equals n-1
+	// 
+	// A = [ a00   a01   ... a0np1   ] 
+	//     | a10   a11   ... a1np1   | 
+	//     | ...   ...       ...     |
+	//     | ai0   ai1   ... ainp1   |
+	//     | ...   ...       ...     |
+	//     | aj0   aj1   ... ajnp1   |   
+	//     | ...   ...       ...     |
+	//     [ anp10 anp11 ... anp1np1 ] 
+	// 
+	// [aik_new] = [  c*aik + s*ajk ]
+	// [ajk_new]   [ -s*aik + c*ajk ]
+	//
+	template<typename AType>
+	auto inline s_givens_apply(Size n, Size ai, Size aj, double theta, double* A, AType a_t) {
+		double c = std::cos(theta);
+		double s = std::sin(theta);
+
+		for (Size k = 0; k < n; ++k) {
+			double Aik = A[at(ai, k, a_t)];
+			double Ajk = A[at(aj, k, a_t)];
+
+			A[at(ai, k, a_t)] = c * Aik + s * Ajk;
+			A[at(aj, k, a_t)] = -s * Aik + c * Ajk;
+		}
+	}
+
+	template<typename AType, typename HType>
+	auto inline s_householder_make(Size m, const double* A, AType a_t, double* h, HType h_t, double& tau, double zero_check = 1e-10) {
+		if (A != h)
+			s_mc(m, 1, A, a_t, h, h_t);
+
+		double rho = -s_norm(m, h, h_t) * s_sgn2(h[0]);
+		if (std::abs(rho) > zero_check) {
+			tau = h[0] / rho - 1.0;
+			s_nv(m - 1, 1.0 / (h[0] - rho), h + next_r(0, h_t), h_t);
+			h[0] = rho;
+		}
+		else {
+			tau = -2.0;
+		}
+	}
+
+	//
+	// B = Q(h,tau) * A 
+	//
+	template<typename HType, typename AType, typename BType>
+	auto inline s_householder_apply(Size m, Size n, const double* h, HType h_t, const double* A, AType a_t, double* x, BType x_t, double& tau) {
+		if (A != x)
+			s_mc(m, n, A, a_t, x, x_t);
+
+		auto h1 = h + next_r(0, h_t);
+		for (Size j(-1), x0j{ 0 }; ++j < n; x0j = next_c(x0j, x_t)) {
+			auto X1j = x + next_r(x0j, x_t);
+
+			double k = tau * (x[x0j] + s_vv(m - 1, h1, h_t, X1j, x_t));
+			x[x0j] += k;
+			s_ma(m - 1, 1, k, h1, h_t, X1j, x_t);
+		}
+	}
+
+	// get hessenberg
+	//
+	// A = U * H * U^T
+	template<typename AType, typename UType, typename HType>
+	auto inline s_hessenberg(Size m, const double* A, AType a_t, double* H, HType h_t, double* U, UType u_t, double zero_check = 1e-10)->void {
+		if (A != H)
+			s_mc(m, m, A, a_t, H, h_t);
+
+		if (U)
+			s_eye(m, U, u_t);
+
+		// 这里防止 m - 1 变成 -1（既最大）
+		for (Size i(-1), h_ip1_i{ next_r(0, h_t) }, u_1_ip1{ next_d(0, u_t) }; ++i < std::min({ m - 2, m - 1, m }); h_ip1_i = next_d(h_ip1_i, h_t), u_1_ip1 = next_c(u_1_ip1, u_t)) {
+			// make householder vector //
+			double tau;
+			s_householder_make(m - i - 1, H + h_ip1_i, h_t, H + h_ip1_i, h_t, tau, zero_check);
+
+			if (std::abs(H[h_ip1_i]) > zero_check) {
+				// make H //
+				s_householder_apply(m - i - 1, m - i - 1, H + h_ip1_i, h_t, H + next_c(h_ip1_i, h_t), h_t, H + next_c(h_ip1_i, h_t), h_t, tau);
+				s_householder_apply(m - i - 1, m, H + h_ip1_i, h_t, H + at(0, i + 1, h_t), T(h_t), H + at(0, i + 1, h_t), T(h_t), tau);
+
+				// make U //
+				if (U)
+					s_householder_apply(m - i - 1, m - 1, H + h_ip1_i, h_t, U + u_1_ip1, T(u_t), U + u_1_ip1, T(u_t), tau);
+			}
+
+			// clear householde vector //
+			s_fill(m - i - 2, 1, 0.0, H + next_r(h_ip1_i, h_t), h_t);
+		}
+	}
+	auto inline s_hessenberg(Size m, const double* A, double* H, double* U, double zero_check = 1e-10)->void {
+		return s_hessenberg(m, A, m, H, m, U, m, zero_check);
+	}
+
+
+	// get schur from hessenberg matrix
+	template<typename HType, typename TType, typename UType>
+	auto inline s_schur(Size m, const double* H, HType h_t, double* T, TType t_t, double* U, UType u_t, aris::Size max_iter = 100, double zero_check = 1e-10)noexcept->int {
+		auto find_small_subdiag_entry = [](Size iu, double* T, TType t_t, double zero_check)->Size {
+			Size ret = iu;
+			while (ret > 0) {
+				double s = std::abs(T[at(ret - 1, ret - 1, t_t)]) + std::abs(T[at(ret, ret, t_t)]);
+				s = std::max(s * std::numeric_limits<double>::epsilon(), zero_check);
+
+				if (std::abs(T[at(ret, ret - 1, t_t)]) <= s)
+					break;
+
+				ret--;
+			}
+			return ret;
+			};
+		auto split_off_two_rows = [](Size m, Size iu, double* T, TType t_t, double* U, UType u_t, double exshift)->void {
+			const Size size = m;
+
+			// The eigenvalues of the 2x2 matrix [a b; c d] are 
+			// trace +/- sqrt(discr/4) where discr = tr^2 - 4*det, tr = a + d, det = ad - bc
+
+			auto& T_iup1_iup1 = T[at(iu - 1, iu - 1, t_t)];
+			auto& T_iu_iu = T[at(iu, iu, t_t)];
+			auto& T_iu_iup1 = T[at(iu, iu - 1, t_t)];
+			auto& T_iup1_iu = T[at(iu - 1, iu, t_t)];
+
+			double p = double(0.5) * (T_iup1_iup1 - T_iu_iu);
+			double q = p * p + T_iu_iup1 * T_iup1_iu;   // q = tr^2 / 4 - det = discr/4
+			T_iu_iu += exshift;
+			T_iup1_iup1 += exshift;
+
+			if (q >= double(0)) { // Two real eigenvalues
+				double z = std::sqrt(std::abs(q));
+
+				double theta;
+				s_givens_make(p >= 0.0 ? p + z : p - z, T[at(iu, iu - 1, t_t)], theta);
+				s_givens_apply(m - iu + 1, 0, 1, theta, T + at(iu - 1, iu - 1, t_t), t_t);
+				s_givens_apply(iu + 1, 0, 1, theta, T + at(0, iu - 1, t_t), aris::dynamic::T(t_t));
+
+				if (U) {
+					s_givens_apply(m, iu - 1, iu, theta, U, aris::dynamic::T(u_t));
+				}
+			}
+
+			if (iu > 1)
+				T[at(iu - 1, iu - 2, t_t)] = double(0);
+			};
+		auto compute_shift = [](Size iu, Size iter, double* T, TType t_t, double& exshift, double* shift_info)->void {
+
+			auto T_iu_iu = T[at(iu, iu, t_t)];
+			auto T_iup1_iu = T[at(iu - 1, iu, t_t)];
+			auto T_iu_iup1 = T[at(iu, iu - 1, t_t)];
+			auto T_iup1_iup1 = T[at(iu - 1, iu - 1, t_t)];
+
+			shift_info[0] = T_iu_iu;
+			shift_info[1] = T_iup1_iup1;
+			shift_info[2] = T_iup1_iu * T_iu_iup1;
+
+			// Wilkinson's original ad hoc shift
+			if (iter == 10)
+			{
+				exshift += shift_info[0];
+				for (Size i = 0; i <= iu; ++i)
+					T[at(i, i, t_t)] -= shift_info[0];
+				double s = std::abs(T_iu_iup1) + std::abs(T[at(iu - 1, iu - 2, t_t)]);
+				shift_info[0] = double(0.75) * s;
+				shift_info[1] = double(0.75) * s;
+				shift_info[2] = double(-0.4375) * s * s;
+			}
+
+			// MATLAB's new ad hoc shift
+			if (iter == 30)
+			{
+				double s = (shift_info[1] - shift_info[0]) / double(2.0);
+				s = s * s + shift_info[2];
+				if (s > double(0)) {
+					s = std::sqrt(s);
+					if (shift_info[1] < shift_info[0])
+						s = -s;
+					s = s + (shift_info[1] - shift_info[0]) / double(2.0);
+					s = shift_info[0] - shift_info[2] / s;
+					exshift += s;
+					for (Size i = 0; i <= iu; ++i)
+						T[at(i, i, t_t)] -= s;
+
+					std::fill_n(shift_info, 3, 0.964);
+				}
+			}
+			};
+		auto init_francis_QR_step = [](Size il, Size iu, const double* shiftInfo, const double* T, TType t_t, Size& im, double* firstHouseholderVector) {
+			auto v = firstHouseholderVector; // alias to save typing
+
+			for (im = iu - 2; im >= il; --im) {
+				const double Tmm = T[at(im, im, t_t)];
+				const double r = shiftInfo[0] - Tmm;
+				const double s = shiftInfo[1] - Tmm;
+				v[0] = (r * s - shiftInfo[2]) / T[at(im + 1, im, t_t)] + T[at(im, im + 1, t_t)];
+				v[1] = T[at(im + 1, im + 1, t_t)] - Tmm - r - s;
+				v[2] = T[at(im + 2, im + 1, t_t)];
+				if (im == il) {
+					break;
+				}
+				const double lhs = T[at(im, im - 1, t_t)] * (std::abs(v[1]) + std::abs(v[2]));
+				const double rhs = v[0] * (std::abs(T[at(im - 1, im - 1, t_t)]) + std::abs(Tmm) + std::abs(T[at(im + 1, im + 1, t_t)]));
+				if (std::abs(lhs) < std::numeric_limits<double>::epsilon() * rhs)
+					break;
+			}
+			};
+		auto perform_francis_QR_step = [](Size m, Size il, Size& im, Size iu, double* T, TType t_t, double* U, UType u_t, double* firstHouseholderVector) {
+			for (Size k = im; k <= iu - 2; ++k) {
+				bool firstIteration = (k == im);
+
+				double v[3];
+				if (firstIteration)
+					s_vc(3, firstHouseholderVector, v);
+				else
+					s_mc(3, 1, T + at(k, k - 1, t_t), t_t, v, 1);
+
+				double tau;
+				double h[3];
+				s_householder_make(3, v, 1, h, 1, tau);
+
+				///////////////////////////////////////////////////////////////////
+				if (h[0] != double(0)) { // if v is not zero
+
+					if (firstIteration && k > il)
+						T[at(k, k - 1, t_t)] = -T[at(k, k - 1, t_t)];
+					else if (!firstIteration)
+						T[at(k, k - 1, t_t)] = h[0];
+
+					// These Householder transformations form the O(n^3) part of the algorithm
+					s_householder_apply(3, m - k, h, 1, T + at(k, k, t_t), t_t, T + at(k, k, t_t), t_t, tau);
+					s_householder_apply(3, std::min(iu, k + 3) + 1, h, 1, T + at(0, k, t_t), aris::dynamic::T(t_t), T + at(0, k, t_t), aris::dynamic::T(t_t), tau);
+					if (U)
+						s_householder_apply(3, m, h, 1, U + at(0, k, u_t), aris::dynamic::T(u_t), U + at(0, k, u_t), aris::dynamic::T(u_t), tau);
+				}
+			}
+
+			double tau;
+			double h[2];
+			s_householder_make(2, T + at(iu - 1, iu - 2, t_t), t_t, h, 1, tau);
+
+			if (h[0] != double(0)) { // if v is not zero
+				T[at(iu - 1, iu - 2, t_t)] = h[0];
+
+				s_householder_apply(2, m - iu + 1, h, 1, T + at(iu - 1, iu - 1, t_t), t_t, T + at(iu - 1, iu - 1, t_t), t_t, tau);
+				s_householder_apply(2, iu + 1, h, 1, T + at(0, iu - 1, t_t), aris::dynamic::T(t_t), T + at(0, iu - 1, t_t), aris::dynamic::T(t_t), tau);
+
+				if (U)
+					s_householder_apply(2, m, h, 1, U + at(0, iu - 1, u_t), aris::dynamic::T(u_t), U + at(0, iu - 1, u_t), aris::dynamic::T(u_t), tau);
+			}
+
+			// clean up pollution due to round-off errors
+			for (Size i = im + 2; i <= iu; ++i) {
+				T[at(i, i - 2, t_t)] = double(0);
+				if (i > im + 2)
+					T[at(i, i - 3, t_t)] = double(0);
+			}
+			};
+
+
+		/////////////////////////////////////////////////////////////////////////  BEGIN /////////////////////////////////////////////
+
+		s_mc(m, m, H, h_t, T, t_t);
+
+
+		// The matrix m_matT is divided in three parts. 
+		// Rows 0,...,il-1 are decoupled from the rest because m_matT(il,il-1) is zero. 
+		// Rows il,...,iu is the part we are working on (the active window).
+		// Rows iu+1,...,end are already brought in triangular form.
+		Size iu = m - 1;
+		Size iter = 0;
+		Size totalIter = 0;
+
+		double exshift = 0.0;
+
+		while (iu >= 0 && iu <= m) {
+
+			Size il = find_small_subdiag_entry(iu, T, t_t, zero_check);
+
+			// Check for convergence
+			if (il == iu) { // One root found
+				T[at(iu, iu, t_t)] += exshift;
+				if (iu > 0 && iu <= m)
+					T[at(iu, iu - 1, t_t)] = 0.0;
+				iu--;
+				iter = 0;
+			}
+			else if (il == iu - 1) { // Two roots found
+				split_off_two_rows(m, iu, T, t_t, U, u_t, exshift);
+				iu -= 2;
+				iter = 0;
+			}
+			else // No convergence yet
+			{
+				// The firstHouseholderVector vector has to be initialized to something to get rid of a silly GCC warning (-O1 -Wall -DNDEBUG )
+				//Vector3s firstHouseholderVector = Vector3s::Zero(), shiftInfo;
+				//computeShift(iu, iter, exshift, shiftInfo);
+				//iter = iter + 1;
+				//totalIter = totalIter + 1;
+				//if (totalIter > maxIters) break;
+				//Size im;
+				//initFrancisQRStep(il, iu, shiftInfo, im, firstHouseholderVector);
+				//performFrancisQRStep(il, im, iu, computeU, firstHouseholderVector, workspace);
+				double first_householder_vec[3]{ 0.0, 0.0, 0.0 }, shift_info[3];
+				compute_shift(iu, iter, T, t_t, exshift, shift_info);
+				iter = iter + 1;
+				totalIter = totalIter + 1;
+				Size im;
+
+				//std::cout << "shift info:" << std::endl;
+				//aris::dynamic::dsp(3, 1, shift_info, 1);
+
+
+				init_francis_QR_step(il, iu, shift_info, T, t_t, im, first_householder_vec);
+				perform_francis_QR_step(m, il, im, iu, T, t_t, U, u_t, first_householder_vec);
+
+				//std::cout << "iter res:" << iter << std::endl;
+				//aris::dynamic::dsp(m, m, T, t_t);
+
+			}
+		}
+
+		return (totalIter <= max_iter) ? 0 : totalIter;
+	}
+	auto inline s_schur(Size m, const double* H, double* T, double* U, aris::Size max_iter = 100, double zero_check = 1e-10)noexcept->int {
+		return s_schur(m, H, m, T, m, U, m, max_iter, zero_check);
+	}
+
+
+	//
+	// get eigen decomposition
+	//
+	// A = U * E * U^T
+	// 
+	// where E is schur decomposition
+	template<typename AType, typename UType, typename EType>
+	auto inline s_eigen(Size m, const double* A, AType a_t, double* E, EType e_t, double* U, UType u_t, double zero_check = 1e-10)->void {
+		s_hessenberg(m, A, a_t, E, e_t, U, u_t, zero_check);
+		s_schur(m, E, e_t, E, e_t, U, u_t, 100, zero_check);
+	}
+	auto inline s_eigen(Size m, const double* A, double* E, double* U, double zero_check = 1e-10)->void {
+		return s_eigen(m, A, m, E, m, U, m, zero_check);
+	}
+
 
 
 	//#define ARIS_DEBUG_DYNAMIC_SVD
@@ -3152,7 +3512,6 @@ namespace aris::dynamic{
 		s_svd(m, n, A, n, U, m, S, n, V, n, zero_check);
 	}
 
-
 	// The problem is in the form:
 	//
 	// min 0.5 x G x + g0 x
@@ -3177,19 +3536,6 @@ namespace aris::dynamic{
 		const double* CE, const double* ce,
 		const double* CI, const double* ci,
 		double* x, double *mem)->double;
-
-	// not support //
-	auto ARIS_API s_qp(Size nG, Size nCE, Size nCI,
-		const double* G, const double* g,
-		const double* CE, const double* ce,
-		const double* CI, const double* ci,
-		double* x)->double;
-	// not support //
-	auto ARIS_API s_qp3(Size nG, Size nCE, Size nCI,
-		double* G, const double* g0,
-		const double* CE, const double* ce0,
-		const double* CI, const double* ci0,
-		double* x)->double;
 
 	// find plane using point clouds //
 	//    n : point number

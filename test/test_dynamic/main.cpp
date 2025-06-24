@@ -1,5 +1,7 @@
 ﻿#include <iostream>
 #include "test_dynamic_matrix.h"
+#include "test_math_poly.h"
+#include "test_math_interval.h"
 #include "test_dynamic_optimization.h"
 #include "test_dynamic_pose.h"
 #include "test_dynamic_screw.h"
@@ -25,11 +27,14 @@
 int main(int argc, char *argv[])
 {
 	//test_matrix();
+	test_poly();
+	//test_interval();
 	//test_optimization();
-	test_pose();
-	test_screw();
-	test_spline();
-	test_plan();
+	//test_pose();
+	//test_screw();
+	//test_spline();
+	// 
+	//test_plan();
 	//test_model();
 	//test_model_coordinate();
 	//test_model_interaction();

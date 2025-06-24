@@ -17,7 +17,7 @@ File $Id: QuadProg++.cc 232 2007-06-21 12:29:00Z digasper $
 #include <limits>
 #include <sstream>
 #include <stdexcept>
-#include "aris/ext/QuadProg++.hh"
+#include "QuadProg++.hh"
 #include "aris/dynamic/math_matrix.hpp"
 
 
