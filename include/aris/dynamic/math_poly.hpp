@@ -31,7 +31,24 @@ namespace aris::dynamic {
 	// mem should be n*n
 	// 
 	// return solution num
-	auto ARIS_API s_polyn_solve(Size n, const double *k, double* x, double* mem, double zero_check = 1e-10) -> int;
+	auto ARIS_API s_poly_solve(Size n, const double *k, double* x, double* mem, double zero_check = 1e-10) -> int;
+
+	// 
+	// 
+	// solve 
+	// 
+	// (f[0]*x^m + ... f[m-1]*x + fm) / (g[0]*x^n + ... g[n-1]*x + gn) < 0
+	// 
+	// give x:
+	// [ l1 r1 ]
+	// | l2 r2 |
+	// |  ...  |
+	// [ lk rk ]
+	// 
+	// return interval num
+	//
+	// x should be larger than (m + n)*2
+	auto ARIS_API s_poly_ieq_solve(Size m, Size n, const double* f, const double* g, double* x, double* mem, double zero_check = 1e-10) -> int;
 }
 
 #endif

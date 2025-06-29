@@ -113,14 +113,14 @@ namespace aris::dynamic{
 
 	// 
 	// mem should be n * n
-	auto ARIS_API s_polyn_solve(Size n, const double* k, double* x, double *mem, double zero_check) -> int {
+	auto ARIS_API s_poly_solve(Size n, const double* k, double* x, double *mem, double zero_check) -> int {
 		double* A = mem;
 
 		if (n == 0) 
 			return 0;
 		
 		if (std::abs(k[0]) < zero_check)
-			return s_polyn_solve(n - 1, k + 1, x, mem, zero_check);
+			return s_poly_solve(n - 1, k + 1, x, mem, zero_check);
 
 		if (n == 1) {
 			x[0] = -k[1] / k[0];
@@ -135,7 +135,7 @@ namespace aris::dynamic{
 		s_fill(n - 1, n, 0.0, A + n);
 		s_eye(n - 1, A + n, n);
 
-		s_eigen(n, A, A, nullptr, zero_check);
+		s_schur(n, A, A, nullptr, zero_check);
 
 		// find roots //
 		int root_num = 0;
@@ -158,6 +158,26 @@ namespace aris::dynamic{
 		std::sort(x, x + root_num);
 
 		return root_num;
+	}
+
+	// mem should be max(m,n) * max(m,n)
+	auto ARIS_API s_poly_ieq_solve(Size m, Size n, const double* f, const double* g, double* x, double* mem, double zero_check) -> int {
+		
+		// get real m and n
+		Size real_m = m, real_n = n;
+		for (int i = 0; std::abs(f[i]) <= zero_check && i < m; real_m--);
+		for (int i = 0; std::abs(g[i]) <= zero_check && i < n; real_n--);
+
+		f = f + (m - real_m);
+		g = g + (n - real_n);
+		m = real_m;
+		n = real_n;
+
+		auto up_solution_num = s_poly_solve(real_m, f, x, mem, zero_check);
+		auto down_solution_num = s_poly_solve(real_n, g, x + 2*m, mem, zero_check);
+
+
+		return 0;
 	}
 
 

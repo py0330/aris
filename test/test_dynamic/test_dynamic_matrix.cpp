@@ -1915,13 +1915,6 @@ void test_schur() {
 				s_eye(m, U, u_t);
 				s_schur(m, H, h_t, E, e_t, U, u_t);
 
-
-				//std::cout << "------------------------" << std::endl;
-				//dsp(m, m, U, u_t);
-				//dsp(m, m, E, e_t);
-				//std::cout << "------------------------ end" << std::endl;
-				//dsp(m, m, H, h_t);
-
 				// verify result //
 
 				// check U * E * U^T == H //

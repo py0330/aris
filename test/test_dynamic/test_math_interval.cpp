@@ -59,13 +59,22 @@ void test_interval_intersect() {
 		std::exit(0);
 	}
 
+	size_c = s_interval_intersect(size_a - 1, set_a, size_b, set_b, result);
+
+	if (size_c != 6 || (!s_is_equal(size_c, 2, set_c, result, 1e-10))) {
+		std::cout << "test_interval_intersect error:multiply error!" << std::endl;
+		dsp(size_c, 2, result);
+		dsp(size_c, 2, set_c);
+		std::exit(0);
+	}
+
 }
 
 
 void test_interval(){
-	std::cout << std::endl << "-----------------test poly--------------------" << std::endl;
+	std::cout << std::endl << "-----------------test intervals--------------------" << std::endl;
 
 	test_interval_intersect();
 
-	std::cout << "-----------------test poly finished-----------" << std::endl << std::endl;
+	std::cout << "-----------------test intervals finished-----------" << std::endl << std::endl;
 }

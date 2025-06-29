@@ -704,8 +704,7 @@ namespace aris::server{
 
 		raii_collector.reset();
 	}
-	auto ControlServer::stop()->void
-	{
+	auto ControlServer::stop()->void{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)THROW_FILE_LINE("failed to stop server, because it is not running");
 		imp_->is_running_ = false;

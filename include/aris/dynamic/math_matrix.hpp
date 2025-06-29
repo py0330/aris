@@ -1786,7 +1786,7 @@ namespace aris::dynamic{
 				ret--;
 			}
 			return ret;
-			};
+		};
 		auto split_off_two_rows = [](Size m, Size iu, double* T, TType t_t, double* U, UType u_t, double exshift)->void {
 			const Size size = m;
 
@@ -1879,7 +1879,7 @@ namespace aris::dynamic{
 				if (std::abs(lhs) < std::numeric_limits<double>::epsilon() * rhs)
 					break;
 			}
-			};
+		};
 		auto perform_francis_QR_step = [](Size m, Size il, Size& im, Size iu, double* T, TType t_t, double* U, UType u_t, double* firstHouseholderVector) {
 			for (Size k = im; k <= iu - 2; ++k) {
 				bool firstIteration = (k == im);
@@ -1930,7 +1930,7 @@ namespace aris::dynamic{
 				if (i > im + 2)
 					T[at(i, i - 3, t_t)] = double(0);
 			}
-			};
+		};
 
 
 		/////////////////////////////////////////////////////////////////////////  BEGIN /////////////////////////////////////////////
@@ -1967,31 +1967,14 @@ namespace aris::dynamic{
 			}
 			else // No convergence yet
 			{
-				// The firstHouseholderVector vector has to be initialized to something to get rid of a silly GCC warning (-O1 -Wall -DNDEBUG )
-				//Vector3s firstHouseholderVector = Vector3s::Zero(), shiftInfo;
-				//computeShift(iu, iter, exshift, shiftInfo);
-				//iter = iter + 1;
-				//totalIter = totalIter + 1;
-				//if (totalIter > maxIters) break;
-				//Size im;
-				//initFrancisQRStep(il, iu, shiftInfo, im, firstHouseholderVector);
-				//performFrancisQRStep(il, im, iu, computeU, firstHouseholderVector, workspace);
 				double first_householder_vec[3]{ 0.0, 0.0, 0.0 }, shift_info[3];
 				compute_shift(iu, iter, T, t_t, exshift, shift_info);
 				iter = iter + 1;
 				totalIter = totalIter + 1;
 				Size im;
 
-				//std::cout << "shift info:" << std::endl;
-				//aris::dynamic::dsp(3, 1, shift_info, 1);
-
-
 				init_francis_QR_step(il, iu, shift_info, T, t_t, im, first_householder_vec);
 				perform_francis_QR_step(m, il, im, iu, T, t_t, U, u_t, first_householder_vec);
-
-				//std::cout << "iter res:" << iter << std::endl;
-				//aris::dynamic::dsp(m, m, T, t_t);
-
 			}
 		}
 

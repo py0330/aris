@@ -83,7 +83,7 @@ void test_polyn() {
 	double x[6]{ 0.0727452285777216,  0.374341805701567 };
 	double mem[36], result[6];
 	
-	auto ret = aris::dynamic::s_polyn_solve(6, k, result, mem);
+	auto ret = aris::dynamic::s_poly_solve(6, k, result, mem);
 
 	if (!s_is_equal(1, 2, result, x, 1e-10)) {
 		std::cout << "poly 6 error 1:multiply error!" << std::endl;
@@ -93,6 +93,24 @@ void test_polyn() {
 	}
 }
 
+void test_poly_ieq() {
+	
+	const double p1[]{1, 2, -1, 4, 8, -3, 2};
+	const double p2[]{ 3, 11, -15, 4 };
+	
+	double k[7]{ 0.3, -0.5, 1.2, 2.6, 6, -3.2, 0.2 };
+	double x[6]{ 0.0727452285777216,  0.374341805701567 };
+	double mem[36], result[6];
+
+	auto ret = aris::dynamic::s_poly_ieq_solve(6, 3, p1, p2, result, mem);
+
+	if (!s_is_equal(1, 2, result, x, 1e-10)) {
+		std::cout << "poly 6 error 1:multiply error!" << std::endl;
+		dsp(1, 2, x);
+		dsp(1, 2, result);
+		std::exit(0);
+	}
+}
 
 void test_poly(){
 	std::cout << std::endl << "-----------------test poly--------------------" << std::endl;

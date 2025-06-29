@@ -9,7 +9,7 @@ namespace aris::dynamic {
 	auto ARIS_API s_interval_intersect(Size m, const double* set_a, Size n, const double* set_b, double* set_c, double zero_check)->Size {
 
 		Size k = 0;
-		for (Size i = 0, j = 0; i + j < m + n;) {
+		for (Size i = 0, j = 0; i < m && j < n;) {
 			auto left_i = set_a[i*2];
 			auto right_i = set_a[i*2 + 1];
 			auto left_j = set_b[j*2];

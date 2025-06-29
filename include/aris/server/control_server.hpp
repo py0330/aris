@@ -28,7 +28,7 @@ namespace aris::server{
 	// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
 	// 1.   parse cmd list
 	//   1.1 ---   all success : goto 2   ---err_code : SUCCESS              ---err_msg : ""                ---plan : cloned
-	//   1.2 ---   any throw   : goto 5a  ---err_code :                      ---err_msg :                   ---plan : 
+	//   1.2 ---   any throw   : goto 5   ---err_code :                      ---err_msg :                   ---plan : 
 	//                              cmds_before_error : PREPARE_CANCELLED               : ""                        : cloned
 	//                                   cmd_at_error : PARSE_EXCEPTION                 : exception.what()          : default
 	//                               cmds_after_error :                                 : ""                        : default
