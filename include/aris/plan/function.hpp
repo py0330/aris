@@ -265,13 +265,13 @@ namespace aris::plan{
 					auto ldec = Tdec * (v_min + v1) / 2;
 					auto lacc = Tacc * (v_min + 0) / 2;
 					if (lacc + ldec >= pt - pa) {
-						total_count = Tacc + Tdec + (pt - pa - lacc - ldec) / v_min;
+						total_count = static_cast<Size>(Tacc + Tdec + (pt - pa - lacc - ldec) / v_min);
 					}
 					else {
 						auto v_max2 = -std::sqrt((pt - pa + v1 * v1 / (2 * a_min)) * 2 * a_min * a_max / (a_max - a_min));
 						auto Tacc2 = (v_max2 - v1) / a_min;
 						auto Tdec2 = (0 - v_max2) / a_max;
-						total_count = (Tacc2 + Tdec2) / dt - 2;
+						total_count = static_cast<Size>((Tacc2 + Tdec2) / dt - 2);
 					}
 
 					return 0;
@@ -298,7 +298,7 @@ namespace aris::plan{
 					auto lacc = Tacc * (v_max + va) / 2;
 					auto ldec = Tdec * (v_max + 0) / 2;
 					if (lacc + ldec <= pt - pa) {
-						total_count = Tacc + Tdec + (pt - pa - lacc - ldec)/v_max;
+						total_count = static_cast<Size>(Tacc + Tdec + (pt - pa - lacc - ldec)/v_max);
 					}
 					else {
 						//auto Tacc = (v_max - va) / a_max;
@@ -313,7 +313,7 @@ namespace aris::plan{
 						auto v_max2 = std::sqrt((pt - pa + va*va / (2 * a_max)) * 4 * a_max * a_min / (2 * a_min - 2 * a_max));
 						auto Tacc2 = (v_max2 - va) / a_max;
 						auto Tdec2 = (0 - v_max2) / a_min;
-						total_count = (Tacc2 + Tdec2)/dt - 1;
+						total_count = static_cast<Size>((Tacc2 + Tdec2)/dt - 1);
 					}
 					
 					
@@ -362,7 +362,7 @@ namespace aris::plan{
 				ac = (v_next - va) / dt;
 				vc = va + ac * dt;
 				pc = pa + vc * dt;
-				total_count = ndec2 + 1;
+				total_count = static_cast<Size>(ndec2 + 1);
 				return 0;
 			}
 		}

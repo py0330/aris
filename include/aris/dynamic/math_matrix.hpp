@@ -341,7 +341,13 @@ namespace aris::dynamic{
 	template <typename T>
 	auto inline constexpr s_sgn2(T val)noexcept->T { return val < T(0) ? T(-1) : T(1); }
 
-	auto inline s_is_equal(double a, double b, double error)noexcept->bool { return std::abs(a - b) < error; }
+	auto inline s_is_equal(double a, double b, double error)noexcept->bool { 
+		if ((a == std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity())
+			|| (a == -std::numeric_limits<double>::infinity() && b == -std::numeric_limits<double>::infinity()))
+			return true;
+		else
+			return std::abs(a - b) < error;
+	}
 	template <typename V1Type, typename V2Type>
 	auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool{
 		for (Size i = 0; i < n; ++i)if (!s_is_equal(v1[at(i, v1_t)], v2[at(i, v2_t)], error))return false;
@@ -1978,7 +1984,7 @@ namespace aris::dynamic{
 			}
 		}
 
-		return (totalIter <= max_iter) ? 0 : totalIter;
+		return (totalIter <= max_iter) ? 0 : static_cast<int>(totalIter);
 	}
 	auto inline s_schur(Size m, const double* H, double* T, double* U, aris::Size max_iter = 100, double zero_check = 1e-10)noexcept->int {
 		return s_schur(m, H, m, T, m, U, m, max_iter, zero_check);
@@ -1992,11 +1998,11 @@ namespace aris::dynamic{
 	// 
 	// where E is schur decomposition
 	template<typename AType, typename UType, typename EType>
-	auto inline s_eigen(Size m, const double* A, AType a_t, double* E, EType e_t, double* U, UType u_t, double zero_check = 1e-10)->void {
+	auto inline s_eigen(Size m, const double* A, AType a_t, double* E, EType e_t, double* U, UType u_t, double zero_check = 1e-10)->int {
 		s_hessenberg(m, A, a_t, E, e_t, U, u_t, zero_check);
-		s_schur(m, E, e_t, E, e_t, U, u_t, 100, zero_check);
+		return s_schur(m, E, e_t, E, e_t, U, u_t, 100, zero_check);
 	}
-	auto inline s_eigen(Size m, const double* A, double* E, double* U, double zero_check = 1e-10)->void {
+	auto inline s_eigen(Size m, const double* A, double* E, double* U, double zero_check = 1e-10)->int {
 		return s_eigen(m, A, m, E, m, U, m, zero_check);
 	}
 

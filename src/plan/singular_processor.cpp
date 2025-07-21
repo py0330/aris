@@ -1851,8 +1851,10 @@ namespace aris::plan {
 					double k0 = B0 - s_b;
 
 					double t[3], t_sol;
-					if (auto ret = aris::dynamic::s_poly3_solve(k3, 0.0, k1, k0, t)) {
-						t_sol = t[ret - 1];
+					Size root_num;
+					aris::dynamic::s_poly3_solve(k3, 0.0, k1, k0, &root_num, t);
+					if (root_num) {
+						t_sol = t[root_num - 1];
 						if (t_sol > 0) {
 							auto d2s_max2 = (ds_b - B3 / 2 * t_sol * t_sol - B1) / t_sol;
 							return d2s_max2;

@@ -35,11 +35,62 @@ void test_akima()
 	if (!s_is_equal(s_akima_at(13, x, y, result_p1, result_p2, result_p3, 6.2, '2'), 0.0175751167428158, error))std::cout << "\"s_akima_at\" failed" << std::endl;
 }
 
+void test_interp_scurve() {
+	double x[6]{ 0, 1, 2, 3.1, 4, 4.3 };
+	double y[6]{ 0, 0.18, 0.24, 0.33, 0.41, 0.5 };
+	
+	double y_at;
+
+	s_interp_scurve(x, y, 2.1, y_at);
+	if (!s_is_equal(y_at,0.246364159792592,1e-10))
+		std::cout << "failed" << std::endl;
+
+	s_interp_scurve(x, y, 2.3, y_at);
+	if (!s_is_equal(y_at, 0.260731796195777, 1e-10))
+		std::cout << "failed" << std::endl;
+
+	s_interp_scurve(x, y, 2.6, y_at);
+	if (!s_is_equal(y_at, 0.286688262281698, 1e-10))
+		std::cout << "failed" << std::endl;
+
+	s_interp_scurve(x, y, 2.9, y_at);
+	if (!s_is_equal(y_at, 0.313432770210573, 1e-10))
+		std::cout << "failed" << std::endl;
+
+	s_interp_scurve(x, y, 3.0, y_at);
+	if (!s_is_equal(y_at, 0.321788916436907, 1e-10))
+		std::cout << "failed" << std::endl;
+
+
+
+}
+
+void test_interp_scurve_u5_range() {
+	double x[6]{ 0, 1, 2, 3.1, 4, 4.3 };
+	double y[6]{ 0, 0.18, 0.24, 0.33, 0.41, 0.5 };
+
+	double u5_range[2];
+
+	s_interp_scurve_u5_range(x, y, -0.0912355750399117, 0.0912355750399117,
+		-0.0409789432258887, 0.1409789432258887,
+		-0.2211555, 0.2211555, u5_range);
+
+
+	aris::dynamic::dsp(1, 2, u5_range);
+
+
+
+
+}
+
+
 void test_spline()
 {
 	std::cout << std::endl << "-----------------test spline--------------------------" << std::endl;
 
 	test_akima();
+	test_interp_scurve();
+	test_interp_scurve_u5_range();
 
 	std::cout << "-----------------test spline finished-----------------" << std::endl << std::endl;
 }

@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	//test_optimization();
 	//test_pose();
 	//test_screw();
-	//test_spline();
+	test_spline();
 	// 
 	//test_plan();
 	//test_model();

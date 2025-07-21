@@ -14,9 +14,6 @@ const double error = 1e-10;
 
 using Size = aris::Size;
 
-
-
-
 void test_basic_operation()
 {
 	//test isEqual
@@ -25,13 +22,17 @@ void test_basic_operation()
 		double b[] = { 0.1,0.2,0.3 };
 		double c[] = { 0.1,0.2,0.35 };
 
-		if (!s_is_equal(3, a, b, error))std::cout << "\"s_is_equal\" failed" << std::endl;
-		if (s_is_equal(3, a, c, error))std::cout << "\"s_is_equal\" failed" << std::endl;
+		if (!s_is_equal(3, a, b, error))
+			std::cout << "\"s_is_equal\" failed" << std::endl;
+		if (s_is_equal(3, a, c, error))
+			std::cout << "\"s_is_equal\" failed" << std::endl;
 
 		double d[]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
 		double e[]{ 0.1,0.0,0.2,0.3,0.0,0.4,0.5,0.0,0.6 };
-		if (!s_is_equal(3, d, 2, e, 3, error))std::cout << "\"s_is_equal\" failed" << std::endl;
-		if (s_is_equal(3, d, 2, e + 1, 3, error))std::cout << "\"s_is_equal\" failed" << std::endl;
+		if (!s_is_equal(3, d, 2, e, 3, error))
+			std::cout << "\"s_is_equal\" failed" << std::endl;
+		if (s_is_equal(3, d, 2, e + 1, 3, error))
+			std::cout << "\"s_is_equal\" failed" << std::endl;
 
 		double m1[]{ 0.1,0.2,0.3,
 			0.4,0.5,0.6 };
@@ -40,8 +41,10 @@ void test_basic_operation()
 		double m3[]{ 0.1,0.2,0.31,
 			0.4,0.5,0.6 };
 
-		if (!s_is_equal(2, 3, m1, m2, error))std::cout << "\"s_is_equal mtx\" failed" << std::endl;
-		if (s_is_equal(2, 3, m1, m3, error))std::cout << "\"s_is_equal mtx\" failed" << std::endl; 
+		if (!s_is_equal(2, 3, m1, m2, error))
+			std::cout << "\"s_is_equal mtx\" failed" << std::endl;
+		if (s_is_equal(2, 3, m1, m3, error))
+			std::cout << "\"s_is_equal mtx\" failed" << std::endl; 
 		
 		double m4[]{ 0.1,0.2,0.3,0.0,
 			0.4,0.5,0.6,0.0 };
@@ -50,8 +53,10 @@ void test_basic_operation()
 		double m6[]{ 0.1,0.2,0.3,0.0,0.0,
 			0.4,0.51,0.6,0.0,0.0, };
 
-		if (!s_is_equal(2, 3, m4, 4, m5, 5, error))std::cout << "\"s_is_equal mtx\" failed" << std::endl;
-		if (s_is_equal(2, 3, m4, 4, m6, 5, error))std::cout << "\"s_is_equal mtx\" failed" << std::endl;
+		if (!s_is_equal(2, 3, m4, 4, m5, 5, error))
+			std::cout << "\"s_is_equal mtx\" failed" << std::endl;
+		if (s_is_equal(2, 3, m4, 4, m6, 5, error))
+			std::cout << "\"s_is_equal mtx\" failed" << std::endl;
 	}
 
 }
@@ -2558,8 +2563,7 @@ void test_interp_plane()
 }
 
 
-void test_matrix()
-{
+void test_matrix(){
 	std::cout << std::endl << "-----------------test matrix--------------------" << std::endl;
 
 	// basic operation //
