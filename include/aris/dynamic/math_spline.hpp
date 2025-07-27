@@ -25,10 +25,10 @@ namespace aris::dynamic{
 	// y:  y0  y1  y2  y3  y4  y5
 	// 
 	// 根据 u2 u3 中 y 的限制，求 u5 可行的范围
-	// 
+	// u5_range_num 最大为 69，mem最大应为69*2=138
 	auto ARIS_API s_interp_scurve_u5_range(const double* x, const double* y, 
 		double dy_min, double dy_max, double d2y_min, double d2y_max, double d3y_min, double d3y_max,
-		double *u5_range)->void;
+		Size &u5_range_num,double *u5_range)->void;
 
 	auto ARIS_API s_scurve_p2p(double T, double p0, double p1, double t_at, double *p_at, double* v_at, double* a_at)->void;
 	auto ARIS_API s_scurve_v2v(double T, double v0, double v1, double t_at, double* p_at, double* v_at, double* a_at)->void;

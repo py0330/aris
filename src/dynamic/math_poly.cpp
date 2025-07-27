@@ -133,6 +133,7 @@ namespace aris::dynamic{
 
 		if (n == 1) {
 			x[0] = -k[1] / k[0];
+			*solution_num = 1;
 			return 0;
 		}
 
@@ -173,6 +174,42 @@ namespace aris::dynamic{
 
 		std::sort(x, x + root_num);
 
+		return 0;
+	}
+
+	auto ARIS_API s_poly_ieq_solve(Size m, const double* f, Size* solution_num, double* x, double* mem, double zero_check) -> int {
+		{
+			Size real_m = m + 1;
+			for (int i = 0; std::abs(f[i]) <= zero_check && i < m + 1; ++i)
+				real_m--;
+
+			if (real_m == 0) {
+				*solution_num = 0;
+				return 0;
+			}
+
+			f = f + (m - real_m + 1);
+			m = real_m - 1;
+		}
+
+		Size x_size = 0;
+
+		if ((f[0] >= 0 && (m % 2 == 1)) || (f[0] < 0 && (m % 2 == 0))) {
+			x[0] = -std::numeric_limits<double>::infinity();
+			x_size += 1;
+		}
+
+		Size root_size = 0;
+		if (auto ret = s_poly_solve(m, f, &root_size, x + x_size, mem, zero_check))
+			return ret;
+		x_size += root_size;
+
+		if (f[0] < 0) {
+			x[x_size] = std::numeric_limits<double>::infinity();
+			x_size += 1;
+		}
+
+		*solution_num = x_size / 2;
 		return 0;
 	}
 

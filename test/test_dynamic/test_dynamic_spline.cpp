@@ -70,10 +70,10 @@ void test_interp_scurve_u5_range() {
 	double y[6]{ 0, 0.18, 0.24, 0.33, 0.41, 0.5 };
 
 	double u5_range[2];
-
+	aris::Size u5_range_num;
 	s_interp_scurve_u5_range(x, y, -0.0912355750399117, 0.0912355750399117,
 		-0.0409789432258887, 0.1409789432258887,
-		-0.2211555, 0.2211555, u5_range);
+		-0.2211555, 0.2211555, u5_range_num, u5_range);
 
 
 	aris::dynamic::dsp(1, 2, u5_range);

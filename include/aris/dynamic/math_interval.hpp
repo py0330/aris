@@ -20,6 +20,8 @@ namespace aris::dynamic {
 	// 需要满足: 
 	// left_1  < left_2  ... < left_m  ( or n, k)
 	// right_1 < right_2 ... < right_m ( or n, k)
+	//
+	// 返回值 k 小于等于 m+n-1
 	auto ARIS_API s_interval_intersect(Size m, Size n, const double *set_a, const double* set_b, Size &k, double* set_c) -> void;
 
 	//
@@ -37,6 +39,8 @@ namespace aris::dynamic {
 	// 需要满足: 
 	// left_1  < left_2  ... < left_m  ( or n, k)
 	// right_1 < right_2 ... < right_m ( or n, k)
+	//
+	// 返回值 k 小于等于 m+n
 	auto ARIS_API s_interval_union(Size m, Size n, const double* set_a, const double* set_b, Size &k, double* set_c)->void;
 
 	// 在全数域上求集合 a 的补集
@@ -50,6 +54,8 @@ namespace aris::dynamic {
 	// 需要满足: 
 	// left_1  < left_2  ... < left_m  ( or n, k)
 	// right_1 < right_2 ... < right_m ( or n, k)
+	//
+	// 返回值 k 小于等于 m+1
 	auto ARIS_API s_interval_inverse(Size m, const double* set_a, Size &k, double* set_c)->void;
 }
 

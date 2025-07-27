@@ -280,7 +280,7 @@ namespace aris::dynamic{
 
 	auto ARIS_API s_interp_scurve_u5_range(const double* u, const double* p,
 		double dp_min, double dp_max, double d2p_min, double d2p_max, double d3p_min, double d3p_max,
-		double* u5_range)->void
+		Size &u5_range_num, double* u5_range)->void
 	{
 		//% 
 		//% 引入虚拟的s0 s1 ... s6，其中间隔相同，即 ds 相同，这里设为 1
@@ -510,112 +510,177 @@ namespace aris::dynamic{
 		constexpr double inf = std::numeric_limits<double>::infinity();
 		double y_range[2]{12.0 / (u[1] + 7 * u[4] - 8 * u[2]), inf};
 
+		double y_mem1[(18*4-3)*2]{y_range[0], y_range[1]}, y_mem2[(18 * 4 - 3) * 2];
+		auto y = y_mem1;
+		auto y2 = y_mem2;
+		u5_range_num = 1;
+
+		const double zero_check = 1e-10;
+		double mem[36];
 		// ------------------------ PART 3 ------------------------------------- //
 		for (int i = 0; i < 4; ++i) {
 			auto A = A_content[i];
 			auto u_range = u_at_range + i * 2;
-			auto ul = u_at_range[0];
-			auto ur = u_at_range[1];
+			auto ul = u_at_range[i*2];
+			auto ur = u_at_range[i*2+1];
 
-			double W[4][6]{ {A[0][5] * E, A[0][5] * D, C * A[0][4], A[0][2] * d2p_du2_2 + A[0][1] * dp_du_2 + A[0][0] * p[2] + A[0][3] * p[3]},
+			double W[4][4]{ {A[0][5] * E, A[0][5] * D, C * A[0][4], A[0][2] * d2p_du2_2 + A[0][1] * dp_du_2 + A[0][0] * p[2] + A[0][3] * p[3]},
 				{A[1][5] * E, A[1][5] * D, C * A[1][4], A[1][2] * d2p_du2_2 + A[1][1] * dp_du_2 + A[1][0] * p[2] + A[1][3] * p[3] },
 				{A[2][5] * E, A[2][5] * D, C * A[2][4], A[2][2] * d2p_du2_2 + A[2][1] * dp_du_2 + A[2][0] * p[2] + A[2][3] * p[3] },
 				{A[3][5] * E, A[3][5] * D, C * A[3][4], A[3][2] * d2p_du2_2 + A[3][1] * dp_du_2 + A[3][0] * p[2] + A[3][3] * p[3] } };
 
 			// ------------------------ PART 3.1 ------------------------------------- //
-			const double i2 = 3 * W[3][0];
-			const double j2 = 3 * W[3][1];
-			const double k2 = 3 * W[3][2];
-			const double h2 = 3 * W[3][3];
+			double x31[24];
+			Size sol31;
+			{
+				// part 3.1 最多 12 个区间：ieq1 ... ieq4的 f 次数为 3，3，6，6，g 的次数为3，所有的f和g共计21个根，
+				// 考虑 -inf，inf，因此一共23个节点，考虑到一旦经过节点，必然有不等式变号，因此不等式全部满足的最大可能区间为12个
+				// 
+				//% ieq1: poly_ieq(-0.5*ijkh1-ur*ijkh2,ijkh2)
+				//% ieq2: poly_ieq( 0.5*ijkh1+ul*ijkh2,ijkh2)
+				//% ieq3: poly_ieq( conv(ijkh2,ijkh0) - conv(ijkh1,ijkh1)/4 - ur*ijkh2,ijkh2)
+				//% ieq4: poly_ieq(-conv(ijkh2,ijkh0) + conv(ijkh1,ijkh1)/4 + ul*ijkh2,ijkh2)
+				
 
-			const double i1 = 2 * W[2][0];
-			const double j1 = 2 * W[2][1];
-			const double k1 = 2 * W[2][2];
-			const double h1 = 2 * W[2][3];
+				double f[7], g[4], x[10], x_result1_mem[24], x_result2_mem[24], x_not_has_ext[10];
+				aris::Size sol_num, sol_num_total, sol_num_not_has_ext;
 
-			const double i0 = W[1][0];
-			const double j0 = W[1][1];
-			const double k0 = W[1][2];
-			const double h0 = W[1][3];
+				auto x_result1 = x_result1_mem;
+				auto x_result2 = x_result2_mem;
 
-			const double ijkh0[]{ i0, j0, k0, h0 };
-			const double ijkh1[]{ i1, j1, k1, h1 };
-			const double ijkh2[]{ i2, j2, k2, h2 };
+				//ieq1: poly_ieq(-W[2] - 3.0*ur*W[3], W[3])
+				s_vi(4, W[2], f);
+				s_va(4, -3.0 * ur, W[3], f);
+				s_vc(4, W[3], g);
+				s_poly_ieq_solve(3, 3, f, g, &sol_num_total, x_result2, mem, zero_check);  // 最多 4 个区间，x 为8维即可
 
-			const double ijkh012[] = { i0, j0, k0, h0,
-				i1, j1, k1, h1,
-				i2, j2, k2, h2 };
+				//ieq2: poly_ieq(W[2] - 3.0*ur*W[3], W[3])
+				s_vc(4, W[2], f);
+				s_va(4, 3.0 * ul, W[3], f);
+				//s_vc(4, W[3], g);   // g is same
+				s_poly_ieq_solve(3, 3, f, g, &sol_num, x, mem, zero_check); // 最多 4 个区间，x 为8维即可
+				std::swap(x_result1, x_result2);
 
+				// 最多7个区间，但因为两个集合g的解（3个）一致，因此最多4个区间
+				s_interval_intersect(sol_num, sol_num_total, x, x_result1, sol_num_total, x_result2);
 
-			//% ieq1: poly_ieq(-0.5*ijkh1-ur*ijkh2,ijkh2)
-			//% ieq2: poly_ieq( 0.5*ijkh1+ul*ijkh2,ijkh2)
-			//% ieq3: poly_ieq( conv(ijkh2,ijkh0) - conv(ijkh1,ijkh1)/4 - ur*ijkh2,ijkh2)
-			//% ieq4: poly_ieq(-conv(ijkh2,ijkh0) + conv(ijkh1,ijkh1)/4 + ul*ijkh2,ijkh2)
-			const double zero_check = 1e-10;
+				// 求反 x_not_has_ext 最多5个区间
+				s_interval_inverse(sol_num_total, x_result2, sol_num_not_has_ext, x_not_has_ext);
 
-			double f[7], g[4], mem[36], x[8], x2[8], x_result1_mem[100], x_result2_mem[100];
-			aris::Size solution_num, solution_num2;
+				//ieq3: poly_ieq(W[2] - 3.0*ur*W[3], W[3])
+				s_conv(3, 3, W[1], W[3], f);
+				s_conv_add(3, 3, -1.0 / 3.0, W[2], W[2], f);
+				s_va(4, -dp_max, W[3], f + 3);
+				//s_vc(4, W[3], g);   // g is same
+				s_poly_ieq_solve(6, 3, f, g, &sol_num, x, mem, zero_check);
+				std::swap(x_result1, x_result2);
+				s_interval_intersect(sol_num, sol_num_total, x, x_result1, sol_num_total, x_result2);
 
-			auto x_result1 = x_result1_mem;
-			auto x_result2 = x_result2_mem;
+				//ieq4: poly_ieq(W[2] - 3.0*ur*W[3], W[3])
+				s_conv(3, 3, -1.0, W[1], W[3], f);
+				s_conv_add(3, 3, 1.0 / 3.0, W[2], W[2], f);
+				s_va(4, dp_min, W[3], f + 3);
+				//s_vc(4, W[3], g);   // g is same
+				s_poly_ieq_solve(6, 3, f, g, &sol_num, x, mem, zero_check);
+				std::swap(x_result1, x_result2);
+				s_interval_intersect(sol_num, sol_num_total, x, x_result1, sol_num_total, x_result2);
 
-			//ieq1: poly_ieq(-W[2] - 3.0*ur*W[3], W[3])
-			s_vi(4, W[2], f);
-			s_va(4, -3.0*ur, W[3], f);
-			s_vc(4, W[3], g);
-			s_poly_ieq_solve(3, 3, f, g, &solution_num2, x_result2, mem, zero_check);
+				// 合并极值区间，得到的结果是：要么没有极值，要么极值在许可范围内
+				std::swap(x_result1, x_result2);
+				s_interval_union(sol_num_total, sol_num_not_has_ext, x_result1, x_not_has_ext, sol31, x31);
+			
+			}
+			
+			// ------------------------ PART 3.2 ------------------------------------- //
+			double x32[6];
+			Size sol32;
+			{
+				double x1[4], x2[4];
+				Size sol1, sol2;
 
-			std::cout << "ieq1---------------" << std::endl;
-			dsp(solution_num2, 2, x_result2);
+				double q[4]{
+					3 * W[3][0] * ur * ur + 2 * W[2][0] * ur + W[1][0],
+					3 * W[3][1] * ur * ur + 2 * W[2][1] * ur + W[1][1],
+					3 * W[3][2] * ur * ur + 2 * W[2][2] * ur + W[1][2],
+					3 * W[3][3] * ur * ur + 2 * W[2][3] * ur + W[1][3]
+				};
 
-			//ieq2: poly_ieq(W[2] - 3.0*ur*W[3], W[3])
-			s_vc(4, W[2], f);
-			s_va(4, 3.0 * ul, W[3], f);
-			//s_vc(4, W[3], g);   // g is same
-			s_poly_ieq_solve(3, 3, f, g, &solution_num, x, mem, zero_check);
-			std::swap(x_result1, x_result2);
-			s_interval_intersect(solution_num, solution_num2, x, x_result1, solution_num2, x_result2);
+				q[3] -= dp_max;
 
-			std::cout << "ieq2---------------" << std::endl;
-			dsp(solution_num, 2, x);
-			dsp(solution_num2, 2, x_result2);
+				s_poly_ieq_solve(3, q, &sol1, x1, mem, zero_check);
 
-			//ieq3: poly_ieq(W[2] - 3.0*ur*W[3], W[3])
-			s_conv(3, 3, W[1], W[3], f);
-			s_conv_add(3, 3, -1.0/3.0, W[2], W[2], f);
-			s_va(4, -dp_max, W[3], f + 3);
-			//s_vc(4, W[3], g);   // g is same
-			s_poly_ieq_solve(6, 3, f, g, &solution_num, x, mem, zero_check);
-			std::swap(x_result1, x_result2);
-			s_interval_intersect(solution_num, solution_num2, x, x_result1, solution_num2, x_result2);
+				q[3] -= dp_min - dp_max;
+				s_iv(4, q);
+				s_poly_ieq_solve(3, q, &sol2, x2, mem, zero_check);
 
-			std::cout << "ieq3---------------" << std::endl;
-			dsp(solution_num, 2, x);
-			dsp(solution_num, 2, x_result2);
+				s_interval_intersect(sol1, sol2, x1, x2, sol32, x32);
+			}
 
-			//s_interval_intersect(4, )
+			// ------------------------ PART 3.3 ------------------------------------- //
+			double x33[6];
+			Size sol33;
+			{
+				double x1[4], x2[4];
+				Size sol1, sol2;
 
-			//aris::dynamic::dsp(4, 2, x);
+				double q[4]{
+					6 * W[3][0] * ur + 2 * W[2][0],
+					6 * W[3][1] * ur + 2 * W[2][1],
+					6 * W[3][2] * ur + 2 * W[2][2],
+					6 * W[3][3] * ur + 2 * W[2][3]
+				};
 
+				q[3] -= d2p_max;
+				s_poly_ieq_solve(3, q, &sol1, x1, mem, zero_check);
 
-			//s_vc(3, -ur / 3.0, W[3], coeff1);
-			//s_poly_ieq_solve(m, n, f, g, solution_num, x, mem, zero_check);
+				q[3] -= d2p_min - d2p_max;
+				s_iv(4, q);
+				s_poly_ieq_solve(3, q, &sol2, x2, mem, zero_check);
 
-//eq1_ans = s_poly_ieq_solve(-0.5*ijkh1-ur*ijkh2,ijkh2);
-//eq2_ans = s_poly_ieq_solve(0.5*ijkh1+ul*ijkh2,ijkh2);
-//eq3_ans = s_poly_ieq_solve(conv(ijkh2,ijkh0) - conv(ijkh1,ijkh1)/4 - dp_max*[zeros(1,3),ijkh2],ijkh2);
-//eq4_ans = s_poly_ieq_solve(-conv(ijkh2,ijkh0) + conv(ijkh1,ijkh1)/4 + dp_min*[zeros(1,3),ijkh2],ijkh2);
-//
-//eq_ans_has_ext = s_interval_intersect(eq1_ans, eq2_ans);
-//eq_ans_not_has_ext = s_interval_inverse(eq_ans_has_ext);
-//
-//eq_ans_has_ext = s_interval_intersect(eq_ans_has_ext, eq3_ans);
-//eq_ans_has_ext = s_interval_intersect(eq_ans_has_ext, eq4_ans);
-//
-//eq_ans = s_interval_union(eq_ans_not_has_ext,eq_ans_has_ext);
+				s_interval_intersect(sol1, sol2, x1, x2, sol33, x33);
+			}
 
+			// ------------------------ PART 3.4 ------------------------------------- //
+			double x34[6];
+			Size sol34;
+			{
+				double x1[4], x2[4];
+				Size sol1, sol2;
 
+				double q[4]{
+					6 * W[3][0],
+					6 * W[3][1],
+					6 * W[3][2],
+					6 * W[3][3]
+				};
+
+				q[3] -= d3p_max;
+				s_poly_ieq_solve(3, q, &sol1, x1, mem, zero_check);
+
+				q[3] -= d3p_min - d3p_max;
+				s_iv(4, q);
+				s_poly_ieq_solve(3, q, &sol2, x2, mem, zero_check);
+
+				s_interval_intersect(sol1, sol2, x1, x2, sol34, x34);
+			}
+
+			// 以上4个条件求交集，应为 12 + 3+ 3+ 3 - 3 = 18
+			// 故最多有18个区间
+			double x[36], x_mem[10], x_mem2[14];
+			Size sol;
+			s_interval_intersect(sol32, sol33, x32, x33, sol, x_mem);
+			s_interval_intersect(sol, sol34, x_mem, x34, sol, x_mem2);
+			s_interval_intersect(sol, sol31, x_mem2, x31, sol, x);
+
+			// 合并到总和里
+			s_interval_intersect(sol, u5_range_num, x, y, u5_range_num, y2);
+			std::swap(y, y2);
 		}
+
+		for (int i = 0; i < u5_range_num * 2; ++i) {
+			u5_range[i] = -12.0 / y[i] + 12.0 * c1;
+		}
+
 	}
 
 	auto s_akima(Size n, const double *x, const double *y, double *p1, double *p2, double *p3, double zero_check)->void	{

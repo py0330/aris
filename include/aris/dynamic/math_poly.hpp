@@ -37,6 +37,25 @@ namespace aris::dynamic {
 	// 
 	// solve 
 	// 
+	// (f[0]*x^m + ... f[m-1]*x + f[m]) < 0
+	// 
+	// give x:
+	// [ l1 r1 ]
+	// | l2 r2 |
+	// |  ...  |
+	// [ lk rk ]
+	// 
+	// return interval num, less than (m + n + 2)/2，m+n为奇数时，为(m+n+1)/2, 为偶数时，为(m+n+2)/2
+	//
+	// x should be larger than (m + n + 2)
+	auto ARIS_API s_poly_ieq_solve(Size m, const double* f, Size* solution_num, double* x, double* mem, double zero_check = 1e-10) -> int;
+
+	// 
+	// 
+	// solve 
+	// 
+	// (f[0]*x^m + ... f[m-1]*x + f[m]) * (g[0]*x^n + ... g[n-1]*x + g[n]) < 0
+	// or
 	// (f[0]*x^m + ... f[m-1]*x + f[m]) / (g[0]*x^n + ... g[n-1]*x + g[n]) < 0
 	// 
 	// give x:
@@ -45,7 +64,7 @@ namespace aris::dynamic {
 	// |  ...  |
 	// [ lk rk ]
 	// 
-	// return interval num
+	// return interval num, less than (m + n + 2)/2，m+n为奇数时，为(m+n+1)/2, 为偶数时，为(m+n+2)/2
 	//
 	// x should be larger than (m + n + 2)
 	auto ARIS_API s_poly_ieq_solve(Size m, Size n, const double* f, const double* g, Size *solution_num, double* x, double* mem, double zero_check = 1e-10) -> int;
