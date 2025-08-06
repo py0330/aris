@@ -97,7 +97,7 @@ auto test_s_cpt_d3u_lr()->void {
 
 auto test_time_optimal_processor_1()->void {
 	// 构造 TG //
-	aris::plan::TimeOptimalTrajectoryGenerator tg;
+	aris::plan::TrajectoryGenerator tg;
 
 	const int PE_SIZE = 6;
 	const int EE_NUM = 1;
@@ -175,14 +175,15 @@ auto test_time_optimal_processor_1()->void {
 
 	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
 	double input_init[6]{ 0,0,0,0,0,0 };
-	puma->setInputPos(input_init);
-	puma->forwardKinematics();
-	double pm[16];
-	puma->getOutputPos(pm);
-	aris::dynamic::dsp(1, 16, pm);
+	puma->getInputPos(input_init);
+	//puma->setInputPos(input_init);
+	//puma->forwardKinematics();
+	//double pm[16];
+	//puma->getOutputPos(pm);
+	//aris::dynamic::dsp(1, 16, pm);
 
 	// 设置 lookahead //
-	aris::plan::LookAheadProcessor sp;
+	aris::plan::InputSmoother sp;
 
 	// 最大速度、加速度 //
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
@@ -192,13 +193,13 @@ auto test_time_optimal_processor_1()->void {
 	// 设置模型等参数 //
 	sp.setModel(*puma);
 	sp.setTrajectoryGenerator(tg);
-	sp.setMaxVels(max_vels.data());
-	sp.setMaxAccs(max_accs.data());
-	sp.setMaxJerks(max_jerks.data());
+	sp.setVelLimits(max_vels.data());
+	sp.setAccLimits(max_accs.data());
+	sp.setJerkLimits(max_jerks.data());
 
-	sp.init();
 
-	sp.lookAhead(0.0);
+	sp.init(input_init);
+
 
 	//sp.lookAheadOneStep();
 
@@ -229,7 +230,6 @@ auto test_time_optimal_processor_1()->void {
 		//	std::cout << "debug" << std::endl;
 		//}
 
-		sp.lookAhead(0.0);
 
 		vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
 		std::copy_n(input_pos, 6, vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
@@ -242,7 +242,7 @@ auto test_time_optimal_processor_1()->void {
 		//puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 	}
 
-	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "D:\\Private\\mcode\\smooth\\pes.txt");
+	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
 

@@ -2422,9 +2422,7 @@ namespace aris::plan {
 				}
 
 				current_node = current_node->next_node_.exchange(nullptr);
-				next_node = current_node->next_node_.load();
 				imp_->current_node_.store(current_node);
-				imp_->ds_ = 0.0;
 				return current_node->id_;
 			}
 			// check 是否仅存一条 init 指令

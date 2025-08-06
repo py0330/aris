@@ -63,7 +63,7 @@ namespace aris::dynamic {
 		}
 
 		for (Size p = i; p < m; ++p) {
-			if (set_a[at(p, 0, 2)] <= set_c[at(k-1, 1, 2)]) {
+			if (k > 0 && set_a[at(p, 0, 2)] <= set_c[at(k-1, 1, 2)]) {
 				set_c[at(k-1, 1, 2)] = std::max(set_c[at(k-1, 1, 2)], set_a[at(p, 1, 2)]);
 			}
 			else {
@@ -74,7 +74,7 @@ namespace aris::dynamic {
 		}
 
 		for (Size p = j; p < n; ++p) {
-			if (set_b[at(p, 0, 2)] <= set_c[at(k-1, 1, 2)]) {
+			if (k > 0 && set_b[at(p, 0, 2)] <= set_c[at(k-1, 1, 2)]) {
 				set_c[at(k-1, 1, 2)] = std::max(set_c[at(k-1, 1, 2)], set_b[at(p, 1, 2)]);
 			}
 			else {

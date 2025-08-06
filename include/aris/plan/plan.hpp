@@ -7,7 +7,7 @@
 #include <aris/plan/move_follower.hpp>
 #include <aris/plan/root.hpp>
 #include <aris/plan/algorithm.hpp>
-#include <aris/plan/time_optimal_trajectory.hpp>
+#include <aris/plan/input_smoother.hpp>
 
 // 规划部分应当包含：
 // 1. scurve
