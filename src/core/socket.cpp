@@ -233,6 +233,7 @@ namespace aris::core{
 		Socket::Type type_{ Type::TCP };
 		bool is_server_{false};
 		std::int64_t connect_time_out_{ -1 };
+		aris::core::MsgSize max_msg_length_{ 0x1000000 };
 
 		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
 		std::function<int(Socket *, const char *data, int size)> onReceivedData;
@@ -421,7 +422,7 @@ namespace aris::core{
 			case Type::TCP:{
 				MsgHeader header;
 				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&header), sizeof(MsgHeader)) <= 0) { imp->lose_tcp(); return; }
-				if (header.msg_size_ > 0x00100000 || header.msg_size_ < 0) { imp->lose_tcp(); return; }
+				if (header.msg_size_ > imp->max_msg_length_ || header.msg_size_ < 0) { imp->lose_tcp(); return; }
 				recv_msg.resize(header.msg_size_);
 				recv_msg.header() = header;
 				if (recv_msg.size() > 0 && safe_recv(imp->recv_socket_, recv_msg.data(), recv_msg.size()) <= 0) { imp->lose_tcp(); return; }
@@ -475,7 +476,7 @@ namespace aris::core{
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000){
+					if (payload_len < 0 || payload_len > imp->max_msg_length_ || payload_len + payload_data.size() > imp->max_msg_length_){
 						ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
@@ -555,7 +556,7 @@ namespace aris::core{
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len > 0x00100000 || payload_len + payload_data.size() > 0x00200000){
+					if (payload_len > imp->max_msg_length_ || payload_len + payload_data.size() > imp->max_msg_length_){
 						ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 						imp->lose_tcp();
 						return;
@@ -1205,6 +1206,12 @@ namespace aris::core{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 		imp_->connect_time_out_ = time_out_ms;
 	}
+	auto Socket::maxMsgLength()const -> aris::core::MsgSize {
+		return imp_->max_msg_length_;
+	}
+	auto Socket::setMaxMsgLength(aris::core::MsgSize length) -> void {
+		imp_->max_msg_length_ = length;
+	}
 
 	auto Socket::setConnectType(const Type type)->void { imp_->type_ = type; }
 	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void{
@@ -1274,6 +1281,7 @@ namespace aris::core{
 		class_<Socket>("Socket")
 			.prop("connect_type", &Socket::setConnectType, &Socket::connectType)
 			.prop("remote_ip", &Socket::setRemoteIP, &Socket::remoteIP)
-			.prop("port", &Socket::setPort, &Socket::port);
+			.prop("port", &Socket::setPort, &Socket::port)
+			.prop("max_msg_length", &Socket::setMaxMsgLength, &Socket::maxMsgLength);
 	}
 }

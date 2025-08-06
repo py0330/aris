@@ -9,6 +9,7 @@
 namespace aris::core{
 	using SOCKET_T = int;
 
+	// depricated 
 	class ARIS_API SocketMultiIo{
 	public:
 		enum class State{
@@ -90,6 +91,11 @@ namespace aris::core{
 		auto setPort(const std::string& port) -> void;
 		auto connectType()const->Type;
 		auto setConnectType(const Type type) -> void;
+		
+		// 影响 tcp、web 的 msg 大小的校验
+		// 也影响 web 中payload 和 total payload的校验
+		auto maxMsgLength()const -> aris::core::MsgSize;
+		auto setMaxMsgLength(aris::core::MsgSize length) -> void;
 
 		auto setOnReceivedMsg(ReceiveMsgCallback on_receive_msg_func = nullptr) -> void;
 		auto setOnReceivedRawData(ReceiveRawDataCallback on_receive_raw_data_func = nullptr) -> void;

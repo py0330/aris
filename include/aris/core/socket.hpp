@@ -39,6 +39,12 @@ namespace aris::core{
 		auto setRemoteIP(const std::string &remote_ip)->void;
 		auto connectType()const->Type;
 		auto setConnectType(const Type type)->void;
+
+		// 影响 tcp、web 的 msg 大小的校验
+		// 也影响 web 中payload 和 total payload的校验
+		auto maxMsgLength()const -> aris::core::MsgSize;
+		auto setMaxMsgLength(aris::core::MsgSize length) -> void;
+
 		// connect timeout: milliseconds
 		// 若想用阻塞模式，将该值设为-1
 		// 默认值为 -1

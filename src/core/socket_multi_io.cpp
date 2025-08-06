@@ -1505,6 +1505,7 @@ namespace aris::core{
 		int received_length_{ 0 };
 		std::vector<char> mem_;
 		bool is_first{ true };
+		aris::core::MsgSize max_msg_length_{0x10000};
 
 		// pack data，多个数据帧（frame）拼成完整的数据后，触发回调 //
 		int datapack_received_length_{ 0 };
@@ -1576,7 +1577,7 @@ namespace aris::core{
 			}
 
 			// 保护，数据不能太大 //
-			if (payload_len < 0 || payload_len > 0x00080000 || payload_len + datapack_received_length_ > 0x00100000) {
+			if (payload_len < 0 || payload_len > max_msg_length_ || payload_len + datapack_received_length_ > max_msg_length_) {
 				ARIS_LOG(WEBSOCKET_RECEIVE_TOO_LARGE_OBJECT, payload_len);
 				return -1;
 			}
@@ -1698,6 +1699,7 @@ namespace aris::core{
 	struct SocketServer::Imp {
 		SocketServer::Type type_{ Type::TCP };
 		std::string port_;
+		aris::core::MsgSize max_msg_length_{ 0x10000 };
 
 		SocketServer* socket_server_;
 		SocketServer::State state_{ State::IDLE };
@@ -1760,7 +1762,7 @@ namespace aris::core{
 				while (recv_data.received_length_ >= recv_data.required_length_) {
 					if (recv_data.received_length_ >= sizeof(MsgHeader)) {
 						auto msg_size = reinterpret_cast<MsgHeader*>(recv_data.mem_.data())->msg_size_;
-						if (msg_size > 0x00100000 || msg_size < 0)
+						if (msg_size > max_msg_length_ || msg_size < 0)
 							return -1;
 						recv_data.required_length_ = msg_size + sizeof(MsgHeader);
 					}
@@ -1958,6 +1960,7 @@ namespace aris::core{
 					imp->sock_datas_.insert(std::pair<SOCKET_T, SockData>(recv_sock, SockData()));
 					imp->sock_datas_[recv_sock].sock_ = recv_sock;
 					imp->sock_datas_[recv_sock].remote_addr_ = remote_addr;
+					imp->sock_datas_[recv_sock].max_msg_length_ = imp->max_msg_length_;
 
 					if (::getsockname(recv_sock, (struct sockaddr*)&imp->sock_datas_[recv_sock].local_addr_, &sin_size)) {
 						imp->sock_datas_.erase(recv_sock);
@@ -2015,7 +2018,13 @@ namespace aris::core{
 	}
 	auto SocketServer::connectType()const->Type { return imp_->type_; }
 	auto SocketServer::setConnectType(const Type type)->void { imp_->type_ = type; }
-	
+	auto SocketServer::maxMsgLength()const -> aris::core::MsgSize {
+		return imp_->max_msg_length_;
+	}
+	auto SocketServer::setMaxMsgLength(aris::core::MsgSize length) -> void {
+		imp_->max_msg_length_ = length;
+	}
+
 	auto SocketServer::setOnReceivedMsg(ReceiveMsgCallback on_receive_msg_func) -> void {
 		imp_->on_receive_msg_ = on_receive_msg_func;
 	}
@@ -2346,6 +2355,7 @@ namespace aris::core{
 
 		class_<SocketServer>("SocketServer")
 			.prop("connect_type", &SocketServer::setConnectType, &SocketServer::connectType)
-			.prop("port", &SocketServer::setPort, &SocketServer::port);
+			.prop("port", &SocketServer::setPort, &SocketServer::port)
+			.prop("max_msg_length", &SocketServer::setMaxMsgLength, &SocketServer::maxMsgLength);
 	}
 }
