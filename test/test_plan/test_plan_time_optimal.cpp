@@ -253,7 +253,16 @@ auto test_time_optimal_processor_1()->void {
 void test_time_optimal(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	//test_s_cpt_d3u_lr();
+	double x[6]{ 0.0080000000000000002, 0.012000000000000000, 0.015999898477761662, 0.020093382747408947, 0.024474922860291064 };
+	double s[6]{ 0.0000000000000000, 0.0010000000000000000, 0.002, 0.003, 0.004, 0.005};
+
+
+	aris::Size range_num;
+	double mem[20];
+	aris::dynamic::s_interp_scurve_u5_range(x, s, -5, 5, -50, 50, -500, 500, range_num, mem);
+
+
+
 	test_time_optimal_processor_1();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;

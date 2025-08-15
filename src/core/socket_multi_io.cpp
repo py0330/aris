@@ -1699,7 +1699,7 @@ namespace aris::core{
 	struct SocketServer::Imp {
 		SocketServer::Type type_{ Type::TCP };
 		std::string port_;
-		aris::core::MsgSize max_msg_length_{ 0x10000 };
+		aris::core::MsgSize max_msg_length_{ 0x1000000 };
 
 		SocketServer* socket_server_;
 		SocketServer::State state_{ State::IDLE };

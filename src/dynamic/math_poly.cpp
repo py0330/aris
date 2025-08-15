@@ -125,16 +125,26 @@ namespace aris::dynamic{
 	auto ARIS_API s_poly_solve(Size n, const double* k, Size *solution_num, double* x, double *mem, double zero_check) -> int {
 		double* A = mem;
 
-		if (n == 0) 
+		if (n == 0) {
+			*solution_num = 0;
 			return 0;
+		}
+			
 		
-		if (std::abs(k[0]) < zero_check)
+		// 多项式首个系数对求解影响巨大，不可以使用zero_check
+		if (k[0] == 0.0)
 			return s_poly_solve(n - 1, k + 1, solution_num, x, mem, zero_check);
 
 		if (n == 1) {
-			x[0] = -k[1] / k[0];
-			*solution_num = 1;
-			return 0;
+			if (k[0] == 0) {
+				*solution_num = 0;
+				return 0;
+			}
+			else {
+				x[0] = -k[1] / k[0];
+				*solution_num = 1;
+				return 0;
+			}
 		}
 
 		if (n == 2) {
@@ -180,7 +190,7 @@ namespace aris::dynamic{
 	auto ARIS_API s_poly_ieq_solve(Size m, const double* f, Size* solution_num, double* x, double* mem, double zero_check) -> int {
 		{
 			Size real_m = m + 1;
-			for (int i = 0; std::abs(f[i]) <= zero_check && i < m + 1; ++i)
+			for (int i = 0; f[i] == 0.0 && i < m + 1; ++i)
 				real_m--;
 
 			if (real_m == 0) {
@@ -219,9 +229,9 @@ namespace aris::dynamic{
 		// get real m and n, make sure that real_m & n > 0
 		{
 			Size real_m = m + 1, real_n = n + 1;
-			for (int i = 0; std::abs(f[i]) <= zero_check && i < m + 1; ++i)
+			for (int i = 0; f[i] == 0.0 && i < m + 1; ++i)
 				real_m--;
-			for (int i = 0; std::abs(g[i]) <= zero_check && i < n + 1; ++i)
+			for (int i = 0; g[i] == 0.0 && i < n + 1; ++i)
 				real_n--;
 
 			if (real_m == 0 || real_n == 0) {

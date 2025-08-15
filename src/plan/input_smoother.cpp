@@ -165,9 +165,9 @@ namespace aris::plan {
 		//aris::dynamic::s_vc(imp_->input_size_, imp_->input_poss_ + (imp_->tg_idx_ % pool_size) * imp_->input_size_, imp_->input_poss_ + ((imp_->tg_idx_ + 3) % pool_size) * imp_->input_size_);
 	}
 
-	auto getInputPos(Size input_size, double u_at, const double *u, const double*p0, const double* p1, const double* p2, const double* p3, const double* p4, const double* p5, double* p) -> void {
+	auto getInputPos(Size input_size, double u_at, const double *u, const double*p0, const double* p1, const double* p2, const double* p3, double* p) -> void {
 		for (Size i = 0; i < input_size; ++i) {
-			double x[6]{ p0[i], p1[i], p2[i], p3[i], p4[i], p5[i] };
+			double x[4]{ p0[i], p1[i], p2[i], p3[i] };
 			aris::dynamic::s_interp_scurve(u, x, u_at, p[i]);
 		}
 	};
@@ -189,7 +189,6 @@ namespace aris::plan {
 			mem[0] = range_init[0];
 			mem[1] = range_init[1];
 
-
 			aris::Size range_num{ 0 }, range_num_sum{ 1 };
 
 			const double x[6]{
@@ -203,7 +202,7 @@ namespace aris::plan {
 					0, dt, 2 * dt, 3 * dt, 4 * dt, 5 * dt
 			};
 
-			aris::dynamic::s_interp_scurve_u5_range(x, s, -500, 500, -1000, 1000, -10000, 10000, range_num, mem + range_num_sum * 2);
+			aris::dynamic::s_interp_scurve_u5_range(x, s, -5, 5, -50, 50, -500, 500, range_num, mem + range_num_sum * 2);
 			auto range_num_sum_old = range_num_sum;
 			aris::dynamic::s_interval_intersect(range_num_sum_old, range_num, mem, mem + range_num_sum_old * 2, range_num_sum, mem + (range_num_sum_old + range_num) * 2);
 			aris::dynamic::s_vc(range_num_sum * 2, mem + (range_num_sum_old + range_num) * 2, mem);

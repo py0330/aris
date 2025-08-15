@@ -19,6 +19,8 @@ namespace aris::dynamic{
 	// 
 	auto ARIS_API s_interp_scurve(const double *x, const double *y, double x_at, double& y_at)->void;
 
+	auto ARIS_API s_interp_scurve2(const double* x, const double* y, double x_at, double& y_at)->void;
+
 
 	// 
 	// u:  u0  u1  u2  u3  u4  u5 
@@ -29,6 +31,10 @@ namespace aris::dynamic{
 	auto ARIS_API s_interp_scurve_u5_range(const double* x, const double* y, 
 		double dy_min, double dy_max, double d2y_min, double d2y_max, double d3y_min, double d3y_max,
 		Size &u5_range_num,double *u5_range)->void;
+
+	auto ARIS_API s_interp_scurve_u3_range(double min_du, const double* u, const double* p,
+		double dp_min, double dp_max, double d2p_min, double d2p_max, double d3p_min, double d3p_max,
+		Size& u3_range_num, double* u5_range)->void;
 
 	auto ARIS_API s_scurve_p2p(double T, double p0, double p1, double t_at, double *p_at, double* v_at, double* a_at)->void;
 	auto ARIS_API s_scurve_v2v(double T, double v0, double v1, double t_at, double* p_at, double* v_at, double* a_at)->void;
