@@ -186,6 +186,7 @@ auto test_time_optimal_processor_1()->void {
 	aris::plan::InputSmoother sp;
 
 	// 最大速度、加速度 //
+	std::vector<double> max_poss{ 314, 314, 314, 314, 314, 314 };
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
 	std::vector<double> max_accs{ 31.4, 31.4, 31.4, 31.4, 31.4, 31.4 };
 	std::vector<double> max_jerks{ 314, 314, 314, 314, 314, 314 };
@@ -253,13 +254,13 @@ auto test_time_optimal_processor_1()->void {
 void test_time_optimal(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	double x[6]{ 0.0080000000000000002, 0.012000000000000000, 0.015999898477761662, 0.020093382747408947, 0.024474922860291064 };
-	double s[6]{ 0.0000000000000000, 0.0010000000000000000, 0.002, 0.003, 0.004, 0.005};
+	//double x[6]{ 0.0080000000000000002, 0.012000000000000000, 0.015999898477761662, 0.020093382747408947, 0.024474922860291064 };
+	//double s[6]{ 0.0000000000000000, 0.0010000000000000000, 0.002, 0.003, 0.004, 0.005};
 
 
-	aris::Size range_num;
-	double mem[20];
-	aris::dynamic::s_interp_scurve_u5_range(x, s, -5, 5, -50, 50, -500, 500, range_num, mem);
+	//aris::Size range_num;
+	//double mem[20];
+	//aris::dynamic::s_interp_scurve_u5_range(x, s, -5, 5, -50, 50, -500, 500, range_num, mem);
 
 
 

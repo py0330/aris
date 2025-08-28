@@ -347,11 +347,11 @@ namespace aris::dynamic{
 		//% 
 		//% d3p_du3 = (d3p_ds3 * du_ds^2 - 3*d2p_ds2*du_ds*d2u_ds2 +
 		//%           dp_ds*3*(d2u_ds2)^2 - du_ds * d3u_ds3)/(du_ds^5)
-		double dp_du_2 = dp_ds_s2 / du_ds_s2;
-		double d2p_du2_2 = (d2p_ds2_s2 * du_ds_s2 - dp_ds_s2 * d2u_ds2_s2) / (du_ds_s2 * du_ds_s2 * du_ds_s2);
+		double dp_du_1 = dp_ds_1 / du_ds_1;
+		double d2p_du2_1 = (d2p_ds2_1 * du_ds_1 - dp_ds_1 * d2u_ds2_1) / (du_ds_1 * du_ds_1 * du_ds_1);
 
-		double dp_du_3 = dp_ds_s3 / du_ds_s3;
-		double d2p_du2_3 = (d2p_ds2_s3 * du_ds_s3 - dp_ds_s3 * d2u_ds2_s3) / (du_ds_s3 * du_ds_s3 * du_ds_s3);
+		double dp_du_2 = dp_ds_2 / du_ds_2;
+		double d2p_du2_2 = (d2p_ds2_2 * du_ds_2 - dp_ds_2 * d2u_ds2_2) / (du_ds_2 * du_ds_2 * du_ds_2);
 
 
 
@@ -470,13 +470,13 @@ namespace aris::dynamic{
 		//% end
 		//% 
 		//% 
-		double u_in = u_at - u[2];
+		double u_in = u_at - u[1];
 
-		double T = u[3] - u[2];
+		double T = u[2] - u[1];
 		double T2 = T * T;
 		double T3 = T2 * T;
 
-		const double pva23[6]{ p[1], dp_du_2, d2p_du2_2, p[2], dp_du_3, d2p_du2_3 };
+		const double pva23[6]{ p[1], dp_du_1, d2p_du2_1, p[2], dp_du_2, d2p_du2_2 };
 		double k[4];
 
 		if (u_in < T / 4) {
@@ -1544,8 +1544,8 @@ namespace aris::dynamic{
 		}
 
 		for (int i = 0; i < u3_range_num; ++i) {
-			u3_range[i * 2] = 1.0 / y[i * 2 + 1];
-			u3_range[i * 2 + 1] = 1.0 / y[i * 2];
+			u3_range[i * 2] = 1.0 / y[i * 2 + 1] + u[1];
+			u3_range[i * 2 + 1] = 1.0 / y[i * 2] + u[1];
 		}
 
 	}
