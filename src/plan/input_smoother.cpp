@@ -1,10 +1,13 @@
 ﻿#include"aris/plan/input_smoother.hpp"
 #include"aris/plan/function.hpp"
 
-//#define ARIS_DEBUG_INPUT_SMOOTHER
+#define ARIS_DEBUG_INPUT_SMOOTHER
 
 namespace aris::plan {
-	
+#ifdef ARIS_DEBUG_INPUT_SMOOTHER
+
+	int begin_log = 0;
+#endif
 	
 
 	// 计算出来 s4
@@ -472,6 +475,19 @@ namespace aris::plan {
 				// 最终更新数据 //
 				lhs_d3s = std::max(lhs_d3s_local, lhs_d3s);
 				rhs_d3s = std::min(rhs_d3s_local, rhs_d3s);
+
+#ifdef ARIS_DEBUG_INPUT_SMOOTHER
+				if (begin_log) {
+					std::cout << "----" << std::endl;
+					std::cout << "i:" << i << "  lls_d3s_local:" << lhs_d3s_local << "  rhs_d3s_local:" << rhs_d3s_local << std::endl;
+					std::cout << "lhs2_local: " << lhs2_local << std::endl;
+					std::cout << "lhs3_local: " << lhs3_local << std::endl;
+					std::cout << "rhs2_local: " << rhs2_local << std::endl;
+					std::cout << "rhs3_local: " << rhs3_local << std::endl;
+
+				}
+#endif
+
 			}
 		}
 
@@ -500,10 +516,7 @@ namespace aris::plan {
 	};
 
 	
-#ifdef ARIS_DEBUG_INPUT_SMOOTHER
-	
-	int begin_log = 0;
-#endif
+
 	int test_depth = 0;
 
 	struct InputSmoother::Imp {
@@ -561,6 +574,11 @@ namespace aris::plan {
 			for (Size i = 0; i < input_size_; ++i) {
 				double x[6]{ p0[i], p1[i], p2[i], p3[i], p4[i], p5[i] };
 				aris::dynamic::s_interp_scurve(s_series, x, s_local, p[i]);
+
+
+				//p[i] = p2[i] + (p3[i] - p2[i]) * s_local / dt_;
+
+
 			}
 			
 			
@@ -598,12 +616,17 @@ namespace aris::plan {
 			// 没有在规定时间内把速度降为0 //
 			if (check_if_ok(input_size_, dt_, max_vels_, min_vels_, max_accs_, min_accs_, p1, p2, p3) != input_size_) {
 				check_if_ok(input_size_, dt_, max_vels_, min_vels_, max_accs_, min_accs_, p1, p2, p3);
-				
+#ifdef ARIS_DEBUG_INPUT_SMOOTHER		
+				if (begin_log) {
+					std::cout << "test failed:" << test_depth << std::endl;
+					//std::cout << "s3:" << s3 << "  s2:" << s2 << std::endl;
+				}
+#endif
 				return false;
 			}
 
 			// 判断是否成功 //
-			if ((s3 - s2) < 1e-8) {
+			if ((s3 - s2) <= 0) {
 #ifdef ARIS_DEBUG_INPUT_SMOOTHER
 				if (begin_log) {
 					std::cout << "test succeesful:" << test_depth << std::endl;
@@ -630,28 +653,32 @@ namespace aris::plan {
 			std::swap(s1, s2);
 			std::swap(s2, s3);
 
-			double ds1 = (s1 - s0) / dt_;
 			double ds2 = (s2 - s1) / dt_;
-			double d2s2 = (ds2 - ds1) / dt_;
-
 			double d2s3 = ret.d2s_lhs;
 
-			if (d2s3*(1000-test_depth)*dt_ > ds2 || ret.d3s_lhs > ret.d3s_rhs) {
+
+			if (d2s3*(1000-test_depth)*dt_ > ds2 || (ret.d2s_lhs > ret.d2s_rhs)) {
+#ifdef ARIS_DEBUG_INPUT_SMOOTHER		
+				if (begin_log) {
+					std::cout << "test failed no large dec:" << test_depth << std::endl;
+					//std::cout << "s3:" << s3 << "  s2:" << s2 << std::endl;
+				}
+#endif
 				return false;
 			}
 			else {
-				//d2s3 = std::min(0.99*d2s3, ds2/ (1000 - test_depth));
 				d2s3 = std::min(0.99 * d2s3, ret.d2s_rhs);
 			}
-#ifdef ARIS_DEBUG_INPUT_SMOOTHER
-			if (begin_log) {
-				std::cout << "test:"<<test_depth << std::endl;
-				std::cout << "ds1:" << ds1 << "  ds2:" << ds2 << "  d2s3:" << d2s3 <<" lhs:" << ret.d3s_lhs <<"  rhs:" << ret.d3s_rhs << std::endl;
-			}
-#endif
 
 			double ds3 = ds2 + d2s3 * dt_;
 			s3 = s2 + ds3 * dt_;
+
+#ifdef ARIS_DEBUG_INPUT_SMOOTHER
+			if (begin_log) {
+				std::cout <<"file:" <<__FILE__<<":"<<__LINE__ << "test:" << test_depth << std::endl;
+				std::cout << "ds2:" << ds2 << "  ds3:" << ds3 << "  d2s3:" << d2s3 << " lhs:" << ret.d2s_lhs << "  rhs:" << ret.d2s_rhs << std::endl;
+			}
+#endif
 
 			return test_next_input(s0, s1, s2, s3, p1, p2, p3, p0);
 		}
@@ -805,15 +832,14 @@ namespace aris::plan {
 
 				d2s3 = std::min(ret.d2s_lhs*0.99, ret.d2s_rhs);
 				ret.d3s_lhs = (d2s3 - d2s2) / imp_->dt_;
+				ret.d2s_lhs = std::min(ret.d2s_lhs * 0.99, ret.d2s_rhs);
+
 #ifdef ARIS_DEBUG_INPUT_SMOOTHER
 				if (begin_log) {
 					std::cout << "---------------------begin------------" << std::endl;
-					std::cout << "ds1:" << ds1 << "  ds2:" << ds2 << "  d2s3:" << d2s3 << std::endl;
+					std::cout << "ds1:" << ds1 << "  ds2:" << ds2 << "  d2s3:" << d2s3 << "  lhs:" << ret.d2s_lhs <<"  rhs:" << ret.d2s_rhs << std::endl;
 				}
 #endif
-				
-
-				ret.d2s_lhs = std::min(ret.d2s_lhs * 0.99, ret.d2s_rhs);
 			}
 
 
@@ -856,6 +882,13 @@ namespace aris::plan {
 				double ds3 = ds2 + l * imp_->dt_;
 				//////////////////////////////////////////////////
 				//s3 = s2 + ds3 * imp_->dt_;
+
+				if (ds3 * imp_->dt_ < 1e-8) {
+					std::cout << "error, too small ds" << std::endl;
+				}
+
+
+
 				s3 = std::max(s2 + ds3 * imp_->dt_, s2 + 1e-8);
 				//////////////////////////////////////////////////
 				
@@ -871,11 +904,7 @@ namespace aris::plan {
 				static int count_{ 0 };
 				count_++;
 
-				if (count_ > 10750 && count_ < 10753)
-					begin_log = 1;
-				else {
-					begin_log = 0;
-				}
+				
 
 				if (begin_log) {
 
@@ -904,7 +933,11 @@ namespace aris::plan {
 					aris::dynamic::dsp(1, 6, a2);
 				
 				}
-
+				if (count_ > 13150 && count_ < 13153)
+					begin_log = 1;
+				else {
+					begin_log = 0;
+				}
 #endif
 			}
 		}
