@@ -193,17 +193,20 @@ auto test_time_optimal_processor_1()->void {
 
 	// 设置模型等参数 //
 	sp.setModel(*puma);
-	sp.setTrajectoryGenerator(tg);
+
+	sp.setInputGenerator([&puma, &tg](double* p)->std::int64_t {
+		double output[16];
+		auto ret = tg.getEePosAndMoveDt(output);
+		puma->setOutputPos(output);
+		puma->inverseKinematics();
+		puma->getInputPos(p);
+		return ret;
+	});
 	sp.setVelLimits(max_vels.data());
 	sp.setAccLimits(max_accs.data());
 	sp.setJerkLimits(max_jerks.data());
 
-
 	sp.init(input_init);
-
-
-	//sp.lookAheadOneStep();
-
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
