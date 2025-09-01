@@ -174,40 +174,53 @@ auto test_time_optimal_processor_1()->void {
 	puma->inverseKinematics();
 
 	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-	double input_init[6]{ 0,0,0,0,0,0 };
+	double input_init[6]{ -1,0,0,0,0,0 };
 	puma->getInputPos(input_init);
-	//puma->setInputPos(input_init);
-	//puma->forwardKinematics();
-	//double pm[16];
-	//puma->getOutputPos(pm);
-	//aris::dynamic::dsp(1, 16, pm);
 
-	// 设置 lookahead //
+
+	// 设置 InputSmoother //
 	aris::plan::InputSmoother sp;
+
+	int input_size = 1;
+	sp.allocateMemory(input_size);
 
 	// 最大速度、加速度 //
 	std::vector<double> max_poss{ 314, 314, 314, 314, 314, 314 };
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
 	std::vector<double> max_accs{ 31.4, 31.4, 31.4, 31.4, 31.4, 31.4 };
 	std::vector<double> max_jerks{ 314, 314, 314, 314, 314, 314 };
-
-	// 设置模型等参数 //
-	sp.setModel(*puma);
-
-	sp.setInputGenerator([&puma, &tg](double* p)->std::int64_t {
-		double output[16];
-		auto ret = tg.getEePosAndMoveDt(output);
-		puma->setOutputPos(output);
-		puma->inverseKinematics();
-		puma->getInputPos(p);
-		return ret;
-	});
 	sp.setVelLimits(max_vels.data());
 	sp.setAccLimits(max_accs.data());
-	sp.setJerkLimits(max_jerks.data());
+	
+	// 设置反解 //
+	//sp.setInputGenerator([&puma, &tg](double* p)->std::int64_t {
+	//	double output[16];
+	//	auto ret = tg.getEePosAndMoveDt(output);
+	//	puma->setOutputPos(output);
+	//	puma->inverseKinematics();
+	//	puma->getInputPos(p);
+	//	return ret;
+	//});
+	sp.setInputGenerator([&puma, &tg](double* p)->std::int64_t {
+		static int count_{ 0 };
 
-	sp.init(input_init);
+		if (count_ == 0) {
+			p[0] = -1;
+		}
+		else {
+			p[0] = std::sin(count_ * 0.001) * 10;
+		}
 
+		count_++;
+
+		if (count_ > 10000)
+			return 0;
+
+
+		return 1;
+	});
+	sp.setBeginInputPos(input_init);
+	
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
@@ -225,6 +238,11 @@ auto test_time_optimal_processor_1()->void {
 		//s += 0.001;
 		m++;
 
+		if(m==11347)
+		std::cout << "m:" << m << std::endl;
+
+
+
 		//if (m > 3000 && m < 6000)
 		//	sp.setTargetDs(0.0);
 		//else
@@ -235,8 +253,8 @@ auto test_time_optimal_processor_1()->void {
 		//}
 
 
-		vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
-		std::copy_n(input_pos, 6, vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
+		vec.resize(m * (input_size * EE_NUM + A_NUM), 0.0);
+		std::copy_n(input_pos, input_size, vec.data() + (input_size * EE_NUM + A_NUM) * (m - 1));
 		
 		//v_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
 		//a_vec.resize(m * (6 * EE_NUM + A_NUM), 0.0);
@@ -246,10 +264,10 @@ auto test_time_optimal_processor_1()->void {
 		//puma->getInputPos(vec.data() + (6 * EE_NUM + A_NUM) * (m - 1));
 	}
 
-	aris::dynamic::dlmwrite(m, (6 * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+	aris::dynamic::dlmwrite(m, (input_size * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), v_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\vpes.txt");
 	//aris::dynamic::dlmwrite(m, (7 * EE_NUM + A_NUM), a_vec.data(), "C:\\Users\\py033\\Desktop\\test_data\\apes.txt");
-
+	
 }
 
 
