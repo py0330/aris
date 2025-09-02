@@ -9,6 +9,7 @@
 #include <any>
 
 #include <aris/core/object.hpp>
+#include <aris/core/expression_calculator.hpp>
 #include <aris/plan/trajectory.hpp>
 #include <aris/dynamic/model_base.hpp>
 
@@ -26,12 +27,24 @@ namespace aris::plan{
 		using InputGenerator = std::function<std::int64_t(double* input)>;
 
 		auto setInputGenerator(InputGenerator input_generator) -> void;
-		auto setPosLimits(const double* max_poss, const double* min_poss = nullptr) -> void;
-		auto setVelLimits(const double* max_vels, const double* min_vels = nullptr) -> void;
-		auto setAccLimits(const double* max_accs, const double* min_accs = nullptr) -> void;
+		auto setInputSize(int input_size) -> void;
+		auto inputSize() -> int;
+		auto setMaxPos(aris::core::Matrix pos) -> void;
+		auto maxPos() -> aris::core::Matrix;
+		auto setMaxVel(aris::core::Matrix vel) -> void;
+		auto maxVel() -> aris::core::Matrix;
+		auto setMaxAcc(aris::core::Matrix acc) -> void;
+		auto maxAcc() -> aris::core::Matrix;
+		auto setMinPos(aris::core::Matrix pos) -> void;
+		auto minPos() -> aris::core::Matrix;
+		auto setMinVel(aris::core::Matrix vel) -> void;
+		auto minVel() -> aris::core::Matrix;
+		auto setMinAcc(aris::core::Matrix acc) -> void;
+		auto minAcc() -> aris::core::Matrix;
+		
 
-		auto allocateMemory(int input_size) -> void;
-		auto setBeginInputPos(const double* init_input_pos) -> void;
+		auto allocateMemory() -> void;
+		auto setInitInputPos(const double* init_input_pos) -> void;
 
 		auto getNextInput(double* p) -> int;
 

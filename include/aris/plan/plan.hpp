@@ -2,8 +2,6 @@
 #include <aris/plan/path.hpp>
 #include <aris/plan/scurve.hpp>
 #include <aris/plan/trajectory.hpp>
-#include <aris/plan/time_optimal_trajectory.hpp>
-#include <aris/plan/singular_processor.hpp>
 #include <aris/plan/move_follower.hpp>
 #include <aris/plan/root.hpp>
 #include <aris/plan/algorithm.hpp>

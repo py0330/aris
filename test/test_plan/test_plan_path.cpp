@@ -239,8 +239,7 @@ void test_arc_estimate() {
 void test_path()
 {
 	std::cout << std::endl << "-----------------test path---------------------" << std::endl;
-	//test_optimal();
-	//test_blend_bezier();
+	test_blend_bezier();
 	test_arc_estimate();
 	std::cout << "-----------------test path finished------------" << std::endl << std::endl;
 }

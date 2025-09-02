@@ -6,8 +6,7 @@
 #include "test_plan_path.h"
 #include "test_plan_scurve.h"
 #include "test_plan_trajectory.h"
-#include "test_plan_time_optimal.h"
-#include "test_plan_singular_processor.h"
+#include "test_plan_input_smoother.h"
 #include "test_plan_move_follower.h"
 
 int main(int argc, char *argv[]){
@@ -60,8 +59,7 @@ int main(int argc, char *argv[]){
 	
 	//test_move_follower();
 	//test_function();
-	test_time_optimal();
-	//test_singular_processor();
+	test_input_smoother();
 	return 0;
 	
 	//test_trajectory();
