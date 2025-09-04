@@ -29,6 +29,10 @@ namespace aris::plan{
 		auto setInputGenerator(InputGenerator input_generator) -> void;
 		auto setInputSize(int input_size) -> void;
 		auto inputSize() -> int;
+		auto setLookAheadCount(int count) -> void;
+		auto lookAheadCount() -> int;
+		auto setDt(double dt) -> void;
+		auto dt() -> double;
 		auto setMaxPos(aris::core::Matrix pos) -> void;
 		auto maxPos() -> aris::core::Matrix;
 		auto setMaxVel(aris::core::Matrix vel) -> void;

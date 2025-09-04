@@ -1,7 +1,7 @@
 ﻿#include"aris/plan/input_smoother.hpp"
 #include"aris/plan/function.hpp"
 
-#define ARIS_DEBUG_INPUT_SMOOTHER
+//#define ARIS_DEBUG_INPUT_SMOOTHER
 
 namespace aris::plan {
 #ifdef ARIS_DEBUG_INPUT_SMOOTHER
@@ -9,23 +9,68 @@ namespace aris::plan {
 #endif
 	
 	struct InputSmoother::Imp {
+		struct InterpNode {
+			double p_;
+			double k0_, k1_, k2_, k3_;
+		};
+		// 线性插值 //
+		auto interp_at(const InterpNode* intp, double s_div_dt) -> double {
+			return s_div_dt * intp->k1_ + intp->k0_;
+		}
+		auto make_interp(InterpNode& node0, InterpNode& node1) -> void {
+			node1.k1_ = node1.p_ - node0.p_;
+			node1.k0_ = node0.p_;
+		}
+		
+		// 三次插值 //
+		auto interp_at4(const InterpNode* intp, double s_div_dt) -> double {
+			return s_div_dt * (s_div_dt * (s_div_dt * intp->k3_ + intp->k2_)+ intp->k1_) + intp->k0_;
+		}
+		auto make_interp4(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				double v1 = (node2.p_ - node0.p_)/2;
+				double v2 = (node3.p_ - node1.p_)/2;
+				double v3 = 0.0;
+				double p0 = node0.p_;
+				double p1 = node1.p_;
+				double p2 = node2.p_;
+				double p3 = node3.p_;
+
+				node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				node2.k1_ = v1; // p1 - p0
+				node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+			}
+		}
+		
+		/////////////////////////////////////////////////////////////
 		InputGenerator input_generator_{ nullptr };
 		aris::Size input_size_{ 0 };
 		aris::core::Matrix min_pos_mat_, max_pos_mat_, min_vel_mat_, max_vel_mat_, min_acc_mat_, max_acc_mat_;
+		double dt_{ 1e-3 };
+		int look_head_size_{ 150 }; // 前瞻数据
+		int interpolation_size_{ 4 }; // 插值的大小
 
+		/////////////////////////////////////////////////////////////
 		std::vector<char> mem_;
-		double * max_poss_,* max_vels_,* max_accs_, * min_poss_, * min_vels_, * min_accs_, 
-			* input_poss_,* p1_back_, * p2_back_,* p1_, * p2_, *p3_;
+		int pool_size_{ 0 }; // = interpolation_size_ + look_head_size_ + 1
 
+		InterpNode* input_poss_;
+		double * max_poss_,* max_vels_,* max_accs_, * min_poss_, * min_vels_, * min_accs_, 
+			* p1_back_, * p2_back_,* p1_, * p2_, *p3_;
 		std::int64_t* node_ids_;
 
-		double dt_{ 1e-3 };
 		double s1_{ 0.0 }, s2_{ dt_ };
-
 		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
-		int look_head_size_{ 0 }; // 前瞻数据
-		int interpolation_size_{ 4 };
-		int pool_size_{ 0 };
 
 		//% dy = y*k + a;
 		//% 求常微分可得：
@@ -39,13 +84,13 @@ namespace aris::plan {
 		//% a = (k*y0)/(exp(-T*k) - 1)
 		//
 		//
-		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的
-		double k_{ -9 }, a_{ -1 }, last_a_{ -1 }, T_{ 0.128 };
+		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的, T是根据 lookaheadcount 计算得出
+		double k_{ -9 }, a_{ -1 }, last_a_{ -1 }, T_{ 0.1 };
 
 
 		auto allocate_mem()->void{
-			look_head_size_ = std::ceil(T_ / dt_);
-			pool_size_ = look_head_size_ + interpolation_size_;
+			//look_head_size_ = std::ceil(T_ / dt_);
+			pool_size_ = look_head_size_ + interpolation_size_ + 1; 
 
 			Size mem_size = 0;
 			core::allocMem(mem_size, max_poss_, input_size_);
@@ -82,14 +127,40 @@ namespace aris::plan {
 			std::int64_t current_idx = std::int64_t(s / dt_) + 1;
 			auto s_local_div_dt = std::fmod(s, dt_)/dt_;
 
-			double* p2 = input_poss_ + ((current_idx - 1) % pool_size_) * input_size_;
-			double* p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
+			auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
 
 			for (Size i = 0; i < input_size_; ++i) {
-				p[i] = p2[i] + (p3[i] - p2[i]) * s_local_div_dt;
+				// 线性插值 //
+				//p[i] = interp_at(p3 + i, s_local_div_dt);
+
+				// 三次插值 //
+				p[i] = interp_at4(p3 + i, s_local_div_dt);
 			}
 			
 			return 0;
+		}
+		
+		auto insert_nodes() -> void {
+			tg_idx_ = tg_idx_ + 1;
+			node_ids_[(tg_idx_ % pool_size_)] = input_generator_(p3_);
+
+			// 线性插值 //
+			//auto nodes0 = input_poss_ + ((tg_idx_-1) % pool_size_) * input_size_;
+			//auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			//for (int j = 0; j < input_size_; ++j) {
+			//	ins_nodes[j].p_ = p3_[j];
+			//	make_interp(nodes0[j], ins_nodes[j]);
+			//}
+
+			// 三次插值 //
+			auto nodes0 = input_poss_ + ((tg_idx_ - 3) % pool_size_) * input_size_;
+			auto nodes1 = input_poss_ + ((tg_idx_ - 2) % pool_size_) * input_size_;
+			auto nodes2 = input_poss_ + ((tg_idx_ - 1) % pool_size_) * input_size_;
+			auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			for (int j = 0; j < input_size_; ++j) {
+				ins_nodes[j].p_ = p3_[j];
+				make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+			}
 		}
 		auto check_if_ok(const double* p1, const double* p2, const double* p3) -> int {
 			// here is condition //
@@ -104,29 +175,7 @@ namespace aris::plan {
 			}
 			return input_size_;
 		};
-		auto test_next_input(double s2, double s3, double *p1, double *p2, double *p3) -> bool {
-			getInputByS(s3, p3);
-
-			// 判断是否成功 //
-			if ((s3 - s2) <= 0) {
-				return true;
-			}
-
-			// 检查加速度等 //
-			if (check_if_ok(p1, p2, p3) != input_size_) {
-				return false;
-			}
-
-			double ds = (s3 - s2)/dt_;
-			double d2s = a_ + k_ * ds;
-
-			double ds4 = ds + d2s * dt_;
-			double s4 = s3 + ds4 * dt_;
-
-			return test_next_input(s3, s4, p2, p3, p1);
-		}
-
-		auto test_next_input2(double d2s) -> bool {
+		auto test_next_input(double d2s) -> bool {
 			double s2 = s2_;
 			double s3 = s2 + (s2_ - s1_) + d2s * dt_ * dt_;
 			
@@ -159,6 +208,8 @@ namespace aris::plan {
 			return false;
 		}
 		auto init_pos(const double* init_input_pos) -> void {
+			T_ = look_head_size_ * dt_;
+			
 			if (!max_pos_mat_.empty())
 				aris::dynamic::s_vc(input_size_, max_pos_mat_.data(), max_poss_);
 			if (!min_pos_mat_.empty())
@@ -172,38 +223,24 @@ namespace aris::plan {
 			if (!min_acc_mat_.empty())
 				aris::dynamic::s_vc(input_size_, dt_ * dt_, min_acc_mat_.data(), min_accs_);
 
-			//if (!max_vel_mat_.empty())
-			//	aris::dynamic::s_vc(input_size_,  max_vel_mat_.data(), max_vels_);
-			//if (!min_vel_mat_.empty())
-			//	aris::dynamic::s_vc(input_size_,  min_vel_mat_.data(), min_vels_);
-			//if (!max_acc_mat_.empty())
-			//	aris::dynamic::s_vc(input_size_,  max_acc_mat_.data(), max_accs_);
-			//if (!min_acc_mat_.empty())
-			//	aris::dynamic::s_vc(input_size_, min_acc_mat_.data(), min_accs_);
+			// 确保有足够的起始值 //
+			for (int i = 0; i < interpolation_size_; ++i) {
+				for (int j = 0; j < input_size_; ++j) {
+					input_poss_[i * input_size_ + j].p_ = init_input_pos[j];
+				}
+			}
 
-			// 第一第二个数据应该为起始数据 //
-			tg_idx_ = 0;
-			aris::dynamic::s_vc(input_size_, init_input_pos, input_poss_);
-
-			tg_idx_ = 1;
-			aris::dynamic::s_vc(input_size_, init_input_pos, input_poss_ + (tg_idx_ % pool_size_) * input_size_);
+			tg_idx_ = interpolation_size_ - 1;
 
 			// 前瞻足够的数据 //
 			for (int i = 0; i < look_head_size_; ++i) {
-				tg_idx_ = tg_idx_ + 1;
-				node_ids_[(tg_idx_ % pool_size_)] = input_generator_(input_poss_ + (tg_idx_ % pool_size_) * input_size_);
-
+				insert_nodes();
 				if (node_ids_[(tg_idx_ % pool_size_)] == 0)
 					break;
 			}
 
-			// 确保前两个数字有正确的值 //
-			node_ids_[0] = node_ids_[2];
-			node_ids_[1] = node_ids_[2];
-
 			// 确定正确的ds，并设置到s1_
-			s1_ = 1 * dt_;
-			s2_ = 1 * dt_;
+			s2_ = (interpolation_size_ - 1) * dt_;
 			aris::dynamic::s_vc(input_size_, init_input_pos, p1_back_);
 			aris::dynamic::s_vc(input_size_, init_input_pos, p2_back_);
 
@@ -212,6 +249,8 @@ namespace aris::plan {
 			for (; std::abs(ds_l-ds_r)>1e-10;) {
 				double ds = (ds_l + ds_r) / 2;
 
+				s1_ = s2_ - dt_ * ds;
+				
 				a_ = (k_ * ds) / (std::exp(-T_ * k_) - 1);
 				a_ = std::min(a_, -1e-6);
 
@@ -219,9 +258,7 @@ namespace aris::plan {
 				aris::dynamic::s_vc(input_size_, p1_back_, p1_);
 				aris::dynamic::s_vc(input_size_, p2_back_, p2_);
 
-				double s3 = s2_ + ds * dt_ + d2s * dt_ * dt_;
-
-				if (test_next_input(s2_, s3, p1_, p2_, p3_)) {
+				if (test_next_input(d2s)) {
 					s1_ = s2_ - ds * dt_;
 					ds_l = ds;
 				}
@@ -240,7 +277,7 @@ namespace aris::plan {
 					bool if_test_success = false;
 					
 					auto ds = (s2_ - s1_) / dt_;
-					double l = last_a_ + k_ * ds;
+					double l = std::max(last_a_ + k_ * ds, -ds/dt_); // ds 不能小于 0 
 					double r = std::min((1.0 - ds) / dt_, 10.0); // ds 最大不能超过 1
 
 					//for (; mid != last_mid;) {
@@ -258,7 +295,7 @@ namespace aris::plan {
 						aris::dynamic::s_vc(input_size_, p2_back_, p2_);
 
 						//if (test_next_input(s2_, s3, p1_, p2_, p3_)) {
-						if (test_next_input2(mid)) {
+						if (test_next_input(mid)) {
 							l = mid;
 							last_a_ = a_;
 							if_test_success = true;
@@ -282,8 +319,9 @@ namespace aris::plan {
 			{
 				// 如果轨迹已经结束，或已经满
 				if (node_ids_[(tg_idx_ % pool_size_)] && tg_idx_ - current_idx < look_head_size_) {
-					tg_idx_ = tg_idx_ + 1;
-					node_ids_[(tg_idx_ % pool_size_)] = input_generator_(input_poss_ + (tg_idx_ % pool_size_) * input_size_);
+					insert_nodes();
+
+					//node_ids_[(tg_idx_ % pool_size_)] = input_generator_(input_poss_ + (tg_idx_ % pool_size_) * input_size_);
 				}
 			}
 
@@ -314,6 +352,18 @@ namespace aris::plan {
 	}
 	auto InputSmoother::inputSize() -> int {
 		return imp_->input_size_;
+	}
+	auto InputSmoother::setLookAheadCount(int count) -> void {
+		imp_->look_head_size_ = count;
+	}
+	auto InputSmoother::lookAheadCount() -> int {
+		return imp_->look_head_size_;
+	}
+	auto InputSmoother::setDt(double dt) -> void {
+		imp_->dt_ = dt;
+	}
+	auto InputSmoother::dt() -> double {
+		return imp_->dt_;
 	}
 	auto InputSmoother::setMaxPos(aris::core::Matrix pos) -> void {
 		imp_->max_pos_mat_ = pos;

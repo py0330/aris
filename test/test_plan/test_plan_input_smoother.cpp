@@ -62,6 +62,8 @@ auto test_input_smoother_sin()->void {
 		
 		m++;
 
+		std::cout << "m:" << m << std::endl;
+
 		vec.resize(m * input_size, 0.0);
 		std::copy_n(input_pos, input_size, vec.data() + input_size * (m - 1));
 	}
@@ -205,7 +207,8 @@ auto test_input_smoother_2() -> void {
 void test_input_smoother(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_input_smoother_2();
+	test_input_smoother_sin();
+	//test_input_smoother_2();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }
