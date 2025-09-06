@@ -85,7 +85,7 @@ namespace aris::plan {
 			Move        move_;
 			Zone        zone1_, 
 				        zone2_;
-			SCurveParam scurve_, scurve_origin_;
+			SCurveParam scurve_;
 		};
 		struct EePlanData {
 			// Move Unit
@@ -1242,95 +1242,62 @@ namespace aris::plan {
 		double diff = last_zone_value_upper - last_zone_value_below;
 		double last_diff = std::max(1.0, 2 * diff);
 
-		// 二分法修正上个单元的 scurve，使得它可以达到 Tmax（否则可能会出现规划失败）
-		//while (diff != last_diff) {
-		//	last_u = last_u_reserve;
-		//	this_u = this_u_reserve;
-		//	
-		//	last_u.zone2_.zone_value_ = (last_zone_value_upper + last_zone_value_below) / 2;
-			
-			switch (last_u.type_) {
+		switch (last_u.type_) {
+		case Node::UnitType::Line3:
+			switch (this_u.type_) {
 			case Node::UnitType::Line3:
-				switch (this_u.type_) {
-				case Node::UnitType::Line3:
-					make_zone_and_scurve_ll(last_u, this_u);
-					break;
-				case Node::UnitType::Circle3:
-					make_zone_and_scurve_lc(last_u, this_u);
-					break;
-				}
+				make_zone_and_scurve_ll(last_u, this_u);
 				break;
 			case Node::UnitType::Circle3:
-				switch (this_u.type_) {
-				case Node::UnitType::Line3:
-					make_zone_and_scurve_cl(last_u, this_u);
-					break;
-				case Node::UnitType::Circle3:
-					make_zone_and_scurve_cc(last_u, this_u);
-					break;
-				}
-				break;
-			case Node::UnitType::Line2:
-				switch (this_u.type_) {
-				case Node::UnitType::Line2:
-					make_zone_and_scurve_ll(last_u, this_u);
-					break;
-				case Node::UnitType::Circle2:
-					make_zone_and_scurve_lc(last_u, this_u);
-					break;
-				}
-				break;
-			case Node::UnitType::Circle2:
-				switch (this_u.type_) {
-				case Node::UnitType::Line2:
-					make_zone_and_scurve_cl(last_u, this_u);
-					break;
-				case Node::UnitType::Circle2:
-					make_zone_and_scurve_cc(last_u, this_u);
-					break;
-				}
-				break;
-			case Node::UnitType::Rotate3:
-				switch (this_u.type_) {
-				case Node::UnitType::Rotate3:
-					make_zone_and_scurve_qq(last_u, this_u);
-					break;
-				}
-				break;
-			case Node::UnitType::Line1:
-				switch (this_u.type_) {
-				case Node::UnitType::Line1:
-					make_zone_and_scurve_ll(last_u, this_u);
-					break;
-				}
+				make_zone_and_scurve_lc(last_u, this_u);
 				break;
 			}
-
-		//	if (s_scurve_cpt_T_upper(last_u.scurve_) != std::numeric_limits<double>::infinity()) {
-		//		//std::cout << "[debug in make_zone_and_scurve] : binary search zone value " << diff <<"  last" << last_diff << std::endl;
-		//		last_zone_value_upper = last_u.zone2_.zone_value_;
-		//		if_need_binary = true;
-		//	}
-		//	else {
-		//		last_zone_value_below = last_u.zone2_.zone_value_;
-		//	}
-
-		//	last_diff = diff;
-		//	diff = last_zone_value_upper - last_zone_value_below;
-		//}
-		
-		/////////////////////////////  for debug /////////////////////////////
-		//if (if_need_binary) {
-		//	std::cout << "binary search end:" << last_zone_value_upper << "  " << last_zone_value_below << std::endl;
-		//
-		//}
-		/////////////////////////////  for debug /////////////////////////////
-
-
-
-		// 更新起始的scurve数值 //
-		last_u.scurve_origin_ = last_u.scurve_;
-		this_u.scurve_origin_ = this_u.scurve_;
+			break;
+		case Node::UnitType::Circle3:
+			switch (this_u.type_) {
+			case Node::UnitType::Line3:
+				make_zone_and_scurve_cl(last_u, this_u);
+				break;
+			case Node::UnitType::Circle3:
+				make_zone_and_scurve_cc(last_u, this_u);
+				break;
+			}
+			break;
+		case Node::UnitType::Line2:
+			switch (this_u.type_) {
+			case Node::UnitType::Line2:
+				make_zone_and_scurve_ll(last_u, this_u);
+				break;
+			case Node::UnitType::Circle2:
+				make_zone_and_scurve_lc(last_u, this_u);
+				break;
+			}
+			break;
+		case Node::UnitType::Circle2:
+			switch (this_u.type_) {
+			case Node::UnitType::Line2:
+				make_zone_and_scurve_cl(last_u, this_u);
+				break;
+			case Node::UnitType::Circle2:
+				make_zone_and_scurve_cc(last_u, this_u);
+				break;
+			}
+			break;
+		case Node::UnitType::Rotate3:
+			switch (this_u.type_) {
+			case Node::UnitType::Rotate3:
+				make_zone_and_scurve_qq(last_u, this_u);
+				break;
+			}
+			break;
+		case Node::UnitType::Line1:
+			switch (this_u.type_) {
+			case Node::UnitType::Line1:
+				make_zone_and_scurve_ll(last_u, this_u);
+				break;
+			}
+			break;
+		}
 	}
 
 	// get unit data //
@@ -1432,7 +1399,6 @@ namespace aris::plan {
 		aris::dynamic::s_vc(data_size, p_, p);
 		aris::dynamic::s_vc(data_size, dp_, dp);
 		aris::dynamic::s_vc(data_size, d2p_, d2p);
-
 	}
 	auto get_move_data(double arc, double darc, double d2arc, Node::UnitType type, const Node::Move& m, double* p, double* dp, double* d2p) -> void {
 		switch (type) {
@@ -1854,16 +1820,12 @@ namespace aris::plan {
 	}
 	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::EEType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
 		// 构造 scurve list //
-		std::list<SCurveNode> ins_scurve_list, ins_scurve_origin_list;
+		std::list<SCurveNode> ins_scurve_list/*, ins_scurve_origin_list*/;
 		LargeNum t0;
 		for (auto iter = begin; iter != end; ++iter) {
 			ins_scurve_list.push_back(SCurveNode{});
 			auto& scurve_node = ins_scurve_list.back();
 			scurve_node.params_.reserve(scurve_size);
-
-			ins_scurve_origin_list.push_back(SCurveNode{});
-			auto& scurve_node_origin = ins_scurve_origin_list.back();
-			scurve_node_origin.params_.reserve(scurve_size);
 
 			for (int i = 0; i < ee_types.size();++i) {
 				auto& ee_p = iter->ee_plans_[i];
@@ -1880,8 +1842,6 @@ namespace aris::plan {
 					begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
 					scurve_node.params_.push_back(ee_p.x_.scurve_);
 					scurve_node.params_.push_back(ee_p.a_.scurve_);
-					scurve_node_origin.params_.push_back(ee_p.x_.scurve_origin_);
-					scurve_node_origin.params_.push_back(ee_p.a_.scurve_origin_);
 					break;
 				}
 				case aris::dynamic::EEType::RE313: [[fallthrough]];
@@ -1891,7 +1851,6 @@ namespace aris::plan {
 				case aris::dynamic::EEType::RQ: {
 					begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
 					scurve_node.params_.push_back(ee_p.a_.scurve_);
-					scurve_node_origin.params_.push_back(ee_p.a_.scurve_origin_);
 					break;
 				}
 				case aris::dynamic::EEType::XYZ: [[fallthrough]];
@@ -1901,7 +1860,6 @@ namespace aris::plan {
 				case aris::dynamic::EEType::A: {
 					begin->ee_plans_[i].x_.scurve_.t0_ = last->ee_plans_[i].x_.scurve_.t0_ + last->ee_plans_[i].x_.scurve_.T_;
 					scurve_node.params_.push_back(ee_p.x_.scurve_);
-					scurve_node_origin.params_.push_back(ee_p.x_.scurve_origin_);
 					break;
 				}
 				case aris::dynamic::EEType::UNKNOWN:
@@ -1914,96 +1872,9 @@ namespace aris::plan {
 
 		// 进行规划 //
 		if (s_scurve_make_nodes(ins_scurve_list.begin(), ins_scurve_list.end()) != 0) {
-			std::cout << "[debug failed] : make scurve error" << std::endl;
-			
-			
-			//// 如果失败，则改为原始数据，因为原始数据一定会成功
-			//// 但是原始数据的首个节点的起始速度不对，应改为上次优化后的数据
-			//for (int i = 0; i < ins_scurve_list.front().params_.size(); ++i) {
-			//	// param1 //
-			//	auto& origin_param = ins_scurve_origin_list.front().params_[i];
-			//	auto& param = ins_scurve_list.front().params_[i];
-
-			//	double vb = origin_param.vb_;
-
-			//	s_scurve_plan_eliminate_optimization(vb, param);
-
-			//	std::swap(origin_param, param);
-			//}
-			// 交换优化 //
-			std::swap(ins_scurve_list, ins_scurve_origin_list);
-
-
-			if (s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end()) != 0) {
-				s_scurve_make_nodes(std::next(ins_scurve_list.begin()), ins_scurve_list.end());
-				
-				std::cout << "[debug failed] : make scurve error when use origin data" << std::endl;
-				std::cout << "[debug failed] : scurve length:" << std::endl;
-				for (auto& scurve_param : ins_scurve_list.back().params_)
-					std::cout << scurve_param.pb_ - scurve_param.pa_ << std::endl;
-
-				std::cout << "[debug failed] : zone1 length:" << std::endl;
-				for (auto& p : std::prev(end)->ee_plans_)
-					std::cout << p.x_.zone1_.length_ << std::endl;
-
-
-
-
-				return -1;
-			}
+			//std::cout << "[debug failed] : make scurve error" << std::endl;
+			return -1;
 		}
-
-		// 将规划好的 scurve 返回到 nodes 中的 origin 位置 //
-		auto scurve_iter = ins_scurve_list.begin();
-		for (auto iter = begin; iter != end; ++iter) {
-			auto& scurve_node = *scurve_iter;
-			scurve_iter++;
-			iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
-			for (int i = 0, s_idx = 0; i < iter->ee_plans_.size(); ++i) {
-				auto& ee_p = iter->ee_plans_[i];
-				switch (ee_types[i]) {
-				case aris::dynamic::EEType::PE313: [[fallthrough]];
-				case aris::dynamic::EEType::PE321: [[fallthrough]];
-				case aris::dynamic::EEType::PE123: [[fallthrough]];
-				case aris::dynamic::EEType::PM: [[fallthrough]];
-				case aris::dynamic::EEType::PQ: [[fallthrough]];
-				case aris::dynamic::EEType::XYZT: [[fallthrough]];
-				case aris::dynamic::EEType::RTZ: [[fallthrough]];
-				case aris::dynamic::EEType::XYT: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					ee_p.a_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::RE313: [[fallthrough]];
-				case aris::dynamic::EEType::RE321: [[fallthrough]];
-				case aris::dynamic::EEType::RE123: [[fallthrough]];
-				case aris::dynamic::EEType::RM: [[fallthrough]];
-				case aris::dynamic::EEType::RQ: {
-					ee_p.a_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: [[fallthrough]];
-				case aris::dynamic::EEType::XY: [[fallthrough]];
-				case aris::dynamic::EEType::RT: [[fallthrough]];
-				case aris::dynamic::EEType::X: [[fallthrough]];
-				case aris::dynamic::EEType::A: {
-					ee_p.x_.scurve_origin_ = scurve_node.params_[s_idx];
-					s_idx++;
-					break;
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-					break;
-				default:
-					break;
-				}
-			}
-		}
-
-		// 优化节点 //
-		//s_optimize_scurve_adjacent_nodes(ins_scurve_list.begin(), ins_scurve_list.end());
 
 		// 将规划好的 scurve 返回到 nodes 中的优化后的位置 //
 		for (auto iter = begin; iter != end; ++iter) {

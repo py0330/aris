@@ -48,7 +48,7 @@ namespace aris::plan{
 		
 
 		auto allocateMemory() -> void;
-		auto setInitInputPos(const double* init_input_pos) -> void;
+		auto init(const double* init_input_pos) -> void;
 
 		auto getNextInput(double* p) -> int;
 
@@ -62,7 +62,43 @@ namespace aris::plan{
 	};
 
 	
-	
+	class ARIS_API SpeedRegulator {
+	public:
+		using InputGenerator = std::function<std::int64_t(double* input)>;
+
+		auto setInputGenerator(InputGenerator input_generator) -> void;
+		auto setInputSize(int input_size) -> void;
+		auto inputSize() -> int;
+		auto setDt(double dt) -> void;
+		auto dt() -> double;
+		auto setMaxPos(aris::core::Matrix pos) -> void;
+		auto maxPos() -> aris::core::Matrix;
+		auto setMaxVel(aris::core::Matrix vel) -> void;
+		auto maxVel() -> aris::core::Matrix;
+		auto setMaxAcc(aris::core::Matrix acc) -> void;
+		auto maxAcc() -> aris::core::Matrix;
+		auto setMinPos(aris::core::Matrix pos) -> void;
+		auto minPos() -> aris::core::Matrix;
+		auto setMinVel(aris::core::Matrix vel) -> void;
+		auto minVel() -> aris::core::Matrix;
+		auto setMinAcc(aris::core::Matrix acc) -> void;
+		auto minAcc() -> aris::core::Matrix;
+
+		auto allocateMemory() -> void;
+		auto init(const double* init_input_pos) -> void;
+		auto setTargetSpeedRatio(double ds) -> void; // 0 <= ds <= 1
+		auto targetSpeedRatio() -> double;
+		auto actualSpeedRatio() -> double;
+		auto getNextInput(double* p) -> int;
+
+		~SpeedRegulator();
+		SpeedRegulator();
+		ARIS_DELETE_BIG_FOUR(SpeedRegulator);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	};
 	
 	
 }

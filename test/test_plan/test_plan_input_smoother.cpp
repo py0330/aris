@@ -46,7 +46,7 @@ auto test_input_smoother_sin()->void {
 		return 1;
 	});
 	double input_init[1]{ -1 };
-	sp.setInitInputPos(input_init);
+	sp.init(input_init);
 	
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
@@ -181,7 +181,7 @@ auto test_input_smoother_2() -> void {
 		puma->getInputPos(p);
 		return ret;
 	});
-	sp.setInitInputPos(input_init);
+	sp.init(input_init);
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;

@@ -404,8 +404,7 @@ namespace aris::plan {
 	auto InputSmoother::allocateMemory() -> void {
 		imp_->allocate_mem();
 	}
-
-	auto InputSmoother::setInitInputPos(const double *init_input_pos) -> void {
+	auto InputSmoother::init(const double *init_input_pos) -> void {
 		imp_->init_pos(init_input_pos);
 	}
 	auto InputSmoother::getNextInput(double* p) -> int {
@@ -416,5 +415,120 @@ namespace aris::plan {
 
 	}
 
+	struct SpeedRegulator::Imp {
 
+		/////////////////////////////////////////////////////////////
+		InputGenerator input_generator_{ nullptr };
+		aris::Size input_size_{ 0 };
+		aris::core::Matrix min_pos_mat_, max_pos_mat_, min_vel_mat_, max_vel_mat_, min_acc_mat_, max_acc_mat_;
+		double dt_{ 1e-3 };
+		int look_head_size_{ 150 }; // 前瞻数据
+		int interpolation_size_{ 4 }; // 插值的大小
+
+		/////////////////////////////////////////////////////////////
+		std::vector<char> mem_;
+		double* max_poss_, * max_vels_, * max_accs_, * min_poss_, * min_vels_, * min_accs_,
+			* p1_back_, * p2_back_, * p1_, * p2_, * p3_;
+		std::int64_t* node_ids_;
+
+		double s1_{ 0.0 }, s2_{ dt_ };
+		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
+
+		//% dy = y*k + a;
+		//% 求常微分可得：
+		//%  y = -a/k + exp(k*t)*C
+		//%
+		//% 其中 C 为常数，若已知 y0 则 C = y0 + a/k
+		//% y 从 y0 降为0 的时间为：
+		//%
+		//% T = log(a/(a + k*y0))/k
+		//% 上式若已知 k y0 T 求a，则：
+		//% a = (k*y0)/(exp(-T*k) - 1)
+		//
+		//
+		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的, T是根据 lookaheadcount 计算得出
+		double k_{ -9 }, a_{ -1 }, last_a_{ -1 }, T_{ 0.1 };
+
+
+		auto allocate_mem() -> void {
+			Size mem_size = 0;
+			core::allocMem(mem_size, max_poss_, input_size_);
+			core::allocMem(mem_size, max_vels_, input_size_);
+			core::allocMem(mem_size, max_accs_, input_size_);
+			core::allocMem(mem_size, min_poss_, input_size_);
+			core::allocMem(mem_size, min_vels_, input_size_);
+			core::allocMem(mem_size, min_accs_, input_size_);
+			core::allocMem(mem_size, p1_back_, input_size_);
+			core::allocMem(mem_size, p2_back_, input_size_);
+			core::allocMem(mem_size, p1_, input_size_);
+			core::allocMem(mem_size, p2_, input_size_);
+			core::allocMem(mem_size, p3_, input_size_);
+
+			mem_.resize(mem_size, char(0));
+
+			max_poss_ = core::getMem(mem_.data(), max_poss_);
+			max_vels_ = core::getMem(mem_.data(), max_vels_);
+			max_accs_ = core::getMem(mem_.data(), max_accs_);
+			min_poss_ = core::getMem(mem_.data(), min_poss_);
+			min_vels_ = core::getMem(mem_.data(), min_vels_);
+			min_accs_ = core::getMem(mem_.data(), min_accs_);
+			p1_back_ = core::getMem(mem_.data(), p1_back_);
+			p2_back_ = core::getMem(mem_.data(), p2_back_);
+			p1_ = core::getMem(mem_.data(), p1_);
+			p2_ = core::getMem(mem_.data(), p2_);
+			p3_ = core::getMem(mem_.data(), p3_);
+		};
+
+	};
+	auto SpeedRegulator::setInputGenerator(InputGenerator generator) -> void {
+		imp_->input_generator_ = generator;
+	}
+	auto SpeedRegulator::setInputSize(int input_size) -> void {
+		imp_->input_size_ = input_size;
+	}
+	auto SpeedRegulator::inputSize() -> int {
+		return imp_->input_size_;
+	}
+	auto SpeedRegulator::setDt(double dt) -> void {
+		imp_->dt_ = dt;
+	}
+	auto SpeedRegulator::dt() -> double {
+		return imp_->dt_;
+	}
+	auto SpeedRegulator::setMaxPos(aris::core::Matrix pos) -> void {
+		imp_->max_pos_mat_ = pos;
+	}
+	auto SpeedRegulator::maxPos() -> aris::core::Matrix {
+		return imp_->max_pos_mat_;
+	}
+	auto SpeedRegulator::setMaxVel(aris::core::Matrix vel) -> void {
+		imp_->max_vel_mat_ = vel;
+	}
+	auto SpeedRegulator::maxVel() -> aris::core::Matrix {
+		return imp_->max_vel_mat_;
+	}
+	auto SpeedRegulator::setMaxAcc(aris::core::Matrix acc) -> void {
+		imp_->max_acc_mat_ = acc;
+	}
+	auto SpeedRegulator::maxAcc() -> aris::core::Matrix {
+		return imp_->max_acc_mat_;
+	}
+	auto SpeedRegulator::setMinPos(aris::core::Matrix pos) -> void {
+		imp_->min_pos_mat_ = pos;
+	}
+	auto SpeedRegulator::minPos() -> aris::core::Matrix {
+		return imp_->min_pos_mat_;
+	}
+	auto SpeedRegulator::setMinVel(aris::core::Matrix vel) -> void {
+		imp_->min_vel_mat_ = vel;
+	}
+	auto SpeedRegulator::minVel() -> aris::core::Matrix {
+		return imp_->min_vel_mat_;
+	}
+	auto SpeedRegulator::setMinAcc(aris::core::Matrix acc) -> void {
+		imp_->min_acc_mat_ = acc;
+	}
+	auto SpeedRegulator::minAcc() -> aris::core::Matrix {
+		return imp_->min_acc_mat_;
+	}
 }
