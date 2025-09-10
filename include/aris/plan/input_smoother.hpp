@@ -50,7 +50,7 @@ namespace aris::plan{
 		auto allocateMemory() -> void;
 		auto init(const double* init_input_pos) -> void;
 
-		auto getNextInput(double* p) -> int;
+		auto getNextInput(double* p) -> std::int64_t;
 
 		~InputSmoother();
 		InputSmoother();
@@ -85,11 +85,11 @@ namespace aris::plan{
 		auto minAcc() -> aris::core::Matrix;
 
 		auto allocateMemory() -> void;
-		auto init(const double* init_input_pos) -> void;
-		auto setTargetSpeedRatio(double ds) -> void; // 0 <= ds <= 1
+		auto init(double init_target_ds) -> void;
+		auto setTargetSpeedRatio(double du) -> void; // 0 <= ds <= 1
 		auto targetSpeedRatio() -> double;
 		auto actualSpeedRatio() -> double;
-		auto getNextInput(double* p) -> int;
+		auto getNextInput(double* p) -> std::int64_t;
 
 		~SpeedRegulator();
 		SpeedRegulator();
