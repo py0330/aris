@@ -49,19 +49,30 @@ auto test_input_smoother_sin()->void {
 	double input_init[1]{ -1 };
 	sp.init(input_init);
 	
+	// 设置 AsyncGenerator //
+	aris::plan::AsyncGenerator ge;
+	ge.setCacheSize(1000);
+	ge.setDt(1e-3);
+	ge.setInputSize(input_size);
+	ge.setInputGenerator([&sp](double* p)->std::int64_t {
+		return sp.getNextInput(p);
+		});
+	ge.allocateMemory();
+	ge.init();
+
 	// 设置 SpeedRegulator //
 	aris::plan::SpeedRegulator sr;
 	sr.setInputSize(input_size);
 	sr.setDt(0.001);
-	sr.setInputGenerator([&sp](double* p)->std::int64_t {
-		return sp.getNextInput(p);
+	sr.setInputGenerator([&ge](double* p)->std::int64_t {
+		return ge.getNextInput(p);
 		});
 	sr.setMaxVel(aris::core::Matrix(input_size, 1, max_vels.data()));
 	sr.setMinVel(aris::core::Matrix(input_size, 1, min_vels.data()));
 	sr.setMaxAcc(aris::core::Matrix(input_size, 1, max_accs.data()));
 	sr.setMinAcc(aris::core::Matrix(input_size, 1, min_accs.data()));
 	sr.allocateMemory();
-	sr.init(0.5);
+	sr.init(1.0);
 	
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
@@ -69,6 +80,11 @@ auto test_input_smoother_sin()->void {
 	double out_vel[16]{}, out_acc[16]{}, ee_pos[16], input_pos[6];
 	double s = 0;
 	while (auto ret = sr.getNextInput(input_pos)) {
+		if (ret < 0) {
+			std::cout << "failed:" << ret << std::endl;
+			break;
+		}
+
 		static auto last_ret = -1;
 		if (ret != last_ret) {
 			std::cout << "cmd:" << ret << std::endl;
@@ -76,11 +92,13 @@ auto test_input_smoother_sin()->void {
 		}
 		
 		m++;
+		if(m%100 == 0)
+			std::this_thread::sleep_for(std::chrono::nanoseconds(10000000));
 
-		if(m > 1000 && m < 2000)
-			sr.setTargetSpeedRatio(0.0);
-		else if(m > 3000)
-			sr.setTargetSpeedRatio(1.0);
+		//if(m > 1000 && m < 2000)
+		//	sr.setTargetSpeedRatio(0.0);
+		//else if(m > 3000)
+		//	sr.setTargetSpeedRatio(1.0);
 
 		std::cout << "m:" << m << std::endl;
 

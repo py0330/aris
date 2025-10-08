@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS2_H_
-#define ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS2_H_
+﻿#ifndef ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS4_H_
+#define ARIS_DYNAMIC_MECHANISM_SEVEN_AXIS4_H_
 
 #include <array>
 #include <aris/dynamic/model_solver.hpp>
@@ -12,41 +12,36 @@ namespace aris::dynamic{
 	
 	// 带有偏移的七轴机器人反解
 	// 
-	//        z
-	//        ^  y  
-	//        | /
-	//     EE *----> x  
-	//        *
-	//        | z7
-	//        *
-	//        *
-	//    --- o y6
-	//     .  *
-	//     .  *
+	//                       z
+	//        |......a6......^  y  
+	//        y6             | /
+	//    --- o ******       *----> x  
+	//     .  *       ****** | z7
+	//     .  * 
 	//    d5  | z5
 	//     .  *
 	//     .  *
-	//    --- o *** a2 *** * ---
-	//        y4           *  .
-	//                     *  .
-	//                  z3 | d3
-	//                     *  .
-	//        y2           *  .        
-	//    --- o *** a2 *** * ---
-	//     .  | z1
+	//    --- o y4
+	//     .  *
+	//     .  * 
+	//    d3  | z3
+	//     .  * 
 	//     .  *      
+	//    --- o y2
+	//     .  | z1
+	//     .  *       
 	//    d1  *
 	//     .  z
 	//     .  ^ y
 	//     .  |/
 	//    --- *----> x
-	//        O
-	struct ARIS_API SevenAxisParam2{
+	//       O
+	struct ARIS_API SevenAxisParam4{
 		// DH PARAM //
 		double d1{ 0.0 };
-		double a2{ 0.0 };
 		double d3{ 0.0 };
 		double d5{ 0.0 };
+		double a6{ 0.0 };
 
 		// 安装方式 //
 		// 0, 正常安装，零位时末端法兰盘朝向：地面 x 轴，零位时末端1轴朝向：地面 z 轴
@@ -82,19 +77,20 @@ namespace aris::dynamic{
 		// mot friction vector, size must be 7
 		std::vector<std::array<double, 3> > mot_frc_vec;
 	};
-	auto ARIS_API createModelSevenAxis2(const SevenAxisParam2 &param)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createModelSevenAxis4(const SevenAxisParam4 &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class ARIS_API SevenAxisInverseKinematicSolver2 :public aris::dynamic::InverseKinematicSolver{
+	class ARIS_API SevenAxisInverseKinematicSolver4 :public aris::dynamic::InverseKinematicSolver{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto virtual kinPosPure(const double* output, double* input, int which_root, const double* current_input = nullptr)->int override;
 
-		virtual ~SevenAxisInverseKinematicSolver2();
-		explicit SevenAxisInverseKinematicSolver2();
-		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver2);
+		virtual ~SevenAxisInverseKinematicSolver4();
+		explicit SevenAxisInverseKinematicSolver4();
+		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver4);
 
 	private:
+		friend auto createModelSevenAxis4(const SevenAxisParam4& param)->std::unique_ptr<aris::dynamic::Model>;
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};

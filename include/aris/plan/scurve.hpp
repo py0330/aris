@@ -89,7 +89,7 @@ namespace aris::plan{
 	struct ARIS_API SCurveParam {
 		LargeNum pb_{ 0.0 };     // 结束位置
 		double vc_max_{ 1.0 };   // 允许的最大速度
-		double vb_max_{ 1.0 };   // 允许的最大末端速度
+		double vb_max_{ 1.0 };   // 允许的最大结束速度
 		double a_{ 1.0 };        // 过程中最大加速度
 		double j_{ 1.0 };        // 过程中最大加加速度
 

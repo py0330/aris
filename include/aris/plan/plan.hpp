@@ -6,6 +6,8 @@
 #include <aris/plan/root.hpp>
 #include <aris/plan/algorithm.hpp>
 #include <aris/plan/input_smoother.hpp>
+#include <aris/plan/async_generator.hpp>
+#include <aris/plan/speed_regulator.hpp>
 
 // 规划部分应当包含：
 // 1. scurve

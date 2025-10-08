@@ -514,8 +514,6 @@ namespace aris::dynamic{
 		model->environment().setGravity(gravity);
 
 		////////////////////////////  EE  /////////////////////////////
-		// 这里的末端角度不对，和注释对不上 tbd//
-		// compute ee info //
 		const double axis_6_pe[6]{ param.a1 + param.d4, param.d3, param.d1 + param.a2 + param.a3, 0.0, aris::PI / 2.0, 0.0 };
 		double axis_6_pm[16];
 		double ee_i_pm[16], ee_i_wrt_axis_6_pm[16];
@@ -637,6 +635,7 @@ namespace aris::dynamic{
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
+		inverse_kinematic.setWhichRoot(8);
 
 		////////////////////////////  TOPOLOGY  /////////////////////////////
 		for (auto &m : model->motionPool())m.activate(true);

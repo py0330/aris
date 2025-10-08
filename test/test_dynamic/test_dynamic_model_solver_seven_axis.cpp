@@ -222,14 +222,62 @@ void test_seven_axis_inverse_solver3()
 	}
 
 }
+void test_seven_axis_inverse_solver4()
+{
+	aris::dynamic::SevenAxisParam4 param;
+
+	param.d1 = 0.3;
+	param.d3 = 0.45;
+	param.d5 = 0.5;
+	param.a6 = 0.1;
+	
+	
+	//param.tool0_pe[0] = 0.01;
+	//param.tool0_pe[1] = 0.02;
+	//param.tool0_pe[2] = 0.03;
+	//param.tool0_pe[3] = 0.04;
+	//param.tool0_pe[4] = 0.05;
+	//param.tool0_pe[5] = 0.06;
+
+	//param.base2ref_pe[0] = -0.11;
+	//param.base2ref_pe[1] = -0.22;
+	//param.base2ref_pe[2] = -0.33;
+	//param.base2ref_pe[3] = -0.044;
+	//param.base2ref_pe[4] = -0.055;
+	//param.base2ref_pe[5] = -0.066;
+
+	auto m = aris::dynamic::createModelSevenAxis4(param);
+
+	auto& gm = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]);
+	m->init();
+
+	double input0[7]{ 0,0,0,0,0,0,0 };
+	double input1[7]{ 0.1,0.2,0.3,0.4,0.5,0.6,0.7 };
+
+	double output0[17];
+
+	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
+
+	double input[7]{ 0.1, 0.2, 0.1, 0.4, 0.5, 0.6, 0.7 };
+	m->setInputPos(input0);
+	m->forwardKinematics();
+	m->getOutputPos(output0);
+
+	aris::dynamic::dsp(1, m->outputPosSize(), output0);
+
+
+	double result[17];
+	m->inverseKinematics(output0, input, 8, result);
+}
 void test_model_solver_seven_axis()
 {
 	
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
-	test_seven_axis_inverse_solver2();
+	//test_seven_axis_inverse_solver2();
 	//test_seven_axis_inverse_solver3();
+	test_seven_axis_inverse_solver4();
 
-
+	/*
 	auto m = createModelStandardSevenAxis();
 	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
 	double result[7];
@@ -255,7 +303,7 @@ void test_model_solver_seven_axis()
 	{
 		std::cout << e.what() << std::endl;
 	}
-	
+	*/
 
 	std::cout << "-----------------test model solver seven_axis finished------------" << std::endl << std::endl;
 }

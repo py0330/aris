@@ -13,19 +13,39 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
-#include "aris/dynamic/mechanism_seven_axis2.hpp"
+#include "aris/dynamic/mechanism_seven_axis4.hpp"
 #include "aris/dynamic/kinematics.hpp"
 #include "aris/core/reflection.hpp"
 
 namespace aris::dynamic{
-	
-	auto createModelSevenAxis2(const SevenAxisParam2 &param)->std::unique_ptr<aris::dynamic::Model>{
+	struct SevenAxisInverseKinematicSolver4::Imp {
+		int which_root_{ 0 };
+		SevenAxisParam4 seven_axis_param;
+		union
+		{
+			struct { Part* GR, * L1, * L2, * L3, * L4, * L5, * L6, * L7; };
+			Part* parts[8]{ nullptr };
+		};
+		union
+		{
+			struct { RevoluteJoint* R1, * R2, * R3, * R4, * R5, * R6, * R7; };
+			RevoluteJoint* joints[7]{ nullptr };
+		};
+		union
+		{
+			struct { Motion* M1, * M2, * M3, * M4, * M5, * M6, * M7; };
+			Motion* motions[7]{ nullptr };
+		};
+		GeneralMotion* EE{ nullptr };
+	};
+
+	auto createModelSevenAxis4(const SevenAxisParam4 &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		model->setName("OffsetSevenAxis");
 
 		////////////////////////////  DH  /////////////////////////////
-		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a2, param.d3, param.d5 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.d3, param.d5, param.a6 }));
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_pe", aris::core::Matrix(1, 6, param.tool0_pe));
 		model->variablePool().add<aris::dynamic::StringVariable>("tool0_pe_type", param.tool0_pe_type.empty() ? std::string("321") : param.tool0_pe_type);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("base_pe", aris::core::Matrix(1, 6, param.base2ref_pe));
@@ -38,7 +58,7 @@ namespace aris::dynamic{
 		model->environment().setGravity(gravity);
 
 		////////////////////////////  EE  /////////////////////////////
-		const double axis_7_pe[]{ 0.0, 0.0, param.d1 + param.d3 + param.d5, 0.0, 0.0 ,0.0 };
+		const double axis_7_pe[]{ param.a6, 0.0, param.d1 + param.d3 + param.d5, 0.0, 0.0 ,0.0 };
 		double axis_7_pm[16];
 		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -60,11 +80,11 @@ namespace aris::dynamic{
 		////////////////////////////  JOINTS  /////////////////////////////
 		const double j1_pos[3]{ 0.0, 0.0, param.d1 };
 		const double j2_pos[3]{ 0.0, 0.0, param.d1 };
-		const double j3_pos[3]{ 0.0, param.a2, param.d1 };
+		const double j3_pos[3]{ 0.0, 0.0, param.d1 };
 		const double j4_pos[3]{ 0.0, 0.0, param.d1 + param.d3 };
 		const double j5_pos[3]{ 0.0, 0.0, param.d1 + param.d3 + param.d5 };
 		const double j6_pos[3]{ 0.0, 0.0, param.d1 + param.d3 + param.d5 };
-		const double j7_pos[3]{ 0.0, 0.0, param.d1 + param.d3 + param.d5 };
+		const double j7_pos[3]{ 0.0, param.a6, param.d1 + param.d3 + param.d5 };
 
 		const double j1_axis[3]{ 0.0, 0.0, 1.0 };
 		const double j2_axis[3]{ 0.0, 1.0, 0.0 };
@@ -113,7 +133,7 @@ namespace aris::dynamic{
 		auto &makI = p7.addMarker("tool0");
 		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
-		auto &arm_mot = model->generalMotionPool().add<aris::dynamic::Motion>("arm_mot", m3.makI(), m3.makJ(), 5);
+		auto &arm_mot = model->generalMotionPool().add<aris::dynamic::Motion>("arm_mot", m6.makI(), m6.makJ(), 5);
 
 		////////////////////////////  INSTALL METHODS  /////////////////////////////
 		double install_pm_relative[16];
@@ -164,10 +184,11 @@ namespace aris::dynamic{
 
 
 		////////////////////////////  SOLVERS  /////////////////////////////
-		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver2>();
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver4>();
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
+		inverse_kinematic.imp_->seven_axis_param = param;
 		inverse_kinematic.setWhichRoot(8);
 
 		////////////////////////////  TOPOLOGY  /////////////////////////////
@@ -178,39 +199,14 @@ namespace aris::dynamic{
 		model->init();
 		return model;
 	}
-	
-	
-
-
-	auto sevenAxisInverse(const void* para, const double *ee_pos, const double *current_input, int which_root, double *input)->bool
-	{
-		// 七轴机器人构型：
-		//
-		//      EE
-		//      |        z
-		//     ---       y      ---
-		//      |        z       |
-		//                       d5
-		//                       |
-		//     ---       y      ---                                                            
-		//                       |
-		//                       d3
-		//      |        z       |   
-		//     ---       y      ---
-		//      |        z    
-		//     BASE
-		//
-		//  A 坐标系为前3轴的交点， z 轴和 1 轴平行， y 轴和 2 轴平行
-		//  D 坐标系为 5 6 7 三根轴的交点，零位下与 A 坐标系方向一致
-		//  
-		//  
-		// 
-		auto& param = *reinterpret_cast<const SevenAxisParam2*>(para);
+	auto sevenAxisInverse4(const void* para, const double *ee_pos, const double *current_input, int which_root, double *input)->bool{
+		auto& param = *reinterpret_cast<const SevenAxisParam4*>(para);
 		const double* ee_pm = ee_pos;
 		const double axis_angle = ee_pos[16];
 
 		auto d3 = param.d3;
 		auto d5 = param.d5;
+		auto a6 = param.a6;
 
 		double pm_A_in_Ground[16]{ 1,0,0,0,0,1,0,0,0,0,1,param.d1,0,0,0,1 };
 		double pm_EE_in_D[16];
@@ -224,25 +220,35 @@ namespace aris::dynamic{
 		double q[7]{ 0 };
 
 		// 轴角就是q3 //
-		q[2] = axis_angle;
+		q[5] = axis_angle;
+		
+		// 求出 q4 //
+		{
+			double theta = aris::PI / 2 - q[5];
+			auto d5_modified = std::sqrt(std::max(d5 * d5 + a6 * a6 - 2 * d5 * a6 * std::cos(theta), 0.0));
+			auto D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
+			auto cq4 = (d5_modified * d5_modified + d3 * d3 - D * D) / (2 * d5_modified * d3);
 
-		// 求q4
-		double distance_D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
-		if (distance_D < std::abs(param.a2))return false;
+			if (cq4 > 1.0 || cq4 < -1.0) {
+				return false;
+			}
+			else {
+				if (which_root & 0x01) {
+					// to be checked
+					q[3] = -aris::PI + std::acos(cq4) - std::atan2(a6 * std::cos(q[5]), d5 - a6 * std::sin(q[5]));
+				}
+				else {
+					q[3] = aris::PI - std::acos(cq4) - std::atan2(a6 * std::cos(q[5]), d5 - a6 * std::sin(q[5]));
+				}
+			}
+		}
 
-		auto d3_modified = std::sqrt(d3 * d3 + std::sin(q[2])*std::sin(q[2]) * param.a2 * param.a2);
-		auto D_modified = std::sqrt(distance_D * distance_D - (1 - std::cos(q[2])) * (1 - std::cos(q[2])) * param.a2 * param.a2);
-		if (auto cq4 = (d3_modified*d3_modified + d5 * d5 - D_modified * D_modified) / (2 * d3_modified*d5); cq4 > 1.0 || cq4 < -1.0){
-			return false;
+		// 求出 q1与q2
+		{
+			
 		}
-		else{
-			if (which_root & 0x01){
-				q[3] = -aris::PI + std::acos(cq4) + std::atan2(std::sin(q[2]) * param.a2 , d3);
-			}
-			else{
-				q[3] = aris::PI - std::acos(cq4) + std::atan2(std::sin(q[2]) * param.a2 , d3);
-			}
-		}
+
+		/*
 
 		// 求q1与q2
 		auto s2 = std::sin(q[2]);
@@ -297,32 +303,13 @@ namespace aris::dynamic{
 			while (q[i] < -PI) q[i] += 2 * PI;
 		}
 
-		s_vc(7, q, input);
+		s_vc(7, q, input);*/
 
 		return true;
 	}
-	struct SevenAxisInverseKinematicSolver2::Imp{
-		int which_root_{ 0 };
-		SevenAxisParam2 seven_axis_param;
-		union
-		{
-			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6, *L7; };
-			Part* parts[8]{ nullptr };
-		};
-		union
-		{
-			struct { RevoluteJoint *R1, *R2, *R3, *R4, *R5, *R6, *R7; };
-			RevoluteJoint* joints[7]{ nullptr };
-		};
-		union
-		{
-			struct { Motion *M1, *M2, *M3, *M4, *M5, *M6, *M7; };
-			Motion* motions[7]{ nullptr };
-		};
-		GeneralMotion *EE{ nullptr };
-	};
-	auto SevenAxisInverseKinematicSolver2::allocateMemory()->void
-	{
+
+	
+	auto SevenAxisInverseKinematicSolver4::allocateMemory()->void{
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;
@@ -352,57 +339,11 @@ namespace aris::dynamic{
 		imp_->M7 = &model()->motionPool().at(6);
 
 		imp_->EE = dynamic_cast<GeneralMotion*>(&model()->generalMotionPool().at(0));
-
-
-		auto &p = imp_->seven_axis_param;
 		
 		//  config seven axis param, tbd.....//
-		double r1_pos_wrt_base[3];
-		s_vc(3, &imp_->R1->makJ()->prtPm()[0][3], 4, r1_pos_wrt_base, 1);
-		s_vs(3, &imp_->EE->makJ()->prtPm()[0][3], 4, r1_pos_wrt_base, 1);
-		imp_->seven_axis_param.d1 = s_vv(3, r1_pos_wrt_base, 1, &imp_->EE->makJ()->prtPm()[0][2], 4);
-
-		double diff_p[3];
-		s_vc(3, &imp_->R4->makJ()->prtPm()[0][3], 4, diff_p, 1);
-		s_vs(3, &imp_->R3->makI()->prtPm()[0][3], 4, diff_p, 1);
-		imp_->seven_axis_param.d3 = diff_p[2];
-		imp_->seven_axis_param.a2 = -diff_p[1];
-
-		s_vc(3, &imp_->R5->makJ()->prtPm()[0][3], 4, diff_p, 1);
-		s_vs(3, &imp_->R4->makI()->prtPm()[0][3], 4, diff_p, 1);
-		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
-
-		// config tool0 //
-		// 
-		// solve:
-		// P_tool0_wrt_eei
-		// 
-		// eei~P_tool0 = eei~P_L7 * L7~P_tool0
-		//             = eei~P_R7i * R7i~P_L7 * L7~P_tool0
-		//             = eei~P_R7j * R7j~P_R7i * R7i~P_L7 * L7~P_tool0
-		//             = eei~P_L6 * L6~P_R7j * R7j~P_R7i * R7i~P_L7 * L7~P_tool0
-		// 
-		// at init point:
-		// eei~P_L6    = [0,0,-d1-d3-d5,0,0,0]
-		// R7j~P_R7i   = eye(4)
-		// L7~P_tool0  = eye(4)
-		//
-		double pm_temp1[16], pm_temp2[16];
-		const double pm_eei_wrt_L6[16]{
-			1,0,0,0,
-			0,1,0,0,
-			0,0,1,-imp_->seven_axis_param.d1 - imp_->seven_axis_param.d3 - imp_->seven_axis_param.d5,
-			0,0,0,1,
-		};// only z changes
-
-		s_pm_dot_pm(pm_eei_wrt_L6, *imp_->R7->makJ()->prtPm(), pm_temp1);
-		s_pm_dot_inv_pm(pm_temp1, *imp_->R7->makI()->prtPm(), pm_temp2);
-
-		imp_->seven_axis_param.tool0_pe_type = "321";
-		s_pm2pe(pm_temp2, imp_->seven_axis_param.tool0_pe, "321");
 	}
 	
-	auto SevenAxisInverseKinematicSolver2::kinPos()->int{
+	auto SevenAxisInverseKinematicSolver4::kinPos()->int{
 		double output_pos[17], input_pos[7], current_input_pos[7];
 		model()->getOutputPos(output_pos);
 		model()->getInputPos(current_input_pos);
@@ -437,7 +378,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto SevenAxisInverseKinematicSolver2::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
+	auto SevenAxisInverseKinematicSolver4::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
 		double ee_pos[17]{}, root_mem[7]{};
 
 		switch (imp_->EE->poseType()) {
@@ -472,21 +413,21 @@ namespace aris::dynamic{
 			double current_input_pos[7];
 			for (int i = 0; i < 7; ++i)
 				current_input_pos[i] = model()->motionPool()[i].mpInternal();
-			return s_ik(7, rootNumber(), &imp_->seven_axis_param, sevenAxisInverse, which_root, ee_pos, input, root_mem, input_period, current_input_pos);
+			return s_ik(7, rootNumber(), &imp_->seven_axis_param, sevenAxisInverse4, which_root, ee_pos, input, root_mem, input_period, current_input_pos);
 		}
 		else {
-			return s_ik(7, rootNumber(), &imp_->seven_axis_param, sevenAxisInverse, which_root, ee_pos, input, root_mem, input_period, current_input);
+			return s_ik(7, rootNumber(), &imp_->seven_axis_param, sevenAxisInverse4, which_root, ee_pos, input, root_mem, input_period, current_input);
 		}
 	}
-	SevenAxisInverseKinematicSolver2::~SevenAxisInverseKinematicSolver2() = default;
-	SevenAxisInverseKinematicSolver2::SevenAxisInverseKinematicSolver2() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
+	SevenAxisInverseKinematicSolver4::~SevenAxisInverseKinematicSolver4() = default;
+	SevenAxisInverseKinematicSolver4::SevenAxisInverseKinematicSolver4() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {
 		setWhichRoot(8);
 		setRootNumber(8);
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver2);
+	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver4);
 
 	ARIS_REGISTRATION{
-		aris::core::class_<SevenAxisInverseKinematicSolver2>("SevenAxisInverseKinematicSolver2")
+		aris::core::class_<SevenAxisInverseKinematicSolver4>("SevenAxisInverseKinematicSolver4")
 			.inherit<InverseKinematicSolver>()
 			;
 	}
