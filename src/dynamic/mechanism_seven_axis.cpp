@@ -125,13 +125,14 @@ namespace aris::dynamic{
 		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
 		// add solver
-		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver>();
+		//auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver>();
+		auto& inverse_kinematic = model->solverPool().add<aris::dynamic::InverseKinematicSolver>();
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 
-		inverse_kinematic.setWhichRoot(8);
-		inverse_kinematic.setAxisAngle(0.0);
+		//inverse_kinematic.setWhichRoot(1);
+		//inverse_kinematic.setAxisAngle(0.0);
 		
 		model->init();
 		// make topology correct // 

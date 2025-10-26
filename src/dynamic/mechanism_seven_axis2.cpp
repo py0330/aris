@@ -228,12 +228,13 @@ namespace aris::dynamic{
 
 		// 求q4
 		double distance_D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
-		if (distance_D < std::abs(param.a2))return false;
+		if (distance_D < std::abs(param.a2))
+			return -1;
 
 		auto d3_modified = std::sqrt(d3 * d3 + std::sin(q[2])*std::sin(q[2]) * param.a2 * param.a2);
 		auto D_modified = std::sqrt(distance_D * distance_D - (1 - std::cos(q[2])) * (1 - std::cos(q[2])) * param.a2 * param.a2);
 		if (auto cq4 = (d3_modified*d3_modified + d5 * d5 - D_modified * D_modified) / (2 * d3_modified*d5); cq4 > 1.0 || cq4 < -1.0){
-			return false;
+			return -1;
 		}
 		else{
 			if (which_root & 0x01){
@@ -252,7 +253,7 @@ namespace aris::dynamic{
 		double pos_when_q1q2_equal_zero[3] = { s2*param.a2 + c2*s3*d5, (1 - c2)*param.a2+s2*s3*d5, d3 + c3*d5 };
 
 		if (pos_when_q1q2_equal_zero[0] * pos_when_q1q2_equal_zero[0] + pos_when_q1q2_equal_zero[2] * pos_when_q1q2_equal_zero[2] < D_in_A[11] * D_in_A[11]){
-			return false;
+			return -1;
 		}
 		else {
 			double q2_tem[2];
@@ -299,7 +300,7 @@ namespace aris::dynamic{
 
 		s_vc(7, q, input);
 
-		return true;
+		return 0;
 	}
 	struct SevenAxisInverseKinematicSolver2::Imp{
 		int which_root_{ 0 };

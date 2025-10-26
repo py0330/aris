@@ -279,9 +279,9 @@ void test_model_solver_seven_axis()
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
 	//test_seven_axis_inverse_solver2();
 	//test_seven_axis_inverse_solver3();
-	test_seven_axis_inverse_solver4();
+	//test_seven_axis_inverse_solver4();
 
-	/*
+	
 	auto m = createModelStandardSevenAxis();
 	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
 	double result[7];
@@ -289,6 +289,13 @@ void test_model_solver_seven_axis()
 	// 直接调用函数设置末端，之后计算反解 //
 	m->setOutputPos(output);
 	m->inverseKinematics();
+	m->getInputPos(result);
+	aris::dynamic::dsp(1, 7, result);
+
+	output[0] = 100;
+	m->setOutputPos(output);
+	if(m->inverseKinematics())
+		std::cout << "error" << std::endl;
 	m->getInputPos(result);
 	aris::dynamic::dsp(1, 7, result);
 
@@ -307,7 +314,7 @@ void test_model_solver_seven_axis()
 	{
 		std::cout << e.what() << std::endl;
 	}
-	*/
+	
 
 	std::cout << "-----------------test model solver seven_axis finished------------" << std::endl << std::endl;
 }
