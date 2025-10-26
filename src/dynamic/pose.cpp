@@ -779,6 +779,48 @@ namespace aris::dynamic{
 		return pa_out;
 	}
 	auto s_ps2pm(const double *ps_in, double *pm_out) noexcept->double *{
+		//
+		// unit化
+		// ps = [v, w]
+		//    = [vu, wu]*n     
+		// 
+		// 其中：
+		// n  = | w |
+		// 
+		// vu可分解为和 wu 重合方向的分量 vuh 以及和 wu 垂直方向的分量 vut
+		// vu  = vuh + vut 
+		// 
+		// vuh = (vu dot wu)*wu
+		//     = (v dot u)*w/(n^3)
+		// 
+		// vuh 所带来的移动：
+		// ph = vh
+		//    = vuh * n
+		//    = (v dot w)/n^2 * w
+		// 
+		// vut = vu - vuh
+		//     = (v - vuh*n)/n
+		//     = (v - ph)/n
+		//
+		// vut 所带来的移动：
+		// pt  = vt
+		//     = sin(n) * vut + (1-cos(n)) * wu x vut
+		//     = sin(n)/n * (v-ph) + (1-cos(n))/n^2 * w x (v-ph)
+		//
+		// p   = ph + pt
+		//     
+
+		//    
+		// 
+		// vuv 和 wu 共同构成了原点沿着某根转轴进行旋转，其位移为：
+		// pv = sin(n) * vut + (1-cos(n)) * wu x vut
+		//    = sin(n) * (vu - vuh) + (1-cos(n)) * wu x vut
+		// 
+		// 
+		// 
+		// 
+		
+		
 		// 补充默认参数 //
 		ps_in = ps_in ? ps_in : default_ps();
 		pm_out = pm_out ? pm_out : default_out();

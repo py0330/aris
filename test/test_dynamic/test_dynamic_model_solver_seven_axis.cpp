@@ -226,11 +226,14 @@ void test_seven_axis_inverse_solver4()
 {
 	aris::dynamic::SevenAxisParam4 param;
 
-	param.d1 = 0.3;
-	param.d3 = 0.45;
-	param.d5 = 0.5;
-	param.a6 = 0.1;
-	
+	param.a1 = 0.0;
+	param.a2 = 0.02;
+	param.b1 = 0.03;
+	param.b2 = 0.04;
+	param.b3 = 0.05;
+	param.c0 = 0.0;
+	param.c1 = 0.6;
+	param.c2 = 0.7;
 	
 	//param.tool0_pe[0] = 0.01;
 	//param.tool0_pe[1] = 0.02;
@@ -258,12 +261,13 @@ void test_seven_axis_inverse_solver4()
 
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
 
-	double input[7]{ 0.1, 0.2, 0.1, 0.4, 0.5, 0.6, 0.7 };
-	m->setInputPos(input0);
+	double input[7]{ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
+	//double input[7]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+	m->setInputPos(input);
 	m->forwardKinematics();
 	m->getOutputPos(output0);
 
-	aris::dynamic::dsp(1, m->outputPosSize(), output0);
+	//aris::dynamic::dsp(1, m->outputPosSize(), output0);
 
 
 	double result[17];

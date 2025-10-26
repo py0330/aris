@@ -195,6 +195,207 @@ namespace aris::plan{
 		d2p[2] = n1 * ry1[2] + n2 * rx1[2] + n3 * ry2[2] + n4 * rx2[2];
 	}
 
+	// 【注】：这里的 theta 并非转角，而是转角的 2 倍
+	//
+	//  要使用本函数，需保证 q[3] > 0
+	auto inline s_rq_2_theta_v(const double* q, const double* dq, const double* ddq,
+		double& theta, double* v, double& dtheta, double* dv, double& d2theta, double* d2v)noexcept->void
+	{
+		//
+		// q   = [ q1 ] = [ s * v ]
+		//       [ q2 ]   [ c     ]
+		//
+		// dq  = [dq1 ] = [ ds * v + s * dv ]
+		//       [dq2 ]   [ dc              ]
+		//
+		// d2q = [d2q1] = [ d2s * v + 2 * ds * dv + s * d2v ]
+		//       [d2q2] = [ d2c                             ]
+		//
+		// 其中：
+		// s   =  sin(theta)
+		// ds  =  cos(theta) * dtheta
+		// d2s = -sin(theta) * dtheta^2 + cos(theta) * d2theta
+		// c   =  cos(theta)
+		// dc  = -sin(theta) * dtheta
+		// d2c = -cos(theta) * dtheta^2 - sin(theta) * d2theta
+		//
+		// 且应该有：
+		//   v'*v  = 1 
+		//   v'*dv = 0  
+		// 
+		// 需求： theta dtheta d2theta v dv d2v
+		//   
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		//  
+		// CASE 1：||q1|| > zero_check, 此时 theta 不接近 0
+		//   【 theta 】 = atan2(||q1||, q2)
+		//   【   v   】 = q1 / s
+		//   【dtheta 】 = -dq2 / s
+		//   【  dv   】 = (dq1 - ds * v) / s 
+		//   【d2theta】 = -(d2q2 + c * dtheta^2)/s
+		//   【  d2v  】 = (d2q1 - d2s * v - 2 * ds * dv)/s
+		//
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		// 
+		// CASE 2：||q1|| <= zero_check && ||dq1|| > zero_check, 此时 theta 接近 0, 但 dtheta 不接近 0
+		//   此时问题退化成：
+		// q   = [ q1 ] = [ 0 ]
+		//       [ q2 ]   [ c ]
+		//
+		// dq  = [dq1 ] = [ ds * v ]
+		//       [dq2 ]   [ 0     ]
+		//
+		// d2q = [d2q1] = [ d2s * v + 2 * ds * dv ]
+		//       [d2q2] = [ d2c                   ]
+		// 
+		//   其中：
+		// s   =  0
+		// ds  =  cos(theta) * dtheta
+		// d2s =  cos(theta) * d2theta
+		// c   =  cos(theta)
+		// dc  =  0
+		// d2c = -cos(theta) * dtheta^2
+		// 
+		//   【 theta 】 = atan2(||q1||, q2)
+		//   dq1' * dq1 = ds^2
+		//   【dtheta 】 = sqrt(dq1'*dq1/c^2)
+		//   【   v   】 = dq1 / ds
+		//   d2q1' * dq1 = d2s * ds
+		//   【d2theta】 = (d2q1'* dq1)/ds/c
+		//   【  dv   】 = (d2q1 - d2s * v)/(2*ds)
+		//   【  d2v  】 = [0;0;0]
+		// 
+		////////////////////////////////////////////////////////////////////////////////////////////// 
+		// 
+		// CASE 3：||q1|| <= zero_check && ||dq1|| <= zero_check && ||d2q1|| > zero_check, 此时 theta 和 dtheta 接近 0，但 d2theta 不接近0 
+		//   此时问题退化成：
+		// q   = [ q1 ] = [ 0 ]
+		//       [ q2 ]   [ c ]
+		//
+		// dq  = [dq1 ] = [ 0 ]
+		//       [dq2 ]   [ 0 ]
+		//
+		// d2q = [d2q1] = [ d2s * v ]
+		//       [d2q2] = [ 0       ]
+		// 
+		//   其中：
+		// s   =  0
+		// ds  =  0
+		// d2s =  cos(theta) * d2theta
+		// c   =  cos(theta)
+		// dc  =  0
+		// d2c =  0
+		// 
+		//   【 theta 】 = atan2(||q1||, q2)
+		//   【dtheta 】 = sqrt(dq1'*dq1/c^2)
+		//    d2q1'*d2q1 = d2s^2 = c^2 * d2theta^2
+		//   【d2theta】 = sqrt(d2q1'*d2q1/c^2)
+		//   【   v   】 = d2q1 / d2s
+		//   【  dv   】 = [0;0;0]
+		//   【  d2v  】 = [0;0;0]
+		// 
+		////////////////////////////////////////////////////////////////////////////////////////////// 
+		// 
+		// CASE 4：||q1|| <= zero_check && ||dq1|| <= zero_check && ||d2q1|| <= zero_check, 此时 theta 、 dtheta、 d2theta 都接近0 
+		//   此时问题退化成：
+		// q   = [ q1 ] = [ 0 ]
+		//       [ q2 ]   [ c ]
+		//
+		// dq  = [dq1 ] = [ 0 ]
+		//       [dq2 ]   [ 0 ]
+		//
+		// d2q = [d2q1] = [ d2s * v ]
+		//       [d2q2] = [ 0       ]
+		// 
+		//   其中：
+		// s   =  0
+		// ds  =  0
+		// d2s =  cos(theta) * d2theta
+		// c   =  cos(theta)
+		// dc  =  0
+		// d2c =  0
+		// 
+		//   【 theta 】 = atan2(||q1||, q2)
+		//   【dtheta 】 = sqrt(dq1'*dq1/c^2)
+		//    d2q1'*d2q1 = d2s^2 = c^2 * d2theta^2
+		//   【d2theta】 = sqrt(d2q1'*d2q1/c^2)
+		//   【   v   】 = d2q1 / d2s
+		//   【  dv   】 = [0;0;0]
+		//   【  d2v  】 = [0;0;0]
+
+
+		auto c = q[3];
+		auto s = aris::dynamic::s_norm(3, q);
+		theta = std::atan2(s, c);// s >= 0 保证了 theta >= 0
+
+		// CASE 1 //
+		if (theta > 1e-7) {
+			aris::dynamic::s_vc(3, 1.0 / s, q, v);
+
+			dtheta = -dq[3] / s;
+			double ds = c * dtheta;
+			dv[0] = (dq[0] - v[0] * ds) / s;
+			dv[1] = (dq[1] - v[1] * ds) / s;
+			dv[2] = (dq[2] - v[2] * ds) / s;
+
+			d2theta = -(ddq[3] + c * dtheta * dtheta) / s;
+			double d2s = -s * dtheta * dtheta + c * d2theta;
+			d2v[0] = (ddq[0] - d2s * v[0] - 2 * ds * dv[0]) / (s);
+			d2v[1] = (ddq[1] - d2s * v[1] - 2 * ds * dv[1]) / (s);
+			d2v[2] = (ddq[2] - d2s * v[2] - 2 * ds * dv[2]) / (s);
+
+			return;
+		}
+
+		// CASE 2 //
+		dtheta = std::sqrt((dq[0] * dq[0] + dq[1] * dq[1] + dq[2] * dq[2]) / c / c);
+		if (dtheta > 1e-7) {
+			//   【   v   】 = dq1 / ds
+			//   d2q1' * dq1 = d2s * ds
+			//   【d2theta】 = (d2q1'* dq1)/ds/c
+			//   【  dv   】 = (d2q1 - d2s * v)/(2*ds)
+			//   【  d2v  】 = [0;0;0]
+
+			double ds = c * dtheta;
+			v[0] = dq[0] / ds;
+			v[1] = dq[1] / ds;
+			v[2] = dq[2] / ds;
+
+			d2theta = (ddq[0] * dq[0] + ddq[1] * dq[1] + ddq[2] * dq[2]) / ds / c;
+			double d2s = c * d2theta;
+			dv[0] = (ddq[0] - d2s * v[0]) / (2 * ds);
+			dv[1] = (ddq[1] - d2s * v[1]) / (2 * ds);
+			dv[2] = (ddq[2] - d2s * v[2]) / (2 * ds);
+
+			d2v[0] = 0.0;
+			d2v[1] = 0.0;
+			d2v[2] = 0.0;
+			return;
+		}
+
+		d2theta = std::sqrt((ddq[0] * ddq[0] + ddq[1] * ddq[1] + ddq[2] * ddq[2]) / c / c);
+		if (d2theta > 1e-7) {
+			double d2s = c * d2theta;
+			v[0] = ddq[0] / d2s;
+			v[1] = ddq[1] / d2s;
+			v[2] = ddq[2] / d2s;
+
+			dv[0] = 0.0;
+			dv[1] = 0.0;
+			dv[2] = 0.0;
+
+			d2v[0] = 0.0;
+			d2v[1] = 0.0;
+			d2v[2] = 0.0;
+			return;
+		}
+
+		std::fill_n(v, 3, 0.0);
+		std::fill_n(dv, 3, 0.0);
+		std::fill_n(d2v, 3, 0.0);
+	}
+
+
 	auto s_bezier3_blend_quaternion(double s,
 		const double* q0_input, const double* q1_input, const double* q2_input,
 		double* q, double* dq, double* d2q)noexcept->void
@@ -323,7 +524,9 @@ namespace aris::plan{
 
 		// theta_b3 & vb3 //
 		double theta_b3, vb3[3], dtheta_b3, dvb3[3], d2theta_b3, d2vb3[3];
-		aris::dynamic::s_rq_to_theta_v(qb3, dqb3, d2qb3, theta_b3, vb3, dtheta_b3, dvb3, d2theta_b3, d2vb3);
+		
+		// 这里保证了 qb3[3] > 0, 因为 q1 为[0,0,0,1], 而 q0, q2 都是距离 q1 较近的四元数
+		s_rq_2_theta_v(qb3, dqb3, d2qb3, theta_b3, vb3, dtheta_b3, dvb3, d2theta_b3, d2vb3);
 
 		// qb3 dqb3 d2qb3 //
 		double qb[4], dqb[4], d2qb[4];

@@ -59,7 +59,7 @@ namespace aris::control {
 				std::strcpy(ns_name[series_id], "wakeup : ");
 				ns_series[series_id] = ns_wakeup;
 #endif
-				if (link_up) {
+//				if (link_up) {
 					// recv //
 					mst.recv();
 #ifdef DEBUG_MASTER_TIME
@@ -90,7 +90,7 @@ namespace aris::control {
 					std::strcpy(ns_name[series_id + 1], "sync   : ");
 					++series_id;
 #endif
-				}
+//				}
 
 
 

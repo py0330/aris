@@ -45,7 +45,7 @@ namespace aris::dynamic{
 		model->setName("OffsetSevenAxis");
 
 		////////////////////////////  DH  /////////////////////////////
-		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.d3, param.d5, param.a6 }));
+		//model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.d3, param.d5, param.a6 }));
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_pe", aris::core::Matrix(1, 6, param.tool0_pe));
 		model->variablePool().add<aris::dynamic::StringVariable>("tool0_pe_type", param.tool0_pe_type.empty() ? std::string("321") : param.tool0_pe_type);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("base_pe", aris::core::Matrix(1, 6, param.base2ref_pe));
@@ -58,7 +58,7 @@ namespace aris::dynamic{
 		model->environment().setGravity(gravity);
 
 		////////////////////////////  EE  /////////////////////////////
-		const double axis_7_pe[]{ param.a6, 0.0, param.d1 + param.d3 + param.d5, 0.0, 0.0 ,0.0 };
+		const double axis_7_pe[]{ param.a1 + param.a2, param.b1 + param.b2 + param.b3, param.c0 + param.c1 + param.c2, 0.0, 0.0 ,0.0 };
 		double axis_7_pm[16];
 		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -78,13 +78,13 @@ namespace aris::dynamic{
 		auto &p7 = model->partPool().add<Part>("L7", param.iv_vec.size() == 7 ? param.iv_vec[6].data() : default_iv, ee_i_pm);
 
 		////////////////////////////  JOINTS  /////////////////////////////
-		const double j1_pos[3]{ 0.0, 0.0, param.d1 };
-		const double j2_pos[3]{ 0.0, 0.0, param.d1 };
-		const double j3_pos[3]{ 0.0, 0.0, param.d1 };
-		const double j4_pos[3]{ 0.0, 0.0, param.d1 + param.d3 };
-		const double j5_pos[3]{ 0.0, 0.0, param.d1 + param.d3 + param.d5 };
-		const double j6_pos[3]{ 0.0, 0.0, param.d1 + param.d3 + param.d5 };
-		const double j7_pos[3]{ 0.0, param.a6, param.d1 + param.d3 + param.d5 };
+		const double j1_pos[3]{ 0.0, 0.0, param.c0 };
+		const double j2_pos[3]{ 0.0, 0.0, param.c0 };
+		const double j3_pos[3]{ param.a1, param.b1, param.c0 };
+		const double j4_pos[3]{ param.a1, param.b1, param.c0 + param.c1 };
+		const double j5_pos[3]{ param.a1, param.b1 + param.b2, param.c0 + param.c1 };
+		const double j6_pos[3]{ param.a1, param.b1 + param.b2, param.c0 + param.c1 + param.c2 };
+		const double j7_pos[3]{ param.a1 + param.a2, param.b1 + param.b2 + param.b3, param.c0 + param.c1 + param.c2 };
 
 		const double j1_axis[3]{ 0.0, 0.0, 1.0 };
 		const double j2_axis[3]{ 0.0, 1.0, 0.0 };
@@ -204,11 +204,9 @@ namespace aris::dynamic{
 		const double* ee_pm = ee_pos;
 		const double axis_angle = ee_pos[16];
 
-		auto d3 = param.d3;
-		auto d5 = param.d5;
-		auto a6 = param.a6;
 
-		double pm_A_in_Ground[16]{ 1,0,0,0,0,1,0,0,0,0,1,param.d1,0,0,0,1 };
+
+		double pm_A_in_Ground[16]{ 1,0,0,0,0,1,0,0,0,0,1,param.c0,0,0,0,1 };
 		double pm_EE_in_D[16];
 		s_pe2pm(param.tool0_pe, pm_EE_in_D, param.base2ref_pe_type.c_str());
 
@@ -217,31 +215,418 @@ namespace aris::dynamic{
 		double D_in_A[16];
 		s_pm_dot_inv_pm(E_in_A, pm_EE_in_D, D_in_A);
 
+
+
+		double A_in_D[16];
+		s_inv_pm(D_in_A, A_in_D);
+
+		std::cout << "input:" << std::endl;
+		dsp(1, 7, current_input);
+		
+		std::cout << "dsp D_in_A:" << std::endl;
+		dsp(4, 4, D_in_A);
+
+		std::cout << "dsp A_in_D:" << std::endl;
+		dsp(4, 4, A_in_D);
+
+		{
+			auto q = current_input;
+			
+			// 各个关节在 A 中的螺旋
+			double vs1[6], vs2[6], vs3[6], vs4[6], vs5[6], vs6[6], vs7[6];
+			{
+				const double j1_pos[3]{ 0.0, 0.0, param.c0 };
+				const double j2_pos[3]{ 0.0, 0.0, param.c0 };
+				const double j3_pos[3]{ param.a1, param.b1, param.c0 };
+				const double j4_pos[3]{ param.a1, param.b1, param.c0 + param.c1 };
+				const double j5_pos[3]{ param.a1, param.b1 + param.b2, param.c0 + param.c1 };
+				const double j6_pos[3]{ param.a1, param.b1 + param.b2, param.c0 + param.c1 + param.c2 };
+				const double j7_pos[3]{ param.a1 + param.a2, param.b1 + param.b2 + param.b3, param.c0 + param.c1 + param.c2 };
+
+				const double j1_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j2_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j3_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j4_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j5_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j6_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j7_axis[3]{ 0.0, 0.0, 1.0 };
+
+
+
+				s_vc(3, j1_axis, vs1 + 3);
+				s_c3(j1_pos, j1_axis, vs1);
+
+				s_vc(3, j2_axis, vs2 + 3);
+				s_c3(j2_pos, j2_axis, vs2);
+
+				s_vc(3, j3_axis, vs3 + 3);
+				s_c3(j3_pos, j3_axis, vs3);
+
+				s_vc(3, j4_axis, vs4 + 3);
+				s_c3(j4_pos, j4_axis, vs4);
+
+				s_vc(3, j5_axis, vs5 + 3);
+				s_c3(j5_pos, j5_axis, vs5);
+
+				s_vc(3, j6_axis, vs6 + 3);
+				s_c3(j6_pos, j6_axis, vs6);
+
+				s_vc(3, j7_axis, vs7 + 3);
+				s_c3(j7_pos, j7_axis, vs7);
+			}
+			double* vss[7]{ vs1, vs2, vs3, vs4, vs5, vs6, vs7 };
+
+			
+			// 验证 D in A
+			double D_now[16];
+			{
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 7; ++i) {
+					auto vs = vss[i];
+					s_vc(6, q[i], vs, ps);
+					s_ps2pm(ps, pm);
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double D_init[16]{
+					1,0,0,param.a1 + param.a2,
+					0,1,0,param.b1 + param.b2 + param.b3,
+					0,0,1,param.c0 + param.c1 + param.c2,
+					0,0,0,1
+				};
+
+
+				s_pm_dot_pm(pm_ee, D_init, D_now);
+			}
+			dsp(4, 4, D_now);
+
+			// 各个关节在 D 中的螺旋
+			double ivs1[6], ivs2[6], ivs3[6], ivs4[6], ivs5[6], ivs6[6], ivs7[6];
+			{
+				const double j1_pos[3]{ -param.a1 - param.a2, -param.b1 - param.b2 - param.b3, -param.c0 - param.c1 - param.c2 };
+				const double j2_pos[3]{ -param.a1 - param.a2, -param.b1 - param.b2 - param.b3, -param.c1 - param.c2 };
+				const double j3_pos[3]{ -param.a2, -param.b2 - param.b3, -param.c1 - param.c2 };
+				const double j4_pos[3]{ -param.a2, -param.b2 - param.b3, - param.c2 };
+				const double j5_pos[3]{ -param.a2, -param.b3, - param.c2 };
+				const double j6_pos[3]{ -param.a2, -param.b3, 0 };
+				const double j7_pos[3]{ 0,0,0 };
+
+				const double j1_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j2_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j3_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j4_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j5_axis[3]{ 0.0, 0.0, 1.0 };
+				const double j6_axis[3]{ 0.0, 1.0, 0.0 };
+				const double j7_axis[3]{ 0.0, 0.0, 1.0 };
+
+
+
+				s_vc(3, j1_axis, ivs1 + 3);
+				s_c3(j1_pos, j1_axis, ivs1);
+
+				s_vc(3, j2_axis, ivs2 + 3);
+				s_c3(j2_pos, j2_axis, ivs2);
+
+				s_vc(3, j3_axis, ivs3 + 3);
+				s_c3(j3_pos, j3_axis, ivs3);
+
+				s_vc(3, j4_axis, ivs4 + 3);
+				s_c3(j4_pos, j4_axis, ivs4);
+
+				s_vc(3, j5_axis, ivs5 + 3);
+				s_c3(j5_pos, j5_axis, ivs5);
+
+				s_vc(3, j6_axis, ivs6 + 3);
+				s_c3(j6_pos, j6_axis, ivs6);
+
+				s_vc(3, j7_axis, ivs7 + 3);
+				s_c3(j7_pos, j7_axis, ivs7);
+			}
+			double* ivss[7]{ ivs1, ivs2, ivs3, ivs4, ivs5, ivs6, ivs7 };
+
+			// 验证 A in D
+			double A_now[16];
+			{
+				// D_in_A = P(1)*P(2)...P(7)*D_in_A_init
+				//
+				// A_in_D = A_in_D_init * P(7)^-1 * P(6)^-1 ... P(1)^-1
+				//
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 7; ++i) {
+					auto vs = ivss[6-i];
+					s_vc(6, -q[6-i], vs, ps);
+					s_ps2pm(ps, pm);
+
+					std::cout << "pm" << 7 - i << ":" << std::endl;
+					dsp(4, 4, pm);
+
+
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double A_init[16]{
+					1,0,0,-param.a1 - param.a2,
+					0,1,0,-param.b1 - param.b2 - param.b3,
+					0,0,1,-param.c0 - param.c1 - param.c2,
+					0,0,0,1
+				};
+
+
+				s_pm_dot_pm(pm_ee, A_init, A_now);
+			}
+			dsp(4, 4, A_now);
+
+			double c_pos_in_D[3];
+			// 通过 c_in_A 计算 c_in_D
+			{
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 3; ++i) {
+					auto vs = vss[i];
+					s_vc(6, q[i], vs, ps);
+					s_ps2pm(ps, pm);
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double cpos_in_A_init[3]{
+					param.a1,
+					param.b1,
+					param.c0 + param.c1,
+				};
+				double cpos_in_A[3];
+
+				s_pp2pp(pm_ee, cpos_in_A_init, cpos_in_A);
+				s_pp2pp(A_in_D, cpos_in_A, c_pos_in_D);
+				
+				dsp(1, 3, cpos_in_A);
+				dsp(1, 3, c_pos_in_D);
+			}
+
+			// 计算 c_in_D
+			{
+				// D_in_A = P(1)*P(2)...P(7)*D_in_A_init
+				//
+				// A_in_D = A_in_D_init * P(7)^-1 * P(6)^-1 ... P(1)^-1
+				//
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 3; ++i) {
+					auto vs = ivss[6 - i];
+					s_vc(6, -q[6 - i], vs, ps);
+					s_ps2pm(ps, pm);
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double c_pos_init[3]{
+					- param.a2,
+					- param.b2 - param.b3,
+					- param.c2
+				};
+				
+				s_pp2pp(pm_ee, c_pos_init, c_pos_in_D);
+			}
+
+			std::cout << "cpos in D:" << std::endl;
+			aris::dynamic::dsp(1, 3, c_pos_in_D);
+
+
+			//////////////////////////////
+			double x_pos_in_D[3];
+			// 通过 x_in_A 计算 x_in_D
+			{
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 2; ++i) {
+					auto vs = vss[i];
+					s_vc(6, q[i], vs, ps);
+					s_ps2pm(ps, pm);
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double xpos_in_A_init[3]{
+					param.a1,
+					param.b1,
+					param.c0,
+				};
+				double xpos_in_A[3];
+
+				s_pp2pp(pm_ee, xpos_in_A_init, xpos_in_A);
+				s_pp2pp(A_in_D, xpos_in_A, x_pos_in_D);
+
+				dsp(1, 3, xpos_in_A);
+				dsp(1, 3, x_pos_in_D);
+			}
+
+			// 计算 x_in_D
+			{
+				// D_in_A = P(1)*P(2)...P(7)*D_in_A_init
+				//
+				// A_in_D = A_in_D_init * P(7)^-1 * P(6)^-1 ... P(1)^-1
+				//
+				double ps[6], pm[16];
+
+				double pm_ee[16], pm_tem[16];
+				s_eye(4, pm_ee);
+
+				for (int i = 0; i < 4; ++i) {
+					auto vs = ivss[6 - i];
+					s_vc(6, -q[6 - i], vs, ps);
+					s_ps2pm(ps, pm);
+					s_vc(16, pm_ee, pm_tem);
+					s_pm_dot_pm(pm_tem, pm, pm_ee);
+				}
+
+				double x_pos_init[16]{
+					-param.a2,
+					-param.b2 - param.b3,
+					-param.c2 - param.c1
+				};
+
+				s_pp2pp(pm_ee, x_pos_init, x_pos_in_D);
+			}
+			//////////////////////////////
+			std::cout << "pd:" << std::endl;
+			dsp(1, 3, x_pos_in_D);
+
+
+			{
+				double ps[6], pm[16];
+
+				s_vc(6, -q[6], ivss[6], ps);
+				s_ps2pm(ps, pm);
+
+				std::cout << "screw 6:" << std::endl;
+				dsp(4, 4, pm);
+
+				s_vc(6, -q[5], ivss[5], ps);
+				s_ps2pm(ps, pm);
+
+				std::cout << "screw 5:" << std::endl;
+				dsp(4, 4, pm);
+
+
+				double pm5[16];
+				s_vc(6, -q[4], ivss[4], ps);
+				s_ps2pm(ps, pm5);
+
+				double c7 = std::cos(q[6]);
+				double s7 = std::sin(q[6]);
+				double pm7[16]{
+					c7,s7,0,0,
+					-s7,c7,0,0,
+					0,0,1,0,
+					0,0,0,1,
+				};
+				dsp(4, 4, pm7);
+
+				double c6 = std::cos(q[5]);
+				double s6 = std::sin(q[5]);
+				double pm6[16]{
+					c6,0,-s6, - param.a2*(1-c6),
+					0,1,0,0,
+					s6,0,c6, s6*param.a2,
+					0,0,0,1,
+				};
+				dsp(4, 4, pm6);
+
+				double c_pos_init[3]{
+					-param.a2,
+					-param.b2 - param.b3,
+					-param.c2
+				};
+				double pm5_dot_c_pos_init[3];
+				s_pp2pp(pm5, c_pos_init, pm5_dot_c_pos_init);
+
+				double c_pos_in_D2[3];
+				s_pm_dot_pm(pm7, pm6, pm);
+				s_pp2pp(pm, pm5_dot_c_pos_init, c_pos_in_D2);
+				dsp(1, 3, c_pos_in_D2);
+				
+
+
+				double e_pos[3]{A_in_D[3], A_in_D[7], A_in_D[11] };
+				double tem_var_[3];
+				s_vc(3, e_pos, tem_var_);
+				s_vs(3, c_pos_in_D, tem_var_);
+
+				std::cout << "eq1: "  << std::sqrt(param.c1*param.c1 + param.b1*param.b1 + param.a1 * param.a1) << std::endl;
+				std::cout << s_norm(3, tem_var_) << std::endl;
+				
+				
+				double b_pos_init[3]{
+					-param.a2,
+					-param.b3,
+					-param.c2
+				};
+				double b_pos[3];
+				s_pp2pp(pm, b_pos_init, b_pos);
+				std::cout << "pb:" << std::endl;
+				dsp(1, 3, b_pos);
+
+				std::cout << "pc:" << std::endl;
+				dsp(1, 3, c_pos_in_D);
+
+				std::cout << "pe:" << std::endl;
+				dsp(1, 3, e_pos);
+
+				std::cout << "px:" << std::endl;
+				dsp(1, 3, x_pos_in_D);
+
+				std::cout << "ax:" << std::endl;
+				dsp(1, 3, A_in_D + 0, T(4));
+
+				std::cout << "ay:" << std::endl;
+				dsp(1, 3, A_in_D + 1, T(4));
+
+				std::cout << "az:" << std::endl;
+				dsp(1, 3, A_in_D + 2, T(4));
+
+
+				
+
+
+
+			}
+
+		}
+		
+
+		aris::dynamic::dsp(4, 4, D_in_A);
+
+
+		double ps[6]{ 1,0,0,0,0,0 };
+		double pm[16];
+		aris::dynamic::s_ps2pm(ps, pm);
+
 		double q[7]{ 0 };
 
 		// 轴角就是q3 //
 		q[5] = axis_angle;
 		
 		// 求出 q4 //
-		{
-			double theta = aris::PI / 2 - q[5];
-			auto d5_modified = std::sqrt(std::max(d5 * d5 + a6 * a6 - 2 * d5 * a6 * std::cos(theta), 0.0));
-			auto D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
-			auto cq4 = (d5_modified * d5_modified + d3 * d3 - D * D) / (2 * d5_modified * d3);
-
-			if (cq4 > 1.0 || cq4 < -1.0) {
-				return false;
-			}
-			else {
-				if (which_root & 0x01) {
-					// to be checked
-					q[3] = -aris::PI + std::acos(cq4) - std::atan2(a6 * std::cos(q[5]), d5 - a6 * std::sin(q[5]));
-				}
-				else {
-					q[3] = aris::PI - std::acos(cq4) - std::atan2(a6 * std::cos(q[5]), d5 - a6 * std::sin(q[5]));
-				}
-			}
-		}
+		
 
 		// 求出 q1与q2
 		{
