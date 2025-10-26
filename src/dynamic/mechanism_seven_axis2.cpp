@@ -182,7 +182,7 @@ namespace aris::dynamic{
 	
 
 
-	auto sevenAxisInverse(const void* para, const double *ee_pos, const double *current_input, int which_root, double *input)->bool
+	auto sevenAxisInverse(const void* para, const double *ee_pos, const double *current_input, int which_root, double *input)->int
 	{
 		// 七轴机器人构型：
 		//

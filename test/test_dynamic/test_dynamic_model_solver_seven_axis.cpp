@@ -281,14 +281,19 @@ void test_model_solver_seven_axis()
 	//test_seven_axis_inverse_solver3();
 	//test_seven_axis_inverse_solver4();
 
-	
-	auto m = createModelStandardSevenAxis();
+	aris::dynamic::SevenAxisParam2 param;
+
+	param.d1 = 0;
+	param.a2 = 0.1;
+	param.d3 = 0.330;
+	param.d5 = 0.320;
+	auto m = aris::dynamic::createModelSevenAxis2(param);
 	double output[7]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8, 0.31 }; // pe321 & arm_angle
 	double result[7];
 
 	// 直接调用函数设置末端，之后计算反解 //
 	m->setOutputPos(output);
-	m->inverseKinematics();
+	//m->inverseKinematics();
 	m->getInputPos(result);
 	aris::dynamic::dsp(1, 7, result);
 
