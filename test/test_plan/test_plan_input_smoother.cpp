@@ -109,6 +109,109 @@ auto test_input_smoother_sin()->void {
 	aris::dynamic::dlmwrite(m, input_size, vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
 }
 
+// 
+auto test_input_smoother_cos() -> void {
+	// 设置 InputSmoother //
+	aris::plan::InputSmoother sp;
+
+	const int input_size = 1;
+	sp.setInputSize(input_size);
+
+	// 最大速度、加速度 //
+	std::vector<double> max_poss{ 314, 314, 314, 314, 314, 314 };
+	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
+	std::vector<double> min_vels{ -3.14, -3.14, -3.14, -3.14, -3.14, -3.14 };
+	std::vector<double> max_accs{ 31.4, 31.4, 31.4, 31.4, 31.4, 31.4 };
+	std::vector<double> min_accs{ -31.4, -31.4, -31.4, -31.4, -31.4, -31.4 };
+
+	sp.setMaxVel(aris::core::Matrix(input_size, 1, max_vels.data()));
+	sp.setMinVel(aris::core::Matrix(input_size, 1, min_vels.data()));
+	sp.setMaxAcc(aris::core::Matrix(input_size, 1, max_accs.data()));
+	sp.setMinAcc(aris::core::Matrix(input_size, 1, min_accs.data()));
+
+	sp.setInputGenerator([](double* p)->std::int64_t {
+		static int count_{ 0 };
+
+		//if (count_ == 0) {
+		//	p[0] = -1;
+		//}
+		//else {
+			p[0] = std::cos(count_ * 0.001) * 100;
+		//}
+
+		count_++;
+
+		if (count_ > 1000)
+			return 0;
+
+
+		return 1;
+		});
+
+	sp.allocateMemory();
+	double input_init[1]{ 100 };
+	sp.init(input_init);
+
+	// 设置 AsyncGenerator //
+	aris::plan::AsyncGenerator ge;
+	ge.setCacheSize(1000);
+	ge.setDt(1e-3);
+	ge.setInputSize(input_size);
+	ge.setInputGenerator([&sp](double* p)->std::int64_t {
+		return sp.getNextInput(p);
+		});
+	ge.allocateMemory();
+	ge.init();
+
+	// 设置 SpeedRegulator //
+	aris::plan::SpeedRegulator sr;
+	sr.setInputSize(input_size);
+	sr.setDt(0.001);
+	sr.setInputGenerator([&ge](double* p)->std::int64_t {
+		return ge.getNextInput(p);
+		});
+	sr.setMaxVel(aris::core::Matrix(input_size, 1, max_vels.data()));
+	sr.setMinVel(aris::core::Matrix(input_size, 1, min_vels.data()));
+	sr.setMaxAcc(aris::core::Matrix(input_size, 1, max_accs.data()));
+	sr.setMinAcc(aris::core::Matrix(input_size, 1, min_accs.data()));
+	sr.allocateMemory();
+	sr.init(1.0);
+
+	// 打印数据 //
+	std::vector<double> vec, v_vec, a_vec;
+	int m = 0;
+	double out_vel[16]{}, out_acc[16]{}, ee_pos[16], input_pos[6];
+	double s = 0;
+	while (auto ret = sr.getNextInput(input_pos)) {
+		if (ret < 0) {
+			std::cout << "failed:" << ret << std::endl;
+			break;
+		}
+
+		static auto last_ret = -1;
+		if (ret != last_ret) {
+			std::cout << "cmd:" << ret << std::endl;
+			last_ret = ret;
+		}
+
+		m++;
+		if (m % 100 == 0)
+			std::this_thread::sleep_for(std::chrono::nanoseconds(10000000));
+
+		//if(m > 1000 && m < 2000)
+		//	sr.setTargetSpeedRatio(0.0);
+		//else if(m > 3000)
+		//	sr.setTargetSpeedRatio(1.0);
+
+		std::cout << "m:" << m << std::endl;
+
+		vec.resize(m * input_size, 0.0);
+		std::copy_n(input_pos, input_size, vec.data() + input_size * (m - 1));
+	}
+
+	aris::dynamic::dlmwrite(m, input_size, vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+}
+
 auto test_input_smoother_2() -> void {
 	// 构造 TG //
 	aris::plan::TrajectoryGenerator tg;
@@ -245,7 +348,7 @@ auto test_input_smoother_2() -> void {
 void test_input_smoother(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_input_smoother_sin();
+	test_input_smoother_cos();
 	//test_input_smoother_2();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;

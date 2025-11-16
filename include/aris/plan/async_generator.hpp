@@ -36,6 +36,7 @@ namespace aris::plan{
 
 		auto allocateMemory() -> void;
 		auto init() -> void;
+		auto stop() -> void;
 		auto getNextInput(double* p) -> std::int64_t;
 
 		~AsyncGenerator();

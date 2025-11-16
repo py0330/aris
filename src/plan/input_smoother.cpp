@@ -135,7 +135,7 @@ namespace aris::plan {
 		//
 		//
 		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的, T是根据 lookaheadcount 计算得出
-		double k_{ -9 }, a_{ -1 }, last_a_{ -1 }, T_{ 0.1 };
+		double k_{ -9 }, a_{ -1 }, last_a_{ -5 }, T_{ 0.1 };
 
 
 		auto allocate_mem()->void{
@@ -314,6 +314,7 @@ namespace aris::plan {
 
 				if (test_next_input(d2s)) {
 					s1_ = s2_ - ds * dt_;
+					last_a_ = a_;
 					ds_l = ds;
 				}
 				else
@@ -326,7 +327,7 @@ namespace aris::plan {
 				getInputByS(s1_, p1_back_);
 				getInputByS(s2_, p2_back_);
 
-				// 二分法求解最优的 d3s
+				// 二分法求解最优的 d2s
 				{
 					bool if_test_success = false;
 					

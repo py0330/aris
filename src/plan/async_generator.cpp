@@ -59,12 +59,15 @@ namespace aris::plan {
 			cache_ = core::getMem(mem_.data(), cache_);
 			ret_ids_ = core::getMem(mem_.data(), ret_ids_);
 		};
-		auto init() -> void {
+		auto stop() {
 			if (is_rt_thread_running_) {
 				is_rt_thread_running_.store(false);
 				if (aris::control::aris_rt_task_join(rt_task_handle_))
 					THROW_FILE_LINE("aris_rt_task_join failed");
 			}
+		}
+		auto init() -> void {
+			stop();
 			
 			
 			current_id_.store(0);
@@ -135,15 +138,14 @@ namespace aris::plan {
 	auto AsyncGenerator::init() -> void {
 		imp_->init();
 	}
+	auto AsyncGenerator::stop() -> void {
+		imp_->stop();
+	}
 	auto AsyncGenerator::getNextInput(double* p) -> std::int64_t {
 		return imp_->get_next_input(p);
 	}
 	AsyncGenerator::~AsyncGenerator() {
-		if (imp_->is_rt_thread_running_) {
-			imp_->is_rt_thread_running_.store(false);
-			if (aris::control::aris_rt_task_join(imp_->rt_task_handle_))
-				THROW_FILE_LINE("aris_rt_task_join failed");
-		}
+		stop();
 	}
 	AsyncGenerator::AsyncGenerator() :imp_(new Imp) {
 
