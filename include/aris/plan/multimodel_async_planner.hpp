@@ -24,7 +24,22 @@ namespace aris::plan{
 
 	class ARIS_API ToolWobjSelector {
 	public:
+		using MarkerVec = std::vector<aris::dynamic::Marker*>;
+		
+		// 配置模型 //
+		auto setModel(aris::dynamic::MultiModel& model) -> void;
+		auto model() -> aris::dynamic::MultiModel&;
 
+		auto computeEePos(MarkerVec& tools, MarkerVec& wobjs, const double* twpos, double* eepos)->int;
+		auto computeTwPos(MarkerVec& tools, MarkerVec& wobjs, const double* eepos, double* twpos)->int;
+
+		~ToolWobjSelector();
+		ToolWobjSelector();
+		ARIS_DELETE_BIG_FOUR(ToolWobjSelector);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
 	};
 
 	class ARIS_API MultimodelAsyncPlanner {

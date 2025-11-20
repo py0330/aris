@@ -195,6 +195,12 @@ namespace aris::plan {
 			std::int64_t current_idx = std::int64_t(s / dt_) + 1;
 			auto s_local_div_dt = std::fmod(s, dt_)/dt_;
 
+			if (current_idx > tg_idx_) {
+				current_idx = tg_idx_;
+				s_local_div_dt = dt_;
+			}
+
+
 			auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
 
 			for (Size i = 0; i < input_size_; ++i) {
@@ -322,6 +328,12 @@ namespace aris::plan {
 			}
 		}
 		auto getNextInput(double* p) -> std::int64_t {
+			//// ----------------- PART 0 Check 是否需要init -------------- //
+			//std::int64_t last_current_idx = std::int64_t(s2_ / dt_) + 1;
+			//{
+			//	if(last_current_idx)
+			//}
+			
 			// ----------------- PART 1 拿数据--------------------------- //
 			{
 				getInputByS(s1_, p1_back_);

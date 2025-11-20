@@ -8,6 +8,7 @@
 #include <aris/plan/input_smoother.hpp>
 #include <aris/plan/async_generator.hpp>
 #include <aris/plan/speed_regulator.hpp>
+#include <aris/plan/multimodel_async_planner.hpp>
 
 // 规划部分应当包含：
 // 1. scurve
