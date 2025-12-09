@@ -500,11 +500,15 @@ namespace aris::dynamic{
 		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
 		// 获取所有子模型中的末端种类
 		auto getEeTypes()->std::vector<EEType>;
+		// 获取所有子模型的末端种类到指定内存
+		auto getEeTypes(EEType*) -> void;
 
 		// 获取对应子模型中的末端
 		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
 		// 获取所有子模型中的末端
 		auto getEes()->std::vector<MotionBase*>;
+		// 获取所有子模型的末端到指定内存
+		auto getEes(MotionBase**) -> void;
 
 		// 获取对应子模型中的电机数量
 		auto getMotionNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;

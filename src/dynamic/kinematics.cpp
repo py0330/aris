@@ -315,7 +315,161 @@ namespace aris::dynamic{
 		return 0;
 	}
 
-	auto s_ik(int root_size, int root_num, const void* dh, IkFunc2 func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods, const double* current_root) -> int {
+	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void {
+		switch (type) {
+		case EEType::PE313:
+			s_pe2pm(pos, pm, "313");
+			return;
+		case EEType::PE321:
+			s_pe2pm(pos, pm, "321");
+			return;
+		case EEType::PE123:
+			s_pe2pm(pos, pm, "123");
+			return;
+		case EEType::PQ:
+			s_pq2pm(pos, pm);
+			return;
+		case EEType::PM:
+			s_vc(16, pos, pm);
+			return;
+		case EEType::RE313:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "313");
+			return;
+		case EEType::RE321:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "321");
+			return;
+		case EEType::RE123:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "123");
+			return;
+		case EEType::RQ:
+			s_eye(4, pm);
+			s_rq2pm(pos, pm);
+			return;
+		case EEType::RM:
+			s_eye(4, pm);
+			s_rm2pm(pos, pm);
+			return;
+		case EEType::XYZT:
+			s_eye(4, pm);
+			s_pp2pm(pos, pm);
+			s_rmz(pos[3], pm, 4);
+			return;
+		case EEType::XYZ:
+			s_eye(4, pm);
+			s_pp2pm(pos, pm);
+			s_rmz(pos[3], pm, 4);
+			return;
+		case EEType::RTZ:
+			s_eye(4, pm);
+			pm[3] = pos[0] * std::cos(pos[1]);
+			pm[7] = pos[0] * std::sin(pos[1]);
+			pm[11] = pos[2];
+			s_rmz(pos[1], pm, 4);
+			return;
+		case EEType::XYT:
+			s_eye(4, pm);
+			pm[3] = pos[0];
+			pm[7] = pos[1];
+			s_rmz(pos[2], pm, 4);
+			return;
+		case EEType::XY:
+			s_eye(4, pm);
+			pm[3] = pos[0];
+			pm[7] = pos[1];
+			return;
+		case EEType::RT:
+			s_eye(4, pm);
+			pm[3] = pos[0] * std::cos(pos[1]);
+			pm[7] = pos[0] * std::sin(pos[1]);
+			s_rmz(pos[1], pm, 4);
+			return;
+		case EEType::X:
+			s_eye(4, pm);
+			pm[3] = pos[0];
+			return;
+		case EEType::A:
+			s_rmz(pos[0], pm, 4);
+			return;
+		case EEType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	}
+	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void {
+		switch (type) {
+		case EEType::PE313:
+			s_pm2pe(pm, pos, "313");
+			return;
+		case EEType::PE321:
+			s_pm2pe(pm, pos, "313");
+			return;
+		case EEType::PE123:
+			s_pm2pe(pm, pos, "313");
+			return;
+		case EEType::PQ:
+			s_pm2pq(pm, pos);
+			return;
+		case EEType::PM:
+			s_vc(16, pm, pos);
+			return;
+		case EEType::RE313:
+			s_pm2re(pm, pos, "313");
+			return;
+		case EEType::RE321:
+			s_pm2re(pm, pos, "321");
+			return;
+		case EEType::RE123:
+			s_pm2re(pm, pos, "123");
+			return;
+		case EEType::RQ:
+			s_pm2rq(pm, pos);
+			return;
+		case EEType::RM:
+			s_pm2rm(pm, pos);
+			return;
+		case EEType::XYZT:
+			s_pm2pp(pm, pos);
+			pos[3] = s_rmz_theta(pm, 4);
+			return;
+		case EEType::XYZ:
+			s_pm2pp(pm, pos);
+			return;
+		case EEType::RTZ:
+			pos[0] = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
+			pos[1] = std::atan2(pm[3], pm[7]);
+			pos[2] = pm[11];
+			return;
+		case EEType::XYT:
+			pos[0] = pm[3];
+			pos[1] = pm[7];
+			pos[2] = s_rmz_theta(pm, 4);
+			return;
+		case EEType::XY:
+			pos[0] = pm[3];
+			pos[1] = pm[7];
+			return;
+		case EEType::RT:
+			pos[0] = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
+			pos[1] = std::atan2(pm[3], pm[7]);
+			return;
+		case EEType::X:
+			pos[0] = pm[3];
+			return;
+		case EEType::A:
+			pos[0] = s_rmz_theta(pm, 4);
+			return;
+		case EEType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	}
+
+	auto s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods, const double* current_root) -> int {
 		if (which_root >= root_num || which_root < 0) {
 			int solution_num = 0;
 			double max_diff_norm = std::numeric_limits<double>::infinity();

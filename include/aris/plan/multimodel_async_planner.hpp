@@ -22,6 +22,9 @@
 /// 
 namespace aris::plan{
 
+	// 计算不同tools，wobjs下的设置顺序
+	//auto ARIS_API computeToolWobjOrder(aris::Size ee_size, aris::dynamic::MotionBase** ees, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, aris::Size* order, bool* is_setting_tool) -> int;
+
 	class ARIS_API ToolWobjSelector {
 	public:
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
@@ -30,8 +33,11 @@ namespace aris::plan{
 		auto setModel(aris::dynamic::MultiModel& model) -> void;
 		auto model() -> aris::dynamic::MultiModel&;
 
-		auto computeEePos(MarkerVec& tools, MarkerVec& wobjs, const double* twpos, double* eepos)->int;
-		auto computeTwPos(MarkerVec& tools, MarkerVec& wobjs, const double* eepos, double* twpos)->int;
+		auto selectTw(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> int;
+		auto setTwPos(const double* twpos)->void;
+		auto getTwPos(double* twpos)->void;
+		auto setEePos(const double* eepos) -> void;
+		auto getEePos(double* eepos) -> void;
 
 		~ToolWobjSelector();
 		ToolWobjSelector();
@@ -44,22 +50,19 @@ namespace aris::plan{
 
 	class ARIS_API MultimodelAsyncPlanner {
 	public:
+		using TW = std::vector<std::pair<std::string, std::string>>;
+		
 		////////////////// PART 1 config ////////////////
 		
 		// 配置末端类型 //
-		auto setModel(aris::dynamic::MultiModel& model)->void;
-		auto model() -> aris::dynamic::MultiModel&;
-
 		auto setDt(double dt) -> void;
 		auto dt() -> double;
 		
-		auto eeTypes()const -> const std::vector<aris::dynamic::EEType>&;
-		auto setEeTypes(const std::vector<aris::dynamic::EEType>& ee_types) -> void;
-		
-		auto setInputSize(int input_size) -> void;
-		auto inputSize() -> int;
-		
+		auto setModel(aris::dynamic::MultiModel& model)->void;
+		auto model() -> aris::dynamic::MultiModel&;
 
+		auto eeTypes()const -> const std::vector<aris::dynamic::EEType>&;
+		auto inputSize() -> int;
 
 		auto setMaxPos(aris::core::Matrix pos) -> void;
 		auto maxPos() -> aris::core::Matrix;
@@ -93,22 +96,13 @@ namespace aris::plan{
 		auto stop() -> void;
 
 		// 插入新的数据，并重规划 //
-		auto insertInitPos(std::int64_t id, const double* ee_pos) -> void;
+		auto insertInitPos(TW& tw, const double* ee_pos) -> std::int64_t;
 
 		// 插入新的数据，并重规划 //
-		auto insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
+		auto insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
 		// 插入新的数据，并重规划 //
-		auto insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
-
-
-		// 插入新的数据，并重规划 //
-		auto insertLinePos(std::vector<std::pair<std::string, std::string>> tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
-
-		// 插入新的数据，并重规划 //
-		auto insertCirclePos(std::vector<std::pair<std::string, std::string>> tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
-
-
+		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
 
 		// 删除已经不用的数据 //
 		auto clearUsedPos() -> void;

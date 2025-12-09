@@ -192,16 +192,13 @@ namespace aris::plan {
 
 		};
 		auto getInputByS(double s, double* p) -> int {
-			std::int64_t current_idx = std::int64_t(s / dt_) + 1;
-			auto s_local_div_dt = std::fmod(s, dt_)/dt_;
+			std::int64_t current_idx = std::min(std::int64_t(s / dt_) + 1, tg_idx_);
+			auto s_local_div_dt = std::min(s / dt_ - (current_idx - 1), 1.0);
+			auto p3 = input_poss_ + (current_idx % pool_size_) * input_size_;
 
-			if (current_idx > tg_idx_) {
-				current_idx = tg_idx_;
-				s_local_div_dt = dt_;
-			}
-
-
-			auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
+			//std::int64_t current_idx = std::int64_t(s / dt_) + 1;
+			//auto s_local_div_dt = std::fmod(s, dt_)/dt_;
+			//auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
 
 			for (Size i = 0; i < input_size_; ++i) {
 				// 线性插值 //
@@ -288,6 +285,7 @@ namespace aris::plan {
 				for (int j = 0; j < input_size_; ++j) {
 					input_poss_[i * input_size_ + j].p_ = init_input_pos[j];
 				}
+				node_ids_[i] = 0;
 			}
 
 			tg_idx_ = interpolation_size_ - 1;
@@ -298,6 +296,9 @@ namespace aris::plan {
 				if (node_ids_[(tg_idx_ % pool_size_)] == 0)
 					break;
 			}
+
+			// 将前面的ret值设置正确 //
+			node_ids_[interpolation_size_ - 1] = node_ids_[interpolation_size_];
 
 			// 确定正确的ds，并设置到s1_
 			s2_ = (interpolation_size_ - 1) * dt_;
@@ -328,11 +329,14 @@ namespace aris::plan {
 			}
 		}
 		auto getNextInput(double* p) -> std::int64_t {
-			//// ----------------- PART 0 Check 是否需要init -------------- //
-			//std::int64_t last_current_idx = std::int64_t(s2_ / dt_) + 1;
-			//{
-			//	if(last_current_idx)
-			//}
+			// ----------------- PART 0 Check 是否需要init -------------- //
+			std::int64_t last_current_idx = std::int64_t(s2_ / dt_) + 1;
+			{
+				if (last_current_idx > tg_idx_) {
+					getInputByS(s2_, p3_);
+					init_pos(p3_);
+				}
+			}
 			
 			// ----------------- PART 1 拿数据--------------------------- //
 			{
@@ -384,11 +388,16 @@ namespace aris::plan {
 			std::int64_t current_idx = std::int64_t(s2_ / dt_) + 1;
 			// ----------------- PART 2 增数据--------------------------- //
 			{
-				// 如果轨迹已经结束，或已经满
+				////////// debug
+				if (node_ids_[std::min(current_idx - 1, tg_idx_) % pool_size_] == 0) {
+					std::cout << "ret 0 " << std::endl;
+				}
+				//////////
+				
+				
+				// 如果轨迹已经尚未结束，或已经满
 				if (node_ids_[(tg_idx_ % pool_size_)] && tg_idx_ - current_idx < look_head_size_) {
 					insert_nodes();
-
-					//node_ids_[(tg_idx_ % pool_size_)] = input_generator_(input_poss_ + (tg_idx_ % pool_size_) * input_size_);
 				}
 			}
 
@@ -408,7 +417,7 @@ namespace aris::plan {
 #endif
 
 
-			return current_idx == tg_idx_ ? 0 : node_ids_[current_idx % pool_size_];
+			return node_ids_[std::min(current_idx - 1, tg_idx_) % pool_size_];
 		}
 	};
 	auto InputSmoother::setInputGenerator(InputGenerator generator) -> void {

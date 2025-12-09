@@ -38,7 +38,7 @@ auto test_input_smoother_sin()->void {
 
 		count_++;
 
-		if (count_ > 10000)
+		if ((count_ % 1000) == 0)
 			return 0;
 
 
@@ -79,7 +79,11 @@ auto test_input_smoother_sin()->void {
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{}, ee_pos[16], input_pos[6];
 	double s = 0;
-	while (auto ret = sr.getNextInput(input_pos)) {
+
+	int stop_count = 10;
+	std::int64_t ret;
+
+	while ((ret = sr.getNextInput(input_pos)) || stop_count > 0) {
 		if (ret < 0) {
 			std::cout << "failed:" << ret << std::endl;
 			break;
@@ -87,7 +91,7 @@ auto test_input_smoother_sin()->void {
 
 		static auto last_ret = -1;
 		if (ret != last_ret) {
-			std::cout << "cmd:" << ret << std::endl;
+			//std::cout << "cmd:" << ret << std::endl;
 			last_ret = ret;
 		}
 		
@@ -95,12 +99,19 @@ auto test_input_smoother_sin()->void {
 		if(m%100 == 0)
 			std::this_thread::sleep_for(std::chrono::nanoseconds(10000000));
 
+
+		if (ret == 0) {
+			stop_count--;
+			std::cout << "stopped " << stop_count << ":" << m << std::endl;
+
+			//std::this_thread::sleep_for(std::chrono::seconds(10));
+		}
 		//if(m > 1000 && m < 2000)
 		//	sr.setTargetSpeedRatio(0.0);
 		//else if(m > 3000)
 		//	sr.setTargetSpeedRatio(1.0);
 
-		std::cout << "m:" << m << std::endl;
+		//std::cout << "m:" << m << std::endl;
 
 		vec.resize(m * input_size, 0.0);
 		std::copy_n(input_pos, input_size, vec.data() + input_size * (m - 1));
@@ -348,7 +359,8 @@ auto test_input_smoother_2() -> void {
 void test_input_smoother(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
-	test_input_smoother_cos();
+	test_input_smoother_sin();
+	//test_input_smoother_cos();
 	//test_input_smoother_2();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;

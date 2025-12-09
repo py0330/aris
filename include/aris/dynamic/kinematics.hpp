@@ -174,8 +174,7 @@ namespace aris::dynamic{
 	};
 
 	auto inline s_ee_type_pos_size(EEType type)noexcept->aris::Size {
-		switch (type)
-		{
+		switch (type){
 		case EEType::PE313:
 			return 6;
 		case EEType::PE321:
@@ -277,8 +276,10 @@ namespace aris::dynamic{
 		}
 		return size;
 	}
+	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void;
+	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void;
 
-	using IkFunc2 = std::function<int(const void* dh, const double* ee_pos, const double*current_input, int which_root, double* input)>;
+	using IkFunc = std::function<int(const void* dh, const double* ee_pos, const double*current_input, int which_root, double* input)>;
 	//    root_size : 解的大小，例如 puma 的解是 6 维
 	//     root_num : 解的个数，例如 puma 的反解的个数为 8 
 	//           dh : 反解需要用到的参数
@@ -289,7 +290,7 @@ namespace aris::dynamic{
 	//    roots_mem : 计算所需的内存，大小应为 root_size
 	// root_periods : 解的周期，例如转动轴周期为 2 PI，如果为 inf 或 nan，则说明没有周期
 	// current_root : 当前解，用于在 which_root < 0 或 >= root_num 时，选择解
-	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc2 func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods = nullptr, const double* current_root = nullptr)->int;
+	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods = nullptr, const double* current_root = nullptr)->int;
 
 }
 

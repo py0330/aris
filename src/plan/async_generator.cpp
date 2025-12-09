@@ -5,7 +5,6 @@
 namespace aris::plan {
 
 	struct AsyncGenerator::Imp {
-
 		static auto rt_task_func(void* ge) -> void {
 			auto imp = reinterpret_cast<Imp*>(ge);
 
@@ -17,18 +16,23 @@ namespace aris::plan {
 
 				auto store_id = imp->stored_id_.load();
 				auto current_id = imp->current_id_.load();
-				while (store_id - current_id < imp->cache_size_) {
-					auto store_pos = store_id % imp->cache_size_;
+				auto store_num = 0;
+				while ((store_id + store_num) - current_id < imp->cache_size_) {
+					auto store_pos = (store_id+store_num) % imp->cache_size_;
 					imp->ret_ids_[store_pos] = imp->input_generator_(imp->cache_ + store_pos * imp->input_size_);
 
-					store_id++;
-					imp->stored_id_.store(store_id);
+					store_num++;
+					
 
 					// 执行完毕，退出 //
 					if (imp->ret_ids_[store_pos] == 0) {
-						return;
+						//std::cout << "stored 0:" << store_id + store_num << std::endl;
+						break;
 					}
 				}
+
+				store_id += store_num;
+				imp->stored_id_.store(store_id);
 			}
 		}
 		
@@ -68,8 +72,7 @@ namespace aris::plan {
 		}
 		auto init() -> void {
 			stop();
-			
-			
+
 			current_id_.store(0);
 			stored_id_.store(0);
 			sample_period_ns_ = dt_ / 2 * 1e9;
@@ -80,16 +83,15 @@ namespace aris::plan {
 			while (store_id - current_id < cache_size_) {
 				auto store_pos = store_id % cache_size_;
 				ret_ids_[store_pos] = input_generator_(cache_ + store_pos*input_size_);
+				store_id++;
 
 				// 执行完毕，退出 //
 				if (ret_ids_[store_pos] == 0) {
-					is_rt_thread_running_.store(false);
-					return;
+					break;
 				}
-
-				store_id++;
-				stored_id_.store(store_id);
 			}
+
+			stored_id_.store(store_id);
 			
 			rt_task_handle_ = aris::control::aris_rt_task_create();
 			if (!rt_task_handle_.has_value()) THROW_FILE_LINE("rt_task_create failed");
@@ -99,11 +101,20 @@ namespace aris::plan {
 		auto get_next_input(double* p) -> std::int64_t {
 			auto store_id = stored_id_.load();
 			auto current_id = current_id_.load();
+			
+			// 已正常结束且没有新的数据，直接返回0，且不增加current_id //
+			if (ret_ids_[current_id % cache_size_] == 0 && current_id == store_id) {
+				std::copy_n(cache_ + (current_id % cache_size_) * input_size_, input_size_, p);
+				return 0;
+			}
 
-			if (current_id >= store_id) {
+			// 【错误！】没有结束，但是读取速度已经超过了存储速度 //
+			if (current_id >= store_id && ret_ids_[(current_id - 1) % cache_size_]) {
+				std::cout << "failed async, current :" << current_id << "  store:" << store_id << std::endl;
 				return -1;
 			}
 
+			// 正常读取，也可能返回0 //
 			std::copy_n(cache_ + (current_id %cache_size_)*input_size_, input_size_, p);
 			current_id++;
 			current_id_.store(current_id);

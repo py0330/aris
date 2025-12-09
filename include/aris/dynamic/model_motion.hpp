@@ -287,7 +287,7 @@ namespace aris::dynamic {
 		explicit PointMotion(const std::string& name = "point_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(PointMotion);
 	};
-	// 只包含 xyz 3个维度的末端，例如 4足 机器人的足端
+	// 只包含 abs 3个维度的末端，例如 球铰
 	class ARIS_API SphericalMotion final :public MotionTemplate<3, 3, 3>{
 	public:
 		enum class PoseType {
@@ -388,7 +388,7 @@ namespace aris::dynamic {
 		explicit PlanarMotion(const std::string& name = "planar_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);
 		ARIS_DECLARE_BIG_FOUR(PlanarMotion);
 	};
-	// 只包含 xy 和 theta 的平面运动末端
+	// 只包含 xy 的平面运动末端
 	class ARIS_API XyMotion final :public MotionTemplate<2, 2, 2>{
 	public:
 		static auto Dim()->Size { return 2; }

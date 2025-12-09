@@ -101,8 +101,21 @@ namespace aris::plan {
 
 		auto init(double init_target_ds) -> void {
 			ret1_ = input_generator_(p1_);
-			ret2_ = input_generator_(p2_);
-			ret3_ = input_generator_(p3_);
+			
+			if (ret1_ > 0) {
+				ret2_ = input_generator_(p2_);
+			}
+			else {
+				ret2_ = 0;
+				aris::dynamic::s_vc(input_size_, p1_, p2_);
+			}
+			if (ret2_ > 0) {
+				ret3_ = input_generator_(p3_);
+			}
+			else {
+				ret3_ = 0;
+				aris::dynamic::s_vc(input_size_, p2_, p3_);
+			}
 
 			u0_ = 1.0;
 			u1_ = 1.0 + init_target_ds;
@@ -112,7 +125,13 @@ namespace aris::plan {
 
 			target_du_.store(init_target_ds);
 		}
-		auto get_next_input2(double* p) -> std::int64_t {
+		auto get_next_input(double* p) -> std::int64_t {
+			auto target_du = target_du_.load();
+			
+			// STEP 0 check 是否结束 //
+			if (ret1_ == 0) {
+				init(target_du);
+			}
 
 			// STEP 1 计算 u2 的范围 //
 			double ur{ u1_ + (u1_ - u0_) + max_d2u_ }, ul{ u1_ + (u1_ - u0_) + min_d2u_ }; // du1 = u1 - u0
@@ -228,7 +247,7 @@ namespace aris::plan {
 			}
 
 			// STEP 2 计算 u2 //
-			auto target_du = target_du_.load();
+			
 			double u2;
 			if (target_du > (ur - u1_)) {
 				u2 = ur;
@@ -247,8 +266,10 @@ namespace aris::plan {
 				ret1_ = ret2_;
 				ret2_ = ret3_;
 
-				if (ret2_)
+				// 还没结束或还没出错 //
+				if (ret2_ > 0) {
 					ret3_ = input_generator_(p3_);
+				}
 				else {
 					aris::dynamic::s_vc(input_size_, p2_, p3_);
 				}
@@ -335,7 +356,7 @@ namespace aris::plan {
 		return (imp_->u1_ - imp_->u0_) / imp_->dt_;
 	}
 	auto SpeedRegulator::getNextInput(double* p) -> std::int64_t {
-		return imp_->get_next_input2(p);
+		return imp_->get_next_input(p);
 	}
 	SpeedRegulator::~SpeedRegulator() = default;
 	SpeedRegulator::SpeedRegulator() :imp_(new Imp) {

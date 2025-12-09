@@ -133,6 +133,7 @@ namespace aris::dynamic{
 		imp_->end_effector_acc_size_ = 0;
 		imp_->end_effector_fce_size_ = 0;
 
+		imp_->ee_types_.clear();
 		for (auto &m : generalMotionPool()) {
 			imp_->end_effector_pos_size_ += m.pSize();
 			imp_->end_effector_vel_size_ += m.vSize();
@@ -467,6 +468,8 @@ namespace aris::dynamic{
 	};
 
 	auto MultiModel::init()->void {
+		imp_->ee_types_.clear();
+
 		for (auto& m : subModels()) {
 			// init sub model //
 			m.init();
@@ -740,10 +743,40 @@ namespace aris::dynamic{
 		std::iota(model_ids.begin(), model_ids.end(), 0);
 		return getEeTypes(model_ids);
 	}
+	auto MultiModel::getEeTypes(EEType* types)->void {
+		int ee_num = 0;
+
+		for (int model_id = 0; model_id < subModels().size(); ++model_id) {
+			auto& m = subModels()[model_id];
+
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& gm : model->generalMotionPool()) {
+					types[ee_num] = gm.eeType();
+					ee_num++;
+				}
+			}
+		}
+	}
+	
 	auto MultiModel::getEes()->std::vector<MotionBase*> {
 		std::vector<Size> model_ids(subModels().size());
 		std::iota(model_ids.begin(), model_ids.end(), 0);
 		return getEes(model_ids);
+	}
+	
+	auto MultiModel::getEes(MotionBase** ees) -> void {
+		
+		int ee_num = 0;
+		for (int model_id = 0; model_id < subModels().size(); ++model_id) {
+			auto& m = subModels()[model_id];
+
+			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
+				for (auto& gm : model->generalMotionPool()) {
+					ees[ee_num] = &gm;
+					ee_num++;
+				}
+			}
+		}
 	}
 	auto MultiModel::getMotionIds()->std::vector<Size> {
 		std::vector<Size> motions;
@@ -782,9 +815,6 @@ namespace aris::dynamic{
 				for (auto& gm : model->generalMotionPool()) {
 					ee_types.push_back(gm.eeType());
 				}
-			}
-			else {
-				ee_types.push_back(aris::dynamic::EEType::UNKNOWN);
 			}
 		}
 		return ee_types;

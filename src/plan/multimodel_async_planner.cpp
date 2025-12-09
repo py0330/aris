@@ -7,153 +7,364 @@
 
 namespace aris::plan {
 
+
+	// 根据 tools 和 wobjs 计算反解前每个tools 和 wobjs的设置顺序，连接地面的最先设置，之后连接已经设置的part的再进行设置
+	// 
+	// 可能报错
+	// 
+	// 
+	//
+	auto computeToolWobjOrder(aris::Size ee_size, aris::Size part_size, aris::dynamic::Part** parts, aris::dynamic::MotionBase** ees, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, char *mem_need, aris::Size* order, bool* set_tool) -> int {
+		// Step 0 给定变量 //
+		Size *parts_setted = reinterpret_cast<Size*>(mem_need);
+		std::fill_n(parts_setted, part_size, 0);
+		
+		// Step 1 补全所有的tool wobj //
+		for (auto i = 0; i < ee_size; ++i) {
+			tools[i] = tools[i] ? tools[i] : ees[i]->makI();
+			wobjs[i] = wobjs[i] ? wobjs[i] : ees[i]->makJ();
+		}
+
+		// Step 2 计算顺序 //
+		// sub 1：找到所有连接地面的 part
+		// sub 2：依次连接其他 part
+		// sub 3：若还有不连已有part的tw，则加入第一组tw
+		{
+			std::iota(order, order + ee_size, 0);
+			auto parts_num_ = 0;
+
+			for (int i = 0; i < ee_size; ++i) {
+				// 如果 wobj 是ground，则把 tool 定义成需要被设置的 part
+				auto found = std::find_if(order + i, order + ee_size, [wobjs](const aris::Size& idx) {
+					return (&wobjs[idx]->fatherPart() == &wobjs[idx]->model()->ground());
+					});
+
+				if (found < order + ee_size) {
+					auto found_part = std::find(parts, parts + part_size, &tools[*found]->fatherPart());
+					if (found_part >= parts + part_size)
+						return -2002;
+
+					if (parts_setted[found_part - parts] > 0)
+						return -2001;
+
+					parts_setted[found_part - parts] = 1;
+					std::swap(order[i], *found);
+					set_tool[i] = true;
+					continue;
+				}
+				
+				// 如果 tool 是ground，则把 wobj 定义成需要被设置的 part
+				found = std::find_if(order + i, order + ee_size, [tools](const aris::Size& idx) {
+					return (&tools[idx]->fatherPart() == &tools[idx]->model()->ground());
+					});
+
+				if (found < order + ee_size) {
+					auto found_part = std::find(parts, parts + part_size, &wobjs[*found]->fatherPart());
+					if (found_part >= parts + part_size)
+						return -2002;
+
+					if (parts_setted[found_part - parts] > 0)
+						return -2001;
+
+					parts_setted[found_part - parts] = 1;
+					std::swap(order[i], *found);
+					set_tool[i] = false;
+					continue;
+				}
+
+				// 如果 ee 的 makj 被设置过，则把它的 maki 设置一下
+				found = std::find_if(order + i, order + ee_size, [wobjs, parts, part_size, parts_setted](const aris::Size& idx) {
+					auto found_part = std::find(parts, parts + part_size, &wobjs[idx]->fatherPart());
+					return (found_part < parts + part_size) && parts_setted[found_part - parts] > 0;
+					});
+
+				if (found < order + ee_size) {
+					auto found_part = std::find(parts, parts + part_size, &tools[*found]->fatherPart());
+					if (found_part >= parts + part_size)
+						return -2002;
+
+					if (parts_setted[found_part - parts] > 0)
+						return -2001;
+
+					parts_setted[found_part - parts] = 1;
+					std::swap(order[i], *found);
+					set_tool[i] = true;
+					continue;
+				}
+
+				// 如果 ee 的 maki 被设置过，则把它的 makj 设置一下
+				found = std::find_if(order + i, order + ee_size, [tools, parts, part_size, parts_setted](const aris::Size& idx) {
+					auto found_part = std::find(parts, parts + part_size, &tools[idx]->fatherPart());
+					return (found_part < parts + part_size) && parts_setted[found_part - parts] > 0;
+				});
+
+				if (found < order + ee_size) {
+					auto found_part = std::find(parts, parts + part_size, &wobjs[*found]->fatherPart());
+					if (found_part >= parts + part_size)
+						return -2002;
+
+					if (parts_setted[found_part - parts] > 0)
+						return -2001;
+
+					parts_setted[found_part - parts] = 1;
+					std::swap(order[i], *found);
+					set_tool[i] = false;
+					continue;
+				}
+
+				// 如果 ee 凭空出现，则将其 maki 和 makj 均设置
+				// 此时 order 无需改变
+				auto found_part_i = std::find(parts, parts + part_size, &tools[i]->fatherPart());
+				auto found_part_j = std::find(parts, parts + part_size, &wobjs[i]->fatherPart());
+				if (found_part_j >= parts + part_size || found_part_i >= parts + part_size){
+					return -2002;
+				}
+				parts_setted[found_part_i - parts] = 1;
+				parts_setted[found_part_j - parts] = 1;
+				set_tool[i] = true;
+			}
+
+			if (std::find(parts_setted, parts_setted + part_size, 0) < parts_setted + part_size) {
+				return -2001;
+			}
+		}
+
+		return 0;
+	}
+	
+	// 根据 tools 和 wobjs 的相对 pos（pos的表达取决于 ee_types）,来计算对应part的位姿
+	auto computePartPmByTwPos(aris::Size ee_size, aris::Size part_size, aris::dynamic::EEType *ee_types, 
+		aris::dynamic::Part** parts, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, 
+		aris::Size* order, bool* set_tool, const double *twpos, const aris::Size* tw_mem_pos, double *part_pms)->void
+	{
+		// 初始化所有的 part_pm，因为可能有环，不一定都会被设置，所有需要初始化 //
+		for (aris::Size i = 0; i < part_size; ++i) {
+			aris::dynamic::s_vc(16, *parts[i]->pm(), part_pms + 16 * i);
+		}
+
+		double ground_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		// 计算所有的part_pm //
+		for (aris::Size i = 0, idx = 0; i < ee_size; ++i) {
+			auto tw_id = order[i];
+
+			double relative_pm[16];
+			s_ee_pos2pm(ee_types[i], twpos + tw_mem_pos[tw_id], relative_pm);
+
+			auto tool_pm_in_part = *tools[tw_id]->prtPm();
+			auto wobj_pm_in_part = *wobjs[tw_id]->prtPm();
+
+			auto part_i_id = std::find(parts, parts + part_size, &tools[tw_id]->fatherPart()) - parts;
+			auto part_i_pm = part_i_id < part_size ? part_pms + 16 * part_i_id : ground_pm;
+
+			auto part_j_id = std::find(parts, parts + part_size, &wobjs[tw_id]->fatherPart()) - parts;
+			auto part_j_pm = part_j_id < part_size ? part_pms + 16 * part_j_id : ground_pm;
+
+			if (set_tool[i]) {
+				// 
+				// relative = wobj(-1) * tool
+				//          = (part_j * wobj_in_prt)^(-1) * part_i * tool_in_part
+				//     
+				// =>
+				// 
+				// part_j * wobj_in_prt * relative = part_i * tool_in_part
+				// 
+				// =>
+				// 
+				// part_i = part_j * wobj_in_prt * relative * tool_in_part(-1)
+				// 
+				//
+				double result1[16], result2[16];
+				aris::dynamic::s_pm_dot_pm(part_j_pm, wobj_pm_in_part, result1);
+				aris::dynamic::s_pm_dot_pm(result1, relative_pm, result2);
+				aris::dynamic::s_pm_dot_inv_pm(result2, tool_pm_in_part, part_i_pm);
+			}
+			else {
+				// 
+				// part_j = part_i * tool_in_part * relative(-1) * wobj_in_prt(-1)
+				// 
+				double result1[16], result2[16];
+				aris::dynamic::s_pm_dot_pm(part_i_pm, tool_pm_in_part, result1);
+				aris::dynamic::s_pm_dot_inv_pm(result1, relative_pm, result2);
+				aris::dynamic::s_pm_dot_inv_pm(result2, wobj_pm_in_part, part_j_pm);
+			}
+		}
+	}
+	
+	// 根据 part 的位姿，计算 tools 和 wobjs 的 pos
+	// 当 ee 的 makI 和 makJ 作为 tools 和 wobjs 时，可以直接计算 eepos
+	// 
+	// 
+	auto computeTwPosByPartPm(aris::Size ee_size, aris::Size part_size, aris::dynamic::EEType* ee_types,
+		aris::dynamic::Part** parts, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs,
+		const double* part_pms, double* tw_pos)->void
+	{
+		double ground_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		// 计算所有的末端位姿 //
+		for (aris::Size i = 0, idx = 0; i < ee_size; ++i) {
+			auto eei_pm_in_part = *tools[i]->prtPm();
+			auto eej_pm_in_part = *wobjs[i]->prtPm();
+
+			auto part_i_id = std::find(parts, parts + part_size, &tools[i]->fatherPart()) - parts;
+			auto part_i_pm = part_i_id < part_size ? part_pms + 16 * part_i_id : ground_pm;
+
+			auto part_j_id = std::find(parts, parts + part_size, &wobjs[i]->fatherPart()) - parts;
+			auto part_j_pm = part_j_id < part_size ? part_pms + 16 * part_j_id : ground_pm;
+
+			double relative_pm[16], result1[16], result2[16];
+
+			// relative = eej(-1) * eei
+			//          = (part_j * eej_in_prt)^(-1) * part_i * eei_in_part
+			//          = eej_in_prt(-1) * part_j(-1) * part_i * eei_in_part
+
+			aris::dynamic::s_pm_dot_pm(part_j_pm, eej_pm_in_part, result1);
+			aris::dynamic::s_pm_dot_pm(part_i_pm, eei_pm_in_part, result2);
+			aris::dynamic::s_inv_pm_dot_pm(result1, result2, relative_pm);
+
+			aris::dynamic::s_ee_pm2pos(ee_types[i], relative_pm, tw_pos + idx);
+			idx += s_ee_type_pos_size(ee_types[i]);
+		}
+	}
+
 	struct ToolWobjSelector::Imp {
 		aris::dynamic::MultiModel* model_{ nullptr };
 
-		aris::Size ee_size_{ 0 };
+		aris::Size ee_size_{ 0 }, part_size_{ 0 }, ee_pos_size_{0}; // parts_num 不包含地面
 		aris::dynamic::MotionBase** ees_; // equals ee_size
-		aris::dynamic::Marker** tools_; // equals ee_size
-		aris::dynamic::Marker** wobjs_; // equals ee_size
-		aris::dynamic::Part** parts_; // equals ee_size
-		aris::Size *order_, *tw_left_;
-		bool* set_tool_;
+		aris::dynamic::Marker** tools_, **wobjs_, **ee_makIs_, **ee_makJs_; // equals ee_size
+		aris::dynamic::Part** parts_; // equals parts_num，所有需要被设置的parts，每引进一个ee，就需要设置一个part的位姿，但是可能有环，因此不是ee_size
+		
+		aris::dynamic::EEType* ee_types_; // equals ee_size
+		aris::Size *tw_order_, *ee_order_, *ee_pos_mem_pos_;
+		bool* tw_set_tool_, *ee_set_tool_;
+		double* part_pms_;
+		char* mem_need_;
 
 		std::vector<char> mem_;
 
 		auto allocateMem()->void {
-			ee_size_ = model_->eeSize();
+			// 计算 part_set，得到内存大小 //
+			std::vector<aris::dynamic::Part*> part_set;
+			{
+				std::vector<aris::dynamic::MotionBase*> ee_vec(model_->eeSize());
+				model_->getEes(ee_vec.data());
+
+				for (auto i = 0; i < model_->eeSize(); ++i) {
+					if ((&ee_vec[i]->makI()->fatherPart() != &ee_vec[i]->makI()->model()->ground())
+						&&std::find(part_set.begin(), part_set.end(), &ee_vec[i]->makI()->fatherPart()) == part_set.end()) {
+						part_set.push_back(&ee_vec[i]->makI()->fatherPart());
+					}
+					if ((&ee_vec[i]->makJ()->fatherPart() != &ee_vec[i]->makJ()->model()->ground())
+						&& std::find(part_set.begin(), part_set.end(), &ee_vec[i]->makJ()->fatherPart()) == part_set.end()) {
+						part_set.push_back(&ee_vec[i]->makJ()->fatherPart());
+					}
+				}
+			}
 			
+			// 计算 ee_pos_size //
+			{
+				std::vector<aris::dynamic::EEType> ee_types(model_->eeSize());
+				model_->getEeTypes(ee_types.data());
+				ee_pos_size_ = aris::dynamic::s_ee_type_pos_size(model_->eeSize(), ee_types.data());
+			}
+			part_size_ = part_set.size();
+			ee_size_ = model_->eeSize();
+
 			Size mem_size = 0;
 
 			core::allocMem(mem_size, ees_, ee_size_);
 			core::allocMem(mem_size, tools_, ee_size_);
 			core::allocMem(mem_size, wobjs_, ee_size_);
-			core::allocMem(mem_size, parts_, ee_size_);
-			core::allocMem(mem_size, order_, ee_size_);
-			core::allocMem(mem_size, tw_left_, ee_size_);
-			core::allocMem(mem_size, set_tool_, ee_size_);
+			core::allocMem(mem_size, ee_makIs_, ee_size_);
+			core::allocMem(mem_size, ee_makJs_, ee_size_);
+			core::allocMem(mem_size, parts_, part_size_);
+			core::allocMem(mem_size, ee_types_, ee_size_);
+			core::allocMem(mem_size, tw_order_, ee_size_);
+			core::allocMem(mem_size, tw_set_tool_, ee_size_);
+			core::allocMem(mem_size, ee_order_, ee_size_);
+			core::allocMem(mem_size, ee_set_tool_, ee_size_);
+			core::allocMem(mem_size, ee_pos_mem_pos_, ee_size_);
+			core::allocMem(mem_size, part_pms_, part_size_ * 16);
+			core::allocMem(mem_size, mem_need_, part_size_ * sizeof(double));
 
 			mem_.resize(mem_size, char(0));
 
 			ees_ = core::getMem(mem_.data(), ees_);
 			tools_ = core::getMem(mem_.data(), tools_);
 			wobjs_ = core::getMem(mem_.data(), wobjs_);
+			ee_makIs_ = core::getMem(mem_.data(), ee_makIs_);
+			ee_makJs_ = core::getMem(mem_.data(), ee_makJs_);
 			parts_ = core::getMem(mem_.data(), parts_);
-			order_ = core::getMem(mem_.data(), order_);
-			tw_left_ = core::getMem(mem_.data(), tw_left_);
-			set_tool_ = core::getMem(mem_.data(), set_tool_);
+			ee_types_ = core::getMem(mem_.data(), ee_types_);
+			tw_order_ = core::getMem(mem_.data(), tw_order_);
+			tw_set_tool_ = core::getMem(mem_.data(), tw_set_tool_);
+			ee_order_ = core::getMem(mem_.data(), ee_order_);
+			ee_set_tool_ = core::getMem(mem_.data(), ee_set_tool_);
+			ee_pos_mem_pos_ = core::getMem(mem_.data(), ee_pos_mem_pos_);
+			part_pms_ = core::getMem(mem_.data(), part_pms_);
+			mem_need_ = core::getMem(mem_.data(), mem_need_);
+
+			// 设置 ees、ee_makIs、ee_makJs、parts //
+			model_->getEes(ees_);
+			for (int i = 0; i < ee_size_; ++i) {
+				ee_makIs_[i] = ees_[i]->makI();
+				ee_makJs_[i] = ees_[i]->makJ();
+			}
+			std::copy(part_set.begin(), part_set.end(), parts_);
+			
+			// 设置 ees_types, ee_order, ee_set_tool //
+			model_->getEeTypes(ee_types_);
+			computeToolWobjOrder(ee_size_, part_size_, parts_, ees_, ee_makIs_, ee_makJs_, mem_need_, ee_order_, ee_set_tool_);
+
+			// 设置 ee_pos_mem_pos //
+			for (aris::Size i = 0, idx = 0; i < ee_size_; ++i) {
+				ee_pos_mem_pos_[i] = idx;
+				idx += s_ee_type_pos_size(ee_types_[i]);
+			}
 		}
 
-		auto computeEePos(const MarkerVec& tools, const MarkerVec& wobjs, const double* twpos, double* eepos) -> int {
-			std::copy(tools.data(), tools.data() + ee_size_, tools_);
-			std::copy(wobjs.data(), wobjs.data() + ee_size_, wobjs_);
-			
-			// Step 1 补全所有的tool wobj //
-			for (auto i = 0; i < model_->eeSize(); ++i) {
-				auto& tool = tools_[i];
-				auto& wobj = wobjs_[i];
+		auto selectTw(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> int {
+			std::copy(tools, tools + ee_size_, tools_);
+			std::copy(wobjs, wobjs + ee_size_, wobjs_);
 
-				if (tool == nullptr)
-					tool = model_->getEes()[i]->makI();
-				if (wobj == nullptr)
-					wobj = model_->getEes()[i]->makJ();
-			}
-			
-			// Step 2 计算顺序 //
-			// sub 1：找到所有连接地面的 part
-			// sub 2：依次连接其他 part
-			{
-				std::iota(tw_left_, tw_left_ + ee_size_, 0);
-
-				//aris::dynamic::dsp(1, 5, tw_left_);
-
-				for (int i = 0; i < ee_size_; ++i) {
-					// sub 1 ：找到所有连接地面的 part
-					auto found = std::find_if(tw_left_, tw_left_ + ee_size_ - i, [this](const aris::Size& idx) {
-						return (&wobjs_[idx]->fatherPart() == &wobjs_[idx]->model()->ground()) || (&tools_[idx]->fatherPart() == &wobjs_[idx]->model()->ground());
-					});
-
-					if (found < tw_left_ + ee_size_ - i) {
-						order_[i] = *found;
-						parts_[i] = (&wobjs_[*found]->fatherPart() == &wobjs_[*found]->model()->ground()) ? &tools_[*found]->fatherPart() : &wobjs_[*found]->fatherPart();
-						set_tool_[i] = (&wobjs_[*found]->fatherPart() == &wobjs_[*found]->model()->ground());
-						std::remove_copy(tw_left_, tw_left_ + ee_size_, tw_left_, *found);
-						
-
-						for (int j = 0; j < 5; ++j) {
-							std::cout << "tool " << j << ": " << tools_[j]->name() << std::endl;
-						}
-						for (int j = 0; j < 5; ++j) {
-							std::cout << "wobj " << j << ": " << wobjs_[j]->name() << std::endl;
-						}
-						for (int j = 0; j < i; ++j) {
-							std::cout << "part " << j << ": " << parts_[j]->name() << std::endl;
-						}
-						aris::dynamic::dsp(1, ee_size_ - i, tw_left_);
-
-						//aris::dynamic::dsp(1, 5, tw_left_);
-						//aris::dynamic::dsp(1, 5, order_);
-
-						//std::cout << "---" << std::endl;
-
-						continue;
-					}
-					
-					// sub 2 ：依次连接其他 part
-					found = std::find_if(tw_left_, tw_left_ + ee_size_ - i, [this, i](const aris::Size& idx) {
-						
-						
-						
-						auto found_connected_part = std::find_if(parts_, parts_ + i, [this, idx](const aris::dynamic::Part* p) {
-							return p == &wobjs_[idx]->fatherPart() || p == &tools_[idx]->fatherPart();
-							});
-						
-						return found_connected_part < parts_ + i;
-						});
-
-					if (found < tw_left_ + ee_size_ - i) {
-						order_[i] = *found;
-						parts_[i] = (&wobjs_[*found]->fatherPart() == &wobjs_[*found]->model()->ground()) ? &tools_[*found]->fatherPart() : &wobjs_[*found]->fatherPart();
-						set_tool_[i] = (&wobjs_[*found]->fatherPart() == &wobjs_[*found]->model()->ground());
-						std::remove_copy(tw_left_, tw_left_ + ee_size_, tw_left_, *found);
-
-						
-						//std::cout << "found" << std::endl;
-					}
-
-					//aris::dynamic::dsp(1, 5, tw_left_);
-					//aris::dynamic::dsp(1, 5, order_);
-
-					//std::cout << "---" << std::endl;
-				}
-
-			}
-
-			// Step 3 计算各个part的位姿 //
-			aris::dynamic::dsp(1, 5, order_);
-			aris::dynamic::dsp(1, 5, set_tool_);
-
-			return 0;
+			// 计算 tw 顺序 //
+			return computeToolWobjOrder(ee_size_, part_size_, parts_, ees_, tools_, wobjs_, mem_need_, tw_order_, tw_set_tool_);
 		}
-
+		auto setTwPos(const double* twpos) -> void {
+			computePartPmByTwPos(ee_size_, part_size_, ee_types_, parts_, tools_, wobjs_, tw_order_, tw_set_tool_, twpos, ee_pos_mem_pos_, part_pms_);
+		}
+		auto getTwPos(double* twpos) -> void {
+			computeTwPosByPartPm(ee_size_, part_size_, ee_types_, parts_, tools_, wobjs_, part_pms_, twpos);
+		}
+		auto setEePos(const double* eepos) -> void {
+			computePartPmByTwPos(ee_size_, part_size_, ee_types_, parts_, ee_makIs_, ee_makJs_, ee_order_, ee_set_tool_, eepos, ee_pos_mem_pos_, part_pms_);
+		}
+		auto getEePos(double* eepos) -> void {
+			computeTwPosByPartPm(ee_size_, part_size_, ee_types_, parts_, ee_makIs_, ee_makJs_, part_pms_, eepos);
+		}
 	};
 
 	auto ToolWobjSelector::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
-
 		imp_->allocateMem();
-
-
 	}
 	auto ToolWobjSelector::model() -> aris::dynamic::MultiModel& {
 		return *imp_->model_;
 	}
 
-	auto ToolWobjSelector::computeEePos(MarkerVec& tools, MarkerVec& wobjs, const double* twpos, double* eepos) -> int {
-		return imp_->computeEePos(tools, wobjs, twpos, eepos);
+	auto ToolWobjSelector::selectTw(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> int {
+		return imp_->selectTw(tools, wobjs);
 	}
-	auto ToolWobjSelector::computeTwPos(MarkerVec& tools, MarkerVec& wobjs, const double* eepos, double* twpos) -> int {
-		return 0;
+	auto ToolWobjSelector::setTwPos(const double* twpos) -> void {
+		imp_->setTwPos(twpos);
+	}
+	auto ToolWobjSelector::getTwPos(double* twpos) -> void {
+		imp_->getTwPos(twpos);
+	}
+	auto ToolWobjSelector::setEePos(const double* eepos) -> void {
+		imp_->setEePos(eepos);
+	}
+	auto ToolWobjSelector::getEePos(double* eepos) -> void {
+		imp_->getEePos(eepos);
 	}
 
 	ToolWobjSelector::~ToolWobjSelector() {}
@@ -162,10 +373,9 @@ namespace aris::plan {
 
 
 
-
+#define TW_POOL_SIZE 10000
 
 	struct MultimodelAsyncPlanner::Imp {
-
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
 		using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
 		
@@ -173,367 +383,74 @@ namespace aris::plan {
 		std::list<ToolWobjNode>::iterator current_node_;
 		std::int64_t id_{ 1 };
 
+		ToolWobjNode tw_pool_[TW_POOL_SIZE];
+
+		MarkerVec last_tool_, last_wobj_;
+		std::vector<double> last_tw_pos_;
+
 		TrajectoryGenerator tg_;
 		InputSmoother is_;
 		AsyncGenerator ag_;
 		SpeedRegulator sr_;
+		ToolWobjSelector tw_;
 		aris::dynamic::MultiModel* model_{nullptr};
-		std::unique_ptr<aris::dynamic::MultiModel> local_model_{nullptr};
 
-		auto setModelMarker(MarkerVec& tools, MarkerVec& wobjs, aris::dynamic::MultiModel* model, const double* eepos)->void {
-			// Step 1 补全所有的tool wobj //
-			for (auto i = 0; i < model->eeSize(); ++i) {
-				auto &tool = tools[i];
-				auto &wobj = wobjs[i];
+		std::vector<char> mem_;
 
-				if (tool == nullptr)
-					tool = model->getEes()[i]->makI();
-				if (wobj == nullptr)
-					wobj = model->getEes()[i]->makJ();
-			}
+		double* ee_pos_, *tw_pos_;
 
-			// Step 2 计算顺序 //
-			// 原则1：是否连接地面
-			// 原则2：是否连接已知杆件
-			// 原则3：（尚未支持）
-			// 
-			// 编码（注意是10进制）：1e10*is_ground + 1e7*connect_known_num
-			//
-			std::vector<aris::Size> order;
-			{
-				std::vector<aris::dynamic::Part*> part_connected;
-				auto weight_compute = [](const std::vector<aris::dynamic::Part*>& part_connected, const aris::dynamic::Marker* tool, const aris::dynamic::Marker* wobj)->std::int64_t {
-					std::int64_t weight = 0;
-
-					// 原则1，判断是否连接地面 //
-					if (&wobj->fatherPart() == &wobj->model()->ground()) {
-						weight += 2e10;
-					}
-
-					if (&tool->fatherPart() == &tool->model()->ground()) {
-						weight += 1e10;
-					}
-
-					// 原则2，判断是否连接已知杆件 //
-					if (std::find(part_connected.begin(), part_connected.end(), &wobj->fatherPart()) != part_connected.end()) {
-						weight += 2e7;
-					}
-
-					if (std::find(part_connected.begin(), part_connected.end(), &tool->fatherPart()) != part_connected.end()) {
-						weight += 1e7;
-					}
-
-					return weight;
-					};
-
-				std::vector<std::pair<aris::dynamic::Marker*, aris::dynamic::Marker*>> tool_wobj_pairs;
-				for (auto i = 0; i < model->eeSize(); ++i) {
-					tool_wobj_pairs.push_back(std::make_pair(tools[i], wobjs[i]));
-				}
-
-				while (!tool_wobj_pairs.empty()) {
-					// 计算权重 //
-					std::vector<std::int64_t> weights;
-					for (auto& tw : tool_wobj_pairs) {
-						weights.push_back(weight_compute(part_connected, tw.first, tw.second));
-					}
-					// 选择权重最大的那个 //
-					auto max_weight_iter = std::max_element(weights.begin(), weights.end());
-					auto max_weight_idx = std::distance(weights.begin(), max_weight_iter);
-					// 更新结果 //
-					order.push_back(max_weight_idx);
-					if(std::find(part_connected.begin(), part_connected.end(), &tool_wobj_pairs[max_weight_idx].first->fatherPart()) == part_connected.end())
-						part_connected.push_back(&tool_wobj_pairs[max_weight_idx].first->fatherPart());
-					if (std::find(part_connected.begin(), part_connected.end(), &tool_wobj_pairs[max_weight_idx].second->fatherPart()) == part_connected.end())
-						part_connected.push_back(&tool_wobj_pairs[max_weight_idx].second->fatherPart());
-					tool_wobj_pairs.erase(tool_wobj_pairs.begin() + max_weight_idx);
-				}
-			}
-			
-			
-			// Step 3 计算末端位置的地址 //
-			std::vector<aris::Size> ee_addr;
-			{
-				aris::Size addr = 0;
-				for (auto i = 0; i < model->eeSize(); ++i) {
-					ee_addr.push_back(addr);
-
-					//enum class EEType {
-					//	PE313,   // 位置与313欧拉角，6维末端， 6维向量
-					//	PE321,   // 位置与321欧拉角，6维末端， 6维向量
-					//	PE123,   // 位置与123欧拉角，6维末端， 6维向量
-					//	PQ,      // 位置与四元数，   6维末端， 7维向量
-					//	PM,      // 位置与位姿矩阵， 6维末端，16维向量
-					//	RE313,   // 313欧拉角，      3维末端， 3维向量
-					//	RE321,   // 321欧拉角，      3维末端， 3维向量
-					//	RE123,   // 123欧拉角，      3维末端， 3维向量
-					//	RQ,      // 四元数，         3维末端， 4维向量
-					//	RM,      // 位姿矩阵，       3维末端， 9维向量
-					//	XYZT,    // x,y,z,theta，    4维末端， 4维向量
-					//	XYZ,     // x,y,z，          3维末端， 3维向量
-					//	RTZ,     // 极坐标r,theta,z，3维末端， 3维向量
-					//	XYT,     // x,y,theta，      3维末端， 3维向量
-					//	XY,      // x,y，            2维末端， 2维向量
-					//	RT,      // 极坐标r,theta，  2维末端， 2维向量
-					//	X,       // 位置x，          1维末端， 1维向量
-					//	A,       // 角度a，          1维末端， 1维向量
-					//	UNKNOWN,
-					//};
-					switch (model->eeTypes()[i]) {
-					case aris::dynamic::EEType::PE313: {
-						addr += 6;
-						break;
-					}
-					case aris::dynamic::EEType::PE321: {
-						addr += 6;
-						break;
-					}
-					case aris::dynamic::EEType::PE123: {
-						addr += 6;
-						break;
-					}
-					case aris::dynamic::EEType::PQ: {
-						addr += 7;
-						break;
-					}
-					case aris::dynamic::EEType::PM: {
-						addr += 16;
-						break;
-					}
-					case aris::dynamic::EEType::RE313: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::RE321: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::RE123: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::RQ: {
-						addr += 4;
-						break;
-					}
-					case aris::dynamic::EEType::RM: {
-						addr += 9;
-						break;
-					}
-					case aris::dynamic::EEType::XYZT: {
-						addr += 4;
-						break;
-					}
-					case aris::dynamic::EEType::XYZ: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::XYT: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::RTZ: {
-						addr += 3;
-						break;
-					}
-					case aris::dynamic::EEType::XY: {
-						addr += 2;
-						break;
-					}
-					case aris::dynamic::EEType::RT: {
-						addr += 2;
-						break;
-					}
-					case aris::dynamic::EEType::X: {
-						addr += 1;
-						break;
-					}
-					case aris::dynamic::EEType::A: {
-						addr += 1;
-						break;
-					}
-					case aris::dynamic::EEType::UNKNOWN:
-						break;
-					default:
-						break;
-					}
+		auto get_next_input(double* p) -> std::int64_t {
+			return sr_.getNextInput(p);
+		};
+		auto init() -> void {
+			is_.setInputGenerator([this](double* p)->std::int64_t {
+				auto ret = tg_.getEePosAndMoveDt(tw_pos_);
 				
-				}
-			}
-			
-			
-			aris::Size internal_idx{ 0 }, out_idx{ 0 };
-
-
-
-
-
-			
-			
-			for (auto i = 0; i < model->eeSize(); ++i) {
-				auto& tool = tools[i];
-				auto& wobj = wobjs[i];
-
-				if (tool == nullptr)
-					tool = model->getEes()[i]->makI();
-				if (wobj == nullptr)
-					wobj = model->getEes()[i]->makJ();
-			}
-				/*
-				switch (model->eeTypes()[i]) {
-				case aris::dynamic::EEType::PE313: {
-					tool->setPe(*wobj, eepos + out_idx);
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "313");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PE321: {
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "321");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PE123: {
-					aris::dynamic::s_pe2pq(out_pos + out_idx, internal_pos + internal_idx, "123");
-					internal_idx += 7;
-					out_idx += 6;
-					break;
-				}
-				case aris::dynamic::EEType::PQ: {
-					aris::dynamic::s_vc(7, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 7;
-					out_idx += 7;
-					break;
-				}
-				case aris::dynamic::EEType::PM: {
-					aris::dynamic::s_pm2pq(out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 7;
-					out_idx += 16;
-					break;
-				}
-				case aris::dynamic::EEType::RE313: {
-					aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "313");
-					internal_idx += 4;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::RE321: {
-					aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "321");
-					internal_idx += 4;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::RE123: {
-					aris::dynamic::s_re2rq(out_pos + out_idx, internal_pos + internal_idx, "123");
-					internal_idx += 4;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::RQ: {
-					aris::dynamic::s_vc(4, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 4;
-					out_idx += 4;
-					break;
-				}
-				case aris::dynamic::EEType::RM: {
-					aris::dynamic::s_rm2rq(out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 9;
-					out_idx += 9;
-					break;
-				}
-				case aris::dynamic::EEType::XYZT: {
-					aris::dynamic::s_vc(4, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 4;
-					out_idx += 4;
-					break;
-				}
-				case aris::dynamic::EEType::XYZ: {
-					aris::dynamic::s_vc(3, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 3;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::XYT: {
-					aris::dynamic::s_vc(3, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 3;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::RTZ: {
-					aris::dynamic::s_vc(3, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 3;
-					out_idx += 3;
-					break;
-				}
-				case aris::dynamic::EEType::XY: {
-					aris::dynamic::s_vc(2, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 2;
-					out_idx += 2;
-					break;
-				}
-				case aris::dynamic::EEType::RT: {
-					aris::dynamic::s_vc(2, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 2;
-					out_idx += 2;
-					break;
-				}
-				case aris::dynamic::EEType::X: {
-					aris::dynamic::s_vc(1, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 1;
-					out_idx += 1;
-					break;
-				}
-				case aris::dynamic::EEType::A: {
-					aris::dynamic::s_vc(1, out_pos + out_idx, internal_pos + internal_idx);
-					internal_idx += 1;
-					out_idx += 1;
-					break;
-				}
-				case aris::dynamic::EEType::UNKNOWN:
-					break;
-				default:
-					break;
-				}
-				*/
-		
-			
-			for (auto i = 0; i < model->eeSize(); ++i) {
-				//enum class EEType {
-				//	PE313,   // 位置与313欧拉角，6维末端， 6维向量
-				//	PE321,   // 位置与321欧拉角，6维末端， 6维向量
-				//	PE123,   // 位置与123欧拉角，6维末端， 6维向量
-				//	PQ,      // 位置与四元数，   6维末端， 7维向量
-				//	PM,      // 位置与位姿矩阵， 6维末端，16维向量
-				//	RE313,   // 313欧拉角，      3维末端， 3维向量
-				//	RE321,   // 321欧拉角，      3维末端， 3维向量
-				//	RE123,   // 123欧拉角，      3维末端， 3维向量
-				//	RQ,      // 四元数，         3维末端， 4维向量
-				//	RM,      // 位姿矩阵，       3维末端， 9维向量
-				//	XYZT,    // x,y,z,theta，    4维末端， 4维向量
-				//	XYZ,     // x,y,z，          3维末端， 3维向量
-				//	RTZ,     // 极坐标r,theta,z，3维末端， 3维向量
-				//	XYT,     // x,y,theta，      3维末端， 3维向量
-				//	XY,      // x,y，            2维末端， 2维向量
-				//	RT,      // 极坐标r,theta，  2维末端， 2维向量
-				//	X,       // 位置x，          1维末端， 1维向量
-				//	A,       // 角度a，          1维末端， 1维向量
-				//	UNKNOWN,
-				//};
-
-				switch (model->eeTypes()[i]) {
+				auto& tw = tw_pool_[ret % TW_POOL_SIZE];
+				tw_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
+				tw_.setTwPos(tw_pos_);
+				tw_.getEePos(ee_pos_);
 				
-				}
+				model_->setOutputPos(ee_pos_);
+				if (model_->inverseKinematics())
+					std::cout << "ik failed" << std::endl;
+				model_->getInputPos(p);
 
-			}
+				return ret;
+			});
+
+			ag_.setInputGenerator([this](double* p)->std::int64_t {
+				return is_.getNextInput(p);
+			});
+
+			sr_.setInputGenerator([this](double* p)->std::int64_t {
+				return ag_.getNextInput(p);
+			});
+
+			std::vector<double> init_ee_pos(model_->inputPosSize());
+			model_->getInputPos(init_ee_pos.data());
+
+			tg_.clearAllPos();
+			//is_.init(init_ee_pos.data());
+			//ag_.init();
+			//sr_.init(1.0);
 		}
-		auto getModelEEPos(MarkerVec& tools, MarkerVec& wobjs, aris::dynamic::MultiModel* model, double* eepos);
+
 	};
 
 	////////////////// PART 1 config ////////////////
-
 	auto MultimodelAsyncPlanner::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
+		imp_->tw_.setModel(model);
+		imp_->last_tool_.resize(model.eeSize(), nullptr);
+		imp_->last_wobj_.resize(model.eeSize(), nullptr);
+		imp_->last_tw_pos_.resize(model.outputPosSize(), 0.0);
+
+		imp_->tg_.setEeTypes(model.getEeTypes());
+		
+		imp_->is_.setInputSize(model.inputPosSize());
+		imp_->ag_.setInputSize(model.inputPosSize());
+		imp_->sr_.setInputSize(model.inputPosSize());
 	}
 	auto MultimodelAsyncPlanner::model() -> aris::dynamic::MultiModel&{
 		return *imp_->model_;
@@ -543,15 +460,7 @@ namespace aris::plan {
 	auto MultimodelAsyncPlanner::eeTypes()const -> const std::vector<aris::dynamic::EEType>& {
 		return imp_->tg_.eeTypes();
 	}
-	auto MultimodelAsyncPlanner::setEeTypes(const std::vector<aris::dynamic::EEType>& ee_types) -> void {
-		imp_->tg_.setEeTypes(ee_types);
-	}
 
-	auto MultimodelAsyncPlanner::setInputSize(int input_size) -> void {
-		imp_->is_.setInputSize(input_size);
-		imp_->ag_.setInputSize(input_size);
-		imp_->sr_.setInputSize(input_size);
-	}
 	auto MultimodelAsyncPlanner::inputSize() -> int {
 		return imp_->is_.inputSize();
 	}
@@ -634,66 +543,60 @@ namespace aris::plan {
 	}
 
 	////////////////// PART 2 NRT operation ////////////////
-
 	auto MultimodelAsyncPlanner::allocateMemory() -> void {
 		imp_->is_.allocateMemory();
 		imp_->ag_.allocateMemory();
 		imp_->sr_.allocateMemory();
+
+
+		Size mem_size = 0;
+
+		core::allocMem(mem_size, imp_->tw_pos_, imp_->model_->eeSize());
+		core::allocMem(mem_size, imp_->ee_pos_, imp_->model_->eeSize());
+
+		imp_->mem_.resize(mem_size, char(0));
+
+		imp_->tw_pos_ = core::getMem(imp_->mem_.data(), imp_->tw_pos_);
+		imp_->ee_pos_ = core::getMem(imp_->mem_.data(), imp_->ee_pos_);
 	}
 	auto MultimodelAsyncPlanner::init() -> void {
-		
-		
-		
-		std::vector<double> init_ee_pos_;
-		
-		imp_->local_model_ = std::make_unique<aris::dynamic::MultiModel>();
-		aris::core::fromJsonString(*imp_->local_model_, aris::core::toJsonString(*imp_->model_));
-		
-		//imp_->is_.init();
-		//imp_->sr_.init();
-		//imp_->ag_.init();
+		imp_->init();
 	}
 	auto MultimodelAsyncPlanner::stop() -> void {
 		imp_->ag_.stop();
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelAsyncPlanner::insertInitPos(std::int64_t id, const double* ee_pos) -> void {
-		
-		
-		imp_->tg_.insertInitPos(id, ee_pos);
-	}
+	auto MultimodelAsyncPlanner::insertLinePos(TW& tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		// 获取坐标系 //
+		auto ee_size = imp_->model_->eeSize();
+		Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
-	// 插入新的数据，并重规划 //
-	auto MultimodelAsyncPlanner::insertLinePos(std::vector<std::pair<std::string, std::string>> tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void {
-		
-		imp_->tool_wobjs_.erase(imp_->tool_wobjs_.begin(), imp_->current_node_);
-
-		Imp::MarkerVec tools, wobjs, tools_local, wobjs_local;
-		for (auto& tool_wobj : tool_wobjs) {
-			tools.push_back(imp_->model_->findTool(tool_wobj.first));
-			wobjs.push_back(imp_->model_->findWobj(tool_wobj.second));
-			tools_local.push_back(imp_->local_model_->findTool(tool_wobj.first));
-			wobjs_local.push_back(imp_->local_model_->findWobj(tool_wobj.second));
+		for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
+			tools[i] = imp_->model_->findTool(tool_wobjs[i].first);
+			wobjs[i] = imp_->model_->findTool(tool_wobjs[i].second);
 		}
 		
-		imp_->id_++;
-
-		if (imp_->tool_wobjs_.empty() || tools != std::get<1>(imp_->tool_wobjs_.back()) || wobjs != std::get<2>(imp_->tool_wobjs_.back())) {
-			//imp_->model_->inverseKinematics()
-			std::vector<double> init_ee_pos(aris::dynamic::s_ee_type_pos_size(imp_->tg_.eeTypes().size(), imp_->tg_.eeTypes().data()));
-
-			
-			
-			imp_->tg_.insertInitPos(imp_->id_, ee_pos);
+		// 如果坐标系有变化，重新插入 INIT //
+		if (tools != imp_->last_tool_ || wobjs != imp_->last_tool_) {
+			std::vector<double> tw_init_pos(imp_->model_->inputPosSize());
+			imp_->tw_.selectTw(imp_->last_tool_.data(), imp_->last_wobj_.data());
+			imp_->tw_.setTwPos(imp_->last_tw_pos_.data());
+			imp_->tw_.selectTw(tools.data(), wobjs.data());
+			imp_->tw_.getTwPos(tw_init_pos.data());
+			imp_->tg_.insertInitPos(imp_->id_, tw_init_pos.data()); // 下面还会插入坐标系，因此这里不用改变id
 		}
 
-
+		// 正常插入指令 //
 		imp_->tg_.insertLinePos(imp_->id_, ee_pos, vel, acc, jerk, zone);
+		imp_->tw_pool_[imp_->id_ % TW_POOL_SIZE] = std::make_tuple(imp_->id_, tools, wobjs);
+		auto ret = imp_->id_;
+		imp_->id_++;
+		return ret;
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelAsyncPlanner::insertCirclePos(std::vector<std::pair<std::string, std::string>> tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void {
+	auto MultimodelAsyncPlanner::insertCirclePos(TW& tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void {
 		imp_->tg_.insertCirclePos(imp_->id_, ee_pos, mid_pos, vel, acc, jerk, zone);
 	}
 
@@ -731,31 +634,13 @@ namespace aris::plan {
 
 	////////////////// PART 3 RT operation ////////////////
 	auto MultimodelAsyncPlanner::getNextInput(double* p) -> std::int64_t {
-		return 0;
+		return imp_->get_next_input(p);
 	}
 
 
 	MultimodelAsyncPlanner::~MultimodelAsyncPlanner() {
 		stop();
 	}
-	MultimodelAsyncPlanner::MultimodelAsyncPlanner() {
-		imp_->is_.setInputGenerator([this](double* p)->std::int64_t {
-			static int count_{ 0 };
-
-			if (count_ == 0) {
-				p[0] = -1;
-			}
-			else {
-				p[0] = std::sin(count_ * 0.001) * 10;
-			}
-
-			count_++;
-
-			if (count_ > 10000)
-				return 0;
-
-
-			return 1;
-		});
+	MultimodelAsyncPlanner::MultimodelAsyncPlanner():imp_(new Imp) {
 	}
 }

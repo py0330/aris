@@ -205,7 +205,9 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::RTZ: {
-				aris::dynamic::s_vc(3, internal_pos + internal_idx, out_pos + out_idx);
+				out_pos[out_idx + 0] = std::sqrt(internal_pos[internal_idx]* internal_pos[internal_idx] + internal_pos[internal_idx + 1]*internal_pos[internal_idx + 1]);
+				out_pos[out_idx + 1] = std::atan2(internal_pos[internal_idx], internal_pos[internal_idx + 1]);
+				out_pos[out_idx + 2] = internal_pos[internal_idx + 2];
 				internal_idx += 3;
 				out_idx += 3;
 				break;
@@ -217,7 +219,8 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::RT: {
-				aris::dynamic::s_vc(2, internal_pos + internal_idx, out_pos + out_idx);
+				out_pos[out_idx + 0] = std::sqrt(internal_pos[internal_idx] * internal_pos[internal_idx] + internal_pos[internal_idx + 1] * internal_pos[internal_idx + 1]);
+				out_pos[out_idx + 1] = std::atan2(internal_pos[internal_idx], internal_pos[internal_idx + 1]);
 				internal_idx += 2;
 				out_idx += 2;
 				break;
@@ -324,7 +327,9 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::RTZ: {
-				aris::dynamic::s_vc(3, out_pos + out_idx, internal_pos + internal_idx);
+				internal_pos[internal_idx + 0] = out_pos[out_idx] * std::cos(out_pos[out_idx + 1]);
+				internal_pos[internal_idx + 1] = out_pos[out_idx] * std::sin(out_pos[out_idx + 1]);
+				internal_pos[internal_idx + 2] = out_pos[out_idx + 2];
 				internal_idx += 3;
 				out_idx += 3;
 				break;
@@ -336,7 +341,8 @@ namespace aris::plan {
 				break;
 			}
 			case aris::dynamic::EEType::RT: {
-				aris::dynamic::s_vc(2, out_pos + out_idx, internal_pos + internal_idx);
+				internal_pos[internal_idx + 0] = out_pos[out_idx] * std::cos(out_pos[out_idx + 1]);
+				internal_pos[internal_idx + 1] = out_pos[out_idx] * std::sin(out_pos[out_idx + 1]);
 				internal_idx += 2;
 				out_idx += 2;
 				break;

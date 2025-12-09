@@ -434,6 +434,22 @@ namespace aris::dynamic{
 	}
 	auto inline s_rmz(double angle, double *A) noexcept->void { return s_rmz(angle, A, 3); }
 
+	template <typename AType>
+	auto inline s_rmx_theta(const double* A, AType a_t) noexcept->double {
+		return std::atan2(A[at(2, 1, a_t)] - A[at(1, 2, a_t)], A[at(2, 2, a_t)] + A[at(1, 1, a_t)]);
+	}
+	auto inline s_rmx_theta(const double* A) noexcept->double { return s_rmx_theta(A, 3); }
+	template <typename AType>
+	auto inline s_rmy_theta(const double* A, AType a_t) noexcept->double {
+		return std::atan2(A[at(0, 2, a_t)] - A[at(2, 0, a_t)], A[at(0, 0, a_t)] + A[at(2, 2, a_t)]);
+	}
+	auto inline s_rmy_theta(const double* A) noexcept->double { return s_rmy_theta(A, 3); }
+	template <typename AType>
+	auto inline s_rmz_theta(const double* A, AType a_t) noexcept->double {
+		return std::atan2(A[at(1, 0, a_t)] - A[at(0, 1, a_t)], A[at(0, 0, a_t)] + A[at(1, 1, a_t)]);
+	}
+	auto inline s_rmz_theta(const double* A) noexcept->double { return s_rmz_theta(A, 3); }
+
 	template<typename XType>
 	auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double{
 		double norm = 0;
