@@ -2,6 +2,10 @@
 #ifdef UNIX
 #include <netinet/tcp.h>
 #endif
+/* Ensure SOL_TCP is available on platforms where it's not defined */
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
 /////////////////////////////////////ARIS ARIS///////////////////////////////////
 
 
@@ -4016,13 +4020,13 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
   int on = 1;
 #endif
 
-/////////////////////////////////// ARIS ÒÔÏÂÎªmongooseÌí¼Ókeepalive ARIS ///////////////////////////////////
+/////////////////////////////////// ARIS ï¿½ï¿½ï¿½ï¿½Îªmongooseï¿½ï¿½ï¿½ï¿½keepalive ARIS ///////////////////////////////////
   int tcp_timeout = 10000; //10 seconds before aborting a write()
-  int keepAlive = 1; // ¿ªÆôkeepaliveÊôÐÔ
-  int keepIdle = 5; // Èç¸ÃÁ¬½ÓÔÚ5ÃëÄÚÃ»ÓÐÈÎºÎÊý¾ÝÍùÀ´,Ôò½øÐÐÌ½²â 
-  int keepInterval = 1; // Ì½²âÊ±·¢°üµÄÊ±¼ä¼ä¸ôÎª5 Ãë
-  int keepCount = 5; // Ì½²â³¢ÊÔµÄ´ÎÊý.Èç¹ûµÚ1´ÎÌ½²â°ü¾ÍÊÕµ½ÏìÓ¦ÁË,Ôòºó2´ÎµÄ²»ÔÙ·¢.					
-/////////////////////////////////// ARIS ÒÔÉÏÎªmongooseÌí¼Ókeepalive ARIS ///////////////////////////////////
+  int keepAlive = 1; // ï¿½ï¿½ï¿½ï¿½keepaliveï¿½ï¿½ï¿½ï¿½
+  int keepIdle = 5; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ 
+  int keepInterval = 1; // Ì½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Îª5 ï¿½ï¿½
+  int keepCount = 5; // Ì½ï¿½â³¢ï¿½ÔµÄ´ï¿½ï¿½ï¿½.ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½Ó¦ï¿½ï¿½,ï¿½ï¿½ï¿½2ï¿½ÎµÄ²ï¿½ï¿½Ù·ï¿½.					
+/////////////////////////////////// ARIS ï¿½ï¿½ï¿½ï¿½Îªmongooseï¿½ï¿½ï¿½ï¿½keepalive ARIS ///////////////////////////////////
 
 
 
@@ -4045,13 +4049,21 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
        * SO_EXCLUSIVEADDRUSE is supported and set on a socket.
        */
       !setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on)) &&
-/////////////////////////////////// ARIS ÒÔÏÂÎªmongooseÌí¼Ókeepalive ARIS ///////////////////////////////////
+    /////////////////////////////////// ARIS ï¿½ï¿½ï¿½ï¿½Îªmongooseï¿½ï¿½ï¿½ï¿½keepalive ARIS ///////////////////////////////////
+    #if defined(TCP_USER_TIMEOUT)
       !setsockopt(sock, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) &&
-	  !setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) &&
-	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) &&
-	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) &&
-	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) &&
-/////////////////////////////////// ARIS ÒÔÉÏÎªmongooseÌí¼Ókeepalive ARIS ///////////////////////////////////
+    #endif
+      !setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) &&
+    #if defined(TCP_KEEPIDLE)
+      !setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) &&
+    #endif
+    #if defined(TCP_KEEPINTVL)
+      !setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) &&
+    #endif
+    #if defined(TCP_KEEPCNT)
+      !setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) &&
+    #endif
+    /////////////////////////////////// ARIS ï¿½ï¿½ï¿½ï¿½Îªmongooseï¿½ï¿½ï¿½ï¿½keepalive ARIS ///////////////////////////////////
 #endif
 #endif /* !MG_LWIP */
 

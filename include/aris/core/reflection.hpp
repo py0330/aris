@@ -8,6 +8,7 @@
 #include <functional>
 #include <string_view>
 #include <variant>
+#include <algorithm>
 
 #include <aris_lib_export.h>
 #include <aris/ext/tinyxml2.h>
@@ -172,7 +173,7 @@ namespace aris::core{
 
 		// 强制转换类型，将其转为本类或父类指针，若失败返回nullptr //
 		template<typename T>
-		constexpr auto castToPointer()const->std::add_pointer_t<T>{
+		auto castToPointer()const->std::add_pointer_t<T>{
 			if (auto type = Type::getType(typeid(T).hash_code())) 
 				return reinterpret_cast<std::add_pointer_t<T>>(castToVoidPointer(type));
 			return nullptr;
@@ -180,7 +181,7 @@ namespace aris::core{
 		
 		// 仅仅可对 【Built-in】 类型做转换 //
 		template<typename T>
-		constexpr auto castToValue()const->T {
+		auto castToValue()const->T {
 			if (!Type::getType(typeid(T).hash_code()))
 				THROW_FILE_LINE("invalid cast in aris::core::reflection");
 

@@ -7,6 +7,9 @@
 #include <memory>
 #include <iostream>
 #include <functional>
+// ensure STL algorithms like std::copy_n are available when building with libstdc++
+#include <algorithm>
+#include <cstring>
 
 #include <aris_lib_export.h>
 
