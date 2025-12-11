@@ -165,7 +165,7 @@ namespace aris::server{
 						// 创建rt_log文件 //
 						if (is_rt_log_started_) {
 							char name[1000];
-							std::sprintf(name, "%" PRId64 "", plan.cmdId());
+							std::snprintf(name, sizeof(name), "%" PRId64, plan.cmdId());
 							server_->master().logFile(name);
 						}
 

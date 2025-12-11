@@ -629,13 +629,13 @@ namespace aris::dynamic{
 		for (int i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			sprintf(posn, (imp_->verify_result_path + "/pos%d.txt").c_str(), i);
-			sprintf(veln, (imp_->verify_result_path + "/vel%d.txt").c_str(), i);
-			sprintf(accn, (imp_->verify_result_path + "/acc%d.txt").c_str(), i);
-			sprintf(fcen, (imp_->verify_result_path + "/fce%d.txt").c_str(), i);
-			sprintf(fn, (imp_->verify_result_path + "/f%d.txt").c_str(), i);
-			sprintf(ffn, (imp_->verify_result_path + "/ff%d.txt").c_str(), i);
-			sprintf(fdn, (imp_->verify_result_path + "/fd%d.txt").c_str(), i);
+			std::snprintf(posn, sizeof(posn), (imp_->verify_result_path + "/pos%d.txt").c_str(), i);
+			std::snprintf(veln, sizeof(veln), (imp_->verify_result_path + "/vel%d.txt").c_str(), i);
+			std::snprintf(accn, sizeof(accn), (imp_->verify_result_path + "/acc%d.txt").c_str(), i);
+			std::snprintf(fcen, sizeof(fcen), (imp_->verify_result_path + "/fce%d.txt").c_str(), i);
+			std::snprintf(fn, sizeof(fn), (imp_->verify_result_path + "/f%d.txt").c_str(), i);
+			std::snprintf(ffn, sizeof(ffn), (imp_->verify_result_path + "/ff%d.txt").c_str(), i);
+			std::snprintf(fdn, sizeof(fdn), (imp_->verify_result_path + "/fd%d.txt").c_str(), i);
 
 			dlmwrite(num, 1, pos[i].data(), posn);
 			dlmwrite(num, 1, vel[i].data(), veln);
@@ -807,13 +807,13 @@ namespace aris::dynamic{
 		for (int i = 0; i<6;++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
-			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
-			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
-			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i);
-			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
-			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
-			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
+			std::snprintf(posn, sizeof(posn), "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
+			std::snprintf(veln, sizeof(veln), "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
+			std::snprintf(accn, sizeof(accn), "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
+			std::snprintf(fcen, sizeof(fcen), "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i);
+			std::snprintf(fn, sizeof(fn), "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
+			std::snprintf(ffn, sizeof(ffn), "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
+			std::snprintf(fdn, sizeof(fdn), "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
 
 			//dlmwrite(num, 1, pos[i].data(), posn);
 			//dlmwrite(num, 1, vel[i].data(), veln);

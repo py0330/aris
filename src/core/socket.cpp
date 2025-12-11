@@ -29,6 +29,20 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <sys/time.h>
+
+// Provide fallbacks/mappings for certain Linux TCP macros on macOS/BSD
+// SOL_TCP: not always defined on macOS; map to IPPROTO_TCP
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
+
+// macOS uses TCP_KEEPALIVE for idle timeout; map TCP_KEEPIDLE to it when available
+#ifndef TCP_KEEPIDLE
+#ifdef TCP_KEEPALIVE
+#define TCP_KEEPIDLE TCP_KEEPALIVE
+#endif
+#endif
 #endif
 
 #include <map>
@@ -677,10 +691,25 @@ namespace aris::core{
 #ifdef UNIX
 		if (sock_type == SOCK_STREAM){
 			int tcp_timeout = 10000; //10 seconds before aborting a write()
+#if defined(TCP_USER_TIMEOUT) && defined(SOL_TCP)
 			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0) {
 				aris_close(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
 			}
+#else
+			// TCP_USER_TIMEOUT not available on this platform; set socket-level timeouts as fallback
+			struct timeval __tcp_tv;
+			__tcp_tv.tv_sec = tcp_timeout / 1000;
+			__tcp_tv.tv_usec = (tcp_timeout % 1000) * 1000;
+			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, (void*)&__tcp_tv, sizeof(__tcp_tv)) < 0) {
+				aris_close(imp_->lisn_socket_);
+				THROW_FILE_LINE("socket setsockopt SO_RCVTIMEO FAILED (fallback for TCP_USER_TIMEOUT)");
+			}
+			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_SNDTIMEO, (void*)&__tcp_tv, sizeof(__tcp_tv)) < 0) {
+				aris_close(imp_->lisn_socket_);
+				THROW_FILE_LINE("socket setsockopt SO_SNDTIMEO FAILED (fallback for TCP_USER_TIMEOUT)");
+			}
+#endif
 
 			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
@@ -692,18 +721,24 @@ namespace aris::core{
 				aris_close(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt SO_KEEPALIVE FAILED");
 			}
+#if defined(TCP_KEEPIDLE)
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0) {
 				aris_close(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
 			}
+#endif
+#if defined(TCP_KEEPINTVL)
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval)) < 0) {
 				aris_close(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
 			}
+#endif
+#if defined(TCP_KEEPCNT)
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount)) < 0) {
 				aris_close(imp_->lisn_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
 			}
+#endif
 		}
 #endif
 
@@ -824,18 +859,24 @@ namespace aris::core{
 				aris_close(imp_->recv_socket_);
 				THROW_FILE_LINE("socket setsockopt SO_KEEPALIVE FAILED");
 			}
+#if defined(TCP_KEEPIDLE)
 			if (setsockopt(imp_->recv_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0) {
 				aris_close(imp_->recv_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
 			}
+#endif
+#if defined(TCP_KEEPINTVL)
 			if (setsockopt(imp_->recv_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval)) < 0) {
 				aris_close(imp_->recv_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
 			}
+#endif
+#if defined(TCP_KEEPCNT)
 			if (setsockopt(imp_->recv_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount)) < 0) {
 				aris_close(imp_->recv_socket_);
 				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
 			}
+#endif
 		}
 #endif
 

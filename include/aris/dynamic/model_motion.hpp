@@ -52,7 +52,7 @@ namespace aris::dynamic {
 	class ARIS_API MotionTemplate : public MotionBase {
 	public:
 		auto virtual pSize()const noexcept->Size override { return P_SIZE; }
-		auto virtual p()const noexcept->const double* { return p_; }
+		auto virtual p()const noexcept->const double* override { return p_; }
 		auto virtual setP(const double* p) noexcept->void override { s_vc(pSize(), p, this->p_); }
 		auto virtual getP(double* p)const noexcept->void override { s_vc(pSize(), this->p_, p); }
 		auto virtual vSize()const noexcept->Size override { return V_SIZE; }
@@ -85,7 +85,7 @@ namespace aris::dynamic {
 		auto virtual cptCa(double *ca)const noexcept->void override;
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
-		auto virtual cptPError(const double* p1, const double* p2)->double;
+		auto virtual cptPError(const double* p1, const double* p2)->double override;
 		auto virtual p() const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double *mp) noexcept->void override;
@@ -211,7 +211,7 @@ namespace aris::dynamic {
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
-		auto virtual pSize()const noexcept->Size;
+		auto virtual pSize()const noexcept->Size override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;
@@ -311,7 +311,7 @@ namespace aris::dynamic {
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
-		auto virtual pSize()const noexcept->Size;
+		auto virtual pSize()const noexcept->Size override;
 		auto virtual p()const noexcept->const double* override;
 		auto virtual updP() noexcept->void override;
 		auto virtual setP(const double* mp) noexcept->void override;

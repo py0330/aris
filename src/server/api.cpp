@@ -56,11 +56,11 @@ namespace aris::server
 			std::filesystem::create_directories(rootPath() / "robot");
 			
 			const std::string default_interface_str = u8"<Interface>\n"
-				"<Dashboard name=\"ÊÖ¶¯²Ù×÷\" editable=\"false\" id=\"NihtPEvZR\">\n"
+				"<Dashboard name=\"Default Dashboard\" editable=\"false\" id=\"NihtPEvZR\">\n"
 				"</Dashboard>\n"
-				" <Dashboard name=\"×Ô¶¯Ä£Ê½\" editable=\"true\" id=\"5uha_EvWR\">\n"
+				" <Dashboard name=\"Auto Mode\" editable=\"true\" id=\"5uha_EvWR\">\n"
 				" </Dashboard>\n"
-				"<Dashboard name=\"ÅäÖÃ¹¤¾ß\" editable=\"true\" id=\"ZtjylPvZg\">\n"
+				"<Dashboard name=\"Manual Control\" editable=\"true\" id=\"ZtjylPvZg\">\n"
 				"</Dashboard>\n"
 				"<WebSocket url=\"ws://120.27.231.59:5866\" commandSendInterval=\"20\" commandSendDelay=\"300\" getInterval=\"500\" unityUpdateInterval=\"100\"></WebSocket>\n"
 				"<LayoutConfig cols=\"48\" rowHeight=\"36\" margin=\"3\" containerPadding=\"0\" theme=\"dark\"></LayoutConfig>\n"
@@ -83,7 +83,7 @@ namespace aris::server
 				js1["i"] = std::string(ele->Attribute("id"));
 				js1["cells"] = std::vector<std::string>();
 				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement()) {
-					my_json j2;//{"name":"EthercatÅäÖÃ","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
+					my_json j2;//{"name":"Ethercatï¿½ï¿½ï¿½ï¿½","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
 					j2["name"] = e1->Attribute("name");
 					j2["type"] = e1->Attribute("type");
 					j2["i"] = e1->Attribute("id");
@@ -266,7 +266,7 @@ namespace aris::server
 				for (auto&file : std::filesystem::directory_iterator(dir)){
 					if (file.is_regular_file()){
 						if (file.path().extension() == ".dat"){
-							// Ð£ÑéÊÇ·ñÎªxml //
+							// Ð£ï¿½ï¿½ï¿½Ç·ï¿½Îªxml //
 							tinyxml2::XMLDocument doc;
 							if (doc.LoadFile(file.path().string().c_str()))continue;
 							
@@ -303,7 +303,7 @@ namespace aris::server
 							pro_dir_js["files"].push_back(file_js);
 						}
 						else if (file.path().extension() == ".pro"){
-							// Ð£ÑéÊÇ·ñÎªxml //
+							// Ð£ï¿½ï¿½ï¿½Ç·ï¿½Îªxml //
 							tinyxml2::XMLDocument doc;
 							if (doc.LoadFile(file.path().string().c_str()))continue;
 							
@@ -409,11 +409,11 @@ namespace aris::server
 		auto program_path = rootPath() / "robot/program";
 		auto js = my_json::parse(data);
 		
-		// ÏÈ½«ËùÓÐÎÄ¼þ´æµ½ temp Â·¾¶ÏÂ //
+		// ï¿½È½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½æµ½ temp Â·ï¿½ï¿½ï¿½ï¿½ //
 		std::filesystem::remove_all(program_path / pro_name / "temp");
 		std::filesystem::create_directories(program_path / pro_name / "temp");
 
-		// ±£´æ£¬²¢È·ÈÏÊÇ·ñ³ö´í //
+		// ï¿½ï¿½ï¿½æ£¬ï¿½ï¿½È·ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ //
 		bool has_error{ false };
 		for (auto &file : js["files"]){
 			std::cout << "update file:" << file["name"].get<std::string>() << std::endl;
@@ -458,7 +458,7 @@ namespace aris::server
 			}
 		}
 
-		// Èç¹ûÎÞ´í£¬Ôò¸²¸Çµ±Ç°ÎÄ¼þ //
+		// ï¿½ï¿½ï¿½ï¿½Þ´ï¿½ï¿½ï¿½ï¿½ò¸²¸Çµï¿½Ç°ï¿½Ä¼ï¿½ //
 		if (has_error == false)	{
 			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name)){
 				if (std::filesystem::is_regular_file(file))	{
@@ -501,7 +501,7 @@ namespace aris::server
 		std::filesystem::rename(rootPath() / "robot/program" / new_name / (old_name + ".pro"), rootPath() / "robot/program" / new_name / (new_name + ".pro"));
 		std::filesystem::rename(rootPath() / "robot/program" / new_name / (old_name + ".dat"), rootPath() / "robot/program" / new_name / (new_name + ".dat"));
 
-		///////////////////////ÒÔÏÂ·µ»Ø///////////////////////////////////
+		///////////////////////ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½///////////////////////////////////
 		auto dir = std::filesystem::directory_entry(rootPath() / "robot/program" / new_name);
 
 		std::filesystem::path dat = rootPath() / "robot/program" / new_name / (new_name + ".dat")

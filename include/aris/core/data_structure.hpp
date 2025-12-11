@@ -142,7 +142,7 @@ namespace aris::core {
         explicit LockFreeArrayQueue(int capacity) {
             static auto func_round_up_pow_of_two = [](int val)->int {
                 if (val <= 0) return 1;
-                if (val & (val-1) == 0) return val;
+                if ((val & (val-1)) == 0) return val;
 
                 int position = 0;
                 for (int i=val; i!=0; i>>=1)

@@ -34,8 +34,13 @@ add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 ## set rely libs ##
 # std & socker rely #
 if(UNIX)
-	set(RELY_LINK_LIB atomic pthread stdc++fs dl)#pthread is needed for concurrency
 	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
+	if(APPLE)
+		# On macOS, libatomic/stdc++fs/dl are not available/needed with the system toolchain
+		set(RELY_LINK_LIB pthread) # pthread needed for concurrency
+	else()
+		set(RELY_LINK_LIB atomic pthread stdc++fs dl) # pthread is needed for concurrency
+	endif()
 elseif(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif()
@@ -157,7 +162,7 @@ install(FILES ${PROJECT_BINARY_DIR}/aris-config.cmake DESTINATION "share/aris/cm
 ## install sh ##
 install(DIRECTORY sh DESTINATION .)
 
-## È·±£installÖ®ºóµÄ¶þ½øÖÆ¿ÉÒÔÁ´½Óµ½aris_lib
+## È·ï¿½ï¿½installÖ®ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½aris_lib
 if(UNIX)
 	#change rpath
 	#https://bewaremypower.github.io/2019/09/05/%E9%93%BE%E6%8E%A5%E9%80%89%E9%A1%B9RPATH%E4%BB%A5%E5%8F%8A%E5%9C%A8cmake%E5%92%8Cgcc%E4%B8%AD%E7%9A%84%E4%BD%BF%E7%94%A8/

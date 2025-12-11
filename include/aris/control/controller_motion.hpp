@@ -150,6 +150,7 @@ namespace aris::control{
 	public:
 		auto virtual init()->void {}
 		virtual auto getFtData(double *data_address)->void = 0;
+		virtual ~FtSensor() = default;
 	};
 
 	class ARIS_API CustomSlave {
@@ -157,6 +158,7 @@ namespace aris::control{
 		auto virtual init()->void {}
 		auto virtual readPdo()->void = 0;
 		auto virtual writePdo()->void = 0;
+		virtual ~CustomSlave() = default;
 	};
 
 	class ARIS_API Controller {

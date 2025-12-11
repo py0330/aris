@@ -10,8 +10,7 @@
 #include <aris/core/basic_type.hpp>
 #include <aris/core/log.hpp>
 
-namespace aris::core
-{
+namespace aris::core{
 	template<typename T> class ImpPtr{
 	public:
 		auto reset(T* p)->void { data_unique_ptr_.reset(p); }

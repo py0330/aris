@@ -32,16 +32,22 @@ namespace aris::core{
 	// 当前语言 id //
 	auto ARIS_API currentLanguage()->int;
 	// 根据语言切换 //
+	// helper to convert std::string to const char* when passed into C varargs
+	inline const char *printf_arg(const std::string &s) { return s.c_str(); }
+	inline const char *printf_arg(const char *s) { return s; }
+	template<typename T>
+	inline T printf_arg(T v) { return v; }
+
 	template <typename ...Args>
 	auto localeString(std::initializer_list<const char*> format_list, Args ... args)->std::string {
 		auto format = (currentLanguage() < format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
-		
-		int size_s = std::snprintf(nullptr, 0, format, args ...) + 1;
+
+		int size_s = std::snprintf(nullptr, 0, format, printf_arg(args)...) + 1;
 		if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
 		auto size = static_cast<size_t>(size_s);
 		std::string ret;
 		ret.resize(size);
-		std::snprintf(ret.data(), size, format, args ...);
+		std::snprintf(ret.data(), size, format, printf_arg(args)...);
 		return ret;
 	};
 

@@ -234,7 +234,7 @@ namespace aris::core{
 		char *proName = path;
 
 		pid_t pId = getpid();
-		sprintf(cParam, "/proc/%d/exe", pId);
+		std::snprintf(cParam, sizeof(cParam), "/proc/%d/exe", pId);
 		count = readlink(cParam, path, TASK_NAME_LEN);
 
 		if (count < 0 || count >= TASK_NAME_LEN)
@@ -283,7 +283,7 @@ namespace aris::core{
 		char* proName = path;
 
 		pid_t pId = getpid();
-		sprintf(cParam, "/proc/%d/exe", pId);
+		std::snprintf(cParam, sizeof(cParam), "/proc/%d/exe", pId);
 		count = readlink(cParam, path, TASK_NAME_LEN);
 
 		if (count < 0 || count >= TASK_NAME_LEN)
