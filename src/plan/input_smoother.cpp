@@ -7,7 +7,238 @@ namespace aris::plan {
 #ifdef ARIS_DEBUG_INPUT_SMOOTHER
 	int begin_log = 0;
 #endif
-	
+	struct InputInterpolator::Imp {
+		struct InterpNode {
+			double p_;
+			double k0_, k1_, k2_, k3_;
+		};
+		// 线性插值 //
+		auto interp_at(const InterpNode* intp, double s_div_dt) -> double {
+			return s_div_dt * intp->k1_ + intp->k0_;
+		}
+		auto make_interp(InterpNode& node0, InterpNode& node1) -> void {
+			node1.k1_ = node1.p_ - node0.p_;
+			node1.k0_ = node0.p_;
+		}
+
+		// 三次插值 //
+		auto interp_at4(const InterpNode* intp, double s_div_dt) -> double {
+			return s_div_dt * (s_div_dt * (s_div_dt * intp->k3_ + intp->k2_) + intp->k1_) + intp->k0_;
+		}
+		auto make_interp4(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				double v1 = (node2.p_ - node0.p_) / 2;
+				double v2 = (node3.p_ - node1.p_) / 2;
+				double v3 = 0.0;
+				double p0 = node0.p_;
+				double p1 = node1.p_;
+				double p2 = node2.p_;
+				double p3 = node3.p_;
+
+				node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				node2.k1_ = v1; // p1 - p0
+				node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+			}
+		}
+
+		// 三次带权重插值，可解决大部分过穿的问题 //
+		auto make_interp_with_ratio(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				// 根据权重（w），速度绝对值越小的权重越高，因此有：
+				// wa = 1/abs(v1a)
+				// wb = 1/abs(v1b)
+				//
+				// v1 = (wa*v1a + wb*v1b)/(wa + wb)	
+				//    = (v1a/abs(v1a) + v1b/abs(v1b)) / (1/abs(v1a) + 1/abs(v1b))
+				//    = (v1a*abs(v1b) + v1b*abs(v1a)) / (abs(v1a) + abs(v1b))
+				//    
+				// v1a = p1 - p0
+				// v1b = p2 - p1
+				// 
+
+
+				double v1a = (node1.p_ - node0.p_);
+				double v1b = (node2.p_ - node1.p_);
+				double v1 = (std::abs(v1a) + std::abs(v1b)) > 1e-10
+					? (v1a * std::abs(v1b) + v1b * std::abs(v1a)) / (std::abs(v1a) + std::abs(v1b))
+					: 0.0;
+
+				double v2a = (node2.p_ - node1.p_);
+				double v2b = (node3.p_ - node2.p_);
+				double v2 = (std::abs(v2a) + std::abs(v2b)) > 1e-10
+					? (v2a * std::abs(v2b) + v2b * std::abs(v2a)) / (std::abs(v2a) + std::abs(v2b))
+					: 0.0;
+
+				double v3 = 0.0;
+				double p0 = node0.p_;
+				double p1 = node1.p_;
+				double p2 = node2.p_;
+				double p3 = node3.p_;
+
+				node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				node2.k1_ = v1; // p1 - p0
+				node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+			}
+		}
+
+		/////////////////////////////////////////////////////////////
+		InputGenerator input_generator_{ nullptr };
+		int input_size_{ 0 };
+		double dt_{ 1e-3 };
+		int look_head_size_{ 150 }; // 前瞻数据
+		int interpolation_size_{ 4 }; // 插值的大小
+
+		/////////////////////////////////////////////////////////////
+		std::vector<char> mem_;
+		int pool_size_{ 0 }; // = interpolation_size_ + look_head_size_ + 1
+
+		InterpNode* input_poss_;
+		std::int64_t* node_ids_;
+		double* p3_;
+
+		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
+
+
+		auto allocate_mem() -> void {
+			//look_head_size_ = std::ceil(T_ / dt_);
+			pool_size_ = look_head_size_ + interpolation_size_ + 1;
+
+			Size mem_size = 0;
+			core::allocMem(mem_size, node_ids_, pool_size_);
+			core::allocMem(mem_size, input_poss_, input_size_ * pool_size_);
+			core::allocMem(mem_size, p3_, input_size_);
+
+			mem_.resize(mem_size, char(0));
+
+			node_ids_ = core::getMem(mem_.data(), node_ids_);
+			input_poss_ = core::getMem(mem_.data(), input_poss_);
+			p3_ = core::getMem(mem_.data(), p3_);
+		};
+		auto getInputByS(double s, double* p) -> int {
+			std::int64_t current_idx = std::min(std::int64_t(s / dt_) + 1, tg_idx_);
+			auto s_local_div_dt = std::min(s / dt_ - (current_idx - 1), 1.0);
+			auto p3 = input_poss_ + (current_idx % pool_size_) * input_size_;
+
+			//std::int64_t current_idx = std::int64_t(s / dt_) + 1;
+			//auto s_local_div_dt = std::fmod(s, dt_)/dt_;
+			//auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
+
+			for (Size i = 0; i < input_size_; ++i) {
+				// 线性插值 //
+				//p[i] = interp_at(p3 + i, s_local_div_dt);
+
+				// 三次插值 //
+				p[i] = interp_at4(p3 + i, s_local_div_dt);
+			}
+
+			return 0;
+		}
+
+		auto insert_nodes() -> std::int64_t {
+			tg_idx_ = tg_idx_ + 1;
+			node_ids_[(tg_idx_ % pool_size_)] = input_generator_(p3_);
+
+			// 线性插值 //
+			//auto nodes0 = input_poss_ + ((tg_idx_-1) % pool_size_) * input_size_;
+			//auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			//for (int j = 0; j < input_size_; ++j) {
+			//	ins_nodes[j].p_ = p3_[j];
+			//	make_interp(nodes0[j], ins_nodes[j]);
+			//}
+
+			// 三次插值 //
+			auto nodes0 = input_poss_ + ((tg_idx_ - 3) % pool_size_) * input_size_;
+			auto nodes1 = input_poss_ + ((tg_idx_ - 2) % pool_size_) * input_size_;
+			auto nodes2 = input_poss_ + ((tg_idx_ - 1) % pool_size_) * input_size_;
+			auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			for (int j = 0; j < input_size_; ++j) {
+				ins_nodes[j].p_ = p3_[j];
+				make_interp_with_ratio(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+				//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+			}
+
+			return node_ids_[(tg_idx_ % pool_size_)];
+		}
+		auto init_pos(const double* init_input_pos) -> void {
+			// 确保有足够的起始值 //
+			for (int i = 0; i < interpolation_size_; ++i) {
+				for (int j = 0; j < input_size_; ++j) {
+					input_poss_[i * input_size_ + j].p_ = init_input_pos[j];
+				}
+				node_ids_[i] = 0;
+			}
+
+			tg_idx_ = interpolation_size_ - 1;
+
+			// 前瞻足够的数据 //
+			for (int i = 0; i < look_head_size_; ++i) {
+				insert_nodes();
+				if (node_ids_[(tg_idx_ % pool_size_)] == 0)
+					break;
+			}
+
+			// 将前面的ret值设置正确 //
+			node_ids_[interpolation_size_ - 1] = node_ids_[interpolation_size_];
+		}
+	};
+	auto InputInterpolator::setInputGenerator(InputGenerator generator) -> void {
+		imp_->input_generator_ = generator;
+	}
+	auto InputInterpolator::setInputSize(int input_size) -> void {
+		imp_->input_size_ = input_size;
+	}
+	auto InputInterpolator::inputSize() -> int {
+		return imp_->input_size_;
+	}
+	auto InputInterpolator::setPoolSize(aris::Size size) -> void {
+		imp_->look_head_size_ = size;
+	}
+	auto InputInterpolator::poolSize() -> aris::Size {
+		return imp_->look_head_size_;
+	}
+	auto InputInterpolator::setDt(double dt) -> void {
+		imp_->dt_ = dt;
+	}
+	auto InputInterpolator::dt() -> double {
+		return imp_->dt_;
+	}
+	auto InputInterpolator::allocateMemory() -> void {
+		imp_->allocate_mem();
+	}
+	auto InputInterpolator::init(const double* init_input_pos) -> void {
+		imp_->init_pos(init_input_pos);
+	}
+	auto InputInterpolator::generateInput() -> std::int64_t {
+		return imp_->insert_nodes();
+	}
+	auto InputInterpolator::getInput(double s, double* p) -> std::int64_t {
+		return imp_->getInputByS(s, p);
+	}
+	InputInterpolator::~InputInterpolator() = default;
+	InputInterpolator::InputInterpolator() :imp_(new Imp) {
+
+	}
+
 	struct InputSmoother::Imp {
 		struct InterpNode {
 			double p_;
@@ -392,13 +623,6 @@ namespace aris::plan {
 			std::int64_t current_idx = std::int64_t(s2_ / dt_) + 1;
 			// ----------------- PART 2 增数据--------------------------- //
 			{
-				////////// debug
-				if (node_ids_[std::min(current_idx - 1, tg_idx_) % pool_size_] == 0) {
-					std::cout << "ret 0 " << std::endl;
-				}
-				//////////
-				
-				
 				// 如果轨迹已经尚未结束，或已经满
 				if (node_ids_[(tg_idx_ % pool_size_)] && tg_idx_ - current_idx < look_head_size_) {
 					insert_nodes();

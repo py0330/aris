@@ -22,6 +22,32 @@
 /// 
 namespace aris::plan{
 	
+	class ARIS_API InputInterpolator {
+	public:
+		using InputGenerator = std::function<std::int64_t(double* input)>;
+
+		auto setInputGenerator(InputGenerator input_generator) -> void;
+		auto setInputSize(int input_size) -> void;
+		auto inputSize() -> int;
+		auto setDt(double dt) -> void;
+		auto dt() -> double;
+		auto poolSize() -> aris::Size;
+		auto setPoolSize(aris::Size size) -> void;
+
+		auto allocateMemory() -> void;
+		auto init(const double* init_input_pos) -> void;
+		auto generateInput() -> std::int64_t;
+		auto getInput(double s, double* p) -> std::int64_t;
+
+		~InputInterpolator();
+		InputInterpolator();
+		ARIS_DELETE_BIG_FOUR(InputInterpolator);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	};
+
 	class ARIS_API InputSmoother {
 	public:
 		using InputGenerator = std::function<std::int64_t(double* input)>;
