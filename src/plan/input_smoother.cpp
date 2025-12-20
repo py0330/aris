@@ -119,8 +119,11 @@ namespace aris::plan {
 			* p1_back_, * p2_back_,* p1_, * p2_, *p3_;
 		std::int64_t* node_ids_;
 
-		double s1_{ 0.0 }, s2_{ dt_ };
+		double ds0_{1.0}, s1_{ 0.0 }, s2_{ dt_ };
 		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
+
+		double max_d3s_{ 10.0 };// 只在上升时有效，下降取决于二分法
+		double max_d2s_{ 10.0 };// 同上
 
 		//% dy = y*k + a;
 		//% 求常微分可得：
@@ -188,8 +191,6 @@ namespace aris::plan {
 				aris::dynamic::s_vc(input_size_, dt_ * dt_, min_acc_mat_.data(), min_accs_);
 			
 			T_ = look_head_size_ * dt_;
-
-
 		};
 		auto getInputByS(double s, double* p) -> int {
 			std::int64_t current_idx = std::min(std::int64_t(s / dt_) + 1, tg_idx_);
@@ -327,6 +328,8 @@ namespace aris::plan {
 				else
 					ds_r = ds;
 			}
+
+			ds0_ = (s2_ - s1_) /dt_;
 		}
 		auto getNextInput(double* p) -> std::int64_t {
 			// ----------------- PART 0 Check 是否需要init -------------- //
@@ -349,10 +352,10 @@ namespace aris::plan {
 					
 					auto ds = (s2_ - s1_) / dt_;
 					double l = std::max(last_a_ + k_ * ds, -ds/dt_); // ds 不能小于 0 
-					double r = std::min((1.0 - ds) / dt_, 10.0); // ds 最大不能超过 1
+					double r = std::min({ (1.0 - ds) / dt_, (ds-ds0_)/dt_ + max_d3s_ * dt_, max_d2s_ }); // ds 最大不能超过 1
 
 					//for (; mid != last_mid;) {
-					for (; std::abs(r - l)>1e-7;) {
+					for (; (r - l)>1e-7;) {
 						double mid = (l + r) / 2;
 
 						double ds3 = ds + mid * dt_;
@@ -382,6 +385,7 @@ namespace aris::plan {
 					getInputByS(s3, p);
 					s1_ = s2_;
 					s2_ = s3;
+					ds0_ = ds;
 				}
 			}
 

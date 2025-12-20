@@ -1,0 +1,581 @@
+<MultiModel __prop_name__="model" name="object" tools="{OffsetSevenAxis.L7.tool0,OffsetSevenAxis.L7.tool1,OffsetSevenAxis.L7.tool2,OffsetSevenAxis.L7.tool3,OffsetSevenAxis.L7.tool4,OffsetSevenAxis.L7.tool5,OffsetSevenAxis.L7.tool6,OffsetSevenAxis.L7.tool7,OffsetSevenAxis.L7.tool8,OffsetSevenAxis.L7.tool9,OffsetSevenAxis.L7.tool10,OffsetSevenAxis.L7.tool11,OffsetSevenAxis.L7.tool12,OffsetSevenAxis.L7.tool13,OffsetSevenAxis.L7.tool14,OffsetSevenAxis.L7.tool15,OffsetSevenAxis.L7.tool16,OffsetSevenAxis.L7.tool0,OffsetSevenAxis.L7.tool1,OffsetSevenAxis.L7.tool2,OffsetSevenAxis.L7.tool3,OffsetSevenAxis.L7.tool4,OffsetSevenAxis.L7.tool5,OffsetSevenAxis.L7.tool6,OffsetSevenAxis.L7.tool7,OffsetSevenAxis.L7.tool8,OffsetSevenAxis.L7.tool9,OffsetSevenAxis.L7.tool10,OffsetSevenAxis.L7.tool11,OffsetSevenAxis.L7.tool12,OffsetSevenAxis.L7.tool13,OffsetSevenAxis.L7.tool14,OffsetSevenAxis.L7.tool15,OffsetSevenAxis.L7.tool16}" wobjs="{OffsetSevenAxis.ground.wobj0,OffsetSevenAxis.ground.wobj1,OffsetSevenAxis.ground.wobj2,OffsetSevenAxis.ground.wobj3,OffsetSevenAxis.ground.wobj4,OffsetSevenAxis.ground.wobj5,OffsetSevenAxis.ground.wobj6,OffsetSevenAxis.ground.wobj7,OffsetSevenAxis.ground.wobj8,OffsetSevenAxis.ground.wobj9,OffsetSevenAxis.ground.wobj10,OffsetSevenAxis.ground.wobj11,OffsetSevenAxis.ground.wobj12,OffsetSevenAxis.ground.wobj13,OffsetSevenAxis.ground.wobj14,OffsetSevenAxis.ground.wobj15,OffsetSevenAxis.ground.wobj16,OffsetSevenAxis.ground.wobj17,OffsetSevenAxis.ground.wobj18,OffsetSevenAxis.ground.wobj19,OffsetSevenAxis.ground.wobj20,OffsetSevenAxis.ground.wobj21,OffsetSevenAxis.ground.wobj22,OffsetSevenAxis.ground.wobj23,OffsetSevenAxis.ground.wobj24,OffsetSevenAxis.ground.wobj25,OffsetSevenAxis.ground.wobj26,OffsetSevenAxis.ground.wobj27,OffsetSevenAxis.ground.wobj28,OffsetSevenAxis.ground.wobj29,OffsetSevenAxis.ground.wobj30,OffsetSevenAxis.ground.wobj31,OffsetSevenAxis.ground.wobj32,OffsetSevenAxis.ground.wobj0,OffsetSevenAxis.ground.wobj1,OffsetSevenAxis.ground.wobj2,OffsetSevenAxis.ground.wobj3,OffsetSevenAxis.ground.wobj4,OffsetSevenAxis.ground.wobj5,OffsetSevenAxis.ground.wobj6,OffsetSevenAxis.ground.wobj7,OffsetSevenAxis.ground.wobj8,OffsetSevenAxis.ground.wobj9,OffsetSevenAxis.ground.wobj10,OffsetSevenAxis.ground.wobj11,OffsetSevenAxis.ground.wobj12,OffsetSevenAxis.ground.wobj13,OffsetSevenAxis.ground.wobj14,OffsetSevenAxis.ground.wobj15,OffsetSevenAxis.ground.wobj16,OffsetSevenAxis.ground.wobj17,OffsetSevenAxis.ground.wobj18,OffsetSevenAxis.ground.wobj19,OffsetSevenAxis.ground.wobj20,OffsetSevenAxis.ground.wobj21,OffsetSevenAxis.ground.wobj22,OffsetSevenAxis.ground.wobj23,OffsetSevenAxis.ground.wobj24,OffsetSevenAxis.ground.wobj25,OffsetSevenAxis.ground.wobj26,OffsetSevenAxis.ground.wobj27,OffsetSevenAxis.ground.wobj28,OffsetSevenAxis.ground.wobj29,OffsetSevenAxis.ground.wobj30,OffsetSevenAxis.ground.wobj31,OffsetSevenAxis.ground.wobj32}">
+        <ModelBasePool __prop_name__="submodel_pool">
+            <Model name="OffsetSevenAxis" time="0">
+                <Environment __prop_name__="environment" gravity="{0,0,-9.8,0,0,0}"/>
+                <VariablePoolElement __prop_name__="variable_pool">
+                    <MatrixVariable name="dh">{0.2665,0,0.2555,0.2555}</MatrixVariable>
+                    <MatrixVariable name="tool0_pe">{0,0,0.1665,0,0,0}</MatrixVariable>
+                    <StringVariable name="tool0_pe_type">321</StringVariable>
+                    <MatrixVariable name="base_pe">{0,0,0,0,0,0}</MatrixVariable>
+                    <StringVariable name="base_pe_type">321</StringVariable>
+                    <MatrixVariable name="axis_range">{nan,nan,nan,nan,nan,nan,0}</MatrixVariable>
+                    <MatrixVariable name="install_method">{0}</MatrixVariable>
+                    <MatrixVariable name="tool0_pe">{0,0,0.1665,0,0,0}</MatrixVariable>
+                    <StringVariable name="machine_name">Ka-Std-7</StringVariable>
+                    <MatrixVariable name="base_pe">{0,0,0,0,0,0}</MatrixVariable>
+                </VariablePoolElement>
+                <PartPoolElement __prop_name__="part_pool">
+                    <Part name="ground" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_j" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="wobj0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj5" active="true" pe="{0,0,0,4.71238898038469,1.5707963267949,-0}"/>
+                            <Marker name="wobj6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj7" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj8" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj9" active="true" pe="{0,0,0,4.71238898038469,1.5707963267949,-0}"/>
+                            <Marker name="wobj10" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj11" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj12" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj13" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj14" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj15" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj16" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj17" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj18" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj19" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj20" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj21" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj22" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj23" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj24" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj25" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj26" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj27" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj28" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj29" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj30" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj31" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj32" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/ground.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L1" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_i" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_1_j" active="true" pe="{0,0,0.2665,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L1.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L2" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_1_i" active="true" pe="{0,0,0.2665,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_2_j" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L2.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L3" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_2_i" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_3_j" active="true" pe="{0,0,0.522,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L3.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L4" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_3_i" active="true" pe="{0,0,0.522,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_4_j" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L4.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L5" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_4_i" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_5_j" active="true" pe="{0,0,0.7775,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L5.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L6" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_5_i" active="true" pe="{0,0,0.7775,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_6_j" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L6.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L7" active="true" pe="{0,0,0.944,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_6_i" active="true" pe="{0,0,-0.1665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="tool0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool7" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool8" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool9" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool10" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool11" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool12" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool13" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool14" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool15" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool16" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L7.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0.7775;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                </PartPoolElement>
+                <MotionPoolElement __prop_name__="motion_pool">
+                    <Motion name="motion_0" active="true" prt_m="L1" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_1" active="true" prt_m="L2" prt_n="L1" mak_i="joint_1_i" mak_j="joint_1_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_2" active="true" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_3" active="true" prt_m="L4" prt_n="L3" mak_i="joint_3_i" mak_j="joint_3_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_4" active="true" prt_m="L5" prt_n="L4" mak_i="joint_4_i" mak_j="joint_4_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_5" active="true" prt_m="L6" prt_n="L5" mak_i="joint_5_i" mak_j="joint_5_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </MotionPoolElement>
+                <JointPoolElement __prop_name__="joint_pool">
+                    <RevoluteJoint name="joint_0" active="true" prt_m="L1" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_1" active="true" prt_m="L2" prt_n="L1" mak_i="joint_1_i" mak_j="joint_1_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_2" active="true" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_3" active="true" prt_m="L4" prt_n="L3" mak_i="joint_3_i" mak_j="joint_3_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_4" active="true" prt_m="L5" prt_n="L4" mak_i="joint_4_i" mak_j="joint_4_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_5" active="true" prt_m="L6" prt_n="L5" mak_i="joint_5_i" mak_j="joint_5_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0,0,0,0,0}"/>
+                </JointPoolElement>
+                <GeneralMotionPoolElement __prop_name__="general_motion_pool">
+                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0.944,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pose_type="EULER321" vel_type="VEL" acc_type="ACC"/>
+                    <Motion name="arm_mot" active="false" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </GeneralMotionPoolElement>
+                <ForcePoolElement __prop_name__="force_pool"/>
+                <SolverPoolElement __prop_name__="solver_pool">
+                    <SevenAxisInverseKinematicSolver2 root_num="8" which_root="8" max_iter_count="1" max_error="0"/>
+                    <ForwardKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <InverseDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                </SolverPoolElement>
+                <CalibratorPoolElement __prop_name__="calibrator_pool"/>
+            </Model>
+            <Model name="OffsetSevenAxis" time="0">
+                <Environment __prop_name__="environment" gravity="{0,0,-9.8,0,0,0}"/>
+                <VariablePoolElement __prop_name__="variable_pool">
+                    <MatrixVariable name="dh">{0.2665,0,0.2555,0.2555}</MatrixVariable>
+                    <MatrixVariable name="tool0_pe">{0,0,0.1665,0,0,0}</MatrixVariable>
+                    <StringVariable name="tool0_pe_type">321</StringVariable>
+                    <MatrixVariable name="base_pe">{0,0,0,0,0,0}</MatrixVariable>
+                    <StringVariable name="base_pe_type">321</StringVariable>
+                    <MatrixVariable name="axis_range">{nan,nan,nan,nan,nan,nan,0}</MatrixVariable>
+                    <MatrixVariable name="install_method">{0}</MatrixVariable>
+                    <MatrixVariable name="tool0_pe">{0,0,0.1665,0,0,0}</MatrixVariable>
+                    <StringVariable name="machine_name">Ka-Std-7</StringVariable>
+                    <MatrixVariable name="base_pe">{0,0,0,0,0,0}</MatrixVariable>
+                </VariablePoolElement>
+                <PartPoolElement __prop_name__="part_pool">
+                    <Part name="ground" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_j" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="wobj0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj5" active="true" pe="{0,0,0,1.5707963267949,1.5707963267949,3.14159265358979}"/>
+                            <Marker name="wobj6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj7" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj8" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj9" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj10" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj11" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj12" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj13" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj14" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj15" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj16" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj17" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj18" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj19" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj20" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj21" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj22" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj23" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj24" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj25" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj26" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj27" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj28" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj29" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj30" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj31" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj32" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/ground.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L1" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_i" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_1_j" active="true" pe="{0,0,0.2665,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L1.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L2" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_1_i" active="true" pe="{0,0,0.2665,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_2_j" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L2.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L3" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_2_i" active="true" pe="{0,0,0.2665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_3_j" active="true" pe="{0,0,0.522,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L3.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L4" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_3_i" active="true" pe="{0,0,0.522,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_4_j" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L4.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L5" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_4_i" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="joint_5_j" active="true" pe="{0,0,0.7775,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L5.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L6" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_5_i" active="true" pe="{0,0,0.7775,3.14159265358979,1.5707963267949,4.71238898038469}"/>
+                            <Marker name="joint_6_j" active="true" pe="{0,0,0.7775,0.785398163397448,0,0.785398163397448}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L6.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="L7" active="true" pe="{0,0,0.7775,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,0,0,0,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_6_i" active="true" pe="{0,0,-0.1665,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="tool0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool7" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool8" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool9" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool10" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool11" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool12" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool13" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool14" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool15" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool16" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/Ka-Std-7/L7.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0.7775;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                </PartPoolElement>
+                <MotionPoolElement __prop_name__="motion_pool">
+                    <Motion name="motion_0" active="true" prt_m="L1" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_1" active="true" prt_m="L2" prt_n="L1" mak_i="joint_1_i" mak_j="joint_1_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_2" active="true" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_3" active="true" prt_m="L4" prt_n="L3" mak_i="joint_3_i" mak_j="joint_3_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_4" active="true" prt_m="L5" prt_n="L4" mak_i="joint_4_i" mak_j="joint_4_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_5" active="true" prt_m="L6" prt_n="L5" mak_i="joint_5_i" mak_j="joint_5_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                    <Motion name="motion_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </MotionPoolElement>
+                <JointPoolElement __prop_name__="joint_pool">
+                    <RevoluteJoint name="joint_0" active="true" prt_m="L1" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_1" active="true" prt_m="L2" prt_n="L1" mak_i="joint_1_i" mak_j="joint_1_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_2" active="true" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_3" active="true" prt_m="L4" prt_n="L3" mak_i="joint_3_i" mak_j="joint_3_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_4" active="true" prt_m="L5" prt_n="L4" mak_i="joint_4_i" mak_j="joint_4_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_5" active="true" prt_m="L6" prt_n="L5" mak_i="joint_5_i" mak_j="joint_5_j" cf="{0,0,0,0,0}"/>
+                    <RevoluteJoint name="joint_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0,0,0,0,0}"/>
+                </JointPoolElement>
+                <GeneralMotionPoolElement __prop_name__="general_motion_pool">
+                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pose_type="EULER321" vel_type="VEL" acc_type="ACC"/>
+                    <Motion name="arm_mot" active="false" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </GeneralMotionPoolElement>
+                <ForcePoolElement __prop_name__="force_pool"/>
+                <SolverPoolElement __prop_name__="solver_pool">
+                    <SevenAxisInverseKinematicSolver2 root_num="8" which_root="8" max_iter_count="1" max_error="0"/>
+                    <ForwardKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <InverseDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                </SolverPoolElement>
+                <CalibratorPoolElement __prop_name__="calibrator_pool"/>
+            </Model>
+            <Model name="ExAxisModel" time="0">
+                <Environment __prop_name__="environment" gravity="{0,-9.8,0,0,0,0}"/>
+                <VariablePoolElement __prop_name__="variable_pool">
+                    <MatrixVariable name="pos">{0,0,0}</MatrixVariable>
+                    <MatrixVariable name="axis">{0,0,1}</MatrixVariable>
+                    <BoolVariable name="is_revolute">false</BoolVariable>
+                    <BoolVariable name="is_coupling">false</BoolVariable>
+                    <StringVariable name="machine_name">ZhanJi_Ext_R</StringVariable>
+                </VariablePoolElement>
+                <PartPoolElement __prop_name__="part_pool">
+                    <Part name="ground" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_j" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="wobj0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/ground.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="EE" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_i" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="tool0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/EE.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                </PartPoolElement>
+                <MotionPoolElement __prop_name__="motion_pool">
+                    <Motion name="motion_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="2" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </MotionPoolElement>
+                <JointPoolElement __prop_name__="joint_pool">
+                    <PrismaticJoint name="joint_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0,0,0,0,0}"/>
+                </JointPoolElement>
+                <GeneralMotionPoolElement __prop_name__="general_motion_pool">
+                    <Motion name="ee" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="2" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </GeneralMotionPoolElement>
+                <ForcePoolElement __prop_name__="force_pool"/>
+                <SolverPoolElement __prop_name__="solver_pool">
+                    <InverseKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <InverseDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                </SolverPoolElement>
+                <CalibratorPoolElement __prop_name__="calibrator_pool"/>
+            </Model>
+            <Model name="ExAxisModel" time="0">
+                <Environment __prop_name__="environment" gravity="{0,-9.8,0,0,0,0}"/>
+                <VariablePoolElement __prop_name__="variable_pool">
+                    <MatrixVariable name="pos">{0,0,0}</MatrixVariable>
+                    <MatrixVariable name="axis">{0,0,1}</MatrixVariable>
+                    <BoolVariable name="is_revolute">true</BoolVariable>
+                    <BoolVariable name="is_coupling">false</BoolVariable>
+                    <StringVariable name="machine_name">ZhanJi_Ext_R</StringVariable>
+                </VariablePoolElement>
+                <PartPoolElement __prop_name__="part_pool">
+                    <Part name="ground" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_j" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="wobj0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/ground.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="EE" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_i" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="tool0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/EE.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                </PartPoolElement>
+                <MotionPoolElement __prop_name__="motion_pool">
+                    <Motion name="motion_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="nan" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </MotionPoolElement>
+                <JointPoolElement __prop_name__="joint_pool">
+                    <RevoluteJoint name="joint_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0,0,0,0,0}"/>
+                </JointPoolElement>
+                <GeneralMotionPoolElement __prop_name__="general_motion_pool">
+                    <Motion name="ee" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="nan" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </GeneralMotionPoolElement>
+                <ForcePoolElement __prop_name__="force_pool"/>
+                <SolverPoolElement __prop_name__="solver_pool">
+                    <InverseKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <InverseDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                </SolverPoolElement>
+                <CalibratorPoolElement __prop_name__="calibrator_pool"/>
+            </Model>
+            <Model name="ExAxisModel" time="0">
+                <Environment __prop_name__="environment" gravity="{0,-9.8,0,0,0,0}"/>
+                <VariablePoolElement __prop_name__="variable_pool">
+                    <MatrixVariable name="pos">{0,0,0}</MatrixVariable>
+                    <MatrixVariable name="axis">{0,0,1}</MatrixVariable>
+                    <BoolVariable name="is_revolute">true</BoolVariable>
+                    <BoolVariable name="is_coupling">false</BoolVariable>
+                    <StringVariable name="machine_name">ZhanJi_Ext_R</StringVariable>
+                </VariablePoolElement>
+                <PartPoolElement __prop_name__="part_pool">
+                    <Part name="ground" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_j" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="wobj0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="wobj6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/ground.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                    <Part name="EE" active="true" pe="{0,0,0,-0,0,-0}" vel="{0,0,0,0,0,0}" acc="{0,0,0,0,0,0}" inertia="{1,0,0,0,1,1,1,0,0,0}">
+                        <MarkerPoolElement __prop_name__="marker_pool">
+                            <Marker name="joint_0_i" active="true" pe="{0,0,0,0.785398163397448,0,0.785398163397448}"/>
+                            <Marker name="tool0" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool1" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool2" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool3" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool4" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool5" active="true" pe="{0,0,0,-0,0,-0}"/>
+                            <Marker name="tool6" active="true" pe="{0,0,0,-0,0,-0}"/>
+                        </MarkerPoolElement>
+                        <GeometryPoolElement __prop_name__="geometry_pool">
+                            <FileGeometry graphic_file_path="/robot/geometry/stl/ZhanJi_Ext_R/EE.stl" pm="{1,0,0,0;
+0,1,0,0;
+0,0,1,0;
+0,0,0,1}"/>
+                        </GeometryPoolElement>
+                    </Part>
+                </PartPoolElement>
+                <MotionPoolElement __prop_name__="motion_pool">
+                    <Motion name="motion_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="nan" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </MotionPoolElement>
+                <JointPoolElement __prop_name__="joint_pool">
+                    <RevoluteJoint name="joint_0" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0,0,0,0,0}"/>
+                </JointPoolElement>
+                <GeneralMotionPoolElement __prop_name__="general_motion_pool">
+                    <Motion name="ee" active="true" prt_m="EE" prt_n="ground" mak_i="joint_0_i" mak_j="joint_0_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="nan" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
+                </GeneralMotionPoolElement>
+                <ForcePoolElement __prop_name__="force_pool"/>
+                <SolverPoolElement __prop_name__="solver_pool">
+                    <InverseKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardKinematicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <InverseDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                    <ForwardDynamicSolver root_num="1" which_root="0" max_iter_count="100" max_error="0.0000000001"/>
+                </SolverPoolElement>
+                <CalibratorPoolElement __prop_name__="calibrator_pool"/>
+            </Model>
+        </ModelBasePool>
+    </MultiModel>
