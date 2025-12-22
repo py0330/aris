@@ -26,6 +26,8 @@ namespace aris::plan{
 	public:
 		using InputGenerator = std::function<std::int64_t(double* input)>;
 
+		auto interpolationSize() -> aris::Size;
+		
 		auto setInputGenerator(InputGenerator input_generator) -> void;
 		auto setInputSize(int input_size) -> void;
 		auto inputSize() -> int;
@@ -37,10 +39,14 @@ namespace aris::plan{
 		auto allocateMemory() -> void;
 		auto init(const double* init_input_pos) -> void;
 		auto generateInput() -> std::int64_t;
-		auto getInput(double s, double* p) -> std::int64_t;
+		
+		auto getInputAt(double s, double* p) -> std::int64_t;
+		auto retCodeAt(double s) -> std::int64_t;
+
+		//auto getFinalInput(double *p) -> std::int64_t;
 		auto finalRetCode() -> std::int64_t;
-		auto finalIdx()-> std::int64_t;
-		auto retCodeAt(double s)-> std::int64_t;
+		auto finalS()-> double;
+		
 
 		~InputInterpolator();
 		InputInterpolator();

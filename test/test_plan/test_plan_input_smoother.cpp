@@ -430,9 +430,51 @@ auto test_input_smoother_7axis()->int {
 	aris::plan::InputInterpolator ii;
 	aris::plan::InputSmoother sp;
 
+	// 设置 InputSmoother //
+	sp.setInputSize(JOINT_NUM);
+	sp.setDt(DT);
+
+	// 最大速度、加速度 //
+	std::vector<double> max_vels(JOINT_NUM), min_vels(JOINT_NUM), max_accs(JOINT_NUM), min_accs(JOINT_NUM);
+	for (int i = 0; i < JOINT_NUM; i++) {
+		max_vels[i] = joint_vel;
+		min_vels[i] = -joint_vel;
+		max_accs[i] = joint_acc;
+		min_accs[i] = -joint_acc;
+	}
+	sp.setMaxVel(aris::core::Matrix(JOINT_NUM, 1, max_vels.data()));
+	sp.setMinVel(aris::core::Matrix(JOINT_NUM, 1, min_vels.data()));
+	sp.setMaxAcc(aris::core::Matrix(JOINT_NUM, 1, max_accs.data()));
+	sp.setMinAcc(aris::core::Matrix(JOINT_NUM, 1, min_accs.data()));
+	sp.allocateMemory(); //这个函数一定要放在这个位置才行！
+
+	// 设置反解 //
+	sp.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
+		double output[6];
+		auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
+		ee.setMpe(output, "321");
+
+		arm_angle.setP(&init_arm_angle);
+
+		if (arm.inverseKinematics()) {
+			std::cout << "++++++++ IK ERROR +++++++" << std::endl;
+		};
+		arm.getInputPos(p);
+		return ret;
+		});
+
+	// 数据输出文件初始化 //
+	std::string filename = "C:/Mac/Home/Desktop/test_data/data.csv";
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		std::cerr << "Error: Could not open motion_data.csv" << std::endl;
+		return -1;
+	}
+	file.precision(15);
+	file.setf(std::ios::fixed);
 
 	// 模拟多次执行指令 //
-	for (int cmd_cnt = 0; cmd_cnt < 1; cmd_cnt++) {
+	for (int cmd_cnt = 0; cmd_cnt < 3; cmd_cnt++) {
 		// 两点间往返 //
 		static bool target_flag = true;
 		double target_ee[EE_DIM]{ 0.0 };
@@ -470,40 +512,6 @@ auto test_input_smoother_7axis()->int {
 		if (local_flag) {
 			local_flag = false; // 前面也有用到，但只在这里翻转即可 //
 
-			// 设置 InputSmoother //
-			sp.setInputSize(JOINT_NUM);
-			sp.setDt(DT);
-
-			// 最大速度、加速度 //
-			std::vector<double> max_vels(JOINT_NUM), min_vels(JOINT_NUM), max_accs(JOINT_NUM), min_accs(JOINT_NUM);
-			for (int i = 0; i < JOINT_NUM; i++) {
-				max_vels[i] = joint_vel;
-				min_vels[i] = -joint_vel;
-				max_accs[i] = joint_acc;
-				min_accs[i] = -joint_acc;
-			}
-			sp.setMaxVel(aris::core::Matrix(JOINT_NUM, 1, max_vels.data()));
-			sp.setMinVel(aris::core::Matrix(JOINT_NUM, 1, min_vels.data()));
-			sp.setMaxAcc(aris::core::Matrix(JOINT_NUM, 1, max_accs.data()));
-			sp.setMinAcc(aris::core::Matrix(JOINT_NUM, 1, min_accs.data()));
-			sp.allocateMemory(); //这个函数一定要放在这个位置才行！
-
-			// 设置反解 //
-			sp.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
-				double output[6];
-				auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
-				ee.setMpe(output, "321");
-
-				arm_angle.setP(&init_arm_angle);
-
-				if (arm.inverseKinematics()) {
-					std::cout << "++++++++ IK ERROR +++++++" << std::endl;
-				};
-				arm.getInputPos(p);
-				return ret;
-				});
-
-
 			// 设置 InputInterpolator
 			ii.setInputSize(JOINT_NUM);
 			ii.setDt(DT);
@@ -522,18 +530,9 @@ auto test_input_smoother_7axis()->int {
 				arm.getInputPos(p);
 				return ret;
 			});
-
 		}
 
-		// 数据输出文件初始化 //
-		std::string filename = "C:/Mac/Home/Desktop/test_data/data" + std::to_string(cmd_cnt) + ".csv";
-		std::ofstream file(filename);
-		if (!file.is_open()) {
-			std::cerr << "Error: Could not open motion_data.csv" << std::endl;
-			return -1;
-		}
-		file.precision(15);
-		file.setf(std::ios::fixed);
+
 
 
 		// 模拟实时循环 //
@@ -556,6 +555,19 @@ auto test_input_smoother_7axis()->int {
 				break;
 			}
 		}
+		double joint_ref[JOINT_NUM]{ 0.0 };
+		auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
+		std::cout << "ret:" << ret << std::endl;
+		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
+
+		ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
+		std::cout << "ret:" << ret << std::endl;
+		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
+
+		ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
+		std::cout << "ret:" << ret << std::endl;
+		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
+
 		/*
 
 		// 模拟实时循环 //
@@ -581,7 +593,7 @@ auto test_input_smoother_7axis()->int {
 			}
 		}
 		*/
-		file.close();
+		
 		tg.clearUsedPos();
 		// tg.clearAllPos(); // 不能直接清除所有的点！
 		std::cout << "========================================" << std::endl;
@@ -595,6 +607,9 @@ auto test_input_smoother_7axis()->int {
 
 
 	}
+
+	file.close();
+
 	std::cout << "Test Finished. " << std::endl;
 	return 0;
 }

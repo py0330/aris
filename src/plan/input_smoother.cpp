@@ -101,23 +101,84 @@ namespace aris::plan {
 			}
 		}
 
+		// 三次插值用 6 个数据 //
+		auto interp_at6(const InterpNode* intp, double s_div_dt) -> double {
+			return s_div_dt * (s_div_dt * (s_div_dt * intp->k3_ + intp->k2_) + intp->k1_) + intp->k0_;
+		}
+		auto make_interp6(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3, InterpNode& node4, InterpNode& node5) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				
+				// dy_at_x2  = (y0 - 8*y1 + 8*y3 - y4)/(12*T);
+				// d2y_at_x2 = (-y0 + 16 * y1 - 30 * y2 + 16 * y3 - y4) / (12 * T ^ 2);
+				
+				double v2 = (node0.p_ - 8 * node1.p_ + 8 * node3.p_ - node4.p_)/12;
+				double v3 = (node1.p_ - 8 * node2.p_ + 8 * node4.p_ - node5.p_)/12;
+				double v4 = (node2.p_ - 8 * node3.p_ + 8 * node5.p_ - node5.p_)/12;
+				double v5 = (node3.p_ - 8 * node4.p_ + 8 * node5.p_ - node5.p_)/12;
+
+				//double a2 = (-node0.p_ + 16 * node1.p_ - 30 * node2.p_ + 16 * node3.p_ - node4.p_) / 12;
+				//double a3 = (-node1.p_ + 16 * node2.p_ - 30 * node3.p_ + 16 * node4.p_ - node5.p_) / 12;
+				//double a4 = (-node2.p_ + 16 * node3.p_ - 30 * node4.p_ + 16 * node5.p_ - node5.p_) / 12;
+				//double a5 = (-node3.p_ + 16 * node4.p_ - 30 * node5.p_ + 16 * node5.p_ - node5.p_) / 12;
+				
+				
+				
+				
+				
+				//double v1 = (node2.p_ - node0.p_) / 2;
+				//double v2 = (node3.p_ - node1.p_) / 2;
+				//double v3 = 0.0;
+				double p0 = node0.p_;
+				double p1 = node1.p_;
+				double p2 = node2.p_;
+				double p3 = node3.p_;
+				double p4 = node3.p_;
+				double p5 = node3.p_;
+
+
+				//node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				//node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				//node2.k1_ = v1; // p1 - p0
+				//node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+
+				node4.k3_ = 2 * (p3 - p4) + (v3 + v4);
+				node4.k2_ = 3 * (p4 - p3) - 2 * v3 - v4;
+				node4.k1_ = v3;
+				node4.k0_ = p3;
+
+				node5.k3_ = 2 * (p4 - p5) + (v4 + v5);
+				node5.k2_ = 3 * (p5 - p4) - 2 * v4 - v5;
+				node5.k1_ = v4;
+				node5.k0_ = p4;
+			}
+		}
+
+
 		/////////////////////////////////////////////////////////////
 		InputGenerator input_generator_{ nullptr };
 		int input_size_{ 0 };
 		double dt_{ 1e-3 };
 		int look_head_size_{ 150 }; // 前瞻数据
-		int interpolation_size_{ 4 }; // 插值的大小
+		int interpolation_size_{ 6 }; // 插值的大小
 
 		/////////////////////////////////////////////////////////////
 		std::vector<char> mem_;
 		int pool_size_{ 0 }; // = interpolation_size_ + look_head_size_ + 1
 
-		InterpNode* input_poss_;
-		std::int64_t* node_ids_;
-		double* p3_;
+		InterpNode* input_poss_{ nullptr };
+		std::int64_t* node_ids_{ nullptr };
+		double* p3_{ nullptr };
 
 		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
-
 
 		auto allocate_mem() -> void {
 			//look_head_size_ = std::ceil(T_ / dt_);
@@ -153,7 +214,6 @@ namespace aris::plan {
 
 			return node_ids_[std::min(std::int64_t(s / dt_), tg_idx_) % pool_size_];
 		}
-
 		auto insert_nodes() -> std::int64_t {
 			tg_idx_ = tg_idx_ + 1;
 			node_ids_[(tg_idx_ % pool_size_)] = input_generator_(p3_);
@@ -167,43 +227,59 @@ namespace aris::plan {
 			//}
 
 			// 三次插值 //
-			auto nodes0 = input_poss_ + ((tg_idx_ - 3) % pool_size_) * input_size_;
-			auto nodes1 = input_poss_ + ((tg_idx_ - 2) % pool_size_) * input_size_;
-			auto nodes2 = input_poss_ + ((tg_idx_ - 1) % pool_size_) * input_size_;
+			//auto nodes0 = input_poss_ + (std::max(tg_idx_ - 3, std::int64_t(0)) % pool_size_) * input_size_;
+			//auto nodes1 = input_poss_ + (std::max(tg_idx_ - 2, std::int64_t(0)) % pool_size_) * input_size_;
+			//auto nodes2 = input_poss_ + (std::max(tg_idx_ - 1, std::int64_t(0)) % pool_size_) * input_size_;
+			//auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			//for (int j = 0; j < input_size_; ++j) {
+			//	ins_nodes[j].p_ = p3_[j];
+			//	make_interp_with_ratio(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+			//	//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+			//}
+
+			// 三次插值 6 个数据 //
+			auto nodes0 = input_poss_ + (std::max(tg_idx_ - 5, std::int64_t(0)) % pool_size_) * input_size_;
+			auto nodes1 = input_poss_ + (std::max(tg_idx_ - 4, std::int64_t(0)) % pool_size_) * input_size_;
+			auto nodes2 = input_poss_ + (std::max(tg_idx_ - 3, std::int64_t(0)) % pool_size_) * input_size_;
+			auto nodes3 = input_poss_ + (std::max(tg_idx_ - 2, std::int64_t(0)) % pool_size_) * input_size_;
+			auto nodes4 = input_poss_ + (std::max(tg_idx_ - 1, std::int64_t(0)) % pool_size_) * input_size_;
 			auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
 			for (int j = 0; j < input_size_; ++j) {
 				ins_nodes[j].p_ = p3_[j];
-				make_interp_with_ratio(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
+				make_interp6(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
 				//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
 			}
 
 			return node_ids_[(tg_idx_ % pool_size_)];
 		}
 		auto init_pos(const double* init_input_pos) -> void {
-			// 确保有足够的起始值 //
-			for (int i = 0; i < interpolation_size_; ++i) {
-				for (int j = 0; j < input_size_; ++j) {
-					input_poss_[i * input_size_ + j].p_ = init_input_pos[j];
-				}
-				node_ids_[i] = 0;
+			// 更新起始 Node //
+			for (int j = 0; j < input_size_; ++j) {
+				input_poss_[j].p_ = init_input_pos[j];
+				input_poss_[j].k0_ = input_poss_[j].p_;
+				input_poss_[j].k1_ = 0.0;
+				input_poss_[j].k2_ = 0.0;
+				input_poss_[j].k3_ = 0.0;
 			}
 
-			tg_idx_ = interpolation_size_ - 1;
+			// 更新 tg_idx //
+			tg_idx_ = 0;
 
-			// 前瞻足够的数据 //
-			for (int i = 0; i < look_head_size_; ++i) {
+			// 前瞻 4 + interpolate_size 个数据 //
+			for (int i = 0; i < 4 + interpolation_size_; ++i) {
 				insert_nodes();
 				if (node_ids_[(tg_idx_ % pool_size_)] == 0)
 					break;
 			}
 
 			// 将前面的ret值设置正确 //
-			node_ids_[interpolation_size_ - 1] = node_ids_[interpolation_size_];
+			node_ids_[0] = node_ids_[1];
 		}
 		auto final_ret_code() -> std::int64_t {
 			return node_ids_[(tg_idx_ % pool_size_)];
 		}
 	};
+	auto InputInterpolator::interpolationSize() -> aris::Size { return imp_->interpolation_size_; }
 	auto InputInterpolator::setInputGenerator(InputGenerator generator) -> void {
 		imp_->input_generator_ = generator;
 	}
@@ -234,18 +310,18 @@ namespace aris::plan {
 	auto InputInterpolator::generateInput() -> std::int64_t {
 		return imp_->insert_nodes();
 	}
-	auto InputInterpolator::getInput(double s, double* p) -> std::int64_t {
+	auto InputInterpolator::retCodeAt(double s) -> std::int64_t {
+		std::int64_t current_idx = std::int64_t(s / imp_->dt_) + 1;
+		return imp_->node_ids_[std::min(current_idx - 1, imp_->tg_idx_) % imp_->pool_size_];
+	}
+	auto InputInterpolator::getInputAt(double s, double* p) -> std::int64_t {
 		return imp_->getInputByS(s, p);
 	}
 	auto InputInterpolator::finalRetCode() -> std::int64_t {
 		return imp_->final_ret_code();
 	}
-	auto InputInterpolator::finalIdx() -> std::int64_t {
-		return imp_->tg_idx_;
-	}
-	auto InputInterpolator::retCodeAt(double s) -> std::int64_t {
-		std::int64_t current_idx = std::int64_t(s / imp_->dt_) + 1;
-		return imp_->node_ids_[std::min(current_idx - 1, imp_->tg_idx_) % imp_->pool_size_];
+	auto InputInterpolator::finalS() -> double {
+		return imp_->tg_idx_ * imp_->dt_;
 	}
 	InputInterpolator::~InputInterpolator() = default;
 	InputInterpolator::InputInterpolator() :imp_(new Imp) {
@@ -265,12 +341,13 @@ namespace aris::plan {
 		/////////////////////////////////////////////////////////////
 		std::vector<char> mem_;
 
-		double * max_poss_,* max_vels_,* max_accs_, * min_poss_, * min_vels_, * min_accs_, 
-			* p1_back_, * p2_back_,* p1_, * p2_, *p3_;
+		double * max_poss_{ nullptr },* max_vels_{ nullptr },* max_accs_{ nullptr }, 
+			* min_poss_{ nullptr }, * min_vels_{ nullptr }, * min_accs_{ nullptr },
+			* p1_back_{ nullptr }, * p2_back_{ nullptr },* p1_{ nullptr }, * p2_{ nullptr }, *p3_{ nullptr };
 
-		double ds0_{1.0}, s1_{ 0.0 }, s2_{ dt_ };
+		double ds0_{ 1.0 }, s1_{ 0.0 }, s2_{ dt_ };
 
-		double max_d3s_{ 10.0 };// 只在上升时有效，下降取决于二分法
+		double max_d3s_{ 100.0 };// 只在上升时有效，下降取决于二分法
 		double max_d2s_{ 10.0 };// 同上
 
 		//% dy = y*k + a;
@@ -285,8 +362,10 @@ namespace aris::plan {
 		//% a = (k*y0)/(exp(-T*k) - 1)
 		//
 		//
-		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的, T是根据 lookaheadcount 计算得出
-		double k_{ -9 }, a_{ -1 }, last_a_{ -5 }, T_{ 0.1 };
+		// T, k 决定了曲线的走向，a是根据T 和 k计算出来的
+		// T是根据 lookaheadCount 计算得出, 但在起始时T可能变化
+		double k_{ -9 }, a_{ -1 }, T_{ 0.1 };
+		double last_a_{ -1.0 }; // 在递减失败时，会沿着 last_a_ 减速，确保一定成功
 
 
 		auto allocate_mem()->void{
@@ -335,14 +414,7 @@ namespace aris::plan {
 			
 			T_ = look_head_size_ * dt_;
 		};
-		auto getInputByS(double s, double* p) -> std::int64_t {
-			return ii_.getInput(s, p);
-		}
 		
-		auto insert_nodes() -> void {
-			ii_.generateInput();
-			return;
-		}
 		auto check_if_ok(const double* p1, const double* p2, const double* p3) -> int {
 			// here is condition //
 			for (int idx = 0; idx < input_size_; ++idx) {
@@ -361,12 +433,15 @@ namespace aris::plan {
 			double s3 = s2 + (s2_ - s1_) + d2s * dt_ * dt_;
 			
 			for (int i = 0; i < look_head_size_ + 1; ++i) {
+				// 本循环必须多做，不能根据下面返回值判断是否返回，因为要确保结束的时候速度是0 //
+				ii_.getInputAt(s3, p3_);
+				
 				// 判断是否成功 //
-				if ((s3 - s2) <= 0 || getInputByS(s3, p3_) == 0) {
+				if ((s3 - s2) <= 0) {
 					return true;
 				}
 
-				// 检查加速度等 //
+				// 判断是否失败 //
 				if (check_if_ok(p1_, p2_, p3_) != input_size_) {
 					return false;
 				}
@@ -389,14 +464,24 @@ namespace aris::plan {
 		auto init_pos(const double* init_input_pos) -> void {
 			ii_.init(init_input_pos);
 			
-			// 确定正确的ds，并设置到s1_
-			s2_ = 3 * dt_; // 3 == interpolate_size_ - 1
+			// 设置 s2 //
+			s2_ = 0.0;
+
+			// 计算 s1 //
 			aris::dynamic::s_vc(input_size_, init_input_pos, p1_back_);
 			aris::dynamic::s_vc(input_size_, init_input_pos, p2_back_);
 
-			double ds_l = 0.0;
-			double ds_r = 1.0;
-			for (; std::abs(ds_l-ds_r)>1e-10;) {
+			T_ = 0.0;
+			if (ii_.finalRetCode() > 0) {
+				T_ = std::min(ii_.finalS() - ii_.interpolationSize() * ii_.dt() - s2_, look_head_size_ * dt_);
+			}
+			else {
+				T_ = std::max(ii_.finalS() - s2_, T_);
+			}
+
+
+			double ds_l{ 0.0 }, ds_r{ 1.0 };
+			for (; std::abs(ds_r - ds_l) > 1e-10;) {
 				double ds = (ds_l + ds_r) / 2;
 
 				s1_ = s2_ - dt_ * ds;
@@ -421,18 +506,20 @@ namespace aris::plan {
 		}
 		auto getNextInput(double* p) -> std::int64_t {
 			// ----------------- PART 0 Check 是否需要init -------------- //
-			std::int64_t last_current_idx = std::int64_t(s2_ / dt_) + 1;
 			{
-				if (last_current_idx > ii_.finalIdx()) {
-					getInputByS(s2_, p3_);
+				// 当前位置已经超过结束位置，或当前位置处返回0，则重新init
+				// 有可能当前位置返回 0，但是s2_ 不超 finalS()
+				// 例如上次正常结束，重新init时没有新的数据进来，但此时 ii 的 finalS() 为 dt
+				if (s2_ >= ii_.finalS() || ii_.retCodeAt(s2_) <= 0) {
+					ii_.getInputAt(s2_, p3_);
 					init_pos(p3_);
 				}
 			}
 			
 			// ----------------- PART 1 拿数据--------------------------- //
 			{
-				getInputByS(s1_, p1_back_);
-				getInputByS(s2_, p2_back_);
+				ii_.getInputAt(s1_, p1_back_);
+				ii_.getInputAt(s2_, p2_back_);
 
 				// 二分法求解最优的 d2s
 				{
@@ -441,6 +528,16 @@ namespace aris::plan {
 					auto ds = (s2_ - s1_) / dt_;
 					double l = std::max(last_a_ + k_ * ds, -ds/dt_); // ds 不能小于 0 
 					double r = std::min({ (1.0 - ds) / dt_, (ds-ds0_)/dt_ + max_d3s_ * dt_, max_d2s_ }); // ds 最大不能超过 1
+
+					// 考虑到 init 时，ii中的数据是缓慢加进来的，因此必须在到达插值区前就可以降速到0
+					// ii 插值区间内的插值函数随着数据的插入可能会改变，因此 T_ 应该小一点
+					if (ii_.finalRetCode() > 0) {
+						T_ = std::min(ii_.finalS() - ii_.interpolationSize() * ii_.dt() - s2_, look_head_size_ * dt_);
+					}
+					else {
+						T_ = std::max(ii_.finalS() - s2_, T_); // 维持上次的值
+					}
+
 
 					//for (; mid != last_mid;) {
 					for (; (r - l)>1e-7;) {
@@ -473,20 +570,21 @@ namespace aris::plan {
 					
 					s1_ = s2_;
 					s2_ = s3;
-					ds0_ = ds;
+					ds0_ = (s2_ - s1_)/dt_;
 				}
 			}
 			
-			std::cout << "s: " << s2_ <<"  ds: " << (s2_ - s1_) / dt_ << std::endl;
-			if (s2_ > 0.375)
-				std::cout << "debug" << std::endl;
-
-			std::int64_t current_idx = std::int64_t(s2_ / dt_) + 1;
 			// ----------------- PART 2 增数据--------------------------- //
 			{
-				// 如果轨迹已经尚未结束，或已经满
-				if (ii_.finalRetCode() && ii_.finalIdx() - current_idx < look_head_size_) {
-					insert_nodes();
+				// 最多增加4个数据 //
+				for (int i = 0; i < 4; ++i) {
+					// 如果轨迹已经尚未结束，或已经满
+					if (ii_.finalRetCode() && (ii_.finalS() - s2_) < look_head_size_ * dt_) {
+						ii_.generateInput();
+					}
+					else {
+						break;
+					}
 				}
 			}
 
@@ -505,7 +603,7 @@ namespace aris::plan {
 
 #endif
 
-			return ii_.getInput(s2_, p);
+			return ii_.getInputAt(s2_, p);
 		}
 	};
 	auto InputSmoother::setInputGenerator(InputGenerator generator) -> void {
