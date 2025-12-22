@@ -38,6 +38,9 @@ namespace aris::plan{
 		auto init(const double* init_input_pos) -> void;
 		auto generateInput() -> std::int64_t;
 		auto getInput(double s, double* p) -> std::int64_t;
+		auto finalRetCode() -> std::int64_t;
+		auto finalIdx()-> std::int64_t;
+		auto retCodeAt(double s)-> std::int64_t;
 
 		~InputInterpolator();
 		InputInterpolator();

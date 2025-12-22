@@ -425,11 +425,14 @@ auto test_input_smoother_7axis()->int {
 	ee.getMpe(current_ee_pos, "321");
 	arm_angle.getP(&init_arm_angle);
 
+	
 	aris::plan::TrajectoryGenerator tg;
+	aris::plan::InputInterpolator ii;
 	aris::plan::InputSmoother sp;
 
+
 	// 模拟多次执行指令 //
-	for (int cmd_cnt = 0; cmd_cnt < cmd_cnt_max; cmd_cnt++) {
+	for (int cmd_cnt = 0; cmd_cnt < 1; cmd_cnt++) {
 		// 两点间往返 //
 		static bool target_flag = true;
 		double target_ee[EE_DIM]{ 0.0 };
@@ -457,7 +460,7 @@ auto test_input_smoother_7axis()->int {
 		if (local_flag) {
 			tg.setEeTypes({ aris::dynamic::EEType::PE321 });
 			tg.setDt(DT);
-			std::cout << "tg dt:" << tg.dt() << std::endl;
+
 			ee.getMpe(current_ee_pos, "321");
 			tg.insertLinePos(index++, current_ee_pos, vel_lim, acc_lim, jerk_lim, zone_lim);
 		}
@@ -491,22 +494,35 @@ auto test_input_smoother_7axis()->int {
 				auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
 				ee.setMpe(output, "321");
 
-				static int count_{ 0 };
-				if (count_++ < 20) {
-					std::cout << "end pos:" << count_ << "\t";
-					aris::dynamic::dsp(1, 6, output);
-					std::cout << tg.currentDs() << std::endl;
-				}
-
-
 				arm_angle.setP(&init_arm_angle);
 
 				if (arm.inverseKinematics()) {
-					// std::cout << "++++++++ IK ERROR +++++++" << std::endl;
+					std::cout << "++++++++ IK ERROR +++++++" << std::endl;
 				};
 				arm.getInputPos(p);
 				return ret;
 				});
+
+
+			// 设置 InputInterpolator
+			ii.setInputSize(JOINT_NUM);
+			ii.setDt(DT);
+			ii.allocateMemory();
+			
+			ii.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
+				double output[6];
+				auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
+				ee.setMpe(output, "321");
+
+				arm_angle.setP(&init_arm_angle);
+
+				if (arm.inverseKinematics()) {
+					std::cout << "++++++++ IK ERROR +++++++" << std::endl;
+				};
+				arm.getInputPos(p);
+				return ret;
+			});
+
 		}
 
 		// 数据输出文件初始化 //
@@ -521,10 +537,36 @@ auto test_input_smoother_7axis()->int {
 
 
 		// 模拟实时循环 //
+		
 		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
 			double joint_ref[JOINT_NUM]{ 0.0 };
 			auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
 
+
+			
+			// 输出关节角度 //
+			file << step_cnt << ",";
+			for (int i = 0; i < JOINT_NUM; i++) {
+				file << joint_ref[i] << ",";
+			}
+			file << std::endl;
+			
+			if (ret <= 0) {
+				std::cout << "  CMD[" << cmd_cnt << "] " << "Finished at CNT[" << step_cnt << "], RET[" << ret << "]" << std::endl;
+				break;
+			}
+		}
+		/*
+
+		// 模拟实时循环 //
+		double joint_ref[JOINT_NUM]{ 0.0 };
+		arm.getInputPos(joint_ref);
+		ii.init(joint_ref);
+		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
+			if (ii.finalIdx() - step_cnt < 50 && ii.finalRetCode())
+				ii.generateInput();
+
+			auto ret = ii.getInput((step_cnt+1)*4e-4 + 12e-3,joint_ref);  //获取下一个关节路径点
 
 			// 输出关节角度 //
 			file << step_cnt << ",";
@@ -532,17 +574,26 @@ auto test_input_smoother_7axis()->int {
 				file << joint_ref[i] << ",";
 			}
 			file << std::endl;
-
+			
 			if (ret <= 0) {
 				std::cout << "  CMD[" << cmd_cnt << "] " << "Finished at CNT[" << step_cnt << "], RET[" << ret << "]" << std::endl;
 				break;
 			}
 		}
-
+		*/
 		file.close();
 		tg.clearUsedPos();
 		// tg.clearAllPos(); // 不能直接清除所有的点！
 		std::cout << "========================================" << std::endl;
+
+
+
+
+
+
+
+
+
 	}
 	std::cout << "Test Finished. " << std::endl;
 	return 0;
