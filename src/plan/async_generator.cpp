@@ -10,19 +10,25 @@ namespace aris::plan {
 
 			aris::control::aris_rt_task_set_periodic(imp->sample_period_ns_);
 
-			while (imp->is_rt_thread_running_) {
-				// rt timer //
+			std::int64_t store_pos{ 0 };
+			while (imp->is_rt_thread_running_.load()) {
+				// sleeping //
 				aris::control::aris_rt_task_wait_period();
 
+				if (imp->ret_ids_[store_pos] == 0 && imp->is_suspending_.load()) {
+					continue;
+				}
+
+
+				// 尽可能一次性的读入较多的数据 //
 				auto store_id = imp->stored_id_.load();
 				auto current_id = imp->current_id_.load();
 				auto store_num = 0;
 				while ((store_id + store_num) - current_id < imp->cache_size_) {
-					auto store_pos = (store_id+store_num) % imp->cache_size_;
+					store_pos = (store_id+store_num) % imp->cache_size_;
 					imp->ret_ids_[store_pos] = imp->input_generator_(imp->cache_ + store_pos * imp->input_size_);
 
 					store_num++;
-					
 
 					// 执行完毕，退出 //
 					if (imp->ret_ids_[store_pos] == 0) {
@@ -30,7 +36,6 @@ namespace aris::plan {
 						break;
 					}
 				}
-
 				store_id += store_num;
 				imp->stored_id_.store(store_id);
 			}
@@ -39,13 +44,13 @@ namespace aris::plan {
 		/////////////////////////////////////////////////////////////
 		InputGenerator input_generator_{ nullptr };
 		int input_size_{ 0 };
-		int cache_size_{ 10 };
+		int cache_size_{ 100 };
 		std::atomic_int64_t current_id_, stored_id_;
 		double dt_{ 1e-3 };
 
-		//
+		// 
 		int sample_period_ns_{ 1000000 };
-		std::atomic_bool is_rt_thread_running_{ false };
+		std::atomic_bool is_rt_thread_running_{ false }, is_suspending_{ true };
 		std::any rt_task_handle_;
 
 		/////////////////////////////////////////////////////////////
@@ -78,25 +83,14 @@ namespace aris::plan {
 			sample_period_ns_ = dt_ / 2 * 1e9;
 			is_rt_thread_running_ = true;
 			
-			auto store_id = stored_id_.load();
-			auto current_id = current_id_.load();
-			while (store_id - current_id < cache_size_) {
-				auto store_pos = store_id % cache_size_;
-				ret_ids_[store_pos] = input_generator_(cache_ + store_pos*input_size_);
-				store_id++;
+			std::fill_n(ret_ids_, cache_size_, 0);
+			std::fill_n(cache_, cache_size_*input_size_, 0);
 
-				// 执行完毕，退出 //
-				if (ret_ids_[store_pos] == 0) {
-					break;
-				}
-			}
-
-			stored_id_.store(store_id);
-			
 			rt_task_handle_ = aris::control::aris_rt_task_create();
 			if (!rt_task_handle_.has_value()) THROW_FILE_LINE("rt_task_create failed");
 			if (aris::control::aris_rt_task_start(rt_task_handle_, &Imp::rt_task_func, this))
 				THROW_FILE_LINE("rt_task_start failed");
+			
 		}
 		auto get_next_input(double* p) -> std::int64_t {
 			auto store_id = stored_id_.load();
@@ -151,6 +145,15 @@ namespace aris::plan {
 	}
 	auto AsyncGenerator::stop() -> void {
 		imp_->stop();
+	}
+	auto AsyncGenerator::suspend() -> void {
+		imp_->is_suspending_.store(true);
+	}
+	auto AsyncGenerator::resume() -> void {
+		imp_->is_suspending_.store(false);
+	}
+	auto AsyncGenerator::cachedDataSize() -> int {
+		return imp_->stored_id_.load() - imp_->current_id_.load();
 	}
 	auto AsyncGenerator::getNextInput(double* p) -> std::int64_t {
 		return imp_->get_next_input(p);

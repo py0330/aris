@@ -37,6 +37,9 @@ namespace aris::plan{
 		auto allocateMemory() -> void;
 		auto init() -> void;
 		auto stop() -> void;
+		auto suspend() -> void; // 在本次轨迹结束后（返回0），暂时不在读取新的数据 //
+		auto resume() -> void; // 不再暂停 //
+		auto cachedDataSize() -> int; // 缓存区内数据个数 //
 		auto getNextInput(double* p) -> std::int64_t;
 
 		~AsyncGenerator();

@@ -370,12 +370,20 @@ namespace aris::plan {
 	ToolWobjSelector::~ToolWobjSelector() {}
 	ToolWobjSelector::ToolWobjSelector():imp_(new Imp) {}
 
-
-
+	enum class MAPNodeType {
+		ResetInitPos,
+		Line,
+		Circle,
+	};
+	struct MAPNode {
+		std::int64_t id_{ 0 };
+		MAPNodeType type_{ MAPNodeType::ResetInitPos };
+		std::vector<double> ee_pos_, mid_pos_, vel_, acc_, jerk_, zone_;
+	};
 
 #define TW_POOL_SIZE 10000
 
-	struct MultimodelAsyncPlanner::Imp {
+	struct MultimodelPlanner::Imp {
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
 		using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
 		
@@ -388,6 +396,10 @@ namespace aris::plan {
 		MarkerVec last_tool_, last_wobj_;
 		std::vector<double> last_tw_pos_;
 
+		aris::Size psize_{ 0 }, vdim_{ 0 }; // zone 和 a 的dim 同v
+
+		bool is_aysnc_{ false };
+
 		TrajectoryGenerator tg_;
 		InputSmoother is_;
 		AsyncGenerator ag_;
@@ -397,49 +409,221 @@ namespace aris::plan {
 
 		std::vector<char> mem_;
 
-		double* ee_pos_, *tw_pos_;
+		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr };
+
+
+		std::list<MAPNode> nodes_;
 
 		auto get_next_input(double* p) -> std::int64_t {
 			return sr_.getNextInput(p);
 		};
-		auto init() -> void {
+		auto allocateMemory() -> void {
+			is_.allocateMemory();
+			ag_.allocateMemory();
+			sr_.allocateMemory();
+
+			Size mem_size = 0;
+
+			core::allocMem(mem_size, tw_pos_, model_->outputPosSize());
+			core::allocMem(mem_size, ee_pos_, model_->outputPosSize());
+
+			mem_.resize(mem_size, char(0));
+
+			tw_pos_ = core::getMem(mem_.data(), tw_pos_);
+			ee_pos_ = core::getMem(mem_.data(), ee_pos_);
+
+			// 更新 tw 仓 //
+			for (int i = 0; i < TW_POOL_SIZE; ++i) {
+				auto& tw = tw_pool_[i];
+				std::get<1>(tw).resize(model_->inputPosSize(), nullptr);
+				std::get<2>(tw).resize(model_->inputPosSize(), nullptr);
+			}
+
+			// 设置回调 //
 			is_.setInputGenerator([this](double* p)->std::int64_t {
 				auto ret = tg_.getEePosAndMoveDt(tw_pos_);
-				
+
 				auto& tw = tw_pool_[ret % TW_POOL_SIZE];
 				tw_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
 				tw_.setTwPos(tw_pos_);
 				tw_.getEePos(ee_pos_);
-				
-				model_->setOutputPos(ee_pos_);
-				if (model_->inverseKinematics())
-					std::cout << "ik failed" << std::endl;
-				model_->getInputPos(p);
 
+				model_->setOutputPos(ee_pos_);
+
+
+				int ik_ret = 0;
+				if (ik_ret = model_->inverseKinematics())
+					return ik_ret;
+
+				model_->getInputPos(p);
 				return ret;
-			});
+				});
 
 			ag_.setInputGenerator([this](double* p)->std::int64_t {
+				//static int count_{ 0 };
+				//auto ret = is_.getNextInput(p);
+				//if (count_++ % 1 == 0) {
+				//	std::cout << "ag called: " << count_ <<"  ret:" << ret << std::endl;
+				//}
+				//return ret;
+
 				return is_.getNextInput(p);
-			});
+				});
 
-			sr_.setInputGenerator([this](double* p)->std::int64_t {
-				return ag_.getNextInput(p);
-			});
 
-			std::vector<double> init_ee_pos(model_->inputPosSize());
+			if (is_aysnc_) {
+				sr_.setInputGenerator([this](double* p)->std::int64_t {
+					return ag_.getNextInput(p);
+				});
+			}
+			else {
+				sr_.setInputGenerator([this](double* p)->std::int64_t {
+					return is_.getNextInput(p);
+				});
+			}
+		}
+		auto stop() -> void {
+			if(is_aysnc_)
+				ag_.stop();
+		}
+
+		auto init() -> void {
+			stop();
+			
+			nodes_.clear();
+
+			std::vector<double> init_input_pos(model_->inputPosSize());
+			model_->getInputPos(init_input_pos.data());
+
+			std::vector<double> init_ee_pos(model_->outputPosSize());
 			model_->getInputPos(init_ee_pos.data());
 
 			tg_.clearAllPos();
-			//is_.init(init_ee_pos.data());
-			//ag_.init();
-			//sr_.init(1.0);
+			tg_.insertInitPos(0, init_ee_pos.data());
+			
+			
+			is_.init(init_input_pos.data());
+			
+			sr_.init(1.0);
+			
+			if (is_aysnc_) {
+				ag_.init();
+				ag_.suspend();
+			}
+		}
+		auto insLine(TW& tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+			// 获取坐标系 //
+			auto ee_size = model_->eeSize();
+			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
+
+			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
+				tools[i] = model_->findTool(tool_wobjs[i].first);
+				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
+			}
+
+			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
+
+			// 如果坐标系有变化，重新插入 INIT //
+			if (tools != last_tool_ || wobjs != last_wobj_) {
+				std::vector<double> tw_init_pos(model_->outputPosSize());
+				tw_.selectTw(last_tool_.data(), last_wobj_.data());
+				tw_.setTwPos(last_tw_pos_.data());
+				tw_.selectTw(tools.data(), wobjs.data());
+				tw_.getTwPos(tw_init_pos.data());
+				
+				nodes_.push_back({ 
+					id_, 
+					MAPNodeType::ResetInitPos, 
+					tw_init_pos
+					});
+			}
+
+			// 正常插入指令 //
+			nodes_.push_back({
+					id_,
+					MAPNodeType::Line,
+					std::vector<double>(ee_pos, ee_pos + psize_),
+					std::vector<double>(),
+					std::vector<double>(vel, vel + vdim_),
+					std::vector<double>(acc, acc + vdim_),
+					std::vector<double>(jerk, jerk + vdim_),
+					std::vector<double>(zone, zone + vdim_)
+				});
+
+			id_++;
+			return id_;
 		}
 
+		auto insCircle(TW& tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+			// 获取坐标系 //
+			auto ee_size = model_->eeSize();
+			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
+
+			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
+				tools[i] = model_->findTool(tool_wobjs[i].first);
+				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
+			}
+
+			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
+
+			// 如果坐标系有变化，重新插入 INIT //
+			if (tools != last_tool_ || wobjs != last_wobj_) {
+				std::vector<double> tw_init_pos(model_->outputPosSize());
+				tw_.selectTw(last_tool_.data(), last_wobj_.data());
+				tw_.setTwPos(last_tw_pos_.data());
+				tw_.selectTw(tools.data(), wobjs.data());
+				tw_.getTwPos(tw_init_pos.data());
+
+				nodes_.push_back({
+					id_,
+					MAPNodeType::ResetInitPos,
+					tw_init_pos
+					});
+			}
+
+			// 正常插入指令 //
+			nodes_.push_back({
+					id_,
+					MAPNodeType::Circle,
+					std::vector<double>(ee_pos, ee_pos + psize_),
+					std::vector<double>(mid_pos, mid_pos + psize_),
+					std::vector<double>(vel, vel + vdim_),
+					std::vector<double>(acc, acc + vdim_),
+					std::vector<double>(jerk, jerk + vdim_),
+					std::vector<double>(zone, zone + vdim_)
+				});
+
+			id_++;
+			return id_;
+		}
+		auto updateIns() -> void {
+			// 插入数据 //
+			for (auto& node : nodes_) {
+				switch (node.type_) {
+				case MAPNodeType::ResetInitPos:
+					tg_.insertInitPos(node.id_, node.ee_pos_.data());
+					break;
+				case MAPNodeType::Line:
+					tg_.insertLinePos(node.id_, node.ee_pos_.data(), node.vel_.data(), node.acc_.data(), node.jerk_.data(), node.zone_.data());
+					break;
+				case MAPNodeType::Circle:
+					tg_.insertCirclePos(node.id_, node.ee_pos_.data(), node.mid_pos_.data(), node.vel_.data(), node.acc_.data(), node.jerk_.data(), node.zone_.data());
+					break;
+				}
+			}
+
+			// resume //
+			if (is_aysnc_) {
+				ag_.resume();
+				while (ag_.cachedDataSize() < 1)
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				ag_.suspend();
+			}
+		}
 	};
 
 	////////////////// PART 1 config ////////////////
-	auto MultimodelAsyncPlanner::setModel(aris::dynamic::MultiModel& model) -> void {
+	auto MultimodelPlanner::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
 		imp_->tw_.setModel(model);
 		imp_->last_tool_.resize(model.eeSize(), nullptr);
@@ -451,196 +635,182 @@ namespace aris::plan {
 		imp_->is_.setInputSize(model.inputPosSize());
 		imp_->ag_.setInputSize(model.inputPosSize());
 		imp_->sr_.setInputSize(model.inputPosSize());
+
+		imp_->psize_ = aris::dynamic::s_ee_type_pos_size(model.eeSize(), model.eeTypes());
+		imp_->vdim_ = aris::dynamic::s_ee_type_vel_dim(model.eeSize(), model.eeTypes());
 	}
-	auto MultimodelAsyncPlanner::model() -> aris::dynamic::MultiModel&{
+	auto MultimodelPlanner::model() -> aris::dynamic::MultiModel&{
 		return *imp_->model_;
 	}
 
 	// 配置末端类型 //
-	auto MultimodelAsyncPlanner::eeTypes()const -> const std::vector<aris::dynamic::EEType>& {
+	auto MultimodelPlanner::eeTypes()const -> const std::vector<aris::dynamic::EEType>& {
 		return imp_->tg_.eeTypes();
 	}
 
-	auto MultimodelAsyncPlanner::inputSize() -> int {
+	auto MultimodelPlanner::inputSize() -> int {
 		return imp_->is_.inputSize();
 	}
 
-	auto MultimodelAsyncPlanner::setDt(double dt) -> void {
+	auto MultimodelPlanner::setDt(double dt) -> void {
 		imp_->tg_.setDt(dt);
 		imp_->is_.setDt(dt);
 		imp_->sr_.setDt(dt);
 		imp_->ag_.setDt(dt);
 	}
-	auto MultimodelAsyncPlanner::dt() -> double {
+	auto MultimodelPlanner::dt() -> double {
 		return imp_->tg_.dt();
 	}
 
-	auto MultimodelAsyncPlanner::setMaxPos(aris::core::Matrix pos) -> void {
+	auto MultimodelPlanner::setMaxPos(aris::core::Matrix pos) -> void {
 		imp_->is_.setMaxPos(pos);
 		imp_->sr_.setMaxPos(pos);
 	}
-	auto MultimodelAsyncPlanner::maxPos() -> aris::core::Matrix {
+	auto MultimodelPlanner::maxPos() -> aris::core::Matrix {
 		return imp_->is_.maxPos();
 	}
-	auto MultimodelAsyncPlanner::setMaxVel(aris::core::Matrix vel) -> void {
+	auto MultimodelPlanner::setMaxVel(aris::core::Matrix vel) -> void {
 		imp_->is_.setMaxVel(vel);
 		imp_->sr_.setMaxVel(vel);
 	}
-	auto MultimodelAsyncPlanner::maxVel() -> aris::core::Matrix {
+	auto MultimodelPlanner::maxVel() -> aris::core::Matrix {
 		return imp_->is_.maxVel();
 	}
-	auto MultimodelAsyncPlanner::setMaxAcc(aris::core::Matrix acc) -> void {
+	auto MultimodelPlanner::setMaxAcc(aris::core::Matrix acc) -> void {
 		imp_->is_.setMaxAcc(acc);
 		imp_->sr_.setMaxAcc(acc);
 	}
-	auto MultimodelAsyncPlanner::maxAcc() -> aris::core::Matrix {
+	auto MultimodelPlanner::maxAcc() -> aris::core::Matrix {
 		return imp_->is_.maxAcc();
 	}
-	auto MultimodelAsyncPlanner::setMinPos(aris::core::Matrix pos) -> void {
+	auto MultimodelPlanner::setMinPos(aris::core::Matrix pos) -> void {
 		imp_->is_.setMinPos(pos);
 		imp_->sr_.setMinPos(pos);
 	}
-	auto MultimodelAsyncPlanner::minPos() -> aris::core::Matrix {
+	auto MultimodelPlanner::minPos() -> aris::core::Matrix {
 		return imp_->is_.minPos();
 	}
-	auto MultimodelAsyncPlanner::setMinVel(aris::core::Matrix vel) -> void {
+	auto MultimodelPlanner::setMinVel(aris::core::Matrix vel) -> void {
 		imp_->is_.setMinVel(vel);
 		imp_->sr_.setMinVel(vel);
 	}
-	auto MultimodelAsyncPlanner::minVel() -> aris::core::Matrix {
+	auto MultimodelPlanner::minVel() -> aris::core::Matrix {
 		return imp_->is_.minVel();
 	}
-	auto MultimodelAsyncPlanner::setMinAcc(aris::core::Matrix acc) -> void {
+	auto MultimodelPlanner::setMinAcc(aris::core::Matrix acc) -> void {
 		imp_->is_.setMinAcc(acc);
 		imp_->sr_.setMinAcc(acc);
 	}
-	auto MultimodelAsyncPlanner::minAcc() -> aris::core::Matrix {
+	auto MultimodelPlanner::minAcc() -> aris::core::Matrix {
 		return imp_->is_.minAcc();
 	}
 
 	// 笛卡尔空间中重规划个数 //
-	auto MultimodelAsyncPlanner::maxReplanNum()const -> int {
+	auto MultimodelPlanner::maxReplanNum()const -> int {
 		return imp_->tg_.maxReplanNum();
 	}
-	auto MultimodelAsyncPlanner::setMaxReplanNum(int max_replan_num) -> void {
+	auto MultimodelPlanner::setMaxReplanNum(int max_replan_num) -> void {
 		imp_->tg_.setMaxReplanNum(max_replan_num);
 	}
 
 	// 前瞻个数 //
-	auto MultimodelAsyncPlanner::setLookAheadCount(int count) -> void {
+	auto MultimodelPlanner::setLookAheadCount(int count) -> void {
 		imp_->is_.setLookAheadCount(count);
 	}
-	auto MultimodelAsyncPlanner::lookAheadCount() -> int {
+	auto MultimodelPlanner::lookAheadCount() -> int {
 		return imp_->is_.lookAheadCount();
+	}
+	
+	// 是否启用异步规划 //
+	auto MultimodelPlanner::setAsync(bool is_async) -> void {
+		imp_->is_aysnc_ = is_async;
+	}
+	auto MultimodelPlanner::isAsync() -> bool {
+		return imp_->is_aysnc_;
 	}
 
 	// 异步规划时缓存个数 //
-	auto MultimodelAsyncPlanner::setCacheSize(int cache_size) -> void {
+	auto MultimodelPlanner::setAsyncCacheSize(int cache_size) -> void {
 		imp_->ag_.setCacheSize(cache_size);
 	}
-	auto MultimodelAsyncPlanner::cacheSize() -> int {
+	auto MultimodelPlanner::asyncCacheSize() -> int {
 		return imp_->ag_.cacheSize();
 	}
 
 	////////////////// PART 2 NRT operation ////////////////
-	auto MultimodelAsyncPlanner::allocateMemory() -> void {
-		imp_->is_.allocateMemory();
-		imp_->ag_.allocateMemory();
-		imp_->sr_.allocateMemory();
-
-
-		Size mem_size = 0;
-
-		core::allocMem(mem_size, imp_->tw_pos_, imp_->model_->eeSize());
-		core::allocMem(mem_size, imp_->ee_pos_, imp_->model_->eeSize());
-
-		imp_->mem_.resize(mem_size, char(0));
-
-		imp_->tw_pos_ = core::getMem(imp_->mem_.data(), imp_->tw_pos_);
-		imp_->ee_pos_ = core::getMem(imp_->mem_.data(), imp_->ee_pos_);
+	auto MultimodelPlanner::allocateMemory() -> void {
+		imp_->allocateMemory();
 	}
-	auto MultimodelAsyncPlanner::init() -> void {
+	auto MultimodelPlanner::init() -> void {
 		imp_->init();
 	}
-	auto MultimodelAsyncPlanner::stop() -> void {
-		imp_->ag_.stop();
+	auto MultimodelPlanner::stop() -> void {
+		imp_->stop();
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelAsyncPlanner::insertLinePos(TW& tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-		// 获取坐标系 //
-		auto ee_size = imp_->model_->eeSize();
-		Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
-
-		for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
-			tools[i] = imp_->model_->findTool(tool_wobjs[i].first);
-			wobjs[i] = imp_->model_->findTool(tool_wobjs[i].second);
-		}
-		
-		// 如果坐标系有变化，重新插入 INIT //
-		if (tools != imp_->last_tool_ || wobjs != imp_->last_tool_) {
-			std::vector<double> tw_init_pos(imp_->model_->inputPosSize());
-			imp_->tw_.selectTw(imp_->last_tool_.data(), imp_->last_wobj_.data());
-			imp_->tw_.setTwPos(imp_->last_tw_pos_.data());
-			imp_->tw_.selectTw(tools.data(), wobjs.data());
-			imp_->tw_.getTwPos(tw_init_pos.data());
-			imp_->tg_.insertInitPos(imp_->id_, tw_init_pos.data()); // 下面还会插入坐标系，因此这里不用改变id
-		}
-
-		// 正常插入指令 //
-		imp_->tg_.insertLinePos(imp_->id_, ee_pos, vel, acc, jerk, zone);
-		imp_->tw_pool_[imp_->id_ % TW_POOL_SIZE] = std::make_tuple(imp_->id_, tools, wobjs);
-		auto ret = imp_->id_;
-		imp_->id_++;
-		return ret;
+	auto MultimodelPlanner::insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		return imp_->insLine(tw, ee_pos, vel, acc, jerk, zone);
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelAsyncPlanner::insertCirclePos(TW& tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void {
-		imp_->tg_.insertCirclePos(imp_->id_, ee_pos, mid_pos, vel, acc, jerk, zone);
+	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		return imp_->insCircle(tw, ee_pos, mid_pos, vel, acc, jerk, zone);
+	}
+
+	auto MultimodelPlanner::updateInsertPos() -> void {
+		imp_->updateIns();
 	}
 
 	// 删除已经不用的数据 //
-	auto MultimodelAsyncPlanner::clearUsedPos() -> void {
+	auto MultimodelPlanner::clearUsedPos() -> void {
 		imp_->tg_.clearUsedPos();
 	}
 
 	// 删除全部数据 //
-	auto MultimodelAsyncPlanner::clearAllPos() -> void {
+	auto MultimodelPlanner::clearAllPos() -> void {
 		imp_->tg_.clearAllPos();
 	}
 
 	// 当前还剩余的指令数 //
-	auto MultimodelAsyncPlanner::unusedPosNum() -> int {
+	auto MultimodelPlanner::unusedPosNum() -> int {
 		return imp_->tg_.unusedPosNum();
 	}
 
 	// 返回当前所有的节点 id //
-	auto MultimodelAsyncPlanner::unusedNodeIds()const -> std::vector<std::int64_t> {
+	auto MultimodelPlanner::unusedNodeIds()const -> std::vector<std::int64_t> {
 		return imp_->tg_.unusedNodeIds();
 	}
 
 	// 调速设置 //
-	auto MultimodelAsyncPlanner::setTargetSpeedRatio(double ds) -> void {
+	auto MultimodelPlanner::setTargetSpeedRatio(double ds) -> void {
 		imp_->sr_.setTargetSpeedRatio(ds);
 	}
-	auto MultimodelAsyncPlanner::targetSpeedRatio() -> double {
+	auto MultimodelPlanner::targetSpeedRatio() -> double {
 		return imp_->sr_.targetSpeedRatio();
 	}
-	auto MultimodelAsyncPlanner::actualSpeedRatio() -> double {
+	auto MultimodelPlanner::actualSpeedRatio() -> double {
 		return imp_->sr_.actualSpeedRatio();
 	}
 
 
 	////////////////// PART 3 RT operation ////////////////
-	auto MultimodelAsyncPlanner::getNextInput(double* p) -> std::int64_t {
+	auto MultimodelPlanner::getNextInput(double* p) -> std::int64_t {
 		return imp_->get_next_input(p);
 	}
 
 
-	MultimodelAsyncPlanner::~MultimodelAsyncPlanner() {
+	MultimodelPlanner::~MultimodelPlanner() {
 		stop();
 	}
-	MultimodelAsyncPlanner::MultimodelAsyncPlanner():imp_(new Imp) {
+	MultimodelPlanner::MultimodelPlanner():imp_(new Imp) {
+
+
+
+
+
+
+
+
 	}
 }

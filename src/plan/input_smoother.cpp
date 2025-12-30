@@ -162,6 +162,100 @@ namespace aris::plan {
 			}
 		}
 
+		// 三次插值用 6 个数据 //
+		auto make_interp6_weno(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3, InterpNode& node4, InterpNode& node5) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				auto cpt_v = [](double p0, double p1, double p2, double p3, double p4)->double {
+					
+					// 左侧二次插值、中间二次插值、右边二次插值 //
+					// 在权重为 1/6，1/3，1/6 时，三者之和为高次插值 (y0 - 8*y1 + 8*y3 - y4)/(12*T)
+					//
+					auto v_left = (p0 - 4 * p1 + 3 * p2) / 2;
+					auto v_mid = (p3 - p1) / 2;
+					auto v_right = (-3 * p2 + 4 * p3 - p4) / 2;
+
+					// 实际权重根据二次曲率确定 //
+					auto left_c = (p0 - 2 * p1 + p2);
+					auto mid_c = (p1 - 2 * p2 + p3);
+					auto right_c = (p2 - 2 * p3 + p4);
+
+					// 计算权重
+					auto alpha1 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + left_c);
+					auto alpha2 = 1.0 / 3.0 / (std::numeric_limits<double>::epsilon() + mid_c);
+					auto alpha3 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + right_c);
+
+					// 归一化 //
+					auto sum_alpha = alpha1 + alpha2 + alpha3;
+					auto w1 = alpha1 / sum_alpha;
+					auto w2 = alpha2 / sum_alpha;
+					auto w3 = alpha3 / sum_alpha;
+
+					// 计算速度
+					return w1 * v_left + w2 * v_mid + w3 * v_right;
+				};
+				
+				auto v2 = cpt_v(node0.p_, node1.p_, node2.p_, node3.p_, node4.p_);
+				auto v3 = cpt_v(node1.p_, node2.p_, node3.p_, node4.p_, node5.p_);
+				auto v4 = cpt_v(node2.p_, node3.p_, node4.p_, node5.p_, node5.p_);
+				auto v5 = cpt_v(node3.p_, node4.p_, node5.p_, node5.p_, node5.p_);
+				//double v3 = (node1.p_ - 8 * node2.p_ + 8 * node4.p_ - node5.p_) / 12;
+				//double v4 = (node2.p_ - 8 * node3.p_ + 8 * node5.p_ - node5.p_) / 12;
+				//double v5 = (node3.p_ - 8 * node4.p_ + 8 * node5.p_ - node5.p_) / 12;
+				
+				// dy_at_x2  = (y0 - 8*y1 + 8*y3 - y4)/(12*T);
+				// d2y_at_x2 = (-y0 + 16 * y1 - 30 * y2 + 16 * y3 - y4) / (12 * T ^ 2);
+
+				//double v2 = (node0.p_ - 8 * node1.p_ + 8 * node3.p_ - node4.p_) / 12;
+				//double v3 = (node1.p_ - 8 * node2.p_ + 8 * node4.p_ - node5.p_) / 12;
+				//double v4 = (node2.p_ - 8 * node3.p_ + 8 * node5.p_ - node5.p_) / 12;
+				//double v5 = (node3.p_ - 8 * node4.p_ + 8 * node5.p_ - node5.p_) / 12;
+
+				//double a2 = (-node0.p_ + 16 * node1.p_ - 30 * node2.p_ + 16 * node3.p_ - node4.p_) / 12;
+				//double a3 = (-node1.p_ + 16 * node2.p_ - 30 * node3.p_ + 16 * node4.p_ - node5.p_) / 12;
+				//double a4 = (-node2.p_ + 16 * node3.p_ - 30 * node4.p_ + 16 * node5.p_ - node5.p_) / 12;
+				//double a5 = (-node3.p_ + 16 * node4.p_ - 30 * node5.p_ + 16 * node5.p_ - node5.p_) / 12;
+
+
+
+
+
+				//double v1 = (node2.p_ - node0.p_) / 2;
+				//double v2 = (node3.p_ - node1.p_) / 2;
+				//double v3 = 0.0;
+				double p0 = node0.p_;
+				double p1 = node1.p_;
+				double p2 = node2.p_;
+				double p3 = node3.p_;
+				double p4 = node3.p_;
+				double p5 = node3.p_;
+
+
+				//node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				//node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				//node2.k1_ = v1; // p1 - p0
+				//node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+
+				node4.k3_ = 2 * (p3 - p4) + (v3 + v4);
+				node4.k2_ = 3 * (p4 - p3) - 2 * v3 - v4;
+				node4.k1_ = v3;
+				node4.k0_ = p3;
+
+				node5.k3_ = 2 * (p4 - p5) + (v4 + v5);
+				node5.k2_ = 3 * (p5 - p4) - 2 * v4 - v5;
+				node5.k1_ = v4;
+				node5.k0_ = p4;
+			}
+		}
+
 
 		/////////////////////////////////////////////////////////////
 		InputGenerator input_generator_{ nullptr };
@@ -218,24 +312,9 @@ namespace aris::plan {
 			tg_idx_ = tg_idx_ + 1;
 			node_ids_[(tg_idx_ % pool_size_)] = input_generator_(p3_);
 
-			// 线性插值 //
-			//auto nodes0 = input_poss_ + ((tg_idx_-1) % pool_size_) * input_size_;
-			//auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
-			//for (int j = 0; j < input_size_; ++j) {
-			//	ins_nodes[j].p_ = p3_[j];
-			//	make_interp(nodes0[j], ins_nodes[j]);
-			//}
-
-			// 三次插值 //
-			//auto nodes0 = input_poss_ + (std::max(tg_idx_ - 3, std::int64_t(0)) % pool_size_) * input_size_;
-			//auto nodes1 = input_poss_ + (std::max(tg_idx_ - 2, std::int64_t(0)) % pool_size_) * input_size_;
-			//auto nodes2 = input_poss_ + (std::max(tg_idx_ - 1, std::int64_t(0)) % pool_size_) * input_size_;
-			//auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
-			//for (int j = 0; j < input_size_; ++j) {
-			//	ins_nodes[j].p_ = p3_[j];
-			//	make_interp_with_ratio(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
-			//	//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
-			//}
+			if (tg_idx_ == 1) {
+				node_ids_[0] = node_ids_[1];
+			}
 
 			// 三次插值 6 个数据 //
 			auto nodes0 = input_poss_ + (std::max(tg_idx_ - 5, std::int64_t(0)) % pool_size_) * input_size_;
@@ -244,9 +323,18 @@ namespace aris::plan {
 			auto nodes3 = input_poss_ + (std::max(tg_idx_ - 2, std::int64_t(0)) % pool_size_) * input_size_;
 			auto nodes4 = input_poss_ + (std::max(tg_idx_ - 1, std::int64_t(0)) % pool_size_) * input_size_;
 			auto ins_nodes = input_poss_ + (tg_idx_ % pool_size_) * input_size_;
+			
+			// 如果报错，此时用上一次的数据 //
+			if (node_ids_[(tg_idx_ % pool_size_)] < 0) {
+				for (int i = 0; i < input_size_; ++i)
+					p3_[i] = ins_nodes[i].p_;
+			}
+			
+			// 插值 //
 			for (int j = 0; j < input_size_; ++j) {
 				ins_nodes[j].p_ = p3_[j];
-				make_interp6(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
+				make_interp6_weno(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
+				//make_interp6(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
 				//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
 			}
 
@@ -264,16 +352,6 @@ namespace aris::plan {
 
 			// 更新 tg_idx //
 			tg_idx_ = 0;
-
-			// 前瞻 4 + interpolate_size 个数据 //
-			for (int i = 0; i < 4 + interpolation_size_; ++i) {
-				insert_nodes();
-				if (node_ids_[(tg_idx_ % pool_size_)] == 0)
-					break;
-			}
-
-			// 将前面的ret值设置正确 //
-			node_ids_[0] = node_ids_[1];
 		}
 		auto final_ret_code() -> std::int64_t {
 			return node_ids_[(tg_idx_ % pool_size_)];
@@ -428,42 +506,80 @@ namespace aris::plan {
 			}
 			return input_size_;
 		};
+		auto inline check_if_ok_by_v(const double* v1, const double* v2) -> int {
+			// here is condition //
+			for (int idx = 0; idx < input_size_; ++idx) {
+				double a = (v2[idx] - v1[idx]);
+				if (v2[idx] > max_vels_[idx] || v2[idx] < min_vels_[idx] || a > max_accs_[idx] || a < min_accs_[idx]) {
+					return idx;
+				}
+			}
+			return input_size_;
+		};
 		auto test_next_input(double d2s) -> bool {
 			double s2 = s2_;
 			double s3 = s2 + (s2_ - s1_) + d2s * dt_ * dt_;
 			
+			// 下面要用，为避免每次计算，这里预计算
+			auto A = a_ * dt_ * dt_;
+			auto B = 1.0 + k_ * dt_;
+
+			// p1 存储 p2 - p1 = v1
+			// p2 存储 p2
+			for (int i = 0; i < input_size_; ++i)
+				p1_[i] = p2_[i] - p1_[i];
+			
+
 			for (int i = 0; i < look_head_size_ + 1; ++i) {
-				// 本循环必须多做，不能根据下面返回值判断是否返回，因为要确保结束的时候速度是0 //
-				ii_.getInputAt(s3, p3_);
-				
 				// 判断是否成功 //
 				if ((s3 - s2) <= 0) {
 					return true;
 				}
+				
+				// 本循环必须多做，不能根据下面返回值判断是否返回，因为要确保结束的时候速度是0 //
+				ii_.getInputAt(s3, p3_);
+				
+				// 判断是否失败，同时更新循环及数据
+				// 
+				// p1 存储 v1
+				// p2 存储 v2
+				// p3 不变
+				for (int i = 0; i < input_size_; ++i) {
+					p2_[i] = p3_[i] - p2_[i];
 
-				// 判断是否失败 //
-				if (check_if_ok(p1_, p2_, p3_) != input_size_) {
-					return false;
+					// 检查速度及加速度是否超限 //
+					double a = (p2_[i] - p1_[i]);
+					if (p2_[i] > max_vels_[i] || p2_[i] < min_vels_[i] || a > max_accs_[i] || a < min_accs_[i]) {
+						return false;
+					}
 				}
 
-				double ds = (s3 - s2) / dt_;
-				double d2s = a_ + k_ * ds;
-
-				double ds4 = ds + d2s * dt_;
-				double s4 = s3 + ds4 * dt_;
-
+				// cpt s4（next s3）
+				//
+				// 
+				// ds3 = (s3 - s2) / dt_;
+				// d2s = a_ + k_ * ds3;
+				//     = a_ + k_ *(s3 - s2) / dt_
+				// 
+				// ds4 = ds3 + d2s * dt_;
+				//     = (s3 - s2) / dt_ + a_ * dt + k_*(s3 - s2);
+				// 
+				// s4 = s3 + ds4 * dt_;
+				//    = s3 + (s3 - s2) + (a_*dt + k*(s3 - s2))*dt
+				//    = s3 + a*dt*dt + (1+k*dt)*s_diff
+				//
+				// 
+				double s_diff = (s3 - s2);
 				s2 = s3;
-				s3 = s4;
+				s3 += A + B * s_diff;
 
 				std::swap(p1_, p2_);
 				std::swap(p2_, p3_);
 			}
 			
-			return false;
+			THROW_FILE_LINE("should not execute here");
 		}
 		auto init_pos(const double* init_input_pos) -> void {
-			ii_.init(init_input_pos);
-			
 			// 设置 s2 //
 			s2_ = 0.0;
 
@@ -476,7 +592,7 @@ namespace aris::plan {
 				T_ = std::min(ii_.finalS() - ii_.interpolationSize() * ii_.dt() - s2_, look_head_size_ * dt_);
 			}
 			else {
-				T_ = std::max(ii_.finalS() - s2_, T_);
+				T_ = std::max({ ii_.finalS() - s2_, T_, dt_ }); // T_ 不能是 0 
 			}
 
 
@@ -511,7 +627,16 @@ namespace aris::plan {
 				// 有可能当前位置返回 0，但是s2_ 不超 finalS()
 				// 例如上次正常结束，重新init时没有新的数据进来，但此时 ii 的 finalS() 为 dt
 				if (s2_ >= ii_.finalS() || ii_.retCodeAt(s2_) <= 0) {
+					// 初始化到指定位置 //
 					ii_.getInputAt(s2_, p3_);
+					ii_.init(p3_);
+					
+					// 前瞻 4 + interpolate_size 个数据 //
+					for (int i = 0; i < 4 + ii_.interpolationSize(); ++i) {
+						if (ii_.generateInput() == 0)
+							break;
+					}
+
 					init_pos(p3_);
 				}
 			}
@@ -535,7 +660,8 @@ namespace aris::plan {
 						T_ = std::min(ii_.finalS() - ii_.interpolationSize() * ii_.dt() - s2_, look_head_size_ * dt_);
 					}
 					else {
-						T_ = std::max(ii_.finalS() - s2_, T_); // 维持上次的值
+						T_ = std::max(ii_.finalS() - s2_, T_); // 至少维持上次的值
+						T_ = std::min(T_, look_head_size_ * dt_); // 最大不能超过前瞻周期
 					}
 
 

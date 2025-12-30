@@ -2070,7 +2070,6 @@ namespace aris::plan {
 			bool insert_success = false;
 			do {
 				// 插入最新节点 //
-				auto& last_node = *std::prev(nodes_.end());
 				auto& ins_node = nodes_.emplace_back(ee_types_.size());
 
 				// 获得需要重新规划的起点

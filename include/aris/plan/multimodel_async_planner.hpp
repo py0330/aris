@@ -48,7 +48,7 @@ namespace aris::plan{
 		std::unique_ptr<Imp> imp_;
 	};
 
-	class ARIS_API MultimodelAsyncPlanner {
+	class ARIS_API MultimodelPlanner {
 	public:
 		using TW = std::vector<std::pair<std::string, std::string>>;
 		
@@ -85,9 +85,13 @@ namespace aris::plan{
 		auto setLookAheadCount(int count) -> void;
 		auto lookAheadCount() -> int;
 
+		// 是否启用异步规划 //
+		auto setAsync(bool is_async = false) -> void;
+		auto isAsync() -> bool;
+
 		// 异步规划时缓存个数 //
-		auto setCacheSize(int cache_size) -> void;
-		auto cacheSize() -> int;
+		auto setAsyncCacheSize(int cache_size) -> void;
+		auto asyncCacheSize() -> int;
 
 		////////////////// PART 2 NRT operation ////////////////
 
@@ -96,13 +100,13 @@ namespace aris::plan{
 		auto stop() -> void;
 
 		// 插入新的数据，并重规划 //
-		auto insertInitPos(TW& tw, const double* ee_pos) -> std::int64_t;
-
-		// 插入新的数据，并重规划 //
 		auto insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
 		// 插入新的数据，并重规划 //
-		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> void;
+		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+
+		// 重规划 //
+		auto updateInsertPos()->void;
 
 		// 删除已经不用的数据 //
 		auto clearUsedPos() -> void;
@@ -127,9 +131,9 @@ namespace aris::plan{
 
 
 
-		~MultimodelAsyncPlanner();
-		MultimodelAsyncPlanner();
-		ARIS_DELETE_BIG_FOUR(MultimodelAsyncPlanner);
+		~MultimodelPlanner();
+		MultimodelPlanner();
+		ARIS_DELETE_BIG_FOUR(MultimodelPlanner);
 
 	private:
 		struct Imp;

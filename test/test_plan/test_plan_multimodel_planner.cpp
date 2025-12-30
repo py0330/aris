@@ -235,11 +235,9 @@ auto test_multimodel_async_planner_1() -> void {
 	multi_model.subModels().add(puma.release());
 	multi_model.init();
 	
-	std::cout << multi_model.eeSize() << std::endl;
-
 	// 构造规划器 //
-	MultimodelAsyncPlanner mmap;
-	mmap.setModel(multi_model);
+	MultimodelPlanner mmp;
+	mmp.setModel(multi_model);
 
 	// 最大速度、加速度 //
 	std::vector<double> max_vels{ 3.14, 3.14, 3.14, 3.14, 3.14, 3.14 };
@@ -247,31 +245,38 @@ auto test_multimodel_async_planner_1() -> void {
 	std::vector<double> max_accs{ 31.4, 31.4, 31.4, 31.4, 31.4, 31.4 };
 	std::vector<double> min_accs{ -31.4, -31.4, -31.4, -31.4, -31.4, -31.4 };
 
-	mmap.setMaxVel(aris::core::Matrix(multi_model.inputPosSize(), 1, max_vels.data()));
-	mmap.setMinVel(aris::core::Matrix(multi_model.inputPosSize(), 1, min_vels.data()));
-	mmap.setMaxAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, max_accs.data()));
-	mmap.setMinAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, min_accs.data()));
+	mmp.setMaxVel(aris::core::Matrix(multi_model.inputPosSize(), 1, max_vels.data()));
+	mmp.setMinVel(aris::core::Matrix(multi_model.inputPosSize(), 1, min_vels.data()));
+	mmp.setMaxAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, max_accs.data()));
+	mmp.setMinAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, min_accs.data()));
 
-	mmap.setDt(1e-3);
+	mmp.setDt(1e-3);
+	mmp.allocateMemory();
 
-	mmap.allocateMemory();
-	mmap.init();
-
+	mmp.init();
+	
 	for (int i = 0; i < PE_SIZE; ++i) {
 		std::vector<std::pair<std::string, std::string>> tw;
 		tw.push_back(std::make_pair<std::string, std::string>("tool0", "wobj0"));
-		mmap.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+		mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
+	{
+		std::vector<std::pair<std::string, std::string>> tw;
+		tw.push_back(std::make_pair<std::string, std::string>("tool1", "wobj1"));
+		mmp.insertCirclePos(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE-1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
+	}
+	mmp.updateInsertPos();
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
 	int m = 0;
 	double out_vel[16]{}, out_acc[16]{}, ee_pos[16], input_pos[6];
 	double s = 0;
-	while (auto ret = mmap.getNextInput(input_pos)) {
+	
+	while (auto ret = mmp.getNextInput(input_pos)) {
 		static auto last_ret = -1;
 		if (ret != last_ret) {
-			std::cout << "cmd:" << ret << std::endl;
+			std::cout << "cmd: " << ret <<"  count: " <<m << std::endl;
 			last_ret = ret;
 		}
 
@@ -282,6 +287,7 @@ auto test_multimodel_async_planner_1() -> void {
 	}
 
 	aris::dynamic::dlmwrite(m, (multi_model.inputPosSize() * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+	/**/
 }
 
 void test_multimodel_planner(){

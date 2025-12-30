@@ -23,6 +23,7 @@ namespace aris::plan {
 		std::atomic<double> target_du_{ 1.0 };
 
 		double max_d2u_{ 0.01 }, min_d2u_{ -0.01 };
+		bool is_first_count_{ true };
 
 		auto allocate_mem() -> void {
 			Size mem_size = 0;
@@ -100,30 +101,10 @@ namespace aris::plan {
 		}
 
 		auto init(double init_target_ds) -> void {
-			ret1_ = input_generator_(p1_);
-			
-			if (ret1_ > 0) {
-				ret2_ = input_generator_(p2_);
-			}
-			else {
-				ret2_ = 0;
-				aris::dynamic::s_vc(input_size_, p1_, p2_);
-			}
-			if (ret2_ > 0) {
-				ret3_ = input_generator_(p3_);
-			}
-			else {
-				ret3_ = 0;
-				aris::dynamic::s_vc(input_size_, p2_, p3_);
-			}
-
 			u0_ = 1.0;
 			u1_ = 1.0 + init_target_ds;
-
-			get_input_by_u(u0_, pu0_);
-			get_input_by_u(u1_, pu1_);
-
 			target_du_.store(init_target_ds);
+			is_first_count_ = true;
 		}
 		auto get_next_input(double* p) -> std::int64_t {
 			auto target_du = target_du_.load();
@@ -132,6 +113,20 @@ namespace aris::plan {
 			if (ret1_ == 0) {
 				init(target_du);
 			}
+
+			// STEP 0.1 补充足够的数据 //
+			if (is_first_count_) {
+				ret2_ = input_generator_(p2_);
+				if (ret2_ > 0) {
+					ret3_ = input_generator_(p3_);
+				}
+				ret1_ = ret2_;
+				aris::dynamic::s_vc(input_size_, p2_, p1_);
+
+				is_first_count_ = false;
+			}
+
+
 
 			// STEP 1 计算 u2 的范围 //
 			double ur{ u1_ + (u1_ - u0_) + max_d2u_ }, ul{ u1_ + (u1_ - u0_) + min_d2u_ }; // du1 = u1 - u0
@@ -144,6 +139,7 @@ namespace aris::plan {
 				//% 减速时，有以下两种可能：
 				//%
 				//% CASE1:
+				//%  0           1            2           3
 				//% p0          p1           p2          p3
 				//%                u1    u2
 				//%
@@ -247,7 +243,6 @@ namespace aris::plan {
 			}
 
 			// STEP 2 计算 u2 //
-			
 			double u2;
 			if (target_du > (ur - u1_)) {
 				u2 = ur;
@@ -273,7 +268,6 @@ namespace aris::plan {
 				else {
 					aris::dynamic::s_vc(input_size_, p2_, p3_);
 				}
-
 
 				u1_ -= 1.0;
 				u2 -= 1.0;
