@@ -493,39 +493,43 @@ namespace aris::dynamic{
 		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
-		// 获取对应子模型中的末端数量
+		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
 		auto getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+		auto getEeNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
 
-		// 获取对应子模型中的末端种类
+		// 获取【某些 or 全部】子模型中的末端种类，使用【vector 或 原始内存】来表达
 		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		// 获取所有子模型中的末端种类
 		auto getEeTypes()->std::vector<EEType>;
-		// 获取所有子模型的末端种类到指定内存
+		auto getEeTypes(Size submodel_num, const Size *submodel_ids, EEType*ee_types_out) -> void;
 		auto getEeTypes(EEType*) -> void;
 
-		// 获取对应子模型中的末端
+		// 获取【某些 or 全部】子模型中的末端地址，使用【vector 或 原始内存】来表达
 		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
-		// 获取所有子模型中的末端
 		auto getEes()->std::vector<MotionBase*>;
-		// 获取所有子模型的末端到指定内存
+		auto getEes(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
 		auto getEes(MotionBase**) -> void;
 
 		// 获取对应子模型中的电机数量
 		auto getMotionNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+		auto getMotionNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* mot_num_out) -> void;
 		
-		// 获取对应子模型中的电机种类
+		// 获取【某些 or 全部】子模型中的电机种类，使用【vector 或 原始内存】来表达
 		auto getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		// 获取所有子模型中的电机种类
 		auto getMotionTypes()->std::vector<EEType>;
+		auto getMotionTypes(Size submodel_num, const Size* submodel_ids, EEType* mot_types_out) -> void;
+		auto getMotionTypes(EEType*) -> void;
 		
-		// 获取对应子模型中的电机
+		// 获取【某些 or 全部】子模型中的电机地址，使用【vector 或 原始内存】来表达
 		auto getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*>;
-		// 获取所有子模型中的电机
 		auto getMotions()->std::vector<Motion*>;
+		auto getMotions(Size submodel_num, const Size* submodel_ids, Motion** mots_out) -> void;
+		auto getMotions(Motion**) -> void;
 		
-		// 获取对应子模型中的电机id
+		// 获取【某些 or 全部】子模型中的电机 id，使用【vector 或 原始内存】来表达
 		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getMotionIds()->std::vector<Size>;
+		auto getMotionIds(Size submodel_num, const Size* submodel_ids, Size *mot_ids_out) -> void;
+		auto getMotionIds(Size* ids_out)->void;
 
 		virtual ~MultiModel();
 		explicit MultiModel();

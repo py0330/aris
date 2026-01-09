@@ -122,7 +122,7 @@ namespace aris::dynamic{
 			q[0] = current_q[0];
 		}
 		else if (which_root & 0x04) {
-			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / xy_square_sum);
+			q[0] = aris::PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d4 / xy_square_sum);
 		}
 		else {
 			q[0] = std::atan2(D_in_A[7], D_in_A[3]) - std::asin(d4 / xy_square_sum);
@@ -146,11 +146,11 @@ namespace aris::dynamic{
 		if (a1 > (a2 + std::abs(d2)))return -2;//工作空间以外
 		if (which_root & 0x02) {
 			q[1] = -std::atan2(z, x - d1) + std::acos((a1 * a1 + d2 * d2 - a2 * a2) / (2 * a1 * d2));
-			q[2] = -(PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
+			q[2] = -(aris::PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
 		}
 		else {
 			q[1] = -std::atan2(z, x - d1) - std::acos((a1 * a1 + d2 * d2 - a2 * a2) / (2 * a1 * d2));
-			q[2] = (PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
+			q[2] = (aris::PI - std::acos((a2 * a2 + d2 * d2 - a1 * a1) / (2 * a2 * d2))) + std::atan2(d3, d5);
 		}
 
 		// 开始求4,5,6轴 //
@@ -163,12 +163,13 @@ namespace aris::dynamic{
 
 		s_pm2pe(R456_pm, R456_pe, "121");
 
-		if (R456_pe[4] < zero_check) {
+		// 1e-6 目前为测试值 //
+		if (R456_pe[4] < 1e-6) {
 			q[3] = current_q[3];
 			q[4] = R456_pe[4];
 			q[5] = R456_pe[3] + R456_pe[5] - q[3];
 		}
-		else if (R456_pe[4] > aris::PI - zero_check) {
+		else if (R456_pe[4] > aris::PI - 1e-6) {
 			q[3] = current_q[3];
 			q[4] = R456_pe[4];
 			q[5] = -((R456_pe[3] - R456_pe[5]) - q[3]);
@@ -429,10 +430,10 @@ namespace aris::dynamic{
 		imp_->deducePumaParam(model());
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int {
-		double output_pos[16], input_pos[6], current_input_pos[6];
+		double output_pos[16], input_pos[6];
 		model()->getOutputPos(output_pos);
-		model()->getInputPos(current_input_pos);
 		
+		// kinPosPure 内会自动设置默认值 //
 		if(auto ret = kinPosPure(output_pos, input_pos, whichRoot()))
 			return ret;
 

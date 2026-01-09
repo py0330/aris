@@ -5,6 +5,12 @@
 #include"aris/plan/async_generator.hpp"
 #include"aris/plan/speed_regulator.hpp"
 
+#define DEBUG_ARIS_MMP
+
+#ifdef DEBUG_ARIS_MMP
+std::vector<double> input_;
+#endif
+
 namespace aris::plan {
 
 
@@ -28,7 +34,7 @@ namespace aris::plan {
 		// Step 2 计算顺序 //
 		// sub 1：找到所有连接地面的 part
 		// sub 2：依次连接其他 part
-		// sub 3：若还有不连已有part的tw，则加入第一组tw
+		// sub 3：若还有不连已有 part 的 tw ，则加入第一组 tw 
 		{
 			std::iota(order, order + ee_size, 0);
 			auto parts_num_ = 0;
@@ -404,12 +410,14 @@ namespace aris::plan {
 		InputSmoother is_;
 		AsyncGenerator ag_;
 		SpeedRegulator sr_;
-		ToolWobjSelector tw_;
+		ToolWobjSelector tw_, tw_rt_;
 		aris::dynamic::MultiModel* model_{nullptr};
 
 		std::vector<char> mem_;
 
 		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr };
+		aris::dynamic::MotionBase** ees_;
+
 
 
 		std::list<MAPNode> nodes_;
@@ -418,19 +426,41 @@ namespace aris::plan {
 			return sr_.getNextInput(p);
 		};
 		auto allocateMemory() -> void {
+			// init tw... //
+			tw_.setModel(*model_);
+			tw_rt_.setModel(*model_);
+			last_tool_.resize(model_->eeSize(), nullptr);
+			last_wobj_.resize(model_->eeSize(), nullptr);
+			last_tw_pos_.resize(model_->outputPosSize(), 0.0);
+
+			psize_ = aris::dynamic::s_ee_type_pos_size(model_->eeSize(), model_->eeTypes());
+			vdim_ = aris::dynamic::s_ee_type_vel_dim(model_->eeSize(), model_->eeTypes());
+
+			// init tg //
+			tg_.setEeTypes(model_->getEeTypes());
+
+			is_.setInputSize(model_->inputPosSize());
+			ag_.setInputSize(model_->inputPosSize());
+			sr_.setInputSize(model_->inputPosSize());
+
 			is_.allocateMemory();
 			ag_.allocateMemory();
 			sr_.allocateMemory();
 
+			// allocate mem //
 			Size mem_size = 0;
 
 			core::allocMem(mem_size, tw_pos_, model_->outputPosSize());
 			core::allocMem(mem_size, ee_pos_, model_->outputPosSize());
+			core::allocMem(mem_size, ees_, model_->eeSize());
 
 			mem_.resize(mem_size, char(0));
 
 			tw_pos_ = core::getMem(mem_.data(), tw_pos_);
 			ee_pos_ = core::getMem(mem_.data(), ee_pos_);
+			ees_ = core::getMem(mem_.data(), ees_);
+
+			model_->getEes(ees_);
 
 			// 更新 tw 仓 //
 			for (int i = 0; i < TW_POOL_SIZE; ++i) {
@@ -444,18 +474,39 @@ namespace aris::plan {
 				auto ret = tg_.getEePosAndMoveDt(tw_pos_);
 
 				auto& tw = tw_pool_[ret % TW_POOL_SIZE];
-				tw_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
-				tw_.setTwPos(tw_pos_);
-				tw_.getEePos(ee_pos_);
+				tw_rt_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
+				tw_rt_.setTwPos(tw_pos_);
+				tw_rt_.getEePos(ee_pos_);
 
 				model_->setOutputPos(ee_pos_);
-
 
 				int ik_ret = 0;
 				if (ik_ret = model_->inverseKinematics())
 					return ik_ret;
 
 				model_->getInputPos(p);
+
+#ifdef DEBUG_ARIS_MMP
+				::input_.resize(::input_.size() + this->is_.inputSize());
+				std::copy(p, p + this->is_.inputSize(), ::input_.end() - this->is_.inputSize());
+				if(ret == 0)
+					aris::dynamic::dlmwrite(input_.size()/ is_.inputSize(), is_.inputSize(), input_.data(), "/Mac/Home/Documents/MATLAB/test/data_ori.txt");
+
+
+				static int count_ = 0;
+				count_++;
+				if (count_ > 100 && count_ < 102) {
+					std::cout << "-------------- "<<count_ << "---------" << std::endl;
+					std::cout << "tw:" << std::endl;
+					aris::dynamic::dsp(1, 6, tw_pos_);
+					std::cout << "ee:" << std::endl;
+					aris::dynamic::dsp(1, 6, ee_pos_);
+					std::cout << "input:" << std::endl;
+					aris::dynamic::dsp(1, 6, p);
+
+				}
+#endif
+
 				return ret;
 				});
 
@@ -496,7 +547,12 @@ namespace aris::plan {
 			model_->getInputPos(init_input_pos.data());
 
 			std::vector<double> init_ee_pos(model_->outputPosSize());
-			model_->getInputPos(init_ee_pos.data());
+			model_->getOutputPos(init_ee_pos.data());
+
+			// 更新 tw //
+			std::fill(last_tool_.begin(), last_tool_.end(), nullptr);
+			std::fill(last_wobj_.begin(), last_wobj_.end(), nullptr);
+			std::copy(init_ee_pos.begin(), init_ee_pos.end(), last_tw_pos_.begin());
 
 			tg_.clearAllPos();
 			tg_.insertInitPos(0, init_ee_pos.data());
@@ -519,6 +575,20 @@ namespace aris::plan {
 			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
+
+				// check tool and wobj default value //
+				if (tool_wobjs[i].first != "" && tools[i] == nullptr) {
+					tools[i] = ees_[i]->makI();
+				}
+				else {
+					THROW_FILE_LINE(tool_wobjs[i].first + " not found");
+				}
+				if (tool_wobjs[i].second != "" && wobjs[i] == nullptr) {
+					wobjs[i] = ees_[i]->makJ();
+				}
+				else {
+					THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+				}
 			}
 
 			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
@@ -531,6 +601,9 @@ namespace aris::plan {
 				tw_.selectTw(tools.data(), wobjs.data());
 				tw_.getTwPos(tw_init_pos.data());
 				
+				std::copy(tools.begin(), tools.end(), last_tool_.begin());
+				std::copy(wobjs.begin(), wobjs.end(), last_wobj_.begin());
+
 				nodes_.push_back({ 
 					id_, 
 					MAPNodeType::ResetInitPos, 
@@ -562,6 +635,20 @@ namespace aris::plan {
 			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
+
+				// check tool and wobj default value //
+				if (tool_wobjs[i].first != "" && tools[i] == nullptr) {
+					tools[i] = ees_[i]->makI();
+				}
+				else {
+					THROW_FILE_LINE(tool_wobjs[i].first + " not found");
+				}
+				if (tool_wobjs[i].second != "" && wobjs[i] == nullptr) {
+					wobjs[i] = ees_[i]->makJ();
+				}
+				else {
+					THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+				}
 			}
 
 			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
@@ -573,6 +660,9 @@ namespace aris::plan {
 				tw_.setTwPos(last_tw_pos_.data());
 				tw_.selectTw(tools.data(), wobjs.data());
 				tw_.getTwPos(tw_init_pos.data());
+
+				std::copy(tools.begin(), tools.end(), last_tool_.begin());
+				std::copy(wobjs.begin(), wobjs.end(), last_wobj_.begin());
 
 				nodes_.push_back({
 					id_,
@@ -625,19 +715,6 @@ namespace aris::plan {
 	////////////////// PART 1 config ////////////////
 	auto MultimodelPlanner::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
-		imp_->tw_.setModel(model);
-		imp_->last_tool_.resize(model.eeSize(), nullptr);
-		imp_->last_wobj_.resize(model.eeSize(), nullptr);
-		imp_->last_tw_pos_.resize(model.outputPosSize(), 0.0);
-
-		imp_->tg_.setEeTypes(model.getEeTypes());
-		
-		imp_->is_.setInputSize(model.inputPosSize());
-		imp_->ag_.setInputSize(model.inputPosSize());
-		imp_->sr_.setInputSize(model.inputPosSize());
-
-		imp_->psize_ = aris::dynamic::s_ee_type_pos_size(model.eeSize(), model.eeTypes());
-		imp_->vdim_ = aris::dynamic::s_ee_type_vel_dim(model.eeSize(), model.eeTypes());
 	}
 	auto MultimodelPlanner::model() -> aris::dynamic::MultiModel&{
 		return *imp_->model_;

@@ -405,10 +405,10 @@ namespace aris::dynamic{
 			s_pm2pe(pm, pos, "313");
 			return;
 		case EEType::PE321:
-			s_pm2pe(pm, pos, "313");
+			s_pm2pe(pm, pos, "321");
 			return;
 		case EEType::PE123:
-			s_pm2pe(pm, pos, "313");
+			s_pm2pe(pm, pos, "123");
 			return;
 		case EEType::PQ:
 			s_pm2pq(pm, pos);

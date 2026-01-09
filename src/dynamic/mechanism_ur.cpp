@@ -141,12 +141,12 @@ namespace aris::dynamic{
 		s_pe2pm(std::array<double, 6>{0, 0, 0, q[0], 0, 0}.data(), R1_pm, "321");
 		s_inv_pm_dot_pm(R1_pm, D_in_A, R23456_pm);
 		s_pm2pe(R23456_pm, R23456_pe, "232");
-		if (R23456_pe[4] < zero_check) // 为了去除奇异点
+		if (R23456_pe[4] < 1e-6) // 为了去除奇异点，1e-6为测试出来的值
 		{
 			R23456_pe[3] = R23456_pe[3] + R23456_pe[5] - current_q[5];
 			R23456_pe[5] = current_q[5];
 		}
-		else if (R23456_pe[4] > aris::PI - zero_check) {
+		else if (R23456_pe[4] > aris::PI - 1e-6) {// 1e-6为测试出来的值
 			R23456_pe[3] = -(R23456_pe[5] - R23456_pe[3] - current_q[5]);
 			R23456_pe[5] = current_q[5];
 		}
@@ -438,10 +438,10 @@ namespace aris::dynamic{
 		}
 	}
 	auto UrInverseKinematicSolver::kinPos()->int {
-		double output_pos[16], input_pos[6], current_input_pos[6];
+		double output_pos[16], input_pos[6];
 		model()->getOutputPos(output_pos);
-		model()->getInputPos(current_input_pos);
 
+		// kinPosPure 内会自动设置默认值 //
 		if (auto ret = kinPosPure(output_pos, input_pos, whichRoot()))
 			return ret;
 		

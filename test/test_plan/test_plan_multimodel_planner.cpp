@@ -235,6 +235,16 @@ auto test_multimodel_async_planner_1() -> void {
 	multi_model.subModels().add(puma.release());
 	multi_model.init();
 	
+	multi_model.tools().push_back(multi_model.findMarker("PumaModel.EE.tool0"));
+	multi_model.tools().push_back(multi_model.findMarker("PumaModel.EE.tool1"));
+	multi_model.wobjs().push_back(multi_model.findMarker("PumaModel.ground.wobj0"));
+	multi_model.wobjs().push_back(multi_model.findMarker("PumaModel.ground.wobj1"));
+
+	//multi_model.findMarker("PumaModel.ground.wobj0")->setPrtPm(*multi_model.findMarker("PumaModel.ground.joint_0_j")->prtPm());
+	//multi_model.findMarker("PumaModel.ground.wobj1")->setPrtPm(*multi_model.findMarker("PumaModel.ground.joint_0_j")->prtPm());
+	//multi_model.findMarker("PumaModel.EE.tool0")->setPrtPm(*multi_model.findMarker("PumaModel.EE.joint_0_i")->prtPm());
+	//multi_model.findMarker("PumaModel.EE.tool1")->setPrtPm(*multi_model.findMarker("PumaModel.EE.joint_0_i")->prtPm());
+
 	// 构造规划器 //
 	MultimodelPlanner mmp;
 	mmp.setModel(multi_model);
@@ -255,14 +265,16 @@ auto test_multimodel_async_planner_1() -> void {
 
 	mmp.init();
 	
+	std::cout << aris::core::toJsonString(multi_model) << std::endl;
+
 	for (int i = 0; i < PE_SIZE; ++i) {
 		std::vector<std::pair<std::string, std::string>> tw;
-		tw.push_back(std::make_pair<std::string, std::string>("tool0", "wobj0"));
-		mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+		tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
+		auto id = mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
 	{
 		std::vector<std::pair<std::string, std::string>> tw;
-		tw.push_back(std::make_pair<std::string, std::string>("tool1", "wobj1"));
+		tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
 		mmp.insertCirclePos(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE-1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
 	}
 	mmp.updateInsertPos();
@@ -280,6 +292,8 @@ auto test_multimodel_async_planner_1() -> void {
 			last_ret = ret;
 		}
 
+		//mmp.setTargetSpeedRatio(0.1);
+
 		m++;
 
 		vec.resize(m * (multi_model.inputPosSize() * EE_NUM + A_NUM), 0.0);
@@ -287,6 +301,8 @@ auto test_multimodel_async_planner_1() -> void {
 	}
 
 	aris::dynamic::dlmwrite(m, (multi_model.inputPosSize() * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+
+	//aris::dynamic::dlmwrite(::input_.size()/ multi_model.inputPosSize(), (multi_model.inputPosSize()* EE_NUM + A_NUM), ::input_.data(), "/Mac/Home/Documents/MATLAB/test/data_origin.txt");
 	/**/
 }
 

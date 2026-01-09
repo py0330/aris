@@ -172,7 +172,7 @@ namespace aris::plan {
 				auto cpt_v = [](double p0, double p1, double p2, double p3, double p4)->double {
 					
 					// 左侧二次插值、中间二次插值、右边二次插值 //
-					// 在权重为 1/6，1/3，1/6 时，三者之和为高次插值 (y0 - 8*y1 + 8*y3 - y4)/(12*T)
+					// 在权重为 1/6，2/3，1/6 时，三者之和为高次插值 (y0 - 8*y1 + 8*y3 - y4)/(12*T)
 					//
 					auto v_left = (p0 - 4 * p1 + 3 * p2) / 2;
 					auto v_mid = (p3 - p1) / 2;
@@ -184,15 +184,15 @@ namespace aris::plan {
 					auto right_c = (p2 - 2 * p3 + p4);
 
 					// 计算权重
-					auto alpha1 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + left_c);
-					auto alpha2 = 1.0 / 3.0 / (std::numeric_limits<double>::epsilon() + mid_c);
-					auto alpha3 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + right_c);
+					auto alpha1 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + std::abs(left_c*left_c));
+					auto alpha2 = 2.0 / 3.0 / (std::numeric_limits<double>::epsilon() + std::abs(mid_c*mid_c));
+					auto alpha3 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + std::abs(right_c*right_c));
 
 					// 归一化 //
 					auto sum_alpha = alpha1 + alpha2 + alpha3;
 					auto w1 = alpha1 / sum_alpha;
-					auto w2 = alpha2 / sum_alpha;
 					auto w3 = alpha3 / sum_alpha;
+					auto w2 = 1.0 - w1 - w3;
 
 					// 计算速度
 					return w1 * v_left + w2 * v_mid + w3 * v_right;
@@ -202,36 +202,11 @@ namespace aris::plan {
 				auto v3 = cpt_v(node1.p_, node2.p_, node3.p_, node4.p_, node5.p_);
 				auto v4 = cpt_v(node2.p_, node3.p_, node4.p_, node5.p_, node5.p_);
 				auto v5 = cpt_v(node3.p_, node4.p_, node5.p_, node5.p_, node5.p_);
-				//double v3 = (node1.p_ - 8 * node2.p_ + 8 * node4.p_ - node5.p_) / 12;
-				//double v4 = (node2.p_ - 8 * node3.p_ + 8 * node5.p_ - node5.p_) / 12;
-				//double v5 = (node3.p_ - 8 * node4.p_ + 8 * node5.p_ - node5.p_) / 12;
-				
-				// dy_at_x2  = (y0 - 8*y1 + 8*y3 - y4)/(12*T);
-				// d2y_at_x2 = (-y0 + 16 * y1 - 30 * y2 + 16 * y3 - y4) / (12 * T ^ 2);
 
-				//double v2 = (node0.p_ - 8 * node1.p_ + 8 * node3.p_ - node4.p_) / 12;
-				//double v3 = (node1.p_ - 8 * node2.p_ + 8 * node4.p_ - node5.p_) / 12;
-				//double v4 = (node2.p_ - 8 * node3.p_ + 8 * node5.p_ - node5.p_) / 12;
-				//double v5 = (node3.p_ - 8 * node4.p_ + 8 * node5.p_ - node5.p_) / 12;
-
-				//double a2 = (-node0.p_ + 16 * node1.p_ - 30 * node2.p_ + 16 * node3.p_ - node4.p_) / 12;
-				//double a3 = (-node1.p_ + 16 * node2.p_ - 30 * node3.p_ + 16 * node4.p_ - node5.p_) / 12;
-				//double a4 = (-node2.p_ + 16 * node3.p_ - 30 * node4.p_ + 16 * node5.p_ - node5.p_) / 12;
-				//double a5 = (-node3.p_ + 16 * node4.p_ - 30 * node5.p_ + 16 * node5.p_ - node5.p_) / 12;
-
-
-
-
-
-				//double v1 = (node2.p_ - node0.p_) / 2;
-				//double v2 = (node3.p_ - node1.p_) / 2;
-				//double v3 = 0.0;
-				double p0 = node0.p_;
-				double p1 = node1.p_;
-				double p2 = node2.p_;
-				double p3 = node3.p_;
-				double p4 = node3.p_;
-				double p5 = node3.p_;
+				const double p2 = node2.p_;
+				const double p3 = node3.p_;
+				const double p4 = node4.p_;
+				const double p5 = node5.p_;
 
 
 				//node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
