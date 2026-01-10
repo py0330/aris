@@ -474,6 +474,40 @@ namespace aris::dynamic{
 		auto subModels()->aris::core::PointerArray<ModelBase>&;
 		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
 
+		// sub input //
+		auto virtual subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto virtual setSubInputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+
+		auto virtual subInputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubInputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto virtual setSubInputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+
+		auto virtual subInputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubInputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto virtual setSubInputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+
+		auto virtual subInputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubInputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto virtual setSubInputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+
+		// sub output //
+		auto virtual subOutputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubOutputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto virtual setSubOutputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+
+		auto virtual subOutputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubOutputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto virtual setSubOutputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+
+		auto virtual subOutputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubOutputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto virtual setSubOutputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+
+		auto virtual subOutputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto virtual getSubOutputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto virtual setSubOutputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+
 		// 方便函数 //
 		auto updP()->void {
 			for(auto &m:subModels())

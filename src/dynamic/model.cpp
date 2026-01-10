@@ -673,6 +673,183 @@ namespace aris::dynamic{
 	auto MultiModel::subModels()->aris::core::PointerArray<ModelBase>& {
 		return *imp_->models_;
 	}
+	
+	auto MultiModel::subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).inputPosSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getInputPos(mp + pos);
+			pos += imp_->models_->at(sub_id[i]).inputPosSize();
+		}
+	}
+	auto MultiModel::setSubInputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setInputPos(mp + pos);
+			pos += imp_->models_->at(sub_id[i]).inputPosSize();
+		}
+	}
+
+	auto MultiModel::subInputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).inputVelSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubInputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getInputVel(mv + pos);
+			pos += imp_->models_->at(sub_id[i]).inputVelSize();
+		}
+	}
+	auto MultiModel::setSubInputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setInputVel(mv + pos);
+			pos += imp_->models_->at(sub_id[i]).inputVelSize();
+		}
+	}
+
+	auto MultiModel::subInputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).inputAccSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubInputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getInputAcc(ma + pos);
+			pos += imp_->models_->at(sub_id[i]).inputAccSize();
+		}
+	}
+	auto MultiModel::setSubInputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setInputAcc(ma + pos);
+			pos += imp_->models_->at(sub_id[i]).inputAccSize();
+		}
+	}
+
+	auto MultiModel::subInputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).inputFceSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubInputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getInputFce(mf + pos);
+			pos += imp_->models_->at(sub_id[i]).inputFceSize();
+		}
+	}
+	auto MultiModel::setSubInputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setInputFce(mf + pos);
+			pos += imp_->models_->at(sub_id[i]).inputFceSize();
+		}
+	}
+
+	auto MultiModel::subOutputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).outputPosSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubOutputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getOutputPos(mp + pos);
+			pos += imp_->models_->at(sub_id[i]).outputPosSize();
+		}
+	}
+	auto MultiModel::setSubOutputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setOutputPos(mp + pos);
+			pos += imp_->models_->at(sub_id[i]).outputPosSize();
+		}
+	}
+
+	auto MultiModel::subOutputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).outputVelSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubOutputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getOutputVel(mv + pos);
+			pos += imp_->models_->at(sub_id[i]).outputVelSize();
+		}
+	}
+	auto MultiModel::setSubOutputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setOutputVel(mv + pos);
+			pos += imp_->models_->at(sub_id[i]).outputVelSize();
+		}
+	}
+
+	auto MultiModel::subOutputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).outputAccSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubOutputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getOutputAcc(ma + pos);
+			pos += imp_->models_->at(sub_id[i]).outputAccSize();
+		}
+	}
+	auto MultiModel::setSubOutputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setOutputAcc(ma + pos);
+			pos += imp_->models_->at(sub_id[i]).outputAccSize();
+		}
+	}
+
+	auto MultiModel::subOutputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).outputFceSize();
+		}
+		return ret;
+	}
+	auto MultiModel::getSubOutputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).getOutputFce(mf + pos);
+			pos += imp_->models_->at(sub_id[i]).outputFceSize();
+		}
+	}
+	auto MultiModel::setSubOutputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void {
+		Size pos = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			imp_->models_->at(sub_id[i]).setOutputFce(mf + pos);
+			pos += imp_->models_->at(sub_id[i]).outputFceSize();
+		}
+	}
+
 	auto MultiModel::tools()->std::vector<aris::dynamic::Marker*>& { return imp_->tools_; }
 	auto MultiModel::wobjs()->std::vector<aris::dynamic::Marker*>& { return imp_->wobjs_; }
 	auto MultiModel::findTool(std::string_view name)->aris::dynamic::Marker* {
@@ -733,6 +910,9 @@ namespace aris::dynamic{
 
 		return &*found_variable;
 	}
+
+
+
 
 	auto MultiModel::getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size> {
 		std::vector<Size> ee_nums;
