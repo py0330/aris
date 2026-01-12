@@ -674,6 +674,14 @@ namespace aris::dynamic{
 		return *imp_->models_;
 	}
 	
+	auto MultiModel::subEeSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
+		Size ret = 0;
+		for (Size i = 0; i < sub_id_num; ++i) {
+			ret += imp_->models_->at(sub_id[i]).eeSize();
+		}
+		return ret;
+	}
+
 	auto MultiModel::subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
 		Size ret = 0;
 		for (Size i = 0; i < sub_id_num; ++i) {

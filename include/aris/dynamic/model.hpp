@@ -474,6 +474,52 @@ namespace aris::dynamic{
 		auto subModels()->aris::core::PointerArray<ModelBase>&;
 		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
 
+		// sub kin & dyn //
+		auto virtual subInverseKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].inverseKinematics())
+					return ret;
+			}
+			return 0;
+		}
+		auto virtual subForwardKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].forwardKinematics())
+					return ret;
+			}
+			return 0;
+		}
+		auto virtual subInverseKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].inverseKinematicsVel())
+					return ret;
+			}
+			return 0;
+		}
+		auto virtual subForwardKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].forwardKinematicsVel())
+					return ret;
+			}
+			return 0;
+		}
+		auto virtual subInverseDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].inverseDynamics())
+					return ret;
+			}
+			return 0;
+		}
+		auto virtual subForwardDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
+			for (Size i = 0; i < sub_id_num; ++i) {
+				if (auto ret = subModels()[sub_id[i]].forwardDynamics())
+					return ret;
+			}
+			return 0;
+		}
+
+		auto virtual subEeSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+
 		// sub input //
 		auto virtual subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
 		auto virtual getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
@@ -510,12 +556,16 @@ namespace aris::dynamic{
 
 		// 方便函数 //
 		auto updP()->void {
-			for(auto &m:subModels())
+			for (auto& m : subModels()) {
 				if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
 					for (auto& ee : model->generalMotionPool()) {
 						ee.updP();
 					}
+				} 
+				else if (auto model = dynamic_cast<aris::dynamic::MultiModel*>(&m)) {
+					model->updP();
 				}
+			}
 		}
 
 		auto tools()->std::vector<aris::dynamic::Marker*>&;

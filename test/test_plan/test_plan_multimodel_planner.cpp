@@ -85,8 +85,6 @@ auto test_tw()->void {
 		ee6.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
 		ee7.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
 
-
-
 		multi_model.init();
 		// tool wobj selector
 		aris::plan::ToolWobjSelector tw_selector;
@@ -151,7 +149,7 @@ auto test_tw()->void {
 				std::cout << "tw selector error" << std::endl;
 			}
 
-			aris::dynamic::dsp(8, 6, twpos);
+			//aris::dynamic::dsp(8, 6, twpos);
 		}
 	}
 
@@ -296,11 +294,113 @@ auto test_multimodel_async_planner_1() -> void {
 
 		m++;
 
-		vec.resize(m * (multi_model.inputPosSize() * EE_NUM + A_NUM), 0.0);
+		vec.resize(m * multi_model.inputPosSize(), 0.0);
 		std::copy_n(input_pos, multi_model.inputPosSize(), vec.data() + (multi_model.inputPosSize() * EE_NUM + A_NUM) * (m - 1));
 	}
 
-	aris::dynamic::dlmwrite(m, (multi_model.inputPosSize() * EE_NUM + A_NUM), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+	aris::dynamic::dlmwrite(m, multi_model.inputPosSize(), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
+
+	//aris::dynamic::dlmwrite(::input_.size()/ multi_model.inputPosSize(), (multi_model.inputPosSize()* EE_NUM + A_NUM), ::input_.data(), "/Mac/Home/Documents/MATLAB/test/data_origin.txt");
+	/**/
+}
+auto test_multimodel_async_planner_two_arm() -> void {
+	// 真机数据 //
+	double joints1[7]{ 149.982, -43.4585, -30.0078, -74.5814, 137.039, 49.1006, 55.3223 };
+	double ee1[7]{ 0.203427, -0.420417, 0.263479, 117.546, 42.114, 222.485, -30.0078* aris::PI / 180.0 };
+
+	double joints2[7]{ 98.0283, -59.5074, -30.0078, -53.0331, 100.313, 68.8685, 2.34352 };
+	double ee2[7]{ -0.202153, -0.476769, 0.346417, 95.5752, -19.3522, 279.021,-30.0078*aris::PI / 180.0 };
+
+	// 仿真时，人为给定初始状态 //
+	for (int i = 0; i < 7; i++) {
+		joints1[i] *= aris::PI / 180.0;
+		joints2[i] *= aris::PI / 180.0;
+	}
+	for (int i = 0; i < 3; i++) {
+		ee1[i + 3] *= aris::PI / 180.0;
+		ee2[i + 3] *= aris::PI / 180.0;
+	}
+	
+
+
+	// 构造模型 //
+	aris::Size sub_num = 1;
+	aris::Size sub_id[1]{ 1 };
+
+	aris::dynamic::MultiModel multi_model;
+	aris::core::fromXmlFile(multi_model, ARIS_INSTALL_PATH + std::string("/resource/test_plan/dual_arm.xml"));
+	multi_model.init();
+
+	multi_model.subModels()[1].setInputPos(joints1);
+	multi_model.subForwardKinematics(sub_num, sub_id);
+
+	// 构造规划器 //
+	MultimodelPlanner mmp;
+	mmp.setModel(multi_model);
+	mmp.setSubModelId({1});
+
+	// 最大速度、加速度 //
+	std::vector<double> max_vels(7, 1.5);
+	std::vector<double> min_vels(7, -1.5);
+	std::vector<double> max_accs(7, 5.0);
+	std::vector<double> min_accs(7, -5.0);
+
+	mmp.setMaxVel(aris::core::Matrix(multi_model.inputPosSize(), 1, max_vels.data()));
+	mmp.setMinVel(aris::core::Matrix(multi_model.inputPosSize(), 1, min_vels.data()));
+	mmp.setMaxAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, max_accs.data()));
+	mmp.setMinAcc(aris::core::Matrix(multi_model.inputPosSize(), 1, min_accs.data()));
+
+	mmp.setDt(1e-3);
+	mmp.allocateMemory();
+
+	mmp.init();
+	{
+		double v[3]{ 1000,1000,1000 };
+		double a[3]{ 100,100,100 };
+		double j[3]{ 1000,1000,1000 };
+		double z[3]{ 0,0,0 };
+
+		std::vector<std::pair<std::string, std::string>> tw{ std::pair<std::string, std::string>({ std::string(""),std::string("") }), std::pair<std::string, std::string>({ std::string(""),std::string("") }) };
+		auto id = mmp.insertLinePos(tw, ee2, v, a, j, z);
+		id = mmp.insertLinePos(tw, ee1, v, a, j, z);
+		id = mmp.insertLinePos(tw, ee2, v, a, j, z);
+	}
+	//std::cout << aris::core::toJsonString(multi_model) << std::endl;
+
+	//for (int i = 0; i < PE_SIZE; ++i) {
+	//	std::vector<std::pair<std::string, std::string>> tw;
+	//	tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
+	//	auto id = mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+	//}
+	//{
+	//	std::vector<std::pair<std::string, std::string>> tw;
+	//	tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
+	//	mmp.insertCirclePos(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE - 1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
+	//}
+	mmp.updateInsertPos();
+
+	// 打印数据 //
+	std::vector<double> vec, v_vec, a_vec;
+	int m = 0;
+	double input_pos[7];
+	double s = 0;
+
+	while (auto ret = mmp.getNextInput(input_pos)) {
+		static auto last_ret = -1;
+		if (ret != last_ret) {
+			std::cout << "cmd: " << ret << "  count: " << m << std::endl;
+			last_ret = ret;
+		}
+
+		//mmp.setTargetSpeedRatio(0.1);
+
+		m++;
+
+		vec.resize(m * multi_model.subInputPosSize(sub_num, sub_id), 0.0);
+		std::copy_n(input_pos, multi_model.subInputPosSize(sub_num, sub_id), vec.data() + multi_model.subInputPosSize(sub_num, sub_id) * (m - 1));
+	}
+
+	aris::dynamic::dlmwrite(m, multi_model.subInputPosSize(sub_num, sub_id), vec.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
 
 	//aris::dynamic::dlmwrite(::input_.size()/ multi_model.inputPosSize(), (multi_model.inputPosSize()* EE_NUM + A_NUM), ::input_.data(), "/Mac/Home/Documents/MATLAB/test/data_origin.txt");
 	/**/
@@ -310,7 +410,7 @@ void test_multimodel_planner(){
 	std::cout << std::endl << "-----------------test processor---------------------" << std::endl;
 
 	//test_tw();
-	test_multimodel_async_planner_1();
+	test_multimodel_async_planner_two_arm();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;
 }

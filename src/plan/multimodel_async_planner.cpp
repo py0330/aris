@@ -233,6 +233,7 @@ namespace aris::plan {
 
 	struct ToolWobjSelector::Imp {
 		aris::dynamic::MultiModel* model_{ nullptr };
+		std::vector<aris::Size> sub_id_list_;
 
 		aris::Size ee_size_{ 0 }, part_size_{ 0 }, ee_pos_size_{0}; // parts_num 不包含地面
 		aris::dynamic::MotionBase** ees_; // equals ee_size
@@ -248,13 +249,15 @@ namespace aris::plan {
 		std::vector<char> mem_;
 
 		auto allocateMem()->void {
+			ee_size_ = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
+			
 			// 计算 part_set，得到内存大小 //
 			std::vector<aris::dynamic::Part*> part_set;
 			{
-				std::vector<aris::dynamic::MotionBase*> ee_vec(model_->eeSize());
-				model_->getEes(ee_vec.data());
+				std::vector<aris::dynamic::MotionBase*> ee_vec(ee_size_);
+				model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ee_vec.data());
 
-				for (auto i = 0; i < model_->eeSize(); ++i) {
+				for (auto i = 0; i < ee_size_; ++i) {
 					if ((&ee_vec[i]->makI()->fatherPart() != &ee_vec[i]->makI()->model()->ground())
 						&&std::find(part_set.begin(), part_set.end(), &ee_vec[i]->makI()->fatherPart()) == part_set.end()) {
 						part_set.push_back(&ee_vec[i]->makI()->fatherPart());
@@ -268,12 +271,12 @@ namespace aris::plan {
 			
 			// 计算 ee_pos_size //
 			{
-				std::vector<aris::dynamic::EEType> ee_types(model_->eeSize());
-				model_->getEeTypes(ee_types.data());
-				ee_pos_size_ = aris::dynamic::s_ee_type_pos_size(model_->eeSize(), ee_types.data());
+				std::vector<aris::dynamic::EEType> ee_types(ee_size_);
+				model_->getEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types.data());
+				ee_pos_size_ = aris::dynamic::s_ee_type_pos_size(ee_size_, ee_types.data());
 			}
 			part_size_ = part_set.size();
-			ee_size_ = model_->eeSize();
+			
 
 			Size mem_size = 0;
 
@@ -310,7 +313,7 @@ namespace aris::plan {
 			mem_need_ = core::getMem(mem_.data(), mem_need_);
 
 			// 设置 ees、ee_makIs、ee_makJs、parts //
-			model_->getEes(ees_);
+			model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
 			for (int i = 0; i < ee_size_; ++i) {
 				ee_makIs_[i] = ees_[i]->makI();
 				ee_makJs_[i] = ees_[i]->makJ();
@@ -318,7 +321,7 @@ namespace aris::plan {
 			std::copy(part_set.begin(), part_set.end(), parts_);
 			
 			// 设置 ees_types, ee_order, ee_set_tool //
-			model_->getEeTypes(ee_types_);
+			model_->getEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types_);
 			computeToolWobjOrder(ee_size_, part_size_, parts_, ees_, ee_makIs_, ee_makJs_, mem_need_, ee_order_, ee_set_tool_);
 
 			// 设置 ee_pos_mem_pos //
@@ -351,10 +354,22 @@ namespace aris::plan {
 
 	auto ToolWobjSelector::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
+		imp_->sub_id_list_.clear();
+		imp_->sub_id_list_.resize(model.subModels().size());
+		std::iota(imp_->sub_id_list_.begin(), imp_->sub_id_list_.end(), 0);
+
 		imp_->allocateMem();
 	}
 	auto ToolWobjSelector::model() -> aris::dynamic::MultiModel& {
 		return *imp_->model_;
+	}
+
+	auto ToolWobjSelector::setSubModelId(std::vector<aris::Size> id_list) -> void {
+		imp_->sub_id_list_ = id_list;
+		imp_->allocateMem();
+	}
+	auto ToolWobjSelector::subModelId() -> const std::vector<aris::Size>& {
+		return imp_->sub_id_list_;
 	}
 
 	auto ToolWobjSelector::selectTw(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> int {
@@ -402,6 +417,7 @@ namespace aris::plan {
 		MarkerVec last_tool_, last_wobj_;
 		std::vector<double> last_tw_pos_;
 
+		std::vector<aris::Size> sub_id_list_;
 		aris::Size psize_{ 0 }, vdim_{ 0 }; // zone 和 a 的dim 同v
 
 		bool is_aysnc_{ false };
@@ -418,8 +434,6 @@ namespace aris::plan {
 		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr };
 		aris::dynamic::MotionBase** ees_;
 
-
-
 		std::list<MAPNode> nodes_;
 
 		auto get_next_input(double* p) -> std::int64_t {
@@ -428,20 +442,26 @@ namespace aris::plan {
 		auto allocateMemory() -> void {
 			// init tw... //
 			tw_.setModel(*model_);
+			tw_.setSubModelId(sub_id_list_);
 			tw_rt_.setModel(*model_);
-			last_tool_.resize(model_->eeSize(), nullptr);
-			last_wobj_.resize(model_->eeSize(), nullptr);
-			last_tw_pos_.resize(model_->outputPosSize(), 0.0);
+			tw_rt_.setSubModelId(sub_id_list_);
 
-			psize_ = aris::dynamic::s_ee_type_pos_size(model_->eeSize(), model_->eeTypes());
-			vdim_ = aris::dynamic::s_ee_type_vel_dim(model_->eeSize(), model_->eeTypes());
+			auto ee_size = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
+			psize_ = model_->subOutputPosSize(sub_id_list_.size(), sub_id_list_.data());
+			vdim_ = model_->subOutputVelSize(sub_id_list_.size(), sub_id_list_.data());
+
+			auto input_psize = model_->subInputPosSize(sub_id_list_.size(), sub_id_list_.data());
+
+			last_tool_.resize(ee_size, nullptr);
+			last_wobj_.resize(ee_size, nullptr);
+			last_tw_pos_.resize(psize_, 0.0);
 
 			// init tg //
-			tg_.setEeTypes(model_->getEeTypes());
+			tg_.setEeTypes(model_->getEeTypes(sub_id_list_));
 
-			is_.setInputSize(model_->inputPosSize());
-			ag_.setInputSize(model_->inputPosSize());
-			sr_.setInputSize(model_->inputPosSize());
+			is_.setInputSize(input_psize);
+			ag_.setInputSize(input_psize);
+			sr_.setInputSize(input_psize);
 
 			is_.allocateMemory();
 			ag_.allocateMemory();
@@ -450,9 +470,9 @@ namespace aris::plan {
 			// allocate mem //
 			Size mem_size = 0;
 
-			core::allocMem(mem_size, tw_pos_, model_->outputPosSize());
-			core::allocMem(mem_size, ee_pos_, model_->outputPosSize());
-			core::allocMem(mem_size, ees_, model_->eeSize());
+			core::allocMem(mem_size, tw_pos_, psize_);
+			core::allocMem(mem_size, ee_pos_, psize_);
+			core::allocMem(mem_size, ees_, ee_size);
 
 			mem_.resize(mem_size, char(0));
 
@@ -460,13 +480,13 @@ namespace aris::plan {
 			ee_pos_ = core::getMem(mem_.data(), ee_pos_);
 			ees_ = core::getMem(mem_.data(), ees_);
 
-			model_->getEes(ees_);
+			model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
 
 			// 更新 tw 仓 //
 			for (int i = 0; i < TW_POOL_SIZE; ++i) {
 				auto& tw = tw_pool_[i];
-				std::get<1>(tw).resize(model_->inputPosSize(), nullptr);
-				std::get<2>(tw).resize(model_->inputPosSize(), nullptr);
+				std::get<1>(tw).resize(input_psize, nullptr);
+				std::get<2>(tw).resize(input_psize, nullptr);
 			}
 
 			// 设置回调 //
@@ -478,13 +498,13 @@ namespace aris::plan {
 				tw_rt_.setTwPos(tw_pos_);
 				tw_rt_.getEePos(ee_pos_);
 
-				model_->setOutputPos(ee_pos_);
+				model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
 
 				int ik_ret = 0;
-				if (ik_ret = model_->inverseKinematics())
+				if (ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data()))
 					return ik_ret;
 
-				model_->getInputPos(p);
+				model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
 
 #ifdef DEBUG_ARIS_MMP
 				::input_.resize(::input_.size() + this->is_.inputSize());
@@ -543,11 +563,11 @@ namespace aris::plan {
 			
 			nodes_.clear();
 
-			std::vector<double> init_input_pos(model_->inputPosSize());
-			model_->getInputPos(init_input_pos.data());
+			std::vector<double> init_input_pos(model_->subInputPosSize(sub_id_list_.size(), sub_id_list_.data()));
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), init_input_pos.data());
 
-			std::vector<double> init_ee_pos(model_->outputPosSize());
-			model_->getOutputPos(init_ee_pos.data());
+			std::vector<double> init_ee_pos(model_->subOutputPosSize(sub_id_list_.size(), sub_id_list_.data()));
+			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), init_ee_pos.data());
 
 			// 更新 tw //
 			std::fill(last_tool_.begin(), last_tool_.end(), nullptr);
@@ -569,7 +589,7 @@ namespace aris::plan {
 		}
 		auto insLine(TW& tool_wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 			// 获取坐标系 //
-			auto ee_size = model_->eeSize();
+			auto ee_size = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
 			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
@@ -577,17 +597,21 @@ namespace aris::plan {
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 
 				// check tool and wobj default value //
-				if (tool_wobjs[i].first != "" && tools[i] == nullptr) {
-					tools[i] = ees_[i]->makI();
+				if (tools[i] == nullptr) {
+					if (tool_wobjs[i].first == "") {
+						tools[i] = ees_[i]->makI();
+					}
+					else {
+						THROW_FILE_LINE(tool_wobjs[i].first + " not found");
+					}
 				}
-				else {
-					THROW_FILE_LINE(tool_wobjs[i].first + " not found");
-				}
-				if (tool_wobjs[i].second != "" && wobjs[i] == nullptr) {
-					wobjs[i] = ees_[i]->makJ();
-				}
-				else {
-					THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+				if (wobjs[i] == nullptr) {
+					if (tool_wobjs[i].second == "") {
+						wobjs[i] = ees_[i]->makJ();
+					}
+					else {
+						THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+					}
 				}
 			}
 
@@ -595,7 +619,7 @@ namespace aris::plan {
 
 			// 如果坐标系有变化，重新插入 INIT //
 			if (tools != last_tool_ || wobjs != last_wobj_) {
-				std::vector<double> tw_init_pos(model_->outputPosSize());
+				std::vector<double> tw_init_pos(model_->subOutputPosSize(sub_id_list_.size(), sub_id_list_.data()));
 				tw_.selectTw(last_tool_.data(), last_wobj_.data());
 				tw_.setTwPos(last_tw_pos_.data());
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -629,7 +653,7 @@ namespace aris::plan {
 
 		auto insCircle(TW& tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 			// 获取坐标系 //
-			auto ee_size = model_->eeSize();
+			auto ee_size = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
 			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
@@ -637,17 +661,21 @@ namespace aris::plan {
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 
 				// check tool and wobj default value //
-				if (tool_wobjs[i].first != "" && tools[i] == nullptr) {
-					tools[i] = ees_[i]->makI();
+				if (tools[i] == nullptr) {
+					if (tool_wobjs[i].first == "") {
+						tools[i] = ees_[i]->makI();
+					}
+					else {
+						THROW_FILE_LINE(tool_wobjs[i].first + " not found");
+					}
 				}
-				else {
-					THROW_FILE_LINE(tool_wobjs[i].first + " not found");
-				}
-				if (tool_wobjs[i].second != "" && wobjs[i] == nullptr) {
-					wobjs[i] = ees_[i]->makJ();
-				}
-				else {
-					THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+				if (wobjs[i] == nullptr) {
+					if (tool_wobjs[i].second == "") {
+						wobjs[i] = ees_[i]->makJ();
+					}
+					else {
+						THROW_FILE_LINE(tool_wobjs[i].second + " not found");
+					}
 				}
 			}
 
@@ -655,7 +683,7 @@ namespace aris::plan {
 
 			// 如果坐标系有变化，重新插入 INIT //
 			if (tools != last_tool_ || wobjs != last_wobj_) {
-				std::vector<double> tw_init_pos(model_->outputPosSize());
+				std::vector<double> tw_init_pos(model_->subOutputPosSize(sub_id_list_.size(), sub_id_list_.data()));
 				tw_.selectTw(last_tool_.data(), last_wobj_.data());
 				tw_.setTwPos(last_tw_pos_.data());
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -715,9 +743,19 @@ namespace aris::plan {
 	////////////////// PART 1 config ////////////////
 	auto MultimodelPlanner::setModel(aris::dynamic::MultiModel& model) -> void {
 		imp_->model_ = &model;
+		imp_->sub_id_list_.clear();
+		imp_->sub_id_list_.resize(model.subModels().size());
+		std::iota(imp_->sub_id_list_.begin(), imp_->sub_id_list_.end(), 0);
 	}
 	auto MultimodelPlanner::model() -> aris::dynamic::MultiModel&{
 		return *imp_->model_;
+	}
+
+	auto MultimodelPlanner::setSubModelId(std::vector<aris::Size> id_list) -> void {
+		imp_->sub_id_list_ = id_list;
+	}
+	auto MultimodelPlanner::subModelId() -> const std::vector<aris::Size> &{
+		return imp_->sub_id_list_;
 	}
 
 	// 配置末端类型 //

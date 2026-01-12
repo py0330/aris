@@ -33,6 +33,9 @@ namespace aris::plan{
 		auto setModel(aris::dynamic::MultiModel& model) -> void;
 		auto model() -> aris::dynamic::MultiModel&;
 
+		auto setSubModelId(std::vector<aris::Size> id_list) -> void;
+		auto subModelId() -> const std::vector<aris::Size>&;
+
 		auto selectTw(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> int;
 		auto setTwPos(const double* twpos)->void;
 		auto getTwPos(double* twpos)->void;
@@ -60,6 +63,9 @@ namespace aris::plan{
 		
 		auto setModel(aris::dynamic::MultiModel& model)->void;
 		auto model() -> aris::dynamic::MultiModel&;
+
+		auto setSubModelId(std::vector<aris::Size> id_list) -> void;
+		auto subModelId() -> const std::vector<aris::Size> &;
 
 		auto eeTypes()const -> const std::vector<aris::dynamic::EEType>&;
 		auto inputSize() -> int;
