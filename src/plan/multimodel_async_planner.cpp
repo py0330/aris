@@ -5,7 +5,7 @@
 #include"aris/plan/async_generator.hpp"
 #include"aris/plan/speed_regulator.hpp"
 
-#define DEBUG_ARIS_MMP
+//#define DEBUG_ARIS_MMP
 
 #ifdef DEBUG_ARIS_MMP
 std::vector<double> input_;
@@ -255,7 +255,7 @@ namespace aris::plan {
 			std::vector<aris::dynamic::Part*> part_set;
 			{
 				std::vector<aris::dynamic::MotionBase*> ee_vec(ee_size_);
-				model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ee_vec.data());
+				model_->getSubEes(sub_id_list_.size(), sub_id_list_.data(), ee_vec.data());
 
 				for (auto i = 0; i < ee_size_; ++i) {
 					if ((&ee_vec[i]->makI()->fatherPart() != &ee_vec[i]->makI()->model()->ground())
@@ -272,7 +272,7 @@ namespace aris::plan {
 			// 计算 ee_pos_size //
 			{
 				std::vector<aris::dynamic::EEType> ee_types(ee_size_);
-				model_->getEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types.data());
+				model_->getSubEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types.data());
 				ee_pos_size_ = aris::dynamic::s_ee_type_pos_size(ee_size_, ee_types.data());
 			}
 			part_size_ = part_set.size();
@@ -313,7 +313,7 @@ namespace aris::plan {
 			mem_need_ = core::getMem(mem_.data(), mem_need_);
 
 			// 设置 ees、ee_makIs、ee_makJs、parts //
-			model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
+			model_->getSubEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
 			for (int i = 0; i < ee_size_; ++i) {
 				ee_makIs_[i] = ees_[i]->makI();
 				ee_makJs_[i] = ees_[i]->makJ();
@@ -321,7 +321,7 @@ namespace aris::plan {
 			std::copy(part_set.begin(), part_set.end(), parts_);
 			
 			// 设置 ees_types, ee_order, ee_set_tool //
-			model_->getEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types_);
+			model_->getSubEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types_);
 			computeToolWobjOrder(ee_size_, part_size_, parts_, ees_, ee_makIs_, ee_makJs_, mem_need_, ee_order_, ee_set_tool_);
 
 			// 设置 ee_pos_mem_pos //
@@ -457,7 +457,7 @@ namespace aris::plan {
 			last_tw_pos_.resize(psize_, 0.0);
 
 			// init tg //
-			tg_.setEeTypes(model_->getEeTypes(sub_id_list_));
+			tg_.setEeTypes(model_->getSubEeTypes(sub_id_list_));
 
 			is_.setInputSize(input_psize);
 			ag_.setInputSize(input_psize);
@@ -480,7 +480,7 @@ namespace aris::plan {
 			ee_pos_ = core::getMem(mem_.data(), ee_pos_);
 			ees_ = core::getMem(mem_.data(), ees_);
 
-			model_->getEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
+			model_->getSubEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
 
 			// 更新 tw 仓 //
 			for (int i = 0; i < TW_POOL_SIZE; ++i) {

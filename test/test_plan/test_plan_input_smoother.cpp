@@ -366,7 +366,7 @@ auto test_input_smoother_7axis()->int {
 	// 仿真参数 //
 	const bool seg_debug_flag = false; // 是否逐段打印 //
 	const int cmd_cnt_max = 3; // 模拟指令执行次数 // 
-	const int step_cnt_max = 10000; // 单次执行最大步数 //
+	const int step_cnt_max = 20000; // 单次执行最大步数 //
 
 	// 规划器参数 //
 	const double vel = 1000;
@@ -380,7 +380,7 @@ auto test_input_smoother_7axis()->int {
 	// ============================================================================
 	const int JOINT_NUM = 7;
 	const int EE_DIM = 6;
-	const double DT = 0.004; // 控制周期 // 
+	const double DT = 0.001; // 控制周期 // 
 	const double pi = 3.141592653589793;
 
 
@@ -530,19 +530,18 @@ auto test_input_smoother_7axis()->int {
 				arm.getInputPos(p);
 				return ret;
 			});
+
+			sp.init(joints1);
 		}
 
-
-
-
 		// 模拟实时循环 //
-		
 		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
 			double joint_ref[JOINT_NUM]{ 0.0 };
 			auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
 
+			aris::dynamic::dsp(1, 7, joint_ref);
 
-			
+
 			// 输出关节角度 //
 			file << step_cnt << ",";
 			for (int i = 0; i < JOINT_NUM; i++) {

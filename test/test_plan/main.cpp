@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
 	
 	//test_move_follower();
 	//test_function();
-	//test_input_smoother();
+	test_input_smoother();
 	test_multimodel_planner();
 	return 0;
 	

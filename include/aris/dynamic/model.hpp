@@ -578,19 +578,18 @@ namespace aris::dynamic{
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
 		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
-		auto getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
-		auto getEeNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
+		auto getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size>;
+		auto getSubEeSize(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
 
-		// 获取【某些 or 全部】子模型中的末端种类，使用【vector 或 原始内存】来表达
-		auto getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		auto getEeTypes()->std::vector<EEType>;
-		auto getEeTypes(Size submodel_num, const Size *submodel_ids, EEType*ee_types_out) -> void;
-		auto getEeTypes(EEType*) -> void;
+		// 获取【某些】子模型中的末端种类，使用【vector 或 原始内存】来表达
+		auto getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
+		auto getSubEeTypes(Size submodel_num, const Size *submodel_ids, EEType*ee_types_out) -> void;
 
-		// 获取【某些 or 全部】子模型中的末端地址，使用【vector 或 原始内存】来表达
-		auto getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
+		// 获取【某些】子模型中的末端地址，使用【vector 或 原始内存】来表达
+		auto getSubEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
+		auto getSubEes(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
+		
 		auto getEes()->std::vector<MotionBase*>;
-		auto getEes(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
 		auto getEes(MotionBase**) -> void;
 
 		// 获取对应子模型中的电机数量

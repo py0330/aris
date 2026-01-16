@@ -873,30 +873,42 @@ namespace aris::dynamic{
 	auto MultiModel::findMarker(std::string_view name)->aris::dynamic::Marker* {
 		auto model_name = name.substr(0, name.find_first_of('.'));
 		name = name.substr(name.find_first_of('.') + 1);
-		auto part_name = name.substr(0, name.find_first_of('.'));
-		name = name.substr(name.find_first_of('.') + 1);
-		auto marker_name = name.substr(0, name.find_first_of('.'));
 
 		auto found_model = std::find_if(subModels().begin(), subModels().end(), [model_name](const auto& variable)->auto{
 			return trimLR(variable.name()) == trimLR(model_name);
 		});
 
-		if (found_model == subModels().end() || !dynamic_cast<aris::dynamic::Model*>(&*found_model)) return nullptr;
+		if (found_model == subModels().end()) 
+			return nullptr;
+
+		if (auto model = dynamic_cast<aris::dynamic::Model*>(&*found_model)) {
+			auto part_name = name.substr(0, name.find_first_of('.'));
+			name = name.substr(name.find_first_of('.') + 1);
+			auto marker_name = name.substr(0, name.find_first_of('.'));
+			
+			auto found_part = std::find_if(model->partPool().begin(), model->partPool().end(), [part_name](const auto& variable)->auto {
+				return trimLR(variable.name()) == trimLR(part_name);
+				});
+
+			if (found_part == model->partPool().end()) return nullptr;
+
+			auto found_marker = std::find_if(found_part->markerPool().begin(), found_part->markerPool().end(), [marker_name](const auto& variable)->auto {
+				return trimLR(variable.name()) == trimLR(marker_name);
+				});
+
+			if (found_marker == found_part->markerPool().end()) return nullptr;
+
+			return &*found_marker;
+		}
+		else if (auto multi_model = dynamic_cast<aris::dynamic::MultiModel*>(&*found_model)) {
+			return multi_model->findMarker(name);
+		}
+		else {
+			return nullptr;
+		}
 		
-		auto model = dynamic_cast<aris::dynamic::Model*>(&*found_model);
-		auto found_part = std::find_if(model->partPool().begin(), model->partPool().end(), [part_name](const auto& variable)->auto{
-			return trimLR(variable.name()) == trimLR(part_name);
-		});
-
-		if (found_part == model->partPool().end()) return nullptr;
-
-		auto found_marker = std::find_if(found_part->markerPool().begin(), found_part->markerPool().end(), [marker_name](const auto& variable)->auto{
-			return trimLR(variable.name()) == trimLR(marker_name);
-		});
 		
-		if (found_marker == found_part->markerPool().end()) return nullptr;
-
-		return &*found_marker;
+		
 	}
 	auto MultiModel::findVariable(std::string_view name)->aris::dynamic::Variable* {
 		auto model_name = name.substr(0, name.find_first_of('.'));
@@ -919,82 +931,44 @@ namespace aris::dynamic{
 		return &*found_variable;
 	}
 
-
-
-
-	auto MultiModel::getEeNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size> {
+	auto MultiModel::getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size> {
 		std::vector<Size> ee_nums;
 
 		for (auto id : submodel_ids) {
-			auto& m = subModels()[id];
-
-			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
-				ee_nums.push_back(model->generalMotionPool().size());
-			}
-			else {
-				ee_nums.push_back(0);
-			}
+			ee_nums.push_back(subModels()[id].eeSize());
 		}
 
 		return ee_nums;
 
 	}
-	auto MultiModel::getEeNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void {
+	auto MultiModel::getSubEeSize(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void {
 		for (Size i = 0; i < submodel_num; ++i) {
-			auto model = dynamic_cast<aris::dynamic::Model*>(&subModels()[submodel_ids[i]]);
-			ee_num_out[i] = model ? model->generalMotionPool().size() : 0;
+			ee_num_out[i] = subModels()[submodel_ids[i]].eeSize();
 		}
 	}
 
-	auto MultiModel::getEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType> {
+	auto MultiModel::getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType> {
 		std::vector<EEType> ee_types;
 
 		for (Size i = 0; i < submodel_ids.size(); ++i) {
+			auto current_size = ee_types.size();
 			auto& m = subModels()[submodel_ids[i]];
-
-			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
-				for (auto& gm : model->generalMotionPool()) {
-					ee_types.push_back(gm.eeType());
-				}
-			}
+			ee_types.resize(ee_types.size() + m.eeSize());
+			std::copy_n(m.eeTypes(), m.eeSize(), ee_types.begin() + current_size);
 		}
 		return ee_types;
 	}
-	auto MultiModel::getEeTypes()->std::vector<EEType> {
-		std::vector<Size> model_ids(subModels().size());
-		std::iota(model_ids.begin(), model_ids.end(), 0);
-		return getEeTypes(model_ids);
-	}
-	auto MultiModel::getEeTypes(Size submodel_num, const Size* submodel_ids, EEType* ee_types_out) -> void {
+	auto MultiModel::getSubEeTypes(Size submodel_num, const Size* submodel_ids, EEType* ee_types_out) -> void {
 		Size id = 0;
 		
 		for (Size i = 0; i < submodel_num; ++i) {
 			auto& m = subModels()[submodel_ids[i]];
-
-			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
-				for (auto& gm : model->generalMotionPool()) {
-					ee_types_out[id] = gm.eeType();
-					id++;
-				}
-			}
-		}
-	}
-	auto MultiModel::getEeTypes(EEType* types)->void {
-		Size id = 0;
-
-		for (int model_id = 0; model_id < subModels().size(); ++model_id) {
-			auto& m = subModels()[model_id];
-
-			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
-				for (auto& gm : model->generalMotionPool()) {
-					types[id] = gm.eeType();
-					id++;
-				}
-			}
+			std::copy_n(m.eeTypes(), m.eeSize(), ee_types_out + id);
+			id += m.eeSize();
 		}
 	}
 
-	auto MultiModel::getEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*> {
+	auto MultiModel::getSubEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*> {
 		std::vector<aris::dynamic::MotionBase*> ees;
 
 		for (auto id : submodel_ids) {
@@ -1009,12 +983,7 @@ namespace aris::dynamic{
 
 		return ees;
 	}
-	auto MultiModel::getEes()->std::vector<MotionBase*> {
-		std::vector<Size> model_ids(subModels().size());
-		std::iota(model_ids.begin(), model_ids.end(), 0);
-		return getEes(model_ids);
-	}
-	auto MultiModel::getEes(Size submodel_num, const Size* submodel_ids, MotionBase** ee_out) -> void {
+	auto MultiModel::getSubEes(Size submodel_num, const Size* submodel_ids, MotionBase** ee_out) -> void {
 		Size ee_id = 0;
 
 		for (Size i = 0; i < submodel_num; ++i) {
@@ -1027,6 +996,12 @@ namespace aris::dynamic{
 				}
 			}
 		}
+	}
+
+	auto MultiModel::getEes()->std::vector<MotionBase*> {
+		std::vector<Size> model_ids(subModels().size());
+		std::iota(model_ids.begin(), model_ids.end(), 0);
+		return getSubEes(model_ids);
 	}
 	auto MultiModel::getEes(MotionBase** ees) -> void {
 		Size id = 0;

@@ -302,7 +302,7 @@ namespace aris::plan {
 			// 如果报错，此时用上一次的数据 //
 			if (node_ids_[(tg_idx_ % pool_size_)] < 0) {
 				for (int i = 0; i < input_size_; ++i)
-					p3_[i] = ins_nodes[i].p_;
+					p3_[i] = nodes4[i].p_;
 			}
 			
 			// 插值 //
@@ -324,6 +324,8 @@ namespace aris::plan {
 				input_poss_[j].k2_ = 0.0;
 				input_poss_[j].k3_ = 0.0;
 			}
+
+			node_ids_[0] = 0;
 
 			// 更新 tg_idx //
 			tg_idx_ = 0;
@@ -604,7 +606,7 @@ namespace aris::plan {
 				if (s2_ >= ii_.finalS() || ii_.retCodeAt(s2_) <= 0) {
 					// 初始化到指定位置 //
 					ii_.getInputAt(s2_, p3_);
-					ii_.init(p3_);
+					ii_.init(p3_); // 设置 ret_code 为0//
 					
 					// 前瞻 4 + interpolate_size 个数据 //
 					for (int i = 0; i < 4 + ii_.interpolationSize(); ++i) {
@@ -772,7 +774,8 @@ namespace aris::plan {
 		imp_->allocate_mem();
 	}
 	auto InputSmoother::init(const double *init_input_pos) -> void {
-		imp_->init_pos(init_input_pos);
+		// 设置 ii //
+		imp_->ii_.init(init_input_pos);
 	}
 	auto InputSmoother::getNextInput(double* p) -> std::int64_t {
 		return imp_->getNextInput(p);

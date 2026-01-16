@@ -156,7 +156,7 @@ namespace aris::dynamic{
 		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver4);
 
 	private:
-		friend auto createModelSevenAxis4(const SevenAxisParam4& param)->std::unique_ptr<aris::dynamic::Model>;
+		friend auto ARIS_API createModelSevenAxis4(const SevenAxisParam4& param)->std::unique_ptr<aris::dynamic::Model>;
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
