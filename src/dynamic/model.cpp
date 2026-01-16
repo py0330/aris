@@ -931,6 +931,12 @@ namespace aris::dynamic{
 		return &*found_variable;
 	}
 
+
+	// to be removed //
+	auto MultiModel::getEeTypes() -> std::vector<EEType> {
+		return std::vector<EEType>(eeTypes(), eeTypes() + eeSize());
+	}
+
 	auto MultiModel::getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size> {
 		std::vector<Size> ee_nums;
 

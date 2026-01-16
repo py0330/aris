@@ -577,6 +577,10 @@ namespace aris::dynamic{
 		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
+		// to be removed
+		auto getEeTypes() -> std::vector<EEType>;
+
+
 		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
 		auto getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getSubEeSize(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
