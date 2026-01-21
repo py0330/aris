@@ -123,6 +123,9 @@ namespace aris::plan {
 				ret1_ = ret2_;
 				aris::dynamic::s_vc(input_size_, p2_, p1_);
 
+				get_input_by_u(u0_, pu0_);
+				get_input_by_u(u1_, pu1_);
+
 				is_first_count_ = false;
 			}
 
@@ -201,6 +204,9 @@ namespace aris::plan {
 							ul_a = std::max(ul_a, left / f);
 							ur_a = std::min(ur_a, right / f);
 						}
+
+						//if (ur_a < 1.0)
+						//	std::cout << "error" << std::endl;
 					}
 
 					// CASE 2 //
@@ -221,6 +227,9 @@ namespace aris::plan {
 							ul_b = std::max(ul_b, left / f);
 							ur_b = std::min(ur_b, right / f);
 						}
+
+						//if (ur_a < 1.0)
+						//	std::cout << "error" << std::endl;
 					}
 				}
 
