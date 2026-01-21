@@ -29,68 +29,62 @@ namespace aris::dynamic{
 		// singular check //
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool { return false; }
 
-		// EE types //
+		// EE & Motion types //
 		auto virtual eeTypes()const noexcept->const EEType* { return nullptr; }
 		auto virtual eeSize()const noexcept->aris::Size { return 0; }
+		auto virtual motTypes()const noexcept->const EEType* { return nullptr; }
+		auto virtual motSize()const noexcept->aris::Size { return 0; }
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size { return 0; }
-		auto virtual getInputPos(double* pos)const noexcept->void {
-			for (int i = 0; i < inputPosSize(); ++i) pos[i] = inputPosAt(i);
-		}
-		auto virtual setInputPos(const double* pos)noexcept->void {
-			for (int i = 0; i < inputPosSize(); ++i) setInputPosAt(pos[i], i);
-		}
-		auto virtual inputPosAt(Size idx)const noexcept->double { return 0; }
-		auto virtual setInputPosAt(double pos, Size idx)noexcept->void { }
+		auto virtual getInputPos(double* pos)const noexcept->void;
+		auto virtual setInputPos(const double* pos)noexcept->void;
+		auto virtual inputPosAt(Size idx)const noexcept->double { return 0.0; }
+		auto virtual setInputPosAt(Size idx, double pos)noexcept->void { }
 
 		auto virtual inputVelSize()const noexcept->Size { return 0; }
-		auto virtual getInputVel(double* vel)const noexcept->void {
-			for (int i = 0; i < inputVelSize(); ++i) vel[i] = inputVelAt(i);
-		}
-		auto virtual setInputVel(const double* vel)noexcept->void {
-			for (int i = 0; i < inputVelSize(); ++i) setInputVelAt(vel[i], i);
-		}
+		auto virtual getInputVel(double* vel)const noexcept->void;
+		auto virtual setInputVel(const double* vel)noexcept->void;
 		auto virtual inputVelAt(Size idx)const noexcept->double { return 0; }
-		auto virtual setInputVelAt(double vel, Size idx)noexcept->void { }
+		auto virtual setInputVelAt(Size idx, double vel)noexcept->void { }
 
 		auto virtual inputAccSize()const noexcept->Size { return 0; }
-		auto virtual getInputAcc(double* acc)const noexcept->void {
-			for (int i = 0; i < inputAccSize(); ++i) acc[i] = inputAccAt(i);
-		}
-		auto virtual setInputAcc(const double* acc)noexcept->void {
-			for (int i = 0; i < inputAccSize(); ++i) setInputAccAt(acc[i], i);
-		}
+		auto virtual getInputAcc(double* acc)const noexcept->void;
+		auto virtual setInputAcc(const double* acc)noexcept->void;
 		auto virtual inputAccAt(Size idx)const noexcept->double { return 0; }
-		auto virtual setInputAccAt(double acc, Size idx)noexcept->void { }
+		auto virtual setInputAccAt(Size idx, double acc)noexcept->void { }
 
 		auto virtual inputFceSize()const noexcept->Size { return 0; }
-		auto virtual getInputFce(double* fce)const noexcept->void {
-			for (int i = 0; i < inputFceSize(); ++i) fce[i] = inputFceAt(i);
-		}
-		auto virtual setInputFce(const double* fce)noexcept->void {
-			for (int i = 0; i < inputFceSize(); ++i) setInputFceAt(fce[i], i);
-		}
+		auto virtual getInputFce(double* fce)const noexcept->void;
+		auto virtual setInputFce(const double* fce)noexcept->void;
 		auto virtual inputFceAt(Size idx)const noexcept->double { return 0; }
-		auto virtual setInputFceAt(double fce, Size idx)noexcept->void { }
+		auto virtual setInputFceAt(Size idx, double fce)noexcept->void { }
 
 		// output variables //
 		// 相比于 input 变量，output 变量不提供对特定维数的访问，因为末端一般为多维末端，需整体访问
 		auto virtual outputPosSize()const noexcept->Size { return 0; }
-		auto virtual getOutputPos(double* pos)const noexcept->void {}
-		auto virtual setOutputPos(const double* pos)noexcept->void {}
+		auto virtual getOutputPos(double* pos)const noexcept->void;
+		auto virtual setOutputPos(const double* pos)noexcept->void;
+		auto virtual outputPosAt(Size idx)const noexcept->const double* { return nullptr; }
+		auto virtual setOutputPosAt(Size idx, const double *pos)noexcept->void {}
 
 		auto virtual outputVelSize()const noexcept->Size { return 0; }
-		auto virtual getOutputVel(double* vel)const noexcept->void {}
-		auto virtual setOutputVel(const double* vel)noexcept->void {}
+		auto virtual getOutputVel(double* vel)const noexcept->void;
+		auto virtual setOutputVel(const double* vel)noexcept->void;
+		auto virtual outputVelAt(Size idx)const noexcept->const double* { return nullptr; }
+		auto virtual setOutputVelAt(Size idx, const double* pos)noexcept->void {}
 
 		auto virtual outputAccSize()const noexcept->Size { return 0; }
-		auto virtual getOutputAcc(double* acc)const noexcept->void {}
-		auto virtual setOutputAcc(const double* acc)noexcept->void {}
+		auto virtual getOutputAcc(double* acc)const noexcept->void;
+		auto virtual setOutputAcc(const double* acc)noexcept->void;
+		auto virtual outputAccAt(Size idx)const noexcept->const double* { return nullptr; }
+		auto virtual setOutputAccAt(Size idx, const double* pos)noexcept->void {}
 
 		auto virtual outputFceSize()const noexcept->Size { return 0; }
-		auto virtual getOutputFce(double* fce)const noexcept->void {}
-		auto virtual setOutputFce(const double* fce)noexcept->void {}
+		auto virtual getOutputFce(double* fce)const noexcept->void;
+		auto virtual setOutputFce(const double* fce)noexcept->void;
+		auto virtual outputFceAt(Size idx)const noexcept->const double* { return nullptr; }
+		auto virtual setOutputFceAt(Size idx, const double* pos)noexcept->void {}
 
 		auto virtual init()->void {};
 	};

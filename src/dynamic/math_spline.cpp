@@ -694,7 +694,7 @@ namespace aris::dynamic{
 			//double d3y_at_x2 = (-y[0] + 2 * y[1] - 2 * y[3] + y[4])/2;
 			};
 
-		double du_ds_s2, d2u_ds2_s2, du_ds_s3, d2u_ds2_s3, dp_ds_s2, d2p_ds2_s2, dp_ds_s3, d2p_ds2_s3;
+		double du_ds_s2, d2u_ds2_s2, dp_ds_s2, d2p_ds2_s2, dp_ds_s3, d2p_ds2_s3;
 
 		cpt_diff(u, du_ds_s2, d2u_ds2_s2);
 		//cpt_diff(u + 1, du_ds_s3, d2u_ds2_s3);

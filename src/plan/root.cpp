@@ -1049,7 +1049,7 @@ namespace aris::plan{
 				mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000,
 				p, v, a, mvj_param->total_count[i]);
 
-			model()->setInputPosAt(p, i);
+			model()->setInputPosAt(i, p);
 			model()->forwardKinematics();
 		}
 

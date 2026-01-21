@@ -128,7 +128,7 @@ namespace aris::dynamic {
 			// 如果当前没有解，将其设为0
 			for (int i = 0; i < 4; ++i) {
 				if (!std::isfinite(model()->inputPosAt(i))) {
-					model()->setInputPosAt(0.0, i);
+					model()->setInputPosAt(i, 0.0);
 				}
 			}
 

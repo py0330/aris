@@ -271,15 +271,15 @@ void test_multi_model() {
 			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
 		};
 
-		ee_types = multi.getMotionTypes();
-		if (ee_types != result0)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes();
+		//if (ee_types != result0)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(15, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(ee_types.data());
-		if (ee_types != result0)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(ee_types.data());
+		//if (ee_types != result0)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 
 		std::vector<aris::dynamic::EEType> result1{
@@ -290,15 +290,15 @@ void test_multi_model() {
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
-		ee_types = multi.getMotionTypes({ 3,4,0,2,1 });
-		if (ee_types != result1)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes({ 3,4,0,2,1 });
+		//if (ee_types != result1)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(15, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(5, sub1, ee_types.data());
-		if (ee_types != result1)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(5, sub1, ee_types.data());
+		//if (ee_types != result1)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		std::vector<aris::dynamic::EEType> result2{
 			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
@@ -307,15 +307,15 @@ void test_multi_model() {
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
-		ee_types = multi.getMotionTypes({ 4,2,3,3 });
-		if (ee_types != result2)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes({ 4,2,3,3 });
+		//if (ee_types != result2)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(14, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(4, sub2, ee_types.data());
-		if (ee_types != result2)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(14, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(4, sub2, ee_types.data());
+		//if (ee_types != result2)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 	}
 
 	// test getMotions
@@ -1089,15 +1089,15 @@ void test_multi_model2() {
 			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
 		};
 
-		ee_types = multi.getMotionTypes();
-		if (ee_types != result0)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes();
+		//if (ee_types != result0)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(15, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(ee_types.data());
-		if (ee_types != result0)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(ee_types.data());
+		//if (ee_types != result0)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 
 		std::vector<aris::dynamic::EEType> result1{
@@ -1108,15 +1108,15 @@ void test_multi_model2() {
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
-		ee_types = multi.getMotionTypes({ 3,4,0,2,1 });
-		if (ee_types != result1)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes({ 3,4,0,2,1 });
+		//if (ee_types != result1)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(15, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(5, sub1, ee_types.data());
-		if (ee_types != result1)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(5, sub1, ee_types.data());
+		//if (ee_types != result1)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		std::vector<aris::dynamic::EEType> result2{
 			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
@@ -1125,15 +1125,15 @@ void test_multi_model2() {
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
-		ee_types = multi.getMotionTypes({ 4,2,3,3 });
-		if (ee_types != result2)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types = multi.getMotionTypes({ 4,2,3,3 });
+		//if (ee_types != result2)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		ee_types.clear();
-		ee_types.resize(14, aris::dynamic::EEType::PQ);
-		multi.getMotionTypes(4, sub2, ee_types.data());
-		if (ee_types != result2)
-			std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
+		//ee_types.clear();
+		//ee_types.resize(14, aris::dynamic::EEType::PQ);
+		//multi.getMotionTypes(4, sub2, ee_types.data());
+		//if (ee_types != result2)
+		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 	}
 
 	// test getMotions

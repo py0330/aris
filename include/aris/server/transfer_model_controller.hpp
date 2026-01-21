@@ -48,9 +48,9 @@ namespace aris::server{
 			for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 				auto& cm = controller->motorPool()[i];
 				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
-					model->setInputPosAt(model_pos_[i], i);
+					model->setInputPosAt(i, model_pos_[i]);
 				if ((options[i] & aris::plan::Plan::UPDATE_MODEL_VEL_FROM_CONTROLLER))
-					model->setInputVelAt(model_vel_[i], i);
+					model->setInputVelAt(i, model_vel_[i]);
 			}
 		}
 		auto updateDataModel2Controller(

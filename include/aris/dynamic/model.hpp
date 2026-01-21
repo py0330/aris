@@ -244,36 +244,36 @@ namespace aris::dynamic{
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size override;                         
 		auto virtual inputPosAt(Size idx)const noexcept->double override;                 
-		auto virtual setInputPosAt(double p, Size idx)noexcept->void override;     
+		auto virtual setInputPosAt(Size idx, double p)noexcept->void override;
 
 		auto virtual inputVelSize()const noexcept->Size override;
 		auto virtual inputVelAt(Size idx)const noexcept->double override;
-		auto virtual setInputVelAt(double v, Size idx)noexcept->void override;
+		auto virtual setInputVelAt(Size idx, double v)noexcept->void override;
 
 		auto virtual inputAccSize()const noexcept->Size override;
 		auto virtual inputAccAt(Size idx)const noexcept->double override;
-		auto virtual setInputAccAt(double a, Size idx)noexcept->void override;
+		auto virtual setInputAccAt(Size idx, double a)noexcept->void override;
 
 		auto virtual inputFceSize()const noexcept->Size override;
 		auto virtual inputFceAt(Size idx)const noexcept->double override;
-		auto virtual setInputFceAt(double f, Size idx)noexcept->void override;
+		auto virtual setInputFceAt(Size idx, double f)noexcept->void override;
 
 		// output variables //
-		auto virtual outputPosSize()const noexcept->Size override;
-		auto virtual getOutputPos(double* pos)const noexcept->void override;
-		auto virtual setOutputPos(const double* pos)noexcept->void override;
+		auto virtual outputPosSize()const noexcept->aris::Size override;
+		auto virtual outputPosAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputPosAt(Size idx, const double* pos)noexcept->void override;
 
-		auto virtual outputVelSize()const noexcept->Size override;
-		auto virtual getOutputVel(double* vel)const noexcept->void override;
-		auto virtual setOutputVel(const double* vel)noexcept->void override;
+		auto virtual outputVelSize()const noexcept->aris::Size override;
+		auto virtual outputVelAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputVelAt(Size idx, const double* vel)noexcept->void override;
 
-		auto virtual outputAccSize()const noexcept->Size override;
-		auto virtual getOutputAcc(double* acc)const noexcept->void override;
-		auto virtual setOutputAcc(const double* acc)noexcept->void override;
+		auto virtual outputAccSize()const noexcept->aris::Size override;
+		auto virtual outputAccAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputAccAt(Size idx, const double* acc)noexcept->void override;
 
-		auto virtual outputFceSize()const noexcept->Size override;
-		auto virtual getOutputFce(double* fce)const noexcept->void override;
-		auto virtual setOutputFce(const double* fce)noexcept->void override;
+		auto virtual outputFceSize()const noexcept->aris::Size override;
+		auto virtual outputFceAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputFceAt(Size idx, const double* fce)noexcept->void override;
 		/// @}
 
 		
@@ -384,42 +384,12 @@ namespace aris::dynamic{
 		auto virtual init()->void override;
 
 		// kinematics & dynamics //
-		auto virtual inverseKinematics()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.inverseKinematics())
-					return ret;
-			return 0;
-		}
-		auto virtual forwardKinematics()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.forwardKinematics())
-					return ret;
-			return 0;
-		}
-		auto virtual inverseKinematicsVel()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.inverseKinematicsVel())
-					return ret;
-			return 0;
-		}
-		auto virtual forwardKinematicsVel()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.forwardKinematicsVel())
-					return ret;
-			return 0;
-		}
-		auto virtual inverseDynamics()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.inverseDynamics())
-					return ret;
-			return 0;
-		}
-		auto virtual forwardDynamics()noexcept->int override {
-			for (auto& model : subModels())
-				if (auto ret = model.forwardDynamics())
-					return ret;
-			return 0;
-		}
+		auto virtual inverseKinematics()noexcept->int override;
+		auto virtual forwardKinematics()noexcept->int override;
+		auto virtual inverseKinematicsVel()noexcept->int override;
+		auto virtual forwardKinematicsVel()noexcept->int override;
+		auto virtual inverseDynamics()noexcept->int override;
+		auto virtual forwardDynamics()noexcept->int override;
 
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
@@ -432,42 +402,50 @@ namespace aris::dynamic{
 		auto virtual getInputPos(double* mp)const noexcept->void override;
 		auto virtual setInputPos(const double* mp)noexcept->void override;
 		auto virtual inputPosAt(Size idx)const noexcept->double override;
-		auto virtual setInputPosAt(double mp, Size idx)noexcept->void override;
+		auto virtual setInputPosAt(Size idx, double p)noexcept->void override;
 
 		auto virtual inputVelSize()const noexcept->Size override;
 		auto virtual getInputVel(double* mv)const noexcept->void override;
 		auto virtual setInputVel(const double* mv)noexcept->void override;
 		auto virtual inputVelAt(Size idx)const noexcept->double override;
-		auto virtual setInputVelAt(double mv, Size idx)noexcept->void override;
+		auto virtual setInputVelAt(Size idx, double mv)noexcept->void override;
 
 		auto virtual inputAccSize()const noexcept->Size override;
 		auto virtual getInputAcc(double* ma)const noexcept->void override;
 		auto virtual setInputAcc(const double* ma)noexcept->void override;
 		auto virtual inputAccAt(Size idx)const noexcept->double override;
-		auto virtual setInputAccAt(double ma, Size idx)noexcept->void override;
+		auto virtual setInputAccAt(Size idx, double ma)noexcept->void override;
 
 		auto virtual inputFceSize()const noexcept->Size override;
 		auto virtual getInputFce(double* mf)const noexcept->void override;
 		auto virtual setInputFce(const double* mf)noexcept->void override;
 		auto virtual inputFceAt(Size idx)const noexcept->double override;
-		auto virtual setInputFceAt(double mf, Size idx)noexcept->void override;
+		auto virtual setInputFceAt(Size idx, double mf)noexcept->void override;
 
 		// outputs //
 		auto virtual outputPosSize()const noexcept->aris::Size override;
 		auto virtual getOutputPos(double* mp)const noexcept->void override;
 		auto virtual setOutputPos(const double* mp)noexcept->void override;
+		auto virtual outputPosAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputPosAt(Size idx, const double* pos)noexcept->void override;
 
 		auto virtual outputVelSize()const noexcept->aris::Size override;
 		auto virtual getOutputVel(double* mv)const noexcept->void override;
 		auto virtual setOutputVel(const double* mv)noexcept->void override;
+		auto virtual outputVelAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputVelAt(Size idx, const double* vel)noexcept->void override;
 
 		auto virtual outputAccSize()const noexcept->aris::Size override;
 		auto virtual getOutputAcc(double* ma)const noexcept->void override;
 		auto virtual setOutputAcc(const double* ma)noexcept->void override;
+		auto virtual outputAccAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputAccAt(Size idx, const double* acc)noexcept->void override;
 
 		auto virtual outputFceSize()const noexcept->aris::Size override;
 		auto virtual getOutputFce(double* mf)const noexcept->void override;
 		auto virtual setOutputFce(const double* mf)noexcept->void override;
+		auto virtual outputFceAt(Size idx)const noexcept->const double* override;
+		auto virtual setOutputFceAt(Size idx, const double* fce)noexcept->void override;
 
 		// sub models //
 		auto resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void;
@@ -579,7 +557,8 @@ namespace aris::dynamic{
 
 		// to be removed
 		auto getEeTypes() -> std::vector<EEType>;
-
+		auto getMotionTypes(const std::vector<Size>& submodel_ids) -> std::vector<EEType>;
+		auto getMotionTypes() -> std::vector<EEType>;
 
 		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
 		auto getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size>;
@@ -601,10 +580,9 @@ namespace aris::dynamic{
 		auto getMotionNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* mot_num_out) -> void;
 		
 		// 获取【某些 or 全部】子模型中的电机种类，使用【vector 或 原始内存】来表达
-		auto getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		auto getMotionTypes()->std::vector<EEType>;
-		auto getMotionTypes(Size submodel_num, const Size* submodel_ids, EEType* mot_types_out) -> void;
-		auto getMotionTypes(EEType*) -> void;
+		
+		//auto getMotionTypes(Size submodel_num, const Size* submodel_ids, EEType* mot_types_out) -> void;
+		//auto getMotionTypes(EEType*) -> void;
 		
 		// 获取【某些 or 全部】子模型中的电机地址，使用【vector 或 原始内存】来表达
 		auto getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*>;

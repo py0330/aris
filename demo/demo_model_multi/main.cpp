@@ -36,8 +36,6 @@ public:
 	MoveL(const MoveL& other);
 };
 
-auto getSubmodels()->std::vector<aris::Size>;
-
 auto MoveL::prepareNrt()->void{
 	
 	MoveLParam param;
@@ -61,9 +59,9 @@ auto MoveL::prepareNrt()->void{
 	/// <returns></returns>
 
 	auto motion_ids = model->getMotionIds({2,0});
-	auto ees = model->getEes({2,0});
-	auto ee_types = model->getEeTypes({ 2,0 });
-	auto ee_nums = model->getEeNumOfSubModels({ 2,0 });
+	auto ees = model->getSubEes({2,0});
+	auto ee_types = model->getSubEeTypes({ 2,0 });
+	auto ee_nums = model->getSubEeSize({ 2,0 });
 
 	double input_pos[7];
 	aris::Size pos_id = 0;

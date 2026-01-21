@@ -15,10 +15,12 @@ namespace aris::server{
 	{
 		for (std::size_t i = 0; i < std::min(controller->motorPool().size(), model->inputPosSize()); ++i) {
 			auto& cm = controller->motorPool()[i];
-			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER))
-				model->setInputPosAt(cm.targetPos(), i);
+			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_POS_FROM_CONTROLLER)) {
+				model->setInputPosAt(i, cm.targetPos());
+			}
+				
 			if ((options[i] & aris::plan::Plan::UPDATE_MODEL_VEL_FROM_CONTROLLER))
-				model->setInputVelAt(cm.targetVel(), i);
+				model->setInputVelAt(i, cm.targetVel());
 		}
 	}
 	auto TransferModelController::updateDataModel2Controller(

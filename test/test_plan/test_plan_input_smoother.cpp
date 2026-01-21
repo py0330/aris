@@ -539,9 +539,6 @@ auto test_input_smoother_7axis()->int {
 			double joint_ref[JOINT_NUM]{ 0.0 };
 			auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
 
-			aris::dynamic::dsp(1, 7, joint_ref);
-
-
 			// 输出关节角度 //
 			file << step_cnt << ",";
 			for (int i = 0; i < JOINT_NUM; i++) {

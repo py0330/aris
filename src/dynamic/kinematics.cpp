@@ -10,6 +10,8 @@
 #include <array>
 #include <list>
 
+#include "aris/core/reflection.hpp"
+
 #include "aris/dynamic/math_matrix.hpp"
 #include "aris/dynamic/pose.hpp"
 #include "aris/dynamic/screw.hpp"
@@ -688,4 +690,202 @@ namespace aris::dynamic{
 		eye_in_base[1] = b[1];
 		eye_in_base[2] = b[2];
 	}
+
+	ARIS_REGISTRATION{
+
+	//	enum class EEType {
+	//	PE313,   // 位置与313欧拉角，6维末端， 6维向量
+	//	PE321,   // 位置与321欧拉角，6维末端， 6维向量
+	//	PE123,   // 位置与123欧拉角，6维末端， 6维向量
+	//	PQ,      // 位置与四元数，   6维末端， 7维向量
+	//	PM,      // 位置与位姿矩阵， 6维末端，16维向量
+	//	RE313,   // 313欧拉角，      3维末端， 3维向量
+	//	RE321,   // 321欧拉角，      3维末端， 3维向量
+	//	RE123,   // 123欧拉角，      3维末端， 3维向量
+	//	RQ,      // 四元数，         3维末端， 4维向量
+	//	RM,      // 位姿矩阵，       3维末端， 9维向量
+	//	XYZT,    // x,y,z,theta，    4维末端， 4维向量
+	//	XYZ,     // x,y,z，          3维末端， 3维向量
+	//	RTZ,     // 极坐标r,theta,z，3维末端， 3维向量
+	//	XYT,     // x,y,theta，      3维末端， 3维向量
+	//	XY,      // x,y，            2维末端， 2维向量
+	//	RT,      // 极坐标r,theta，  2维末端， 2维向量
+	//	X,       // 位置x，          1维末端， 1维向量
+	//	A,       // 角度a，          1维末端， 1维向量
+	//	UNKNOWN,
+	//};
+		aris::core::class_<EEType>("EEType")
+			.textMethod([](EEType* type)->std::string {
+				switch (*type) {
+				case EEType::PE313:return "PE313";
+				case EEType::PE321:return "PE321";
+				case EEType::PE123:return "PE123";
+				case EEType::PQ:return "PQ";
+				case EEType::PM:return "PM";
+				case EEType::RE313:return "RE313";
+				case EEType::RE321:return "RE321";
+				case EEType::RE123:return "RE123";
+				case EEType::RQ:return "RQ";
+				case EEType::RM:return "RM";
+				case EEType::XYZT:return "XYZT";
+				case EEType::XYZ:return "XYZ";
+				case EEType::RTZ:return "RTZ";
+				case EEType::XYT:return "XYT";
+				case EEType::XY:return "XY";
+				case EEType::RT:return "RT";
+				case EEType::X:return "X";
+				case EEType::A:return "A";
+				case EEType::UNKNOWN:return "UNKNOWN";
+				default:return "UNKNOWN";
+				}
+			}, [](EEType* type, std::string_view name)->void {
+				if (name == "PE313")*type = EEType::PE313;
+				if (name == "PE321")*type = EEType::PE321;
+				if (name == "PE123")*type = EEType::PE123;
+				if (name == "PQ")*type = EEType::PQ;
+				if (name == "PM")*type = EEType::PM;
+				if (name == "RE313")*type = EEType::RE313;
+				if (name == "RE321")*type = EEType::RE321;
+				if (name == "RE123")*type = EEType::RE123;
+				if (name == "RQ")*type = EEType::RQ;
+				if (name == "RM")*type = EEType::RM;
+				if (name == "XYZT")*type = EEType::XYZT;
+				if (name == "XYZ")*type = EEType::XYZ;
+				if (name == "RTZ")*type = EEType::RTZ;
+				if (name == "XYT")*type = EEType::XYT;
+				if (name == "XY")*type = EEType::XY;
+				if (name == "RT")*type = EEType::RT;
+				if (name == "X")*type = EEType::X;
+				if (name == "A")*type = EEType::A;
+				if (name == "UNKNOWN")*type = EEType::UNKNOWN;
+			});
+
+		aris::core::class_<EEVelType>("EEVelType")
+			.textMethod([](EEVelType* type)->std::string {
+				switch (*type) {
+				case EEVelType::VE313:return "PE313";
+				case EEVelType::VE321:return "PE321";
+				case EEVelType::VE123:return "PE123";
+				case EEVelType::VQ:return "PQ";
+				case EEVelType::VM:return "PM";
+				case EEVelType::WE313:return "WE313";
+				case EEVelType::WE321:return "WE321";
+				case EEVelType::WE123:return "WE123";
+				case EEVelType::WQ:return "WQ";
+				case EEVelType::WM:return "WM";
+				case EEVelType::DXYZT:return "DXYZT";
+				case EEVelType::DXYZ:return "DXYZ";
+				case EEVelType::DRTZ:return "DRTZ";
+				case EEVelType::DXYT:return "DXYT";
+				case EEVelType::DXY:return "DXY";
+				case EEVelType::DRT:return "DRT";
+				case EEVelType::DX:return "DX";
+				case EEVelType::DA:return "DA";
+				case EEVelType::UNKNOWN:return "UNKNOWN";
+				default:return "UNKNOWN";
+				}
+			}, [](EEVelType* type, std::string_view name)->void {
+				if (name == "VE313")*type = EEVelType::VE313;
+				if (name == "VE321")*type = EEVelType::VE321;
+				if (name == "VE123")*type = EEVelType::VE123;
+				if (name == "VQ")*type = EEVelType::VQ;
+				if (name == "VM")*type = EEVelType::VM;
+				if (name == "WE313")*type = EEVelType::WE313;
+				if (name == "WE321")*type = EEVelType::WE321;
+				if (name == "WE123")*type = EEVelType::WE123;
+				if (name == "WQ")*type = EEVelType::WQ;
+				if (name == "WM")*type = EEVelType::WM;
+				if (name == "DXYZT")*type = EEVelType::DXYZT;
+				if (name == "DXYZ")*type = EEVelType::DXYZ;
+				if (name == "DRTZ")*type = EEVelType::DRTZ;
+				if (name == "DXYT")*type = EEVelType::DXYT;
+				if (name == "DXY")*type = EEVelType::DXY;
+				if (name == "DRT")*type = EEVelType::DRT;
+				if (name == "DX")*type = EEVelType::DX;
+				if (name == "DA")*type = EEVelType::DA;
+				if (name == "UNKNOWN")*type = EEVelType::UNKNOWN;
+			});
+	
+		aris::core::class_<EEAccType>("EEAccType")
+			.textMethod([](EEAccType* type)->std::string {
+				switch (*type) {
+				case EEAccType::AE313:return "AE313";
+				case EEAccType::AE321:return "AE321";
+				case EEAccType::AE123:return "AE123";
+				case EEAccType::AQ:return "AQ";
+				case EEAccType::AM:return "AM";
+				case EEAccType::XE313:return "XE313";
+				case EEAccType::XE321:return "XE321";
+				case EEAccType::XE123:return "XE123";
+				case EEAccType::XQ:return "XQ";
+				case EEAccType::XM:return "XM";
+				case EEAccType::D2XYZT:return "D2XYZT";
+				case EEAccType::D2XYZ:return "D2XYZ";
+				case EEAccType::D2RTZ:return "D2RTZ";
+				case EEAccType::D2XYT:return "D2XYT";
+				case EEAccType::D2XY:return "D2XY";
+				case EEAccType::D2RT:return "D2RT";
+				case EEAccType::D2X:return "D2X";
+				case EEAccType::D2A:return "D2A";
+				case EEAccType::UNKNOWN:return "UNKNOWN";
+				default:return "UNKNOWN";
+				}
+			}, [](EEAccType* type, std::string_view name)->void {
+				if (name == "AE313")*type = EEAccType::AE313;
+				if (name == "AE321")*type = EEAccType::AE321;
+				if (name == "AE123")*type = EEAccType::AE123;
+				if (name == "AQ")*type = EEAccType::AQ;
+				if (name == "AM")*type = EEAccType::AM;
+				if (name == "XE313")*type = EEAccType::XE313;
+				if (name == "XE321")*type = EEAccType::XE321;
+				if (name == "XE123")*type = EEAccType::XE123;
+				if (name == "XQ")*type = EEAccType::XQ;
+				if (name == "XM")*type = EEAccType::XM;
+				if (name == "D2XYZT")*type = EEAccType::D2XYZT;
+				if (name == "D2XYZ")*type = EEAccType::D2XYZ;
+				if (name == "D2RTZ")*type = EEAccType::D2RTZ;
+				if (name == "D2XYT")*type = EEAccType::D2XYT;
+				if (name == "D2XY")*type = EEAccType::D2XY;
+				if (name == "D2RT")*type = EEAccType::D2RT;
+				if (name == "D2X")*type = EEAccType::D2X;
+				if (name == "D2A")*type = EEAccType::D2A;
+				if (name == "UNKNOWN")*type = EEAccType::UNKNOWN;
+			});
+			//FT,        // 力与转矩，     6维末端， 6维向量
+			//	FS,        // 力旋量，       6维末端， 6维向量
+			//	TORQUE,    // 转矩，         3维末端， 3维向量
+			//	FORCE,     // 3维力，        3维末端， 3维向量
+			//	FXYZ_TZ,   // 3维转矩，      4维末端， 4维向量
+			//	FXY_TZ,    // Fxy和Tz，      3维末端， 3维向量
+			//	FX,        // Fx，           1维末端， 1维向量
+			//	TZ,        // Tz，           1维末端， 1维向量
+			//	UNKNOWN,
+		aris::core::class_<EEFceType>("EEFceType")
+			.textMethod([](EEFceType* type)->std::string {
+				switch (*type) {
+				case EEFceType::FT:return "FT";
+				case EEFceType::FS:return "FS";
+				case EEFceType::TORQUE:return "TORQUE";
+				case EEFceType::FORCE:return "FORCE";
+				case EEFceType::FXYZ_TZ:return "FXYZ_TZ";
+				case EEFceType::FXY_TZ:return "FXY_TZ";
+				case EEFceType::FX:return "FX";
+				case EEFceType::TZ:return "TZ";
+				case EEFceType::UNKNOWN:return "UNKNOWN";
+				default:return "UNKNOWN";
+				}
+			}, [](EEFceType* type, std::string_view name)->void {
+				if (name == "FT")*type = EEFceType::FT;
+				if (name == "FS")*type = EEFceType::FS;
+				if (name == "TORQUE")*type = EEFceType::TORQUE;
+				if (name == "FORCE")*type = EEFceType::FORCE;
+				if (name == "FXYZ_TZ")*type = EEFceType::FXYZ_TZ;
+				if (name == "FXY_TZ")*type = EEFceType::FXY_TZ;
+				if (name == "FX")*type = EEFceType::FX;
+				if (name == "TZ")*type = EEFceType::TZ;
+				if (name == "UNKNOWN")*type = EEFceType::UNKNOWN;
+			});
+
+	}		
+		
 }

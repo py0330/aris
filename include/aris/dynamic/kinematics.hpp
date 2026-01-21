@@ -172,7 +172,6 @@ namespace aris::dynamic{
 		A,       // 角度a，          1维末端， 1维向量
 		UNKNOWN,
 	};
-
 	auto inline s_ee_type_pos_size(EEType type)noexcept->aris::Size {
 		switch (type){
 		case EEType::PE313:
@@ -224,6 +223,9 @@ namespace aris::dynamic{
 		}
 		return size;
 	}
+	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void;
+	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void;
+
 	auto inline s_ee_type_vel_dim(EEType type)noexcept->aris::Size {
 		switch (type)
 		{
@@ -276,8 +278,137 @@ namespace aris::dynamic{
 		}
 		return size;
 	}
-	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void;
-	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void;
+
+	enum class EEVelType {
+		VA,      // 速度与角速度，   6维末端， 6维向量
+		VS,      // 速度旋量，       6维末端， 6维向量
+		VE313,   // 位置与313欧拉角，6维末端， 6维向量
+		VE321,   // 位置与321欧拉角，6维末端， 6维向量
+		VE123,   // 位置与123欧拉角，6维末端， 6维向量
+		VQ,      // 位置与四元数，   6维末端， 7维向量
+		VM,      // 位置与位姿矩阵， 6维末端，16维向量
+		WE313,   // 313欧拉角，      3维末端， 3维向量
+		WE321,   // 321欧拉角，      3维末端， 3维向量
+		WE123,   // 123欧拉角，      3维末端， 3维向量
+		WQ,      // 四元数，         3维末端， 4维向量
+		WM,      // 位姿矩阵，       3维末端， 9维向量
+		DXYZT,   // x,y,z,theta，    4维末端， 4维向量
+		DXYZ,    // x,y,z，          3维末端， 3维向量
+		DRTZ,    // 极坐标r,theta,z，3维末端， 3维向量
+		DXYT,    // x,y,theta，      3维末端， 3维向量
+		DXY,     // x,y，            2维末端， 2维向量
+		DRT,     // 极坐标r,theta，  2维末端， 2维向量
+		DX,      // 位置x，          1维末端， 1维向量
+		DA,      // 角度a，          1维末端， 1维向量
+		UNKNOWN,
+	};
+	auto inline s_ee_type_vel_size(EEType type)noexcept->aris::Size {
+		switch (type) {
+		case EEType::PE313:
+			return 6;
+		case EEType::PE321:
+			return 6;
+		case EEType::PE123:
+			return 6;
+		case EEType::PQ:
+			return 6;
+		case EEType::PM:
+			return 6;
+		case EEType::RE313:
+			return 3;
+		case EEType::RE321:
+			return 3;
+		case EEType::RE123:
+			return 3;
+		case EEType::RQ:
+			return 3;
+		case EEType::RM:
+			return 3;
+		case EEType::XYZT:
+			return 4;
+		case EEType::XYZ:
+			return 3;
+		case EEType::RTZ:
+			return 3;
+		case EEType::XYT:
+			return 3;
+		case EEType::XY:
+			return 2;
+		case EEType::RT:
+			return 2;
+		case EEType::X:
+			return 1;
+		case EEType::A:
+			return 1;
+		case EEType::UNKNOWN:
+			return -1;
+		default:
+			return -1;
+		}
+	}
+	auto inline s_ee_type_vel_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+		aris::Size size = 0;
+		for (Size i = 0; i < n; ++i) {
+			size += s_ee_type_vel_size(ee_types[i]);
+		}
+		return size;
+	}
+
+	enum class EEAccType {
+		AA,      // 速度与角速度，   6维末端， 6维向量
+		AS,      // 速度旋量，       6维末端， 6维向量
+		AE313,   // 位置与313欧拉角，6维末端， 6维向量
+		AE321,   // 位置与321欧拉角，6维末端， 6维向量
+		AE123,   // 位置与123欧拉角，6维末端， 6维向量
+		AQ,      // 位置与四元数，   6维末端， 7维向量
+		AM,      // 位置与位姿矩阵， 6维末端，16维向量
+		XE313,   // 313欧拉角，      3维末端， 3维向量
+		XE321,   // 321欧拉角，      3维末端， 3维向量
+		XE123,   // 123欧拉角，      3维末端， 3维向量
+		XQ,      // 四元数，         3维末端， 4维向量
+		XM,      // 位姿矩阵，       3维末端， 9维向量
+		D2XYZT,   // x,y,z,theta，    4维末端， 4维向量
+		D2XYZ,    // x,y,z，          3维末端， 3维向量
+		D2RTZ,    // 极坐标r,theta,z，3维末端， 3维向量
+		D2XYT,    // x,y,theta，      3维末端， 3维向量
+		D2XY,     // x,y，            2维末端， 2维向量
+		D2RT,     // 极坐标r,theta，  2维末端， 2维向量
+		D2X,      // 位置x，          1维末端， 1维向量
+		D2A,      // 角度a，          1维末端， 1维向量
+		UNKNOWN,
+	};
+	auto inline s_ee_type_acc_size(EEType type)noexcept->aris::Size {
+		return s_ee_type_vel_size(type);
+	}
+	auto inline s_ee_type_acc_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+		aris::Size size = 0;
+		for (Size i = 0; i < n; ++i) {
+			size += s_ee_type_acc_size(ee_types[i]);
+		}
+		return size;
+	}
+	
+	enum class EEFceType {
+		FT,        // 力与转矩，     6维末端， 6维向量
+		FS,        // 力旋量，       6维末端， 6维向量
+		TORQUE,    // 转矩，         3维末端， 3维向量
+		FORCE,     // 3维力，        3维末端， 3维向量
+		FXYZ_TZ,   // 3维转矩，      4维末端， 4维向量
+		FXY_TZ,    // Fxy和Tz，      3维末端， 3维向量
+		FX,        // Fx，           1维末端， 1维向量
+		TZ,        // Tz，           1维末端， 1维向量
+		UNKNOWN,
+	};
+	auto inline s_ee_type_fce_size(EEType type)noexcept->aris::Size {
+		return s_ee_type_vel_size(type);
+	}
+	auto inline s_ee_type_fce_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+		aris::Size size = 0;
+		for (Size i = 0; i < n; ++i) {
+			size += s_ee_type_acc_size(ee_types[i]);
+		}
+		return size;
+	}
 
 	using IkFunc = std::function<int(const void* dh, const double* ee_pos, const double*current_input, int which_root, double* input)>;
 	//    root_size : 解的大小，例如 puma 的解是 6 维
