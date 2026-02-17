@@ -500,8 +500,8 @@ namespace aris::plan {
 
 				model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
 
-				int ik_ret = 0;
-				if (ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data()))
+				int ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
+				if (ik_ret)
 					return ik_ret;
 
 				model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
