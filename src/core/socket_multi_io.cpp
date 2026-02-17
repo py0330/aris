@@ -1627,14 +1627,14 @@ namespace aris::core{
 			}
 
 			// 本帧没有收取完 //
-			required_length_ = frame_length + payload_len;
+			required_length_ = frame_length + static_cast<int>(payload_len);
 			if (received_length_ < required_length_)
 				return 2;
 
 			// 读取数据 
-			datapack_mem_.resize(payload_len + datapack_received_length_);
+			datapack_mem_.resize(static_cast<std::size_t>(payload_len) + datapack_received_length_);
 			if (mask_flag) {
-				for (int i{ 0 }; i < payload_len; ++i) {
+				for (int i{ 0 }; i < static_cast<int>(payload_len); ++i) {
 					datapack_mem_[i + datapack_received_length_] = mem_[i + frame_length] ^ masks[i % 4];
 				}
 			}
@@ -1642,8 +1642,8 @@ namespace aris::core{
 				std::copy_n(mem_.data(), payload_len, datapack_mem_.data() + datapack_received_length_);
 			}
 
-			datapack_received_length_ += payload_len;
-			frame_length += payload_len;
+			datapack_received_length_ += static_cast<int>(payload_len);
+			frame_length += static_cast<int>(payload_len);
 
 			// 本帧已经收取完毕，准备下一帧 //
 			std::copy_n(mem_.data() + required_length_, received_length_ - required_length_, mem_.data());

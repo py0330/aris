@@ -907,8 +907,8 @@ namespace aris::core{
 				FD_SET(imp_->recv_socket_, &setE);
 
 				timeval time_out = { 0 };
-				time_out.tv_sec = imp_->connect_time_out_ / 1000;
-				time_out.tv_usec = (imp_->connect_time_out_ % 1000) * 1000;
+				time_out.tv_sec = static_cast<decltype(time_out.tv_sec)>(imp_->connect_time_out_ / 1000);
+				time_out.tv_usec = static_cast<decltype(time_out.tv_usec)>((imp_->connect_time_out_ % 1000) * 1000);
 
 #ifdef WIN32
 				if (WSAGetLastError() == WSAEWOULDBLOCK) {
@@ -993,15 +993,15 @@ namespace aris::core{
 				FD_SET(imp_->recv_socket_, &setE);
 
 				timeval time_out = { 0 };
-				time_out.tv_sec = imp_->connect_time_out_ / 1000;
-				time_out.tv_usec = (imp_->connect_time_out_ % 1000) * 1000;
+				time_out.tv_sec = static_cast<decltype(time_out.tv_sec)>(imp_->connect_time_out_ / 1000);
+				time_out.tv_usec = static_cast<decltype(time_out.tv_usec)>((imp_->connect_time_out_ % 1000) * 1000);
 
-#ifdef WIN32
-				if (WSAGetLastError() == WSAEWOULDBLOCK) {
-					// connection pending
-					int ret = select(0, NULL, &setW, &setE, &time_out);
-					if (ret < 0) {
-						aris_close(imp_->recv_socket_);
+				#ifdef WIN32
+							if (WSAGetLastError() == WSAEWOULDBLOCK) {
+								// connection pending
+								int ret = select(0, NULL, &setW, &setE, &time_out);
+								if (ret < 0) {
+									aris_close(imp_->recv_socket_);
 						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
 					}
 					else if (ret == 0) {

@@ -58,7 +58,7 @@ namespace aris::dynamic{
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void{
 			dynamic_cast<GeneralMotion&>(model()->generalMotionPool()[0]).setMpm(ee_pm);
 			if (ext_axes){
-				for (int i = 6; i < model()->motionPool().size(); ++i){
+				for (int i = 6; i < static_cast<int>(model()->motionPool().size()); ++i){
 					model()->motionPool()[i].setMp(ext_axes[i - 6]);
 				}
 			}

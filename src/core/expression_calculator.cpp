@@ -393,9 +393,9 @@ namespace aris::core
 			if (input[0] <= '9' && input[0] >= '0'){
 				bool has_scientific = false;
 				int i;
-				for (i = 1; i < input.size(); ++i){
+				for (i = 1; i < static_cast<int>(input.size()); ++i){
 					// 可能是科学计数法 //
-					if (i < input.size() - 1
+					if (i < static_cast<int>(input.size()) - 1
 						&& (input[i] == 'e' || input[i] == 'E')
 						&& ((input[Size(i) + 1] <= '9' && input[Size(i) + 1] >= '0') || input[Size(i) + 1] == '+' || input[Size(i) + 1] == '-'))
 					{
@@ -419,7 +419,7 @@ namespace aris::core
 			// get operator //
 			else if (operatorStr.find(input[0]) != operatorStr.npos){
 				int i;
-				for (i = 1; i < input.size() && operatorStr.find(input[i]) != std::string_view::npos; ++i);
+				for (i = 1; i < static_cast<int>(input.size()) && operatorStr.find(input[i]) != std::string_view::npos; ++i);
 
 				auto ret = input.substr(0, i);
 				input = i == input.size() ? std::string_view() : input.substr(i);
@@ -428,16 +428,16 @@ namespace aris::core
 			// get string //
 			else if (input[0] == '\"'){
 				int i;
-				for (i = 1; i < input.size() && !(input[i] == '\"' && input[Size(i) - 1] != '\\'); ++i);
+				for (i = 1; i < static_cast<int>(input.size()) && !(input[i] == '\"' && input[Size(i) - 1] != '\\'); ++i);
 
 				auto ret = input.substr(0, Size(i) + 1);
-				input = Size(i) + 1 == input.size() ? std::string_view() : input.substr(Size(i) + 1);
+				input = Size(i) + 1 == static_cast<int>(input.size()) ? std::string_view() : input.substr(Size(i) + 1);
 				return ret;
 			}
 			// get word //
 			else{
 				int i;
-				for (i = 1; i < input.size() && varStr.find(input[i]) != std::string_view::npos; ++i);
+				for (i = 1; i < static_cast<int>(input.size()) && varStr.find(input[i]) != std::string_view::npos; ++i);
 
 				auto ret = input.substr(0, i);
 				input = i == input.size() ? std::string_view() : input.substr(i);
@@ -633,7 +633,7 @@ namespace aris::core
 		auto params = value_mat.size() == 0 ? std::vector<Value>() : value_mat.front();
 		std::vector<std::string> p_types(params.size());
 		std::vector<std::any> p_values(params.size());
-		for (int i = 0; i < params.size(); ++i){
+		for (int i = 0; i < static_cast<int>(params.size()); ++i){
 			p_types[i] = params[i].type_;
 			p_values[i] = params[i].val();
 		}

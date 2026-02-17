@@ -26,7 +26,7 @@ namespace aris::plan {
 		std::fill_n(parts_setted, part_size, 0);
 		
 		// Step 1 补全所有的tool wobj //
-		for (auto i = 0; i < ee_size; ++i) {
+		for (auto i = decltype(ee_size)(0); i < ee_size; ++i) {
 			tools[i] = tools[i] ? tools[i] : ees[i]->makI();
 			wobjs[i] = wobjs[i] ? wobjs[i] : ees[i]->makJ();
 		}
@@ -39,7 +39,7 @@ namespace aris::plan {
 			std::iota(order, order + ee_size, 0);
 			auto parts_num_ = 0;
 
-			for (int i = 0; i < ee_size; ++i) {
+			for (auto i = decltype(ee_size)(0); i < ee_size; ++i) {
 				// 如果 wobj 是ground，则把 tool 定义成需要被设置的 part
 				auto found = std::find_if(order + i, order + ee_size, [wobjs](const aris::Size& idx) {
 					return (&wobjs[idx]->fatherPart() == &wobjs[idx]->model()->ground());
@@ -160,10 +160,10 @@ namespace aris::plan {
 			auto wobj_pm_in_part = *wobjs[tw_id]->prtPm();
 
 			auto part_i_id = std::find(parts, parts + part_size, &tools[tw_id]->fatherPart()) - parts;
-			auto part_i_pm = part_i_id < part_size ? part_pms + 16 * part_i_id : ground_pm;
+			auto part_i_pm = part_i_id < static_cast<int>(part_size) ? part_pms + 16 * part_i_id : ground_pm;
 
 			auto part_j_id = std::find(parts, parts + part_size, &wobjs[tw_id]->fatherPart()) - parts;
-			auto part_j_pm = part_j_id < part_size ? part_pms + 16 * part_j_id : ground_pm;
+			auto part_j_pm = part_j_id < static_cast<int>(part_size) ? part_pms + 16 * part_j_id : ground_pm;
 
 			if (set_tool[i]) {
 				// 
@@ -211,10 +211,10 @@ namespace aris::plan {
 			auto eej_pm_in_part = *wobjs[i]->prtPm();
 
 			auto part_i_id = std::find(parts, parts + part_size, &tools[i]->fatherPart()) - parts;
-			auto part_i_pm = part_i_id < part_size ? part_pms + 16 * part_i_id : ground_pm;
+			auto part_i_pm = part_i_id < static_cast<int>(part_size) ? part_pms + 16 * part_i_id : ground_pm;
 
 			auto part_j_id = std::find(parts, parts + part_size, &wobjs[i]->fatherPart()) - parts;
-			auto part_j_pm = part_j_id < part_size ? part_pms + 16 * part_j_id : ground_pm;
+			auto part_j_pm = part_j_id < static_cast<int>(part_size) ? part_pms + 16 * part_j_id : ground_pm;
 
 			double relative_pm[16], result1[16], result2[16];
 
@@ -257,7 +257,7 @@ namespace aris::plan {
 				std::vector<aris::dynamic::MotionBase*> ee_vec(ee_size_);
 				model_->getSubEes(sub_id_list_.size(), sub_id_list_.data(), ee_vec.data());
 
-				for (auto i = 0; i < ee_size_; ++i) {
+				for (auto i = decltype(ee_size_)(0); i < ee_size_; ++i) {
 					if ((&ee_vec[i]->makI()->fatherPart() != &ee_vec[i]->makI()->model()->ground())
 						&&std::find(part_set.begin(), part_set.end(), &ee_vec[i]->makI()->fatherPart()) == part_set.end()) {
 						part_set.push_back(&ee_vec[i]->makI()->fatherPart());
@@ -314,7 +314,7 @@ namespace aris::plan {
 
 			// 设置 ees、ee_makIs、ee_makJs、parts //
 			model_->getSubEes(sub_id_list_.size(), sub_id_list_.data(), ees_);
-			for (int i = 0; i < ee_size_; ++i) {
+			for (auto i = decltype(ee_size_)(0); i < ee_size_; ++i) {
 				ee_makIs_[i] = ees_[i]->makI();
 				ee_makJs_[i] = ees_[i]->makJ();
 			}
@@ -592,7 +592,7 @@ namespace aris::plan {
 			auto ee_size = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
-			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
+			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(),ee_size)); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 
@@ -656,7 +656,7 @@ namespace aris::plan {
 			auto ee_size = model_->subEeSize(sub_id_list_.size(), sub_id_list_.data());
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
-			for (int i = 0; i < std::min(tool_wobjs.size(), ee_size); ++i) {
+			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(), ee_size)); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 

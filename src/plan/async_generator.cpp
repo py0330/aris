@@ -80,7 +80,7 @@ namespace aris::plan {
 
 			current_id_.store(0);
 			stored_id_.store(0);
-			sample_period_ns_ = dt_ / 2 * 1e9;
+			sample_period_ns_ = static_cast<int>(dt_ / 2 * 1e9);
 			is_rt_thread_running_ = true;
 			
 			std::fill_n(ret_ids_, cache_size_, 0);
@@ -153,7 +153,7 @@ namespace aris::plan {
 		imp_->is_suspending_.store(false);
 	}
 	auto AsyncGenerator::cachedDataSize() -> int {
-		return imp_->stored_id_.load() - imp_->current_id_.load();
+		return static_cast<int>(imp_->stored_id_.load() - imp_->current_id_.load());
 	}
 	auto AsyncGenerator::getNextInput(double* p) -> std::int64_t {
 		return imp_->get_next_input(p);

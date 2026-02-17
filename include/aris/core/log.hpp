@@ -40,17 +40,21 @@ namespace aris::core{
 
 	template <typename ...Args>
 	auto localeString(std::initializer_list<const char*> format_list, Args ... args)->std::string {
-		auto format = (currentLanguage() < format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
+		auto format = (static_cast<std::size_t>(currentLanguage()) < format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-security"
+#endif
 		int size_s = std::snprintf(nullptr, 0, format, printf_arg(args)...) + 1;
 		if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
 		auto size = static_cast<size_t>(size_s);
 		std::string ret;
 		ret.resize(size);
 		std::snprintf(ret.data(), size, format, printf_arg(args)...);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 		return ret;
 	};
 

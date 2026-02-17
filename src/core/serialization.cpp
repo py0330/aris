@@ -43,7 +43,7 @@ namespace aris::core{
 				if (auto str = prop->toString(&ins); str != "")
 					ele->SetAttribute(prop->name().data(), str.c_str());
 			}
-			for (auto i = 0; i < ins.size(); ++i){
+			for (auto i = decltype(ins.size())(0); i < ins.size(); ++i){
 				auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(ins.at(i).type()).data());
 				ele->InsertEndChild(insert_ele);
 				to_xml_ele(ins.at(i), insert_ele);
@@ -233,7 +233,7 @@ namespace aris::core{
 				if (!v.isBasic())THROW_FILE_LINE("failed to serilize");
 				if (v.toString() != "")js["@" + prop->name()] = v.toString();
 			}
-			for (auto i = 0; i < ins.size(); ++i){
+			for (auto i = decltype(ins.size())(0); i < ins.size(); ++i){
 				my_json insert;
 				insert[typename_c2json(ins.at(i).type())] = to_json(ins.at(i));
 				js["#array"].push_back(insert);

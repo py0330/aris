@@ -2768,10 +2768,10 @@ namespace aris::dynamic{
 				z[at(0, h + 1, z_t)] = a_hp1_h * U2[at(0, 0, u2_t)];
 
 				// 排序生成p
-				for (auto i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
+				for (Size i = 0; i < n; ++i)p[at(0, i, p_t)] = i;
 				std::sort(RowIterator<decltype(p_t)>(p, p_t), RowIterator<decltype(p_t)>(p, p_t) + n, [&d, &d_t](const auto& left, const auto& right) {
 					return d[at(0, static_cast<Size>(left), d_t)] < d[at(0, static_cast<Size>(right), d_t)];
-					});
+				});
 
 				// d和z两个一起变换
 				s_permutate(n, 2, RowIterator<decltype(p_t)>(p, p_t), d, T(d_t));

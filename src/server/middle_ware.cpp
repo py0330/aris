@@ -444,17 +444,14 @@ namespace aris::server {
 									}
 
 									// 碰到断点时才真正执行 //
-									auto server_execute = [&]() ->int
-									{
+									auto server_execute = [&]() ->int{
 										auto plans = cs.executeCmdInCmdLine(cmd_vec);
-										for (int i = 0; i < plans.size(); ++i)
-										{
+										for (int i = 0; i < static_cast<int>(plans.size()); ++i){
 											ARIS_PRO_COUT << lines[i] << "---" << plans[i]->cmdId() << "---" << plans[i]->cmdString() << std::endl;
 											//LOG_INFO << "pro " << lines[i] << "---" << plans[i]->cmdId() << "---" << plans[i]->cmdString() << std::endl;
 										}
 										cs.waitForAllCollection();
-										for (int i = 0; i < plans.size(); ++i)
-										{
+										for (int i = 0; i < static_cast<int>(plans.size()); ++i){
 											// 如果因为其他轨迹出错而取消 //
 											if (plans[i]->prepareRetCode() == aris::plan::Plan::PREPARE_CANCELLED || plans[i]->executeRetCode() == aris::plan::Plan::EXECUTE_CANCELLED)
 											{

@@ -273,7 +273,7 @@ namespace aris::plan {
 			//auto s_local_div_dt = std::fmod(s, dt_)/dt_;
 			//auto p3 = input_poss_ + (std::min(current_idx, tg_idx_) % pool_size_) * input_size_;
 
-			for (Size i = 0; i < input_size_; ++i) {
+			for (auto i = decltype(input_size_)(0); i < input_size_; ++i) {
 				// 线性插值 //
 				//p[i] = interp_at(p3 + i, s_local_div_dt);
 
@@ -609,7 +609,7 @@ namespace aris::plan {
 					ii_.init(p3_); // 设置 ret_code 为0//
 					
 					// 前瞻 4 + interpolate_size 个数据 //
-					for (int i = 0; i < 4 + ii_.interpolationSize(); ++i) {
+					for (int i = 0; i < 4 + static_cast<int>(ii_.interpolationSize()); ++i) {
 						if (ii_.generateInput() == 0)
 							break;
 					}
