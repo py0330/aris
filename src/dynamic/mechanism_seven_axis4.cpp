@@ -697,7 +697,6 @@ namespace aris::dynamic{
 	auto SevenAxisInverseKinematicSolver4::allocateMemory()->void{
 		InverseKinematicSolver::allocateMemory();
 
-		this->imp_->GR;
 		imp_->GR = &model()->partPool().at(0);
 		imp_->L1 = &model()->partPool().at(1);
 		imp_->L2 = &model()->partPool().at(2);

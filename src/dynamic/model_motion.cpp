@@ -622,6 +622,9 @@ namespace aris::dynamic{
 			s_rm2rq(p1, q1);
 			s_rm2rq(p2, q2);
 			break;
+		default:
+			THROW_FILE_LINE("wrong pos type");
+			break;
 		}
 
 		if (s_vv(4, q1, q2) < 0)

@@ -42,12 +42,15 @@ namespace aris::core{
 	auto localeString(std::initializer_list<const char*> format_list, Args ... args)->std::string {
 		auto format = (currentLanguage() < format_list.size()) ? format_list.begin()[currentLanguage()] : format_list.begin()[0];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-security"
 		int size_s = std::snprintf(nullptr, 0, format, printf_arg(args)...) + 1;
 		if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
 		auto size = static_cast<size_t>(size_s);
 		std::string ret;
 		ret.resize(size);
 		std::snprintf(ret.data(), size, format, printf_arg(args)...);
+#pragma clang diagnostic pop
 		return ret;
 	};
 

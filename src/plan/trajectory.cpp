@@ -1011,6 +1011,9 @@ namespace aris::plan {
 			case Node::UnitType::Circle3:
 				make_zone_and_scurve_lc(last_u, this_u);
 				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
+				break;
 			}
 			break;
 		case Node::UnitType::Circle3:
@@ -1020,6 +1023,9 @@ namespace aris::plan {
 				break;
 			case Node::UnitType::Circle3:
 				make_zone_and_scurve_cc(last_u, this_u);
+				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
 				break;
 			}
 			break;
@@ -1031,6 +1037,9 @@ namespace aris::plan {
 			case Node::UnitType::Circle2:
 				make_zone_and_scurve_lc(last_u, this_u);
 				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
+				break;
 			}
 			break;
 		case Node::UnitType::Circle2:
@@ -1041,6 +1050,9 @@ namespace aris::plan {
 			case Node::UnitType::Circle2:
 				make_zone_and_scurve_cc(last_u, this_u);
 				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
+				break;
 			}
 			break;
 		case Node::UnitType::Rotate3:
@@ -1048,12 +1060,18 @@ namespace aris::plan {
 			case Node::UnitType::Rotate3:
 				make_zone_and_scurve_qq(last_u, this_u);
 				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
+				break;
 			}
 			break;
 		case Node::UnitType::Line1:
 			switch (this_u.type_) {
 			case Node::UnitType::Line1:
 				make_zone_and_scurve_ll(last_u, this_u);
+				break;
+			default:
+				THROW_FILE_LINE("unknown unit type");
 				break;
 			}
 			break;
