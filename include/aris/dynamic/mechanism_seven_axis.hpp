@@ -35,7 +35,7 @@ namespace aris::dynamic{
 	class ARIS_API ArmAngleMotion final :public MotionBase{
 	public:
 		static auto Dim()->Size { return 1; }
-		auto virtual eeType()const->EEType override { return EEType::A; }
+		auto virtual posType()const->PosType override { return PosType::A; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptPFromPm(const double* mak_i2j, double* p)const noexcept->void override;

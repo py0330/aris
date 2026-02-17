@@ -179,7 +179,7 @@
                     <RevoluteJoint name="joint_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0,0,0,0,0}"/>
                 </JointPoolElement>
                 <GeneralMotionPoolElement __prop_name__="general_motion_pool">
-                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0.944,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pose_type="EULER321" vel_type="VEL" acc_type="ACC"/>
+                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0.944,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pos_type="PE321" vel_type="VA" acc_type="AA"/>
                     <Motion name="arm_mot" active="false" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
                 </GeneralMotionPoolElement>
                 <ForcePoolElement __prop_name__="force_pool"/>
@@ -370,7 +370,7 @@
                     <RevoluteJoint name="joint_6" active="true" prt_m="L7" prt_n="L6" mak_i="joint_6_i" mak_j="joint_6_j" cf="{0,0,0,0,0}"/>
                 </JointPoolElement>
                 <GeneralMotionPoolElement __prop_name__="general_motion_pool">
-                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pose_type="EULER321" vel_type="VEL" acc_type="ACC"/>
+                    <GeneralMotion name="ee" active="false" prt_m="L7" prt_n="ground" mak_i="tool0" mak_j="wobj0" cf="{0,0,0,0,0,0}" mp="{0,0,0,0,-0,-0}" mv="{0,0,0,0,0,0}" ma="{0,0,0,0,0,0}" pos_type="PE321" vel_type="VA" acc_type="AA"/>
                     <Motion name="arm_mot" active="false" prt_m="L3" prt_n="L2" mak_i="joint_2_i" mak_j="joint_2_j" cf="{0}" mp="{0}" mv="{0}" ma="{0}" component="5" pitch="0" rotate_range="0" mp_offset="0" mp_factor="1" frc_coe="{0,0,0}"/>
                 </GeneralMotionPoolElement>
                 <ForcePoolElement __prop_name__="force_pool"/>

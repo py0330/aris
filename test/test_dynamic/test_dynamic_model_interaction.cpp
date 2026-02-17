@@ -6,8 +6,8 @@
 
 using namespace aris::dynamic;
 
-void test_constraint()
-{
+void test_constraint(){
+
 	const double error = 1e-10;
 
 	const double prt_pm_i[16]{ -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
@@ -36,6 +36,9 @@ void test_constraint()
 	auto& m3 = model.motionPool().add<Motion>("m3", &mak_i, &mak_j, 5);
 	m3.setPitch(0.16);
 	auto &g1 = model.generalMotionPool().add<GeneralMotion>("g1", &mak_i, &mak_j);
+	g1.setPosType(PosType::PM);
+	g1.setVelType(VelType::VS);
+	g1.setAccType(AccType::AS);
 	model.init();
 
 	prt_n.setPe(glb_pe_n);
@@ -583,28 +586,28 @@ void test_constraint()
 		double result[36];
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
 		g1.setMpe(mpe313, "313");
-		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
 		g1.setMpe(mpe321, "321");
-		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
 		g1.setMpq(mpq);
-		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
 		g1.setMpm(mpm);
-		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
 		g1.getMpe(result, "313");
 		if (!s_is_equal(6, result, mpe313, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
@@ -620,40 +623,40 @@ void test_constraint()
 
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMve(mve313, "313");
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMve(mve321, "321");
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMvq(mvq);
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMvm(mvm);
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMva(mva);
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.setMvs(mvs);
-		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
 		g1.getMve(result, "313");
 		if (!s_is_equal(6, result, mve313, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
@@ -675,40 +678,40 @@ void test_constraint()
 
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMae(mae313, "313");
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMae(mae321, "321");
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMaq(maq);
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMam(mam);
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMaa(maa);
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.setMas(mas);
-		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
 		g1.getMae(result, "313");
 		if (!s_is_equal(6, result, mae313, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;

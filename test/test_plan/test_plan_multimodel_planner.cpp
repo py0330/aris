@@ -76,14 +76,14 @@ auto test_tw()->void {
 		auto& ee6 = model_0.generalMotionPool().add<aris::dynamic::GeneralMotion>("ee6", &mak_i_060, &mak_i_070);
 		auto& ee7 = model_0.generalMotionPool().add<aris::dynamic::GeneralMotion>("ee7", &mak_i_080, &mak_i_0g0);
 
-		ee0.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee1.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee2.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee3.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee4.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee5.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee6.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
-		ee7.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
+		ee0.setPosType(aris::dynamic::PosType::PE321);
+		ee1.setPosType(aris::dynamic::PosType::PE321);
+		ee2.setPosType(aris::dynamic::PosType::PE321);
+		ee3.setPosType(aris::dynamic::PosType::PE321);
+		ee4.setPosType(aris::dynamic::PosType::PE321);
+		ee5.setPosType(aris::dynamic::PosType::PE321);
+		ee6.setPosType(aris::dynamic::PosType::PE321);
+		ee7.setPosType(aris::dynamic::PosType::PE321);
 
 		multi_model.init();
 		// tool wobj selector
@@ -225,7 +225,7 @@ auto test_multimodel_async_planner_1() -> void {
 	puma->setOutputPos(init_pe);
 	puma->inverseKinematics();
 
-	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
+	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPosType(aris::dynamic::PosType::PE321);
 	double input_init[6]{ -1,0,0,0,0,0 };
 	puma->getInputPos(input_init);
 
@@ -329,6 +329,9 @@ auto test_multimodel_async_planner_two_arm() -> void {
 
 	aris::dynamic::MultiModel multi_model;
 	aris::core::fromXmlFile(multi_model, ARIS_INSTALL_PATH + std::string("/resource/test_plan/dual_arm.xml"));
+	
+	auto& sub0 = dynamic_cast<aris::dynamic::Model&>(multi_model.subModels()[0]);
+
 	multi_model.init();
 
 	multi_model.subModels()[1].setInputPos(joints1);

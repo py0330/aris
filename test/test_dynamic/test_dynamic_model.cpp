@@ -12,30 +12,30 @@ void test_multi_model() {
 	auto& sub4 = multi.subModels().add<aris::dynamic::Model>();
 
 	auto &gm01 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm01.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm01.setPosType(aris::dynamic::PosType::PE123);
 	auto &gm02 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm02.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm02.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm03 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm03.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm03.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm21 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm21.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm21.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm22 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm22.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm22.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm23 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm23.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm23.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm24 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm24.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm24.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm25 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm25.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm25.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm31 = sub3.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm31.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm31.setPosType(aris::dynamic::PosType::PQ);
 
 	auto& gm41 = sub4.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm41.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm41.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm42 = sub4.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm42.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm42.setPosType(aris::dynamic::PosType::PM);
 
 	multi.init();
 
@@ -114,38 +114,38 @@ void test_multi_model() {
 	{
 		//
 		// 	ee_types:
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
 		//
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-		//aris::dynamic::EEType::PQ,
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+		//aris::dynamic::PosType::PQ,
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM
 
 
-		std::vector<aris::dynamic::EEType> ee_types;
-		std::vector<aris::dynamic::EEType> result0{
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
+		std::vector<aris::dynamic::PosType> ee_types;
+		std::vector<aris::dynamic::PosType> result0{
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
 			
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM
 		};
 
-		ee_types = std::vector<aris::dynamic::EEType>(multi.eeTypes(), multi.eeTypes() + multi.eeSize());
+		ee_types = std::vector<aris::dynamic::PosType>(multi.eePosTypes(), multi.eePosTypes() + multi.eeSize());
 		if (ee_types != result0)
-			std::cout << "\"MultiModel::eeTypes\" failed" << std::endl;
+			std::cout << "\"MultiModel::eePosTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(11, aris::dynamic::EEType::PQ);
+		//ee_types.resize(11, aris::dynamic::PosType::PQ);
 		//multi.getSubEeSize(ee_types.data());
 		//if (ee_types != result0)
 		//	std::cout << "\"MultiModel::getSubEeSize\" failed" << std::endl;
 
 
-		std::vector<aris::dynamic::EEType> result1{
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
+		std::vector<aris::dynamic::PosType> result1{
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
@@ -154,16 +154,16 @@ void test_multi_model() {
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
 		ee_types.clear();
-		ee_types.resize(11, aris::dynamic::EEType::PQ);
+		ee_types.resize(11, aris::dynamic::PosType::PQ);
 		multi.getSubEeTypes(5, sub1, ee_types.data());
 		if (ee_types != result1)
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
-		std::vector<aris::dynamic::EEType> result2{
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PQ, 
-			aris::dynamic::EEType::PQ,
+		std::vector<aris::dynamic::PosType> result2{
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PQ, 
+			aris::dynamic::PosType::PQ,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
@@ -172,7 +172,7 @@ void test_multi_model() {
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
 		ee_types.clear();
-		ee_types.resize(9, aris::dynamic::EEType::PQ);
+		ee_types.resize(9, aris::dynamic::PosType::PQ);
 		multi.getSubEeTypes(4, sub2, ee_types.data());
 		if (ee_types != result2)
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
@@ -262,13 +262,13 @@ void test_multi_model() {
 	
 	// test getMotionTypes
 	{
-		std::vector<aris::dynamic::EEType> ee_types;
-		std::vector<aris::dynamic::EEType> result0{
-			aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+		std::vector<aris::dynamic::PosType> ee_types;
+		std::vector<aris::dynamic::PosType> result0{
+			aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 			
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 		};
 
 		//ee_types = multi.getMotionTypes();
@@ -276,17 +276,17 @@ void test_multi_model() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//ee_types.resize(15, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(ee_types.data());
 		//if (ee_types != result0)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 
-		std::vector<aris::dynamic::EEType> result1{
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+		std::vector<aris::dynamic::PosType> result1{
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
@@ -295,15 +295,15 @@ void test_multi_model() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//ee_types.resize(15, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(5, sub1, ee_types.data());
 		//if (ee_types != result1)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		std::vector<aris::dynamic::EEType> result2{
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
+		std::vector<aris::dynamic::PosType> result2{
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
@@ -312,7 +312,7 @@ void test_multi_model() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(14, aris::dynamic::EEType::PQ);
+		//ee_types.resize(14, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(4, sub2, ee_types.data());
 		//if (ee_types != result2)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
@@ -471,56 +471,56 @@ void test_multi_model2() {
 	sub54.setName("sub54");
 
 	auto& gm01 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm01.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm01.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm02 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm02.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm02.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm03 = sub0.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm03.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm03.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm21 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm21.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm21.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm22 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm22.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm22.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm23 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm23.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm23.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm24 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm24.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm24.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm25 = sub2.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm25.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm25.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm31 = sub3.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm31.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm31.setPosType(aris::dynamic::PosType::PQ);
 
 	auto& gm41 = sub4.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm41.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm41.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm42 = sub4.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm42.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm42.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm501 = sub50.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm501.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm501.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm502 = sub50.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm502.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm502.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm503 = sub50.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm503.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm503.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm521 = sub52.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm521.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm521.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm522 = sub52.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm522.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm522.setPosType(aris::dynamic::PosType::PQ);
 	auto& gm523 = sub52.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm523.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm523.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm524 = sub52.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm524.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm524.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm525 = sub52.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm525.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm525.setPosType(aris::dynamic::PosType::PM);
 
 	auto& gm531 = sub53.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm531.setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+	gm531.setPosType(aris::dynamic::PosType::PQ);
 
 	auto& gm541 = sub54.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm541.setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	gm541.setPosType(aris::dynamic::PosType::PE123);
 	auto& gm542 = sub54.generalMotionPool().add<aris::dynamic::GeneralMotion>();
-	gm542.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	gm542.setPosType(aris::dynamic::PosType::PM);
 
 	auto& mot01 = sub0.motionPool().add<aris::dynamic::Motion>();
 	mot01.setAxis(5);
@@ -927,43 +927,43 @@ void test_multi_model2() {
 	{
 		//
 		// 	ee_types:
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
 		//
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-		//aris::dynamic::EEType::PQ,
-		//aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+		//aris::dynamic::PosType::PQ,
+		//aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM
 
 
-		std::vector<aris::dynamic::EEType> ee_types;
-		std::vector<aris::dynamic::EEType> result0{
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
+		std::vector<aris::dynamic::PosType> ee_types;
+		std::vector<aris::dynamic::PosType> result0{
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
 
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
 
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
 		};
 
-		ee_types = std::vector<aris::dynamic::EEType>(multi.eeTypes(), multi.eeTypes() + multi.eeSize());
+		ee_types = std::vector<aris::dynamic::PosType>(multi.eePosTypes(), multi.eePosTypes() + multi.eeSize());
 		if (ee_types != result0)
-			std::cout << "\"MultiModel::eeTypes\" failed" << std::endl;
+			std::cout << "\"MultiModel::eePosTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(11, aris::dynamic::EEType::PQ);
+		//ee_types.resize(11, aris::dynamic::PosType::PQ);
 		//multi.getEeTypes(ee_types.data());
 		//if (ee_types != result0)
 		//	std::cout << "\"MultiModel::getEeTypes\" failed" << std::endl;
 
 
-		std::vector<aris::dynamic::EEType> result1{
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
+		std::vector<aris::dynamic::PosType> result1{
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
@@ -972,16 +972,16 @@ void test_multi_model2() {
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
 		ee_types.clear();
-		ee_types.resize(11, aris::dynamic::EEType::PQ);
+		ee_types.resize(11, aris::dynamic::PosType::PQ);
 		multi.getSubEeTypes(5, sub1, ee_types.data());
 		if (ee_types != result1)
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
-		std::vector<aris::dynamic::EEType> result2{
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PE123, aris::dynamic::EEType::PQ, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PE123, aris::dynamic::EEType::PM,
-			aris::dynamic::EEType::PQ,
-			aris::dynamic::EEType::PQ,
+		std::vector<aris::dynamic::PosType> result2{
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PE123, aris::dynamic::PosType::PQ, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PE123, aris::dynamic::PosType::PM,
+			aris::dynamic::PosType::PQ,
+			aris::dynamic::PosType::PQ,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
@@ -990,7 +990,7 @@ void test_multi_model2() {
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
 
 		ee_types.clear();
-		ee_types.resize(9, aris::dynamic::EEType::PQ);
+		ee_types.resize(9, aris::dynamic::PosType::PQ);
 		multi.getSubEeTypes(4, sub2, ee_types.data());
 		if (ee_types != result2)
 			std::cout << "\"MultiModel::getSubEeTypes\" failed" << std::endl;
@@ -1080,13 +1080,13 @@ void test_multi_model2() {
 
 	// test getMotionTypes
 	{
-		std::vector<aris::dynamic::EEType> ee_types;
-		std::vector<aris::dynamic::EEType> result0{
-			aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+		std::vector<aris::dynamic::PosType> ee_types;
+		std::vector<aris::dynamic::PosType> result0{
+			aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 		};
 
 		//ee_types = multi.getMotionTypes();
@@ -1094,17 +1094,17 @@ void test_multi_model2() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//ee_types.resize(15, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(ee_types.data());
 		//if (ee_types != result0)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 
-		std::vector<aris::dynamic::EEType> result1{
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,
+		std::vector<aris::dynamic::PosType> result1{
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
@@ -1113,15 +1113,15 @@ void test_multi_model2() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(15, aris::dynamic::EEType::PQ);
+		//ee_types.resize(15, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(5, sub1, ee_types.data());
 		//if (ee_types != result1)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
-		std::vector<aris::dynamic::EEType> result2{
-			aris::dynamic::EEType::X, aris::dynamic::EEType::X,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
-			aris::dynamic::EEType::X, aris::dynamic::EEType::A, aris::dynamic::EEType::X, aris::dynamic::EEType::X,aris::dynamic::EEType::X, aris::dynamic::EEType::A,
+		std::vector<aris::dynamic::PosType> result2{
+			aris::dynamic::PosType::X, aris::dynamic::PosType::X,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
+			aris::dynamic::PosType::X, aris::dynamic::PosType::A, aris::dynamic::PosType::X, aris::dynamic::PosType::X,aris::dynamic::PosType::X, aris::dynamic::PosType::A,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
 
@@ -1130,7 +1130,7 @@ void test_multi_model2() {
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;
 
 		//ee_types.clear();
-		//ee_types.resize(14, aris::dynamic::EEType::PQ);
+		//ee_types.resize(14, aris::dynamic::PosType::PQ);
 		//multi.getMotionTypes(4, sub2, ee_types.data());
 		//if (ee_types != result2)
 		//	std::cout << "\"MultiModel::getMotionTypes\" failed" << std::endl;

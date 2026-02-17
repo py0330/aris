@@ -238,8 +238,17 @@ namespace aris::dynamic{
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
 		// EE types //
-		auto virtual eeTypes()const noexcept->const EEType* override;
 		auto virtual eeSize()const noexcept->aris::Size override;
+		auto virtual eePosTypes()const noexcept->const PosType* override;
+		auto virtual eeVelTypes()const noexcept->const VelType* override;
+		auto virtual eeAccTypes()const noexcept->const AccType* override;
+		auto virtual eeFceTypes()const noexcept->const FceType* override;
+
+		auto virtual motSize()const noexcept->aris::Size override;
+		auto virtual motPosTypes()const noexcept->const PosType* override;
+		auto virtual motVelTypes()const noexcept->const VelType* override;
+		auto virtual motAccTypes()const noexcept->const AccType* override;
+		auto virtual motFceTypes()const noexcept->const FceType* override;
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size override;                         
@@ -394,8 +403,8 @@ namespace aris::dynamic{
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
 		// EE types //
-		auto virtual eeTypes()const noexcept->const EEType* override;
 		auto virtual eeSize()const noexcept->aris::Size override;
+		auto virtual eePosTypes()const noexcept->const PosType* override;
 
 		// inputs //
 		auto virtual inputPosSize()const noexcept->Size override;
@@ -556,17 +565,17 @@ namespace aris::dynamic{
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
 		// to be removed
-		auto getEeTypes() -> std::vector<EEType>;
-		auto getMotionTypes(const std::vector<Size>& submodel_ids) -> std::vector<EEType>;
-		auto getMotionTypes() -> std::vector<EEType>;
+		auto getEeTypes() -> std::vector<PosType>;
+		auto getMotionTypes(const std::vector<Size>& submodel_ids) -> std::vector<PosType>;
+		auto getMotionTypes() -> std::vector<PosType>;
 
 		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
 		auto getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size>;
 		auto getSubEeSize(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
 
 		// 获取【某些】子模型中的末端种类，使用【vector 或 原始内存】来表达
-		auto getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType>;
-		auto getSubEeTypes(Size submodel_num, const Size *submodel_ids, EEType*ee_types_out) -> void;
+		auto getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<PosType>;
+		auto getSubEeTypes(Size submodel_num, const Size *submodel_ids, PosType*ee_types_out) -> void;
 
 		// 获取【某些】子模型中的末端地址，使用【vector 或 原始内存】来表达
 		auto getSubEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
@@ -581,8 +590,8 @@ namespace aris::dynamic{
 		
 		// 获取【某些 or 全部】子模型中的电机种类，使用【vector 或 原始内存】来表达
 		
-		//auto getMotionTypes(Size submodel_num, const Size* submodel_ids, EEType* mot_types_out) -> void;
-		//auto getMotionTypes(EEType*) -> void;
+		//auto getMotionTypes(Size submodel_num, const Size* submodel_ids, PosType* mot_types_out) -> void;
+		//auto getMotionTypes(PosType*) -> void;
 		
 		// 获取【某些 or 全部】子模型中的电机地址，使用【vector 或 原始内存】来表达
 		auto getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*>;

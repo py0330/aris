@@ -151,15 +151,33 @@ namespace aris::dynamic{
 	/// mini_angle: 最小允许的输入角度差值
 	auto ARIS_API s_calib_tool_two_pnts(const double* input, double* result, double mini_angle = 0.1)noexcept->int;
 
-	enum class EEType {
+	enum class PosType {
+		PE121,   // 位置与121欧拉角，6维末端， 6维向量
+		PE123,   // 位置与123欧拉角，6维末端， 6维向量
+		PE131,   // 位置与131欧拉角，6维末端， 6维向量
+		PE132,   // 位置与132欧拉角，6维末端， 6维向量
+		PE212,   // 位置与212欧拉角，6维末端， 6维向量
+		PE213,   // 位置与213欧拉角，6维末端， 6维向量
+		PE231,   // 位置与231欧拉角，6维末端， 6维向量
+		PE232,   // 位置与232欧拉角，6维末端， 6维向量
+		PE312,   // 位置与312欧拉角，6维末端， 6维向量
 		PE313,   // 位置与313欧拉角，6维末端， 6维向量
 		PE321,   // 位置与321欧拉角，6维末端， 6维向量
-		PE123,   // 位置与123欧拉角，6维末端， 6维向量
+		PE323,   // 位置与323欧拉角，6维末端， 6维向量
 		PQ,      // 位置与四元数，   6维末端， 7维向量
 		PM,      // 位置与位姿矩阵， 6维末端，16维向量
+		RE121,   // 121欧拉角，      3维末端， 3维向量
+		RE123,   // 123欧拉角，      3维末端， 3维向量
+		RE131,   // 131欧拉角，      3维末端， 3维向量
+		RE132,   // 132欧拉角，      3维末端， 3维向量
+		RE212,   // 212欧拉角，      3维末端， 3维向量
+		RE213,   // 213欧拉角，      3维末端， 3维向量
+		RE231,   // 231欧拉角，      3维末端， 3维向量
+		RE232,   // 232欧拉角，      3维末端， 3维向量
+		RE312,   // 312欧拉角，      3维末端， 3维向量
 		RE313,   // 313欧拉角，      3维末端， 3维向量
 		RE321,   // 321欧拉角，      3维末端， 3维向量
-		RE123,   // 123欧拉角，      3维末端， 3维向量
+		RE323,   // 323欧拉角，      3维末端， 3维向量
 		RQ,      // 四元数，         3维末端， 4维向量
 		RM,      // 位姿矩阵，       3维末端， 9维向量
 		XYZT,    // x,y,z,theta，    4维末端， 4维向量
@@ -169,127 +187,250 @@ namespace aris::dynamic{
 		XY,      // x,y，            2维末端， 2维向量
 		RT,      // 极坐标r,theta，  2维末端， 2维向量
 		X,       // 位置x，          1维末端， 1维向量
-		A,       // 角度a，          1维末端， 1维向量
+		Y,       // 位置y，          1维末端， 1维向量
+		Z,       // 位置z，          1维末端， 1维向量
+		A,       // 位置a，          1维末端， 1维向量
+		B,       // 位置b，          1维末端， 1维向量
+		C,       // 角度c，          1维末端， 1维向量
 		UNKNOWN,
 	};
-	auto inline s_ee_type_pos_size(EEType type)noexcept->aris::Size {
+	constexpr auto inline s_pos_type_size(PosType type)noexcept->aris::Size {
 		switch (type){
-		case EEType::PE313:
-			return 6;
-		case EEType::PE321:
-			return 6;
-		case EEType::PE123:
-			return 6;
-		case EEType::PQ:
-			return 7;
-		case EEType::PM:
-			return 16;
-		case EEType::RE313:
-			return 3;
-		case EEType::RE321:
-			return 3;
-		case EEType::RE123:
-			return 3;
-		case EEType::RQ:
-			return 4;
-		case EEType::RM:
-			return 9;
-		case EEType::XYZT:
-			return 4;
-		case EEType::XYZ:
-			return 3;
-		case EEType::RTZ:
-			return 3;
-		case EEType::XYT:
-			return 3;
-		case EEType::XY:
-			return 2;
-		case EEType::RT:
-			return 2;
-		case EEType::X:
-			return 1;
-		case EEType::A:
-			return 1;
-		case EEType::UNKNOWN:
-			return -1;
-		default:
-			return -1;
+		case PosType::PE121:return 6;
+		case PosType::PE123:return 6;
+		case PosType::PE131:return 6;
+		case PosType::PE132:return 6;
+		case PosType::PE212:return 6;
+		case PosType::PE213:return 6;
+		case PosType::PE231:return 6;
+		case PosType::PE232:return 6;
+		case PosType::PE312:return 6;
+		case PosType::PE313:return 6;
+		case PosType::PE321:return 6;
+		case PosType::PE323:return 6;
+		case PosType::PQ:   return 7;
+		case PosType::PM:   return 16;
+		case PosType::RE121:return 3;
+		case PosType::RE123:return 3;
+		case PosType::RE131:return 3;
+		case PosType::RE132:return 3;
+		case PosType::RE212:return 3;
+		case PosType::RE213:return 3;
+		case PosType::RE231:return 3;
+		case PosType::RE232:return 3;
+		case PosType::RE312:return 3;
+		case PosType::RE313:return 3;
+		case PosType::RE321:return 3;
+		case PosType::RE323:return 3;
+		case PosType::RQ:   return 4;
+		case PosType::RM:   return 9;
+		case PosType::XYZT: return 4;
+		case PosType::XYZ:  return 3;
+		case PosType::RTZ:  return 3;
+		case PosType::XYT:  return 3;
+		case PosType::XY:   return 2;
+		case PosType::RT:   return 2;
+		case PosType::X:    return 1;
+		case PosType::Y:    return 1;
+		case PosType::Z:    return 1;
+		case PosType::A:    return 1;
+		case PosType::B:    return 1;
+		case PosType::C:    return 1;
+		case PosType::UNKNOWN:return -1;
+		default:return -1;
 		}
 	}
-	auto inline s_ee_type_pos_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+	auto inline s_pos_type_size(aris::Size n, const PosType* ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n; ++i) {
-			size += s_ee_type_pos_size(ee_types[i]);
+			size += s_pos_type_size(ee_types[i]);
 		}
 		return size;
 	}
-	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void;
-	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void;
+	auto ARIS_API s_pos2pm(PosType type, const double* pos, double* pm)noexcept->void;
+	auto ARIS_API s_pm2pos(const double* pm, PosType type, double* pos)noexcept->void;
+	auto ARIS_API s_pos2pos(PosType p1_t, const double* pos1, PosType p2_t, double* pos2)->void;
+	auto ARIS_API s_pos2pos(Size n, const PosType* p1_t, const double* p1, const PosType* p2_t, double* p2) -> void;
 
-	auto inline s_ee_type_vel_dim(EEType type)noexcept->aris::Size {
-		switch (type)
-		{
-		case EEType::PE313:
-			return 2;
-		case EEType::PE321:
-			return 2;
-		case EEType::PE123:
-			return 2;
-		case EEType::PQ:
-			return 2;
-		case EEType::PM:
-			return 2;
-		case EEType::RE313:
-			return 1;
-		case EEType::RE321:
-			return 1;
-		case EEType::RE123:
-			return 1;
-		case EEType::RQ:
-			return 1;
-		case EEType::RM:
-			return 1;
-		case EEType::XYZT:
-			return 2;
-		case EEType::XYZ:
-			return 1;
-		case EEType::RTZ:
-			return 2;
-		case EEType::XYT:
-			return 2;
-		case EEType::XY:
-			return 1;
-		case EEType::RT:
-			return 2;
-		case EEType::X:
-			return 1;
-		case EEType::A:
-			return 1;
-		case EEType::UNKNOWN:
-			return -1;
-		default:
-			return -1;
+
+	// 返回位置大小的 size，例如xyz abc距离和角度，它的mag size 就是2
+	constexpr auto inline s_pos_type_mag_size(PosType type)noexcept->aris::Size {
+		switch (type) {
+		case PosType::PE121:return 2;
+		case PosType::PE123:return 2;
+		case PosType::PE131:return 2;
+		case PosType::PE132:return 2;
+		case PosType::PE212:return 2;
+		case PosType::PE213:return 2;
+		case PosType::PE231:return 2;
+		case PosType::PE232:return 2;
+		case PosType::PE312:return 2;
+		case PosType::PE313:return 2;
+		case PosType::PE321:return 2;
+		case PosType::PE323:return 2;
+		case PosType::PQ:   return 2;
+		case PosType::PM:   return 2;
+		case PosType::RE121:return 1;
+		case PosType::RE123:return 1;
+		case PosType::RE131:return 1;
+		case PosType::RE132:return 1;
+		case PosType::RE212:return 1;
+		case PosType::RE213:return 1;
+		case PosType::RE231:return 1;
+		case PosType::RE232:return 1;
+		case PosType::RE312:return 1;
+		case PosType::RE313:return 1;
+		case PosType::RE321:return 1;
+		case PosType::RE323:return 1;
+		case PosType::RQ:   return 1;
+		case PosType::RM:   return 1;
+		case PosType::XYZT: return 2;
+		case PosType::XYZ:  return 1;
+		case PosType::RTZ:  return 1;
+		case PosType::XYT:  return 2;
+		case PosType::XY:   return 1;
+		case PosType::RT:   return 1;
+		case PosType::X:    return 1;
+		case PosType::Y:    return 1;
+		case PosType::Z:    return 1;
+		case PosType::A:    return 1;
+		case PosType::B:    return 1;
+		case PosType::C:    return 1;
+		case PosType::UNKNOWN:return -1;
+		default:return -1;
 		}
 	}
-	auto inline s_ee_type_vel_dim(aris::Size n, const EEType *ee_types)noexcept->aris::Size {
+	auto inline s_pos_type_mag_size(aris::Size n, const PosType *ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n;++i) {
-			size += s_ee_type_vel_dim(ee_types[i]);
+			size += s_pos_type_mag_size(ee_types[i]);
 		}
 		return size;
 	}
 
-	enum class EEVelType {
+	auto inline s_pos_type_rot_dim(PosType pos_type)->int {
+		switch (pos_type) {
+		case PosType::PE121:return 3;
+		case PosType::PE123:return 3;
+		case PosType::PE131:return 3;
+		case PosType::PE132:return 3;
+		case PosType::PE212:return 3;
+		case PosType::PE213:return 3;
+		case PosType::PE231:return 3;
+		case PosType::PE232:return 3;
+		case PosType::PE312:return 3;
+		case PosType::PE313:return 3;
+		case PosType::PE321:return 3;
+		case PosType::PE323:return 3;
+		case PosType::PQ:   return 3;
+		case PosType::PM:   return 3;
+		case PosType::RE121:return 3;
+		case PosType::RE123:return 3;
+		case PosType::RE131:return 3;
+		case PosType::RE132:return 3;
+		case PosType::RE212:return 3;
+		case PosType::RE213:return 3;
+		case PosType::RE231:return 3;
+		case PosType::RE232:return 3;
+		case PosType::RE312:return 3;
+		case PosType::RE313:return 3;
+		case PosType::RE321:return 3;
+		case PosType::RE323:return 3;
+		case PosType::RQ:   return 3;
+		case PosType::RM:   return 3;
+		case PosType::XYZT: return 1;
+		case PosType::XYZ:  return 0;
+		case PosType::RTZ:  return 0;
+		case PosType::XYT:  return 1;
+		case PosType::XY:   return 0;
+		case PosType::RT:   return 0;
+		case PosType::X:    return 0;
+		case PosType::Y:    return 0;
+		case PosType::Z:    return 0;
+		case PosType::A:    return 1;
+		case PosType::B:    return 1;
+		case PosType::C:    return 1;
+		case PosType::UNKNOWN:return 0;
+		default:return 0;
+		}
+	}
+	auto inline s_pos_type_mov_dim(PosType pos_type)->int {
+		switch (pos_type) {
+		case PosType::PE121:return 3;
+		case PosType::PE123:return 3;
+		case PosType::PE131:return 3;
+		case PosType::PE132:return 3;
+		case PosType::PE212:return 3;
+		case PosType::PE213:return 3;
+		case PosType::PE231:return 3;
+		case PosType::PE232:return 3;
+		case PosType::PE312:return 3;
+		case PosType::PE313:return 3;
+		case PosType::PE321:return 3;
+		case PosType::PE323:return 3;
+		case PosType::PQ:   return 3;
+		case PosType::PM:   return 3;
+		case PosType::RE121:return 0;
+		case PosType::RE123:return 0;
+		case PosType::RE131:return 0;
+		case PosType::RE132:return 0;
+		case PosType::RE212:return 0;
+		case PosType::RE213:return 0;
+		case PosType::RE231:return 0;
+		case PosType::RE232:return 0;
+		case PosType::RE312:return 0;
+		case PosType::RE313:return 0;
+		case PosType::RE321:return 0;
+		case PosType::RE323:return 0;
+		case PosType::RQ:   return 0;
+		case PosType::RM:   return 0;
+		case PosType::XYZT: return 3;
+		case PosType::XYZ:  return 3;
+		case PosType::RTZ:  return 3;
+		case PosType::XYT:  return 2;
+		case PosType::XY:   return 2;
+		case PosType::RT:   return 2;
+		case PosType::X:    return 1;
+		case PosType::Y:    return 1;
+		case PosType::Z:    return 1;
+		case PosType::A:    return 0;
+		case PosType::B:    return 0;
+		case PosType::C:    return 0;
+		case PosType::UNKNOWN:return 0;
+		default:return 0;
+		}
+	}
+
+	enum class VelType {
 		VA,      // 速度与角速度，   6维末端， 6维向量
 		VS,      // 速度旋量，       6维末端， 6维向量
+		VE121,   // 位置与121欧拉角，6维末端， 6维向量
+		VE123,   // 位置与123欧拉角，6维末端， 6维向量
+		VE131,   // 位置与131欧拉角，6维末端， 6维向量
+		VE132,   // 位置与132欧拉角，6维末端， 6维向量
+		VE212,   // 位置与212欧拉角，6维末端， 6维向量
+		VE213,   // 位置与213欧拉角，6维末端， 6维向量
+		VE231,   // 位置与231欧拉角，6维末端， 6维向量
+		VE232,   // 位置与232欧拉角，6维末端， 6维向量
+		VE312,   // 位置与312欧拉角，6维末端， 6维向量
 		VE313,   // 位置与313欧拉角，6维末端， 6维向量
 		VE321,   // 位置与321欧拉角，6维末端， 6维向量
-		VE123,   // 位置与123欧拉角，6维末端， 6维向量
+		VE323,   // 位置与323欧拉角，6维末端， 6维向量
 		VQ,      // 位置与四元数，   6维末端， 7维向量
 		VM,      // 位置与位姿矩阵， 6维末端，16维向量
+		WA,      // 角速度，         3维末端， 3维向量
+		WE121,   // 121欧拉角，      3维末端， 3维向量
+		WE123,   // 123欧拉角，      3维末端， 3维向量
+		WE131,   // 131欧拉角，      3维末端， 3维向量
+		WE132,   // 132欧拉角，      3维末端， 3维向量
+		WE212,   // 212欧拉角，      3维末端， 3维向量
+		WE213,   // 213欧拉角，      3维末端， 3维向量
+		WE231,   // 231欧拉角，      3维末端， 3维向量
+		WE232,   // 232欧拉角，      3维末端， 3维向量
+		WE312,   // 312欧拉角，      3维末端， 3维向量
 		WE313,   // 313欧拉角，      3维末端， 3维向量
 		WE321,   // 321欧拉角，      3维末端， 3维向量
-		WE123,   // 123欧拉角，      3维末端， 3维向量
+		WE323,   // 323欧拉角，      3维末端， 3维向量
 		WQ,      // 四元数，         3维末端， 4维向量
 		WM,      // 位姿矩阵，       3维末端， 9维向量
 		DXYZT,   // x,y,z,theta，    4维末端， 4维向量
@@ -299,72 +440,103 @@ namespace aris::dynamic{
 		DXY,     // x,y，            2维末端， 2维向量
 		DRT,     // 极坐标r,theta，  2维末端， 2维向量
 		DX,      // 位置x，          1维末端， 1维向量
-		DA,      // 角度a，          1维末端， 1维向量
+		DY,      // 位置y，          1维末端， 1维向量
+		DZ,      // 位置z，          1维末端， 1维向量
+		DA,      // 位置a，          1维末端， 1维向量
+		DB,      // 位置b，          1维末端， 1维向量
+		DC,      // 角度c，          1维末端， 1维向量
 		UNKNOWN,
 	};
-	auto inline s_ee_type_vel_size(EEType type)noexcept->aris::Size {
+	constexpr auto inline s_vel_type_size(VelType type)noexcept->aris::Size {
 		switch (type) {
-		case EEType::PE313:
-			return 6;
-		case EEType::PE321:
-			return 6;
-		case EEType::PE123:
-			return 6;
-		case EEType::PQ:
-			return 6;
-		case EEType::PM:
-			return 6;
-		case EEType::RE313:
-			return 3;
-		case EEType::RE321:
-			return 3;
-		case EEType::RE123:
-			return 3;
-		case EEType::RQ:
-			return 3;
-		case EEType::RM:
-			return 3;
-		case EEType::XYZT:
-			return 4;
-		case EEType::XYZ:
-			return 3;
-		case EEType::RTZ:
-			return 3;
-		case EEType::XYT:
-			return 3;
-		case EEType::XY:
-			return 2;
-		case EEType::RT:
-			return 2;
-		case EEType::X:
-			return 1;
-		case EEType::A:
-			return 1;
-		case EEType::UNKNOWN:
-			return -1;
-		default:
-			return -1;
+		case VelType::VA:return 6;
+		case VelType::VS:return 6;
+		case VelType::VE121:return 6;
+		case VelType::VE123:return 6;
+		case VelType::VE131:return 6;
+		case VelType::VE132:return 6;
+		case VelType::VE212:return 6;
+		case VelType::VE213:return 6;
+		case VelType::VE231:return 6;
+		case VelType::VE232:return 6;
+		case VelType::VE312:return 6;
+		case VelType::VE313:return 6;
+		case VelType::VE321:return 6;
+		case VelType::VE323:return 6;
+		case VelType::VQ:   return 7;
+		case VelType::VM:   return 16;
+		case VelType::WE121:return 3;
+		case VelType::WE123:return 3;
+		case VelType::WE131:return 3;
+		case VelType::WE132:return 3;
+		case VelType::WE212:return 3;
+		case VelType::WE213:return 3;
+		case VelType::WE231:return 3;
+		case VelType::WE232:return 3;
+		case VelType::WE312:return 3;
+		case VelType::WE313:return 3;
+		case VelType::WE321:return 3;
+		case VelType::WE323:return 3;
+		case VelType::WQ:   return 4;
+		case VelType::WM:   return 9;
+		case VelType::DXYZT:return 4;
+		case VelType::DXYZ: return 3;
+		case VelType::DRTZ: return 3;
+		case VelType::DXYT: return 3;
+		case VelType::DXY:  return 2;
+		case VelType::DRT:  return 2;
+		case VelType::DX:   return 1;
+		case VelType::DY:   return 1;
+		case VelType::DZ:   return 1;
+		case VelType::DA:   return 1;
+		case VelType::DB:   return 1;
+		case VelType::DC:   return 1;
+		case VelType::UNKNOWN:return -1;
+		default:return -1;
 		}
 	}
-	auto inline s_ee_type_vel_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+	auto inline s_vel_type_size(aris::Size n, const VelType* ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n; ++i) {
-			size += s_ee_type_vel_size(ee_types[i]);
+			size += s_vel_type_size(ee_types[i]);
 		}
 		return size;
 	}
+	auto ARIS_API s_vel2vs(PosType p_t, const double* pos, VelType v_t, const double* vel, double* vs)noexcept->void;
+	auto ARIS_API s_vs2vel(PosType p_t, const double* pos, const double* vs, VelType v_t, double* vel)noexcept->void;
+	auto ARIS_API s_vel2vel(PosType p1_t, const double* pos1, VelType v1_t, const double* vel1, VelType v2_t, double* vel2)->void;
+	auto ARIS_API s_vel2vel(Size n, const PosType *p1_t, const double* p1, const VelType *v1_t, const double* v1, const VelType *v2_t, double* v2)->void;
 
-	enum class EEAccType {
+	enum class AccType {
 		AA,      // 速度与角速度，   6维末端， 6维向量
 		AS,      // 速度旋量，       6维末端， 6维向量
+		AE121,   // 位置与121欧拉角，6维末端， 6维向量
+		AE123,   // 位置与123欧拉角，6维末端， 6维向量
+		AE131,   // 位置与131欧拉角，6维末端， 6维向量
+		AE132,   // 位置与132欧拉角，6维末端， 6维向量
+		AE212,   // 位置与212欧拉角，6维末端， 6维向量
+		AE213,   // 位置与213欧拉角，6维末端， 6维向量
+		AE231,   // 位置与231欧拉角，6维末端， 6维向量
+		AE232,   // 位置与232欧拉角，6维末端， 6维向量
+		AE312,   // 位置与312欧拉角，6维末端， 6维向量
 		AE313,   // 位置与313欧拉角，6维末端， 6维向量
 		AE321,   // 位置与321欧拉角，6维末端， 6维向量
-		AE123,   // 位置与123欧拉角，6维末端， 6维向量
+		AE323,   // 位置与323欧拉角，6维末端， 6维向量
 		AQ,      // 位置与四元数，   6维末端， 7维向量
 		AM,      // 位置与位姿矩阵， 6维末端，16维向量
+		XA,      // 角加速度，       3维末端， 3维向量
+		XE121,   // 121欧拉角，      3维末端， 3维向量
+		XE123,   // 123欧拉角，      3维末端， 3维向量
+		XE131,   // 131欧拉角，      3维末端， 3维向量
+		XE132,   // 132欧拉角，      3维末端， 3维向量
+		XE212,   // 212欧拉角，      3维末端， 3维向量
+		XE213,   // 213欧拉角，      3维末端， 3维向量
+		XE231,   // 231欧拉角，      3维末端， 3维向量
+		XE232,   // 232欧拉角，      3维末端， 3维向量
+		XE312,   // 312欧拉角，      3维末端， 3维向量
 		XE313,   // 313欧拉角，      3维末端， 3维向量
 		XE321,   // 321欧拉角，      3维末端， 3维向量
-		XE123,   // 123欧拉角，      3维末端， 3维向量
+		XE323,   // 323欧拉角，      3维末端， 3维向量
 		XQ,      // 四元数，         3维末端， 4维向量
 		XM,      // 位姿矩阵，       3维末端， 9维向量
 		D2XYZT,   // x,y,z,theta，    4维末端， 4维向量
@@ -374,38 +546,113 @@ namespace aris::dynamic{
 		D2XY,     // x,y，            2维末端， 2维向量
 		D2RT,     // 极坐标r,theta，  2维末端， 2维向量
 		D2X,      // 位置x，          1维末端， 1维向量
-		D2A,      // 角度a，          1维末端， 1维向量
+		D2Y,      // 位置y，          1维末端， 1维向量
+		D2Z,      // 位置z，          1维末端， 1维向量
+		D2A,      // 位置a，          1维末端， 1维向量
+		D2B,      // 位置b，          1维末端， 1维向量
+		D2C,      // 角度c，          1维末端， 1维向量
 		UNKNOWN,
 	};
-	auto inline s_ee_type_acc_size(EEType type)noexcept->aris::Size {
-		return s_ee_type_vel_size(type);
+	constexpr auto inline s_acc_type_size(AccType type)noexcept->aris::Size {
+		switch (type) {
+		case AccType::AA:return 6;
+		case AccType::AS:return 6;
+		case AccType::AE121:return 6;
+		case AccType::AE123:return 6;
+		case AccType::AE131:return 6;
+		case AccType::AE132:return 6;
+		case AccType::AE212:return 6;
+		case AccType::AE213:return 6;
+		case AccType::AE231:return 6;
+		case AccType::AE232:return 6;
+		case AccType::AE312:return 6;
+		case AccType::AE313:return 6;
+		case AccType::AE321:return 6;
+		case AccType::AE323:return 6;
+		case AccType::AQ:   return 7;
+		case AccType::AM:   return 16;
+		case AccType::XE121:return 3;
+		case AccType::XE123:return 3;
+		case AccType::XE131:return 3;
+		case AccType::XE132:return 3;
+		case AccType::XE212:return 3;
+		case AccType::XE213:return 3;
+		case AccType::XE231:return 3;
+		case AccType::XE232:return 3;
+		case AccType::XE312:return 3;
+		case AccType::XE313:return 3;
+		case AccType::XE321:return 3;
+		case AccType::XE323:return 3;
+		case AccType::XQ:   return 4;
+		case AccType::XM:   return 9;
+		case AccType::D2XYZT:return 4;
+		case AccType::D2XYZ: return 3;
+		case AccType::D2RTZ: return 3;
+		case AccType::D2XYT: return 3;
+		case AccType::D2XY:  return 2;
+		case AccType::D2RT:  return 2;
+		case AccType::D2X:   return 1;
+		case AccType::D2Y:   return 1;
+		case AccType::D2Z:   return 1;
+		case AccType::D2A:   return 1;
+		case AccType::D2B:   return 1;
+		case AccType::D2C:   return 1;
+		case AccType::UNKNOWN:return -1;
+		default:return -1;
+		}
 	}
-	auto inline s_ee_type_acc_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+	auto inline s_acc_type_size(aris::Size n, const AccType* ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n; ++i) {
-			size += s_ee_type_acc_size(ee_types[i]);
+			size += s_acc_type_size(ee_types[i]);
 		}
 		return size;
 	}
 	
-	enum class EEFceType {
+	auto ARIS_API s_acc2as(PosType p_t, const double* pos, VelType v_t, const double* vel, AccType a_t, const double* acc, double* as)noexcept->void;
+	auto ARIS_API s_as2acc(PosType p_t, const double* pos, VelType v_t, const double* vel, const double* as, AccType a_t, double* acc)noexcept->void;
+	auto ARIS_API s_acc2acc(PosType p1_t, const double* pos1, VelType v1_t, const double* vel1, AccType a1_t, const double* acc1, AccType a2_t, double* acc2)->void;
+	auto ARIS_API s_acc2acc(Size n, const PosType *p1_t, const double* p1, const VelType *v1_t, const double* v1, const AccType *a1_t, const double* a1, const AccType *a2_t, double* a2)->void;
+
+	enum class FceType {
 		FT,        // 力与转矩，     6维末端， 6维向量
 		FS,        // 力旋量，       6维末端， 6维向量
-		TORQUE,    // 转矩，         3维末端， 3维向量
-		FORCE,     // 3维力，        3维末端， 3维向量
 		FXYZ_TZ,   // 3维转矩，      4维末端， 4维向量
+		TXYZ,      // 转矩，         3维末端， 3维向量
+		FXYZ,      // 3维力，        3维末端， 3维向量
 		FXY_TZ,    // Fxy和Tz，      3维末端， 3维向量
+		FXY,       // Fxy，          2维末端， 2维向量
 		FX,        // Fx，           1维末端， 1维向量
+		FY,        // Fy，           1维末端， 1维向量
+		FZ,        // Fz，           1维末端， 1维向量
+		TX,        // Tx，           1维末端， 1维向量
+		TY,        // Ty，           1维末端， 1维向量
 		TZ,        // Tz，           1维末端， 1维向量
 		UNKNOWN,
 	};
-	auto inline s_ee_type_fce_size(EEType type)noexcept->aris::Size {
-		return s_ee_type_vel_size(type);
+	constexpr auto inline s_fce_type_size(FceType type)noexcept->aris::Size {
+		switch (type) {
+		case FceType::FT:      return 6;
+		case FceType::FS:      return 6;
+		case FceType::FXYZ_TZ: return 4;
+		case FceType::TXYZ:    return 3;
+		case FceType::FXYZ:    return 3;
+		case FceType::FXY_TZ:  return 3;
+		case FceType::FXY:     return 2;
+		case FceType::FX:      return 1;
+		case FceType::FY:      return 1;
+		case FceType::FZ:      return 1;
+		case FceType::TX:      return 1;
+		case FceType::TY:      return 1;
+		case FceType::TZ:      return 1;
+		case FceType::UNKNOWN: return -1;
+		default:return -1;
+		}
 	}
-	auto inline s_ee_type_fce_size(aris::Size n, const EEType* ee_types)noexcept->aris::Size {
+	auto inline s_fce_type_size(aris::Size n, const FceType* ee_types)noexcept->aris::Size {
 		aris::Size size = 0;
 		for (Size i = 0; i < n; ++i) {
-			size += s_ee_type_acc_size(ee_types[i]);
+			size += s_fce_type_size(ee_types[i]);
 		}
 		return size;
 	}

@@ -88,9 +88,9 @@ namespace aris::dynamic {
 	auto ARIS_API s_conv_add(Size m, Size n, const double* u, const double* v, double* result)->void;
 
 	// 返回向量 u 和 v 的卷积，并加到结果上。如果 u 和 v 是多项式系数的向量，对其卷积与将
-// 这两个多项式相乘等效。
-//
-// result 的长度为 m + n - 1
+	// 这两个多项式相乘等效。
+	//
+	// result 的长度为 m + n - 1
 	auto ARIS_API s_conv_add(Size m, Size n, double alpha, const double* u, const double* v, double* result)->void;
 }
 

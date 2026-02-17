@@ -530,7 +530,9 @@ namespace aris::dynamic
 
 			for (int i = 0; i < 8; ++i)
 			{
-				if (puma5Inverse(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num]))
+				double pm[16];
+				imp_->ee->getMpm(pm);
+				if (puma5Inverse(imp_->puma_param, pm, i, diff_q[solution_num]))
 				{
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 6; ++j)
@@ -582,7 +584,9 @@ namespace aris::dynamic
 		}
 		else
 		{
-			if (double q[6]; puma5Inverse(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q))
+			double pm[16];
+			imp_->ee->getMpm(pm);
+			if (double q[6]; puma5Inverse(imp_->puma_param, pm, imp_->which_root_, q))
 			{
 				for (aris::Size i = 0; i < 6; ++i)
 				{

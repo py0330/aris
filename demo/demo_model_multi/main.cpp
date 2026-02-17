@@ -7,7 +7,7 @@
 struct MoveLParam{
 	// 根据前端得到的参数，以下vec的size应该一样
 	std::vector<aris::dynamic::MotionBase*> ees;
-	std::vector<aris::dynamic::EEType> ee_types;
+	std::vector<aris::dynamic::PosType> ee_types;
 	std::vector<aris::dynamic::Marker*> ee_tools;
 	std::vector<aris::dynamic::Marker*> ee_wobjs;
 	std::vector<aris::dynamic::ModelBase*> submodels;
@@ -80,7 +80,7 @@ auto MoveL::prepareNrt()->void{
 
 		// 对子模型做规划
 		for (int j = 0; j < param.sub_ee_num[i]; ++j) {
-			if (sub_ee_types[j] == aris::dynamic::EEType::A || sub_ee_types[j] == aris::dynamic::EEType::X) {
+			if (sub_ee_types[j] == aris::dynamic::PosType::A || sub_ee_types[j] == aris::dynamic::PosType::X) {
 				// 起始位置
 				param.begin_output_pos.push_back(0.1);
 
@@ -102,8 +102,8 @@ auto MoveL::prepareNrt()->void{
 				// 对单轴做规划，得到period，例如调用sCurve函数
 				ee_periods.push_back(5.0124);
 			}
-			else if (sub_ee_types[j] == aris::dynamic::EEType::PE123
-				|| sub_ee_types[j] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
+			else if (sub_ee_types[j] == aris::dynamic::PosType::PE123
+				|| sub_ee_types[j] == aris::dynamic::PosType::PE321) {// 还可以有更多条件
 
 				// 起始位置
 				double begin_pe[6]{ 0,1,2,3,4,5 };
@@ -164,7 +164,7 @@ auto MoveL::executeRT()->int{
 			auto sub_acc = param.accs.data() + acc_idx;
 			auto time_ratio = param.time_ratio[i]; // 时间缩放比例
 
-			if (sub_ee_types[j] == aris::dynamic::EEType::A || sub_ee_types[j] == aris::dynamic::EEType::X) {
+			if (sub_ee_types[j] == aris::dynamic::PosType::A || sub_ee_types[j] == aris::dynamic::PosType::X) {
 				// 处理id
 				pos_idx++;
 				vel_idx++;
@@ -189,8 +189,8 @@ auto MoveL::executeRT()->int{
 					param.submodels[i]->inverseKinematics();
 				}
 			}
-			else if (sub_ee_types[j] == aris::dynamic::EEType::PE123
-				|| sub_ee_types[j] == aris::dynamic::EEType::PE321) {// 还可以有更多条件
+			else if (sub_ee_types[j] == aris::dynamic::PosType::PE123
+				|| sub_ee_types[j] == aris::dynamic::PosType::PE321) {// 还可以有更多条件
 
 				// 处理id
 				pos_idx += 6;

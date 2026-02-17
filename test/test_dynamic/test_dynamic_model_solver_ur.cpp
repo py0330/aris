@@ -103,7 +103,7 @@ void test_ur_forward_solver(){
 void test_ur_inverse_solver(){
 	auto m = createUrModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 	auto& ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
-	ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	ee.setPosType(aris::dynamic::PosType::PM);
 	m->init();
 
 	double ee_pm[16];
@@ -143,7 +143,7 @@ void test_ur_inverse_solver(){
 		auto new_m = createUrModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::UrInverseKinematicSolver&>(new_m->solverPool().at(0));
 		auto &new_ee = dynamic_cast<aris::dynamic::GeneralMotion&>(new_m->generalMotionPool().at(0));
-		new_ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+		new_ee.setPosType(aris::dynamic::PosType::PM);
 		new_m->init();
 
 		for (int i = 0; i < 8; ++i){
@@ -157,10 +157,12 @@ void test_ur_inverse_solver(){
 
 			if (new_m->forwardKinematics())std::cout << "forward failed" << std::endl;
 			new_ee.updP();
-			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
-			{
+
+			double mpm[16];
+			new_ee.getMpm(mpm);
+			if (!s_is_equal(16, ee_pm, mpm, 1e-9)){
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;
-				dsp(4, 4, *new_ee.mpm());
+				dsp(4, 4, mpm);
 			}
 		}
 	}
@@ -248,7 +250,7 @@ void test_ur_calib_dh() {
 	param.H2 = -0.09465;
 	param.W2 = 0.0823;
 	auto m = aris::dynamic::createModelUr(param);
-	dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+	dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]).setPosType(aris::dynamic::PosType::PE123);
 
 	// 待标定的真实值
 	double joint_error[6]{ 0.01,0.03,0.015,0.02,0.001,-0.02 };
@@ -287,7 +289,7 @@ void test_ur_calib_dh() {
 		param.W2 = dh_with_error[5];
 
 		auto m = aris::dynamic::createModelUr(param);
-		dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER123);
+		dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool()[0]).setPosType(aris::dynamic::PosType::PE123);
 
 		for (int i = 0; i < 6; ++i) {
 			m->motionPool()[i].setMpOffset(joint_error[i]);

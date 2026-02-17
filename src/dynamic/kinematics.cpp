@@ -317,157 +317,1763 @@ namespace aris::dynamic{
 		return 0;
 	}
 
-	auto ARIS_API s_ee_pos2pm(EEType type, const double* pos, double* pm)noexcept->void {
+	auto ARIS_API s_pos2pm(PosType type, const double* pos, double* pm)noexcept->void {
 		switch (type) {
-		case EEType::PE313:
-			s_pe2pm(pos, pm, "313");
+		case PosType::PE121:
+			s_pe2pm(pos, pm, "121");
 			return;
-		case EEType::PE321:
-			s_pe2pm(pos, pm, "321");
-			return;
-		case EEType::PE123:
+		case PosType::PE123:
 			s_pe2pm(pos, pm, "123");
 			return;
-		case EEType::PQ:
+		case PosType::PE131:
+			s_pe2pm(pos, pm, "131");
+			return;
+		case PosType::PE132:
+			s_pe2pm(pos, pm, "132");
+			return;
+		case PosType::PE212:
+			s_pe2pm(pos, pm, "212");
+			return;
+		case PosType::PE213:
+			s_pe2pm(pos, pm, "213");
+			return;
+		case PosType::PE231:
+			s_pe2pm(pos, pm, "231");
+			return;
+		case PosType::PE232:
+			s_pe2pm(pos, pm, "232");
+			return;
+		case PosType::PE312:
+			s_pe2pm(pos, pm, "313");
+			return;
+		case PosType::PE313:
+			s_pe2pm(pos, pm, "313");
+			return;
+		case PosType::PE321:
+			s_pe2pm(pos, pm, "321");
+			return;
+		case PosType::PE323:
+			s_pe2pm(pos, pm, "323");
+			return;
+		case PosType::PQ:
 			s_pq2pm(pos, pm);
 			return;
-		case EEType::PM:
+		case PosType::PM:
 			s_vc(16, pos, pm);
 			return;
-		case EEType::RE313:
+		case PosType::RE121:
 			s_eye(4, pm);
-			s_re2pm(pos, pm, "313");
+			s_re2pm(pos, pm, "121");
 			return;
-		case EEType::RE321:
-			s_eye(4, pm);
-			s_re2pm(pos, pm, "321");
-			return;
-		case EEType::RE123:
+		case PosType::RE123:
 			s_eye(4, pm);
 			s_re2pm(pos, pm, "123");
 			return;
-		case EEType::RQ:
+		case PosType::RE131:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "131");
+			return;
+		case PosType::RE132:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "132");
+			return;
+		case PosType::RE212:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "212");
+			return;
+		case PosType::RE213:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "213");
+			return;
+		case PosType::RE231:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "231");
+			return;
+		case PosType::RE232:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "232");
+			return;
+		case PosType::RE312:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "312");
+			return;
+		case PosType::RE313:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "313");
+			return;
+		case PosType::RE321:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "321");
+			return;
+		case PosType::RE323:
+			s_eye(4, pm);
+			s_re2pm(pos, pm, "323");
+			return;
+		case PosType::RQ:
 			s_eye(4, pm);
 			s_rq2pm(pos, pm);
 			return;
-		case EEType::RM:
+		case PosType::RM:
 			s_eye(4, pm);
 			s_rm2pm(pos, pm);
 			return;
-		case EEType::XYZT:
+		case PosType::XYZT:
 			s_eye(4, pm);
 			s_pp2pm(pos, pm);
 			s_rmz(pos[3], pm, 4);
 			return;
-		case EEType::XYZ:
+		case PosType::XYZ:
 			s_eye(4, pm);
 			s_pp2pm(pos, pm);
 			s_rmz(pos[3], pm, 4);
 			return;
-		case EEType::RTZ:
+		case PosType::RTZ:
 			s_eye(4, pm);
 			pm[3] = pos[0] * std::cos(pos[1]);
 			pm[7] = pos[0] * std::sin(pos[1]);
 			pm[11] = pos[2];
 			s_rmz(pos[1], pm, 4);
 			return;
-		case EEType::XYT:
+		case PosType::XYT:
 			s_eye(4, pm);
 			pm[3] = pos[0];
 			pm[7] = pos[1];
 			s_rmz(pos[2], pm, 4);
 			return;
-		case EEType::XY:
+		case PosType::XY:
 			s_eye(4, pm);
 			pm[3] = pos[0];
 			pm[7] = pos[1];
 			return;
-		case EEType::RT:
+		case PosType::RT:
 			s_eye(4, pm);
 			pm[3] = pos[0] * std::cos(pos[1]);
 			pm[7] = pos[0] * std::sin(pos[1]);
 			s_rmz(pos[1], pm, 4);
 			return;
-		case EEType::X:
+		case PosType::X:
 			s_eye(4, pm);
 			pm[3] = pos[0];
 			return;
-		case EEType::A:
+		case PosType::Y:
+			s_eye(4, pm);
+			pm[7] = pos[0];
+			return;
+		case PosType::Z:
+			s_eye(4, pm);
+			pm[10] = pos[0];
+			return;
+		case PosType::A:
+			s_eye(4, pm);
+			s_rmx(pos[0], pm, 4);
+			return;
+		case PosType::B:
+			s_eye(4, pm);
+			s_rmy(pos[0], pm, 4);
+			return;
+		case PosType::C:
+			s_eye(4, pm);
 			s_rmz(pos[0], pm, 4);
 			return;
-		case EEType::UNKNOWN:
+		case PosType::UNKNOWN:
 			return;
 		default:
 			return;
 		}
 	}
-	auto ARIS_API s_ee_pm2pos(EEType type, const double* pm, double* pos)noexcept->void {
+	auto ARIS_API s_pm2pos(const double* pm, PosType type, double* pos)noexcept->void {
 		switch (type) {
-		case EEType::PE313:
-			s_pm2pe(pm, pos, "313");
+		case PosType::PE121:
+			s_pm2pe(pm, pos, "121");
 			return;
-		case EEType::PE321:
-			s_pm2pe(pm, pos, "321");
-			return;
-		case EEType::PE123:
+		case PosType::PE123:
 			s_pm2pe(pm, pos, "123");
 			return;
-		case EEType::PQ:
+		case PosType::PE131:
+			s_pm2pe(pm, pos, "131");
+			return;
+		case PosType::PE132:
+			s_pm2pe(pm, pos, "132");
+			return;
+		case PosType::PE212:
+			s_pm2pe(pm, pos, "212");
+			return;
+		case PosType::PE213:
+			s_pm2pe(pm, pos, "213");
+			return;
+		case PosType::PE231:
+			s_pm2pe(pm, pos, "231");
+			return;
+		case PosType::PE232:
+			s_pm2pe(pm, pos, "232");
+			return;
+		case PosType::PE312:
+			s_pm2pe(pm, pos, "312");
+			return;
+		case PosType::PE313:
+			s_pm2pe(pm, pos, "313");
+			return;
+		case PosType::PE321:
+			s_pm2pe(pm, pos, "321");
+			return;
+		case PosType::PE323:
+			s_pm2pe(pm, pos, "323");
+			return;
+		case PosType::PQ:
 			s_pm2pq(pm, pos);
 			return;
-		case EEType::PM:
+		case PosType::PM:
 			s_vc(16, pm, pos);
 			return;
-		case EEType::RE313:
-			s_pm2re(pm, pos, "313");
+		case PosType::RE121:
+			s_pm2re(pm, pos, "121");
 			return;
-		case EEType::RE321:
-			s_pm2re(pm, pos, "321");
-			return;
-		case EEType::RE123:
+		case PosType::RE123:
 			s_pm2re(pm, pos, "123");
 			return;
-		case EEType::RQ:
+		case PosType::RE131:
+			s_pm2re(pm, pos, "131");
+			return;
+		case PosType::RE132:
+			s_pm2re(pm, pos, "132");
+			return;
+		case PosType::RE212:
+			s_pm2re(pm, pos, "212");
+			return;
+		case PosType::RE213:
+			s_pm2re(pm, pos, "213");
+			return;
+		case PosType::RE231:
+			s_pm2re(pm, pos, "231");
+			return;
+		case PosType::RE232:
+			s_pm2re(pm, pos, "232");
+			return;
+		case PosType::RE312:
+			s_pm2re(pm, pos, "312");
+			return;
+		case PosType::RE313:
+			s_pm2re(pm, pos, "313");
+			return;
+		case PosType::RE321:
+			s_pm2re(pm, pos, "321");
+			return;
+		case PosType::RE323:
+			s_pm2re(pm, pos, "323");
+			return;
+		case PosType::RQ:
 			s_pm2rq(pm, pos);
 			return;
-		case EEType::RM:
+		case PosType::RM:
 			s_pm2rm(pm, pos);
 			return;
-		case EEType::XYZT:
+		case PosType::XYZT:
 			s_pm2pp(pm, pos);
 			pos[3] = s_rmz_theta(pm, 4);
 			return;
-		case EEType::XYZ:
+		case PosType::XYZ:
 			s_pm2pp(pm, pos);
 			return;
-		case EEType::RTZ:
+		case PosType::RTZ:
 			pos[0] = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
 			pos[1] = std::atan2(pm[3], pm[7]);
 			pos[2] = pm[11];
 			return;
-		case EEType::XYT:
+		case PosType::XYT:
 			pos[0] = pm[3];
 			pos[1] = pm[7];
 			pos[2] = s_rmz_theta(pm, 4);
 			return;
-		case EEType::XY:
+		case PosType::XY:
 			pos[0] = pm[3];
 			pos[1] = pm[7];
 			return;
-		case EEType::RT:
+		case PosType::RT:
 			pos[0] = std::sqrt(pm[3] * pm[3] + pm[7] * pm[7]);
 			pos[1] = std::atan2(pm[3], pm[7]);
 			return;
-		case EEType::X:
+		case PosType::X:
 			pos[0] = pm[3];
 			return;
-		case EEType::A:
+		case PosType::Y:
+			pos[0] = pm[7];
+			return;
+		case PosType::Z:
+			pos[0] = pm[11];
+			return;
+		case PosType::A:
+			pos[0] = s_rmx_theta(pm, 4);
+			return;
+		case PosType::B:
+			pos[0] = s_rmy_theta(pm, 4);
+			return;
+		case PosType::C:
 			pos[0] = s_rmz_theta(pm, 4);
 			return;
-		case EEType::UNKNOWN:
+		case PosType::UNKNOWN:
 			return;
 		default:
 			return;
+		}
+	}
+	auto ARIS_API s_pos2pos(PosType p1_t, const double* pos1, PosType p2_t, double* pos2)->void {
+		if (p1_t == p2_t) {
+			s_vc(s_pos_type_size(p1_t), pos1, pos2);
+			return;
+		}
+
+		double pm[16];
+		s_pos2pm(p1_t, pos1, pm);
+		s_pm2pos(pm, p2_t, pos2);
+	}
+	auto ARIS_API s_pos2pos(aris::Size n, const PosType* p1_t, const double* p1, const PosType* p2_t, double* p2) -> void {
+		aris::Size idx1{ 0 }, idx2{ 0 };
+		for (aris::Size i = 0; i < n; ++i) {
+			s_pos2pos(p1_t[i], p1 + idx1, p2_t[i], p2 + idx2);
+			idx1 += aris::dynamic::s_pos_type_size(p1_t[i]);
+			idx2 += aris::dynamic::s_pos_type_size(p2_t[i]);
+		}
+	}
+
+	auto ARIS_API s_vel2vs(PosType p_t, const double* pos, VelType v_t, const double* vel, double* vs)noexcept->void {
+
+		switch (v_t) {
+		case VelType::VA: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, vel, vs);
+			return;
+		}
+		case VelType::VS: {
+			s_vc(6, vel, vs);
+			return;
+		}
+		case VelType::VE121: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE121, pe);
+			s_ve2vs(pe, vel, vs, "121");
+			return;
+		}
+		case VelType::VE123: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE123, pe);
+			s_ve2vs(pe, vel, vs, "123");
+			return;
+		}
+		case VelType::VE131: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE131, pe);
+			s_ve2vs(pe, vel, vs, "131");
+			return;
+		}
+		case VelType::VE132: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE132, pe);
+			s_ve2vs(pe, vel, vs, "132");
+			return;
+		}
+		case VelType::VE212: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE212, pe);
+			s_ve2vs(pe, vel, vs, "212");
+			return;
+		}
+		case VelType::VE213: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE213, pe);
+			s_ve2vs(pe, vel, vs, "213");
+			return;
+		}
+		case VelType::VE231: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE231, pe);
+			s_ve2vs(pe, vel, vs, "231");
+			return;
+		}
+		case VelType::VE232: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE232, pe);
+			s_ve2vs(pe, vel, vs, "232");
+			return;
+		}
+		case VelType::VE312: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE312, pe);
+			s_ve2vs(pe, vel, vs, "312");
+			return;
+		}
+		case VelType::VE313: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE313, pe);
+			s_ve2vs(pe, vel, vs, "313");
+			return;
+		}
+		case VelType::VE321: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE321, pe);
+			s_ve2vs(pe, vel, vs, "321");
+			return;
+		}
+		case VelType::VE323: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE323, pe);
+			s_ve2vs(pe, vel, vs, "323");
+			return;
+		}
+		case VelType::VQ: {
+			double pq[7];
+			s_pos2pos(p_t, pos, PosType::PQ, pq);
+			s_vq2vs(pq, vel, vs);
+			return;
+		}
+		case VelType::VM: {
+			double pm[16];
+			s_pos2pos(p_t, pos, PosType::PM, pm);
+			s_vm2vs(pm, vel, vs);
+			return;
+		}
+		case VelType::WE121: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE121, re);
+			s_we2vs(re, vel, vs, "121");
+			return;
+		}
+		case VelType::WE123: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE123, re);
+			s_we2vs(re, vel, vs, "123");
+			return;
+		}
+		case VelType::WE131: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE131, re);
+			s_we2vs(re, vel, vs, "131");
+			return;
+		}
+		case VelType::WE132: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE132, re);
+			s_we2vs(re, vel, vs, "132");
+			return;
+		}
+		case VelType::WE212: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE212, re);
+			s_we2vs(re, vel, vs, "212");
+			return;
+		}
+		case VelType::WE213: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE213, re);
+			s_we2vs(re, vel, vs, "213");
+			return;
+		}
+		case VelType::WE231: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE231, re);
+			s_we2vs(re, vel, vs, "231");
+			return;
+		}
+		case VelType::WE232: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE232, re);
+			s_we2vs(re, vel, vs, "232");
+			return;
+		}
+		case VelType::WE312: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE312, re);
+			s_we2vs(re, vel, vs, "312");
+			return;
+		}
+		case VelType::WE313: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE313, re);
+			s_we2vs(re, vel, vs, "313");
+			return;
+		}
+		case VelType::WE321: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE321, re);
+			s_we2vs(re, vel, vs, "321");
+			return;
+		}
+		case VelType::WE323: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE323, re);
+			s_we2vs(re, vel, vs, "323");
+			return;
+		}
+		case VelType::WQ: {
+			double rq[4];
+			s_pos2pos(p_t, pos, PosType::RQ, rq);
+			s_wq2vs(rq, vel, vs);
+			return;
+		}
+		case VelType::WM: {
+			double rm[9];
+			s_pos2pos(p_t, pos, PosType::RM, rm);
+			s_wm2vs(rm, vel, vs);
+			return;
+		}
+		case VelType::DXYZT: {
+			double p[6]{ 0.0 };
+			s_pos2pos(p_t, pos, PosType::XYZT, p);
+			s_ve2vs(p, vel, vs, "321");
+			return;
+		}
+		case VelType::DXYZ: {
+			double p[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, p);
+			s_vp2vs(p, vel, vs);
+			return;
+		}
+		case VelType::DRTZ: {
+			// x = r*cos(t)
+			// y = r*sin(t)
+			//
+			// dx = dr*cos(t) - r*sin(t)*dt
+			// dy = dr*sin(t) + r*cos(t)*dt
+			//
+			
+			// to va //
+			double va[6]{ 0.0 };
+			{
+				double rtz[3];
+				s_pos2pos(p_t, pos, PosType::RTZ, rtz);
+
+				double& r = rtz[0];
+				double& t = rtz[1];
+				const double& dr = vel[0];
+				const double& dt = vel[1];
+				va[0] = dr * std::cos(t) - r * std::sin(t) * dt;
+				va[1] = dr * std::sin(t) + r * std::cos(t) * dt;
+				va[5] = dt;
+			}
+
+			// to vs //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DXYT: {
+			double va[6]{ vel[0], vel[1], 0,0,0, vel[2]};
+
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DXY: {
+			double va[6]{ vel[0], vel[1], 0,0,0,0 };
+
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DRT: {
+			// to va //
+			double va[6]{ 0.0 };
+			{
+				double rtz[3];
+				s_pos2pos(p_t, pos, PosType::RTZ, rtz);
+
+				double& r = rtz[0];
+				double& t = rtz[1];
+				const double& dr = vel[0];
+				const double& dt = vel[1];
+				va[0] = dr * std::cos(t) - r * std::sin(t) * dt;
+				va[1] = dr * std::sin(t) + r * std::cos(t) * dt;
+			}
+
+			// to vs //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DX: {
+			double va[6]{ vel[0],0,0,0,0,0 };
+			
+			// to vs //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DY: {
+			double va[6]{ 0,vel[0],0,0,0,0 };
+
+			// to vs //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DZ: {
+			double va[6]{ 0,0,vel[0],0,0,0 };
+
+			// to vs //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_va2vs(pp, va, vs);
+			return;
+		}
+		case VelType::DA: {
+			std::fill_n(vs, 6, 0.0);
+			vs[3] = vel[0];
+			return;
+		}
+		case VelType::DB: {
+			std::fill_n(vs, 6, 0.0);
+			vs[4] = vel[0];
+			return;
+		}
+		case VelType::DC: {
+			std::fill_n(vs, 6, 0.0);
+			vs[5] = vel[0];
+			return;
+		}
+		case VelType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	
+	}
+	auto ARIS_API s_vs2vel(PosType p_t, const double* pos, const double* vs, VelType v_t, double* vel)noexcept->void {
+		switch (v_t) {
+		case VelType::VA: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_vs2va(vs, pp, vel);
+			return;
+		}
+		case VelType::VS: {
+			s_vc(6, vs, vel);
+			return;
+		}
+		case VelType::VE121: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE121, pe);
+			s_vs2ve(vs, pe, vel, "121");
+			return;
+		}
+		case VelType::VE123: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE123, pe);
+			s_vs2ve(vs, pe, vel, "123");
+			return;
+		}
+		case VelType::VE131: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE131, pe);
+			s_vs2ve(vs, pe, vel, "131");
+			return;
+		}
+		case VelType::VE132: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE132, pe);
+			s_vs2ve(vs, pe, vel, "132");
+			return;
+		}
+		case VelType::VE212: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE212, pe);
+			s_vs2ve(vs, pe, vel, "212");
+			return;
+		}
+		case VelType::VE213: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE213, pe);
+			s_vs2ve(vs, pe, vel, "213");
+			return;
+		}
+		case VelType::VE231: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE231, pe);
+			s_vs2ve(vs, pe, vel, "231");
+			return;
+		}
+		case VelType::VE232: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE232, pe);
+			s_vs2ve(vs, pe, vel, "232");
+			return;
+		}
+		case VelType::VE312: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE312, pe);
+			s_vs2ve(vs, pe, vel, "312");
+			return;
+		}
+		case VelType::VE313: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE313, pe);
+			s_vs2ve(vs, pe, vel, "313");
+			return;
+		}
+		case VelType::VE321: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE321, pe);
+			s_vs2ve(vs, pe, vel, "321");
+			return;
+		}
+		case VelType::VE323: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE323, pe);
+			s_vs2ve(vs, pe, vel, "323");
+			return;
+		}
+		case VelType::VQ: {
+			double pq[7];
+			s_pos2pos(p_t, pos, PosType::PQ, pq);
+			s_vs2vq(vs, pq, vel);
+			return;
+		}
+		case VelType::VM: {
+			double pm[16];
+			s_pos2pos(p_t, pos, PosType::PM, pm);
+			s_vs2vm(vs, pm, vel);
+			return;
+		}
+		case VelType::WE121: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE121, re);
+			s_vs2we(vs, re, vel, "121");
+			return;
+		}
+		case VelType::WE123: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE123, re);
+			s_vs2we(vs, re, vel, "123");
+			return;
+		}
+		case VelType::WE131: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE131, re);
+			s_vs2we(vs, re, vel, "131");
+			return;
+		}
+		case VelType::WE132: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE132, re);
+			s_vs2we(vs, re, vel, "132");
+			return;
+		}
+		case VelType::WE212: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE212, re);
+			s_vs2we(vs, re, vel, "212");
+			return;
+		}
+		case VelType::WE213: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE213, re);
+			s_vs2we(vs, re, vel, "213");
+			return;
+		}
+		case VelType::WE231: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE231, re);
+			s_vs2we(vs, re, vel, "231");
+			return;
+		}
+		case VelType::WE232: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE232, re);
+			s_vs2we(vs, re, vel, "232");
+			return;
+		}
+		case VelType::WE312: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE312, re);
+			s_vs2we(vs, re, vel, "312");
+			return;
+		}
+		case VelType::WE313: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE313, re);
+			s_vs2we(vs, re, vel, "313");
+			return;
+		}
+		case VelType::WE321: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE321, re);
+			s_vs2we(vs, re, vel, "321");
+			return;
+		}
+		case VelType::WE323: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE323, re);
+			s_vs2we(vs, re, vel, "323");
+			return;
+		}
+		case VelType::WQ: {
+			double rq[4];
+			s_pos2pos(p_t, pos, PosType::RQ, rq);
+			s_vs2wq(vs, rq, vel);
+			return;
+		}
+		case VelType::WM: {
+			double rm[9];
+			s_pos2pos(p_t, pos, PosType::RM, rm);
+			s_vs2wm(vs, rm, vel);
+			return;
+		}
+		case VelType::DXYZT: {
+			double p[6]{ 0.0 };
+			s_pos2pos(p_t, pos, PosType::XYZT, p);
+			s_vs2ve(vs, p, vel, "321");
+			return;
+		}
+		case VelType::DXYZ: {
+			double p[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, p);
+			s_vs2vp(vs, p, vel);
+			return;
+		}
+		case VelType::DRTZ: {
+			// x = r*cos(t)
+			// y = r*sin(t)
+			//
+			// dx = dr*cos(t) - r*sin(t)*dt
+			// dy = dr*sin(t) + r*cos(t)*dt
+			//
+
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+
+			
+			double rtz[3];
+			s_pos2pos(p_t, pos, PosType::RTZ, rtz);
+			double& r = rtz[0];
+			double& t = rtz[1];
+
+			if (rtz[0] < 1e-7) {
+				double dr = std::sqrt(va[0] * va[0] + va[1] * va[1]);
+				double dt = 0.0;
+				vel[0] = dr;
+				vel[1] = dt;
+				vel[2] = va[2];
+			}
+			else {
+
+				double A[4]{ cos(t), -r * sin(t), sin(t) , r * cos(t) };
+				double det = A[0] * A[3] - A[1] * A[2];
+				double inv_A[4]{
+					A[3] / det, A[1] / det, A[2] / det, A[0] / det
+				};
+
+				vel[0] = inv_A[0] * va[0] + inv_A[1] * va[1];
+				vel[1] = inv_A[2] * va[0] + inv_A[3] * va[1];
+				vel[2] = va[2];
+			}
+			return;
+		}
+		case VelType::DXYT: {
+			double va[6];
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_vs2va(vs, pp, va);
+
+			vel[0] = va[0];
+			vel[1] = va[1];
+			vel[2] = va[5];
+			return;
+		}
+		case VelType::DXY: {
+			double va[6];
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+			s_vs2va(vs, pp, va);
+
+			vel[0] = va[0];
+			vel[1] = va[1];
+			return;
+		}
+		case VelType::DRT: {
+			// x = r*cos(t)
+			// y = r*sin(t)
+			//
+			// dx = dr*cos(t) - r*sin(t)*dt
+			// dy = dr*sin(t) + r*cos(t)*dt
+			//
+
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+
+
+			double rt[2];
+			s_pos2pos(p_t, pos, PosType::RT, rt);
+			double& r = rt[0];
+			double& t = rt[1];
+
+			if (rt[0] < 1e-7) {
+				double dr = std::sqrt(va[0] * va[0] + va[1] * va[1]);
+				double dt = 0.0;
+				vel[0] = dr;
+				vel[1] = dt;
+			}
+			else {
+
+				double A[4]{ cos(t), -r * sin(t), sin(t) , r * cos(t) };
+				double det = A[0] * A[3] - A[1] * A[2];
+				double inv_A[4]{
+					A[3] / det, A[1] / det, A[2] / det, A[0] / det
+				};
+
+				vel[0] = inv_A[0] * va[0] + inv_A[1] * va[1];
+				vel[1] = inv_A[2] * va[0] + inv_A[3] * va[1];
+			}
+			return;
+		}
+		case VelType::DX: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[0];
+			return;
+		}
+		case VelType::DY: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[1];
+			return;
+		}
+		case VelType::DZ: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[2];
+			return;
+		}
+		case VelType::DA: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[3];
+			return;
+		}
+		case VelType::DB: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[4];
+			return;
+		}
+		case VelType::DC: {
+			// to va //
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6]{ 0.0 };
+			s_vs2va(vs, pp, va);
+			vel[0] = va[5];
+			return;
+		}
+		case VelType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	}
+	auto ARIS_API s_vel2vel(PosType p1_t, const double* pos1, VelType v1_t, const double* vel1, VelType v2_t, double* vel2)->void {
+		if (v1_t == v2_t) {
+			s_vc(s_vel_type_size(v1_t), vel1, vel2);
+			return;
+		}
+
+		double vs[6];
+		s_vel2vs(p1_t, pos1, v1_t, vel1, vs);
+		s_vs2vel(p1_t, pos1, vs, v2_t, vel2);
+	}
+	auto ARIS_API s_vel2vel(Size n, const PosType* p1_t, const double* p1, const VelType* v1_t, const double* v1, const VelType* v2_t, double* v2)->void {
+		aris::Size pidx1{ 0 }, vidx1{ 0 }, vidx2{ 0 };
+		for (aris::Size i = 0; i < n; ++i) {
+			s_vel2vel(p1_t[i], p1 + pidx1, v1_t[i], v1 + vidx1, v2_t[i], v2 + vidx2);
+			pidx1 += aris::dynamic::s_pos_type_size(p1_t[i]);
+			vidx1 += aris::dynamic::s_vel_type_size(v1_t[i]);
+			vidx2 += aris::dynamic::s_vel_type_size(v2_t[i]);
+		}
+	}
+
+	auto ARIS_API s_acc2as(PosType p_t, const double* pos, VelType v_t, const double* vel, AccType a_t, const double* acc, double* as)noexcept->void {
+		switch (a_t) {
+		case AccType::AA: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double va[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VA, va);
+
+			s_aa2as(pp, va, acc, as);
+			return;
+		}
+		case AccType::AS: {
+			s_vc(6, acc, as);
+			return;
+		}
+		case AccType::AE121: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE121, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE121, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "121");
+			return;
+		}
+		case AccType::AE123: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE123, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE123, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "123");
+			return;
+		}
+		case AccType::AE131: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE131, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE131, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "131");
+			return;
+		}
+		case AccType::AE132: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE132, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE132, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "132");
+			return;
+		}
+		case AccType::AE212: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE212, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE212, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "212");
+			return;
+		}
+		case AccType::AE213: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE213, pe);
+			
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE213, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "213");
+			return;
+		}
+		case AccType::AE231: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE231, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE231, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "231");
+			return;
+		}
+		case AccType::AE232: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE232, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE232, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "232");
+			return;
+		}
+		case AccType::AE312: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE312, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE312, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "312");
+			return;
+		}
+		case AccType::AE313: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE313, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE313, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "313");
+			return;
+		}
+		case AccType::AE321: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE321, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE321, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "321");
+			return;
+		}
+		case AccType::AE323: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE323, pe);
+
+			double ve[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VE323, ve);
+
+			s_ae2as(pe, ve, acc, as, nullptr, "323");
+			return;
+		}
+		case AccType::AQ: {
+			double pq[7];
+			s_pos2pos(p_t, pos, PosType::PQ, pq);
+
+			double vq[7];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VQ, vq);
+
+			s_aq2as(pq, vq, acc, as);
+			return;
+		}
+		case AccType::AM: {
+			double pm[16];
+			s_pos2pos(p_t, pos, PosType::PM, pm);
+			
+			double vm[16];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VM, vm);
+
+			s_am2as(pm, vm, acc, as);
+			return;
+		}
+		case AccType::XE121: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE121, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE121, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "121");
+			return;
+		}
+		case AccType::XE123: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE123, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE123, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "123");
+			return;
+		}
+		case AccType::XE131: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE131, re);
+			
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE131, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "131");
+			return;
+		}
+		case AccType::XE132: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE132, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE132, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "132");
+			return;
+		}
+		case AccType::XE212: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE212, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE212, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "212");
+			return;
+		}
+		case AccType::XE213: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE213, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE213, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "213");
+			return;
+		}
+		case AccType::XE231: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE231, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE231, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "231");
+			return;
+		}
+		case AccType::XE232: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE232, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE232, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "232");
+			return;
+		}
+		case AccType::XE312: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE312, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE312, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "312");
+			return;
+		}
+		case AccType::XE313: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE313, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE313, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "313");
+			return;
+		}
+		case AccType::XE321: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE321, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE321, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "321");
+			return;
+		}
+		case AccType::XE323: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE323, re);
+
+			double we[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WE323, we);
+
+			s_xe2as(re, we, acc, as, nullptr, "323");
+			return;
+		}
+		case AccType::XQ: {
+			double rq[4];
+			s_pos2pos(p_t, pos, PosType::RQ, rq);
+
+			double wq[4];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WQ, wq);
+
+			s_xe2as(rq, wq, acc, as);
+			return;
+		}
+		case AccType::XM: {
+			double rm[9];
+			s_pos2pos(p_t, pos, PosType::RM, rm);
+
+			double wm[9];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::WM, wm);
+
+			s_xe2as(rm, wm, acc, as);
+			return;
+		}
+		case AccType::D2XYZT: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double vp[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::DXYZ, vp);
+
+			s_ap2as(pp, vp, acc, as);
+			as[5] = acc[3];
+			return;
+		}
+		case AccType::D2XYZ: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double vp[3];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::DXYZ, vp);
+
+			s_ap2as(pp, vp, acc, as);
+			return;
+		}
+		case AccType::D2RTZ: {
+			// tbd //
+			return;
+		}
+		case AccType::D2XYT: {
+			// tbd //
+			return;
+		}
+		case AccType::D2XY: {
+			// tbd //
+			return;
+		}
+		case AccType::D2RT: {
+			// tbd //
+			return;
+		}
+		case AccType::D2X: {
+			std::fill_n(as, 6, 0.0);
+			as[0] = acc[0];
+			return;
+		}
+		case AccType::D2Y: {
+			std::fill_n(as, 6, 0.0);
+			as[1] = acc[0];
+			return;
+		}
+		case AccType::D2Z: {
+			std::fill_n(as, 6, 0.0);
+			as[2] = acc[0];
+			return;
+		}
+		case AccType::D2A: {
+			std::fill_n(as, 6, 0.0);
+			as[3] = acc[0];
+			return;
+		}
+		case AccType::D2B: {
+			std::fill_n(as, 6, 0.0);
+			as[4] = acc[0];
+			return;
+		}
+		case AccType::D2C: {
+			std::fill_n(as, 6, 0.0);
+			as[5] = acc[0];
+			return;
+		}
+		case AccType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	}
+	auto ARIS_API s_as2acc(PosType p_t, const double* pos, VelType v_t, const double* vel, const double* as, AccType a_t, double* acc)noexcept->void {
+		switch (a_t) {
+		case AccType::AS: {
+			s_vc(6, as, acc);
+			return;
+		}
+		case AccType::AA: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2aa(vs, as, pp, acc);
+			return;
+		}
+		case AccType::AE121: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE121, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "121");
+			return;
+		}
+		case AccType::AE123: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE123, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "123");
+			return;
+		}
+		case AccType::AE131: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE131, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "131");
+			return;
+		}
+		case AccType::AE132: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE132, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "132");
+			return;
+		}
+		case AccType::AE212: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE212, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "212");
+			return;
+		}
+		case AccType::AE213: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE213, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "213");
+			return;
+		}
+		case AccType::AE231: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE231, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "231");
+			return;
+		}
+		case AccType::AE232: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE232, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "232");
+			return;
+		}
+		case AccType::AE312: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE312, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "312");
+			return;
+		}
+		case AccType::AE313: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE313, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "313");
+			return;
+		}
+		case AccType::AE321: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE321, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "321");
+			return;
+		}
+		case AccType::AE323: {
+			double pe[6];
+			s_pos2pos(p_t, pos, PosType::PE323, pe);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ae(vs, as, pe, acc, nullptr, "323");
+			return;
+		}
+		case AccType::AQ: {
+			double pq[7];
+			s_pos2pos(p_t, pos, PosType::PQ, pq);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2aq(vs, as, pq, acc);
+			return;
+		}
+		case AccType::AM: {
+			double pm[16];
+			s_pos2pos(p_t, pos, PosType::PM, pm);
+			
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2am(vs, as, pm, acc);
+			return;
+		}
+		case AccType::XE121: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE121, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "121");
+			return;
+		}
+		case AccType::XE123: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE123, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "123");
+			return;
+		}
+		case AccType::XE131: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE131, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "131");
+			return;
+		}
+		case AccType::XE132: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE132, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "132");
+			return;
+		}
+		case AccType::XE212: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE212, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "212");
+			return;
+		}
+		case AccType::XE213: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE213, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "213");
+			return;
+		}
+		case AccType::XE231: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE231, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "231");
+			return;
+		}
+		case AccType::XE232: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE232, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "232");
+			return;
+		}
+		case AccType::XE312: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE312, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "312");
+			return;
+		}
+		case AccType::XE313: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE313, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "313");
+			return;
+		}
+		case AccType::XE321: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE321, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "321");
+			return;
+		}
+		case AccType::XE323: {
+			double re[3];
+			s_pos2pos(p_t, pos, PosType::RE323, re);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xe(vs, as, re, acc, nullptr, "323");
+			return;
+		}
+		case AccType::XQ: {
+			double rq[4];
+			s_pos2pos(p_t, pos, PosType::RQ, rq);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xq(vs, as, rq, acc);
+			return;
+		}
+		case AccType::XM: {
+			double rm[9];
+			s_pos2pos(p_t, pos, PosType::RM, rm);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2xm(vs, as, rm, acc);
+			return;
+		}
+		case AccType::D2XYZT: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ap(vs, as, pp, acc);
+			acc[3] = as[5];
+			return;
+		}
+		case AccType::D2XYZ: {
+			double pp[3];
+			s_pos2pos(p_t, pos, PosType::XYZ, pp);
+
+			double vs[6];
+			s_vel2vel(p_t, pos, v_t, vel, VelType::VS, vs);
+
+			s_as2ap(vs, as, pp, acc);
+			return;
+		}
+		case AccType::D2RTZ: {
+			// tbd //
+			return;
+		}
+		case AccType::D2XYT: {
+			// tbd //
+			return;
+		}
+		case AccType::D2XY: {
+			// tbd //
+			return;
+		}
+		case AccType::D2RT: {
+			// tbd //
+			return;
+		}
+		case AccType::D2X: {
+			acc[0] = as[0];
+			return;
+		}
+		case AccType::D2Y: {
+			acc[0] = as[1];
+			return;
+		}
+		case AccType::D2Z: {
+			acc[0] = as[2];
+			return;
+		}
+		case AccType::D2A: {
+			acc[0] = as[3];
+			return;
+		}
+		case AccType::D2B: {
+			acc[0] = as[4];
+			return;
+		}
+		case AccType::D2C: {
+			acc[0] = as[5];
+			return;
+		}
+		case AccType::UNKNOWN:
+			return;
+		default:
+			return;
+		}
+	}
+	auto ARIS_API s_acc2acc(PosType p1_t, const double* pos1, VelType v1_t, const double* vel1, AccType a1_t, const double* acc1, AccType a2_t, double* acc2)->void {
+		if (a1_t == a2_t) {
+			s_vc(s_acc_type_size(a1_t), acc1, acc2);
+			return;
+		}
+
+		double as[6];
+		s_acc2as(p1_t, pos1, v1_t, vel1, a1_t, acc1, as);
+		s_as2acc(p1_t, pos1, v1_t, vel1, as, a2_t, acc2);
+	}
+	auto ARIS_API s_acc2acc(Size n, const PosType* p1_t, const double* p1, const VelType* v1_t, const double* v1, const AccType* a1_t, const double* a1, const AccType *a2_t, double* a2)->void {
+		aris::Size pidx1{ 0 }, vidx1{ 0 }, aidx1{ 0 }, aidx2{ 0 };
+		for (aris::Size i = 0; i < n; ++i) {
+			s_acc2acc(p1_t[i], p1 + pidx1, v1_t[i], v1 + vidx1, a1_t[i], a1 + aidx1, a2_t[i], a2 + aidx2);
+			pidx1 += aris::dynamic::s_pos_type_size(p1_t[i]);
+			vidx1 += aris::dynamic::s_vel_type_size(v1_t[i]);
+			aidx1 += aris::dynamic::s_acc_type_size(a1_t[i]);
+			aidx2 += aris::dynamic::s_acc_type_size(a2_t[i]);
 		}
 	}
 
@@ -693,197 +2299,278 @@ namespace aris::dynamic{
 
 	ARIS_REGISTRATION{
 
-	//	enum class EEType {
-	//	PE313,   // 位置与313欧拉角，6维末端， 6维向量
-	//	PE321,   // 位置与321欧拉角，6维末端， 6维向量
-	//	PE123,   // 位置与123欧拉角，6维末端， 6维向量
-	//	PQ,      // 位置与四元数，   6维末端， 7维向量
-	//	PM,      // 位置与位姿矩阵， 6维末端，16维向量
-	//	RE313,   // 313欧拉角，      3维末端， 3维向量
-	//	RE321,   // 321欧拉角，      3维末端， 3维向量
-	//	RE123,   // 123欧拉角，      3维末端， 3维向量
-	//	RQ,      // 四元数，         3维末端， 4维向量
-	//	RM,      // 位姿矩阵，       3维末端， 9维向量
-	//	XYZT,    // x,y,z,theta，    4维末端， 4维向量
-	//	XYZ,     // x,y,z，          3维末端， 3维向量
-	//	RTZ,     // 极坐标r,theta,z，3维末端， 3维向量
-	//	XYT,     // x,y,theta，      3维末端， 3维向量
-	//	XY,      // x,y，            2维末端， 2维向量
-	//	RT,      // 极坐标r,theta，  2维末端， 2维向量
-	//	X,       // 位置x，          1维末端， 1维向量
-	//	A,       // 角度a，          1维末端， 1维向量
-	//	UNKNOWN,
-	//};
-		aris::core::class_<EEType>("EEType")
-			.textMethod([](EEType* type)->std::string {
+		aris::core::class_<PosType>("PosType")
+			.textMethod([](PosType* type)->std::string {
 				switch (*type) {
-				case EEType::PE313:return "PE313";
-				case EEType::PE321:return "PE321";
-				case EEType::PE123:return "PE123";
-				case EEType::PQ:return "PQ";
-				case EEType::PM:return "PM";
-				case EEType::RE313:return "RE313";
-				case EEType::RE321:return "RE321";
-				case EEType::RE123:return "RE123";
-				case EEType::RQ:return "RQ";
-				case EEType::RM:return "RM";
-				case EEType::XYZT:return "XYZT";
-				case EEType::XYZ:return "XYZ";
-				case EEType::RTZ:return "RTZ";
-				case EEType::XYT:return "XYT";
-				case EEType::XY:return "XY";
-				case EEType::RT:return "RT";
-				case EEType::X:return "X";
-				case EEType::A:return "A";
-				case EEType::UNKNOWN:return "UNKNOWN";
+				case PosType::PE121:return "PE121";
+				case PosType::PE123:return "PE123";
+				case PosType::PE131:return "PE131";
+				case PosType::PE132:return "PE132";
+				case PosType::PE212:return "PE212";
+				case PosType::PE213:return "PE213";
+				case PosType::PE231:return "PE231";
+				case PosType::PE232:return "PE232";
+				case PosType::PE312:return "PE312";
+				case PosType::PE313:return "PE313";
+				case PosType::PE321:return "PE321";
+				case PosType::PE323:return "PE323";
+				case PosType::PQ:return "PQ";
+				case PosType::PM:return "PM";
+				case PosType::RE121:return "RE121";
+				case PosType::RE123:return "RE123";
+				case PosType::RE131:return "RE131";
+				case PosType::RE132:return "RE132";
+				case PosType::RE212:return "RE212";
+				case PosType::RE213:return "RE213";
+				case PosType::RE231:return "RE231";
+				case PosType::RE232:return "RE232";
+				case PosType::RE312:return "RE312";
+				case PosType::RE313:return "RE313";
+				case PosType::RE321:return "RE321";
+				case PosType::RE323:return "RE323";
+				case PosType::RQ:return "RQ";
+				case PosType::RM:return "RM";
+				case PosType::XYZT:return "XYZT";
+				case PosType::XYZ:return "XYZ";
+				case PosType::RTZ:return "RTZ";
+				case PosType::XYT:return "XYT";
+				case PosType::XY:return "XY";
+				case PosType::RT:return "RT";
+				case PosType::X:return "X";
+				case PosType::Y:return "Y";
+				case PosType::Z:return "Z";
+				case PosType::A:return "A";
+				case PosType::B:return "B";
+				case PosType::C:return "C";
+				case PosType::UNKNOWN:return "UNKNOWN";
 				default:return "UNKNOWN";
 				}
-			}, [](EEType* type, std::string_view name)->void {
-				if (name == "PE313")*type = EEType::PE313;
-				if (name == "PE321")*type = EEType::PE321;
-				if (name == "PE123")*type = EEType::PE123;
-				if (name == "PQ")*type = EEType::PQ;
-				if (name == "PM")*type = EEType::PM;
-				if (name == "RE313")*type = EEType::RE313;
-				if (name == "RE321")*type = EEType::RE321;
-				if (name == "RE123")*type = EEType::RE123;
-				if (name == "RQ")*type = EEType::RQ;
-				if (name == "RM")*type = EEType::RM;
-				if (name == "XYZT")*type = EEType::XYZT;
-				if (name == "XYZ")*type = EEType::XYZ;
-				if (name == "RTZ")*type = EEType::RTZ;
-				if (name == "XYT")*type = EEType::XYT;
-				if (name == "XY")*type = EEType::XY;
-				if (name == "RT")*type = EEType::RT;
-				if (name == "X")*type = EEType::X;
-				if (name == "A")*type = EEType::A;
-				if (name == "UNKNOWN")*type = EEType::UNKNOWN;
+			}, [](PosType* type, std::string_view name)->void {
+				if (name == "PE121")*type = PosType::PE121;
+				if (name == "PE123")*type = PosType::PE123;
+				if (name == "PE131")*type = PosType::PE131;
+				if (name == "PE132")*type = PosType::PE132;
+				if (name == "PE212")*type = PosType::PE212;
+				if (name == "PE213")*type = PosType::PE213;
+				if (name == "PE231")*type = PosType::PE231;
+				if (name == "PE232")*type = PosType::PE232;
+				if (name == "PE312")*type = PosType::PE312;
+				if (name == "PE313")*type = PosType::PE313;
+				if (name == "PE321")*type = PosType::PE321;
+				if (name == "PE323")*type = PosType::PE323;
+				if (name == "PQ")*type = PosType::PQ;
+				if (name == "PM")*type = PosType::PM;
+				if (name == "RE121")*type = PosType::RE121;
+				if (name == "RE123")*type = PosType::RE123;
+				if (name == "RE131")*type = PosType::RE131;
+				if (name == "RE132")*type = PosType::RE132;
+				if (name == "RE212")*type = PosType::RE212;
+				if (name == "RE213")*type = PosType::RE213;
+				if (name == "RE231")*type = PosType::RE231;
+				if (name == "RE232")*type = PosType::RE232;
+				if (name == "RE312")*type = PosType::RE312;
+				if (name == "RE313")*type = PosType::RE313;
+				if (name == "RE321")*type = PosType::RE321;
+				if (name == "RE323")*type = PosType::RE323;
+				if (name == "RQ")*type = PosType::RQ;
+				if (name == "RM")*type = PosType::RM;
+				if (name == "XYZT")*type = PosType::XYZT;
+				if (name == "XYZ")*type = PosType::XYZ;
+				if (name == "RTZ")*type = PosType::RTZ;
+				if (name == "XYT")*type = PosType::XYT;
+				if (name == "XY")*type = PosType::XY;
+				if (name == "RT")*type = PosType::RT;
+				if (name == "X")*type = PosType::X;
+				if (name == "Y")*type = PosType::Y;
+				if (name == "Z")*type = PosType::Z;
+				if (name == "A")*type = PosType::A;
+				if (name == "B")*type = PosType::B;
+				if (name == "C")*type = PosType::C;
+				if (name == "UNKNOWN")*type = PosType::UNKNOWN;
 			});
 
-		aris::core::class_<EEVelType>("EEVelType")
-			.textMethod([](EEVelType* type)->std::string {
+		aris::core::class_<VelType>("VelType")
+			.textMethod([](VelType* type)->std::string {
 				switch (*type) {
-				case EEVelType::VE313:return "PE313";
-				case EEVelType::VE321:return "PE321";
-				case EEVelType::VE123:return "PE123";
-				case EEVelType::VQ:return "PQ";
-				case EEVelType::VM:return "PM";
-				case EEVelType::WE313:return "WE313";
-				case EEVelType::WE321:return "WE321";
-				case EEVelType::WE123:return "WE123";
-				case EEVelType::WQ:return "WQ";
-				case EEVelType::WM:return "WM";
-				case EEVelType::DXYZT:return "DXYZT";
-				case EEVelType::DXYZ:return "DXYZ";
-				case EEVelType::DRTZ:return "DRTZ";
-				case EEVelType::DXYT:return "DXYT";
-				case EEVelType::DXY:return "DXY";
-				case EEVelType::DRT:return "DRT";
-				case EEVelType::DX:return "DX";
-				case EEVelType::DA:return "DA";
-				case EEVelType::UNKNOWN:return "UNKNOWN";
+				case VelType::VA:return "VA";
+				case VelType::VS:return "VS";
+				case VelType::VE313:return "PE313";
+				case VelType::VE321:return "PE321";
+				case VelType::VE123:return "PE123";
+				case VelType::VQ:return "PQ";
+				case VelType::VM:return "PM";
+				case VelType::WA:return "WA";
+				case VelType::WE313:return "WE313";
+				case VelType::WE321:return "WE321";
+				case VelType::WE123:return "WE123";
+				case VelType::WQ:return "WQ";
+				case VelType::WM:return "WM";
+				case VelType::DXYZT:return "DXYZT";
+				case VelType::DXYZ:return "DXYZ";
+				case VelType::DRTZ:return "DRTZ";
+				case VelType::DXYT:return "DXYT";
+				case VelType::DXY:return "DXY";
+				case VelType::DRT:return "DRT";
+				case VelType::DX:return "DX";
+				case VelType::DA:return "DA";
+				case VelType::UNKNOWN:return "UNKNOWN";
 				default:return "UNKNOWN";
 				}
-			}, [](EEVelType* type, std::string_view name)->void {
-				if (name == "VE313")*type = EEVelType::VE313;
-				if (name == "VE321")*type = EEVelType::VE321;
-				if (name == "VE123")*type = EEVelType::VE123;
-				if (name == "VQ")*type = EEVelType::VQ;
-				if (name == "VM")*type = EEVelType::VM;
-				if (name == "WE313")*type = EEVelType::WE313;
-				if (name == "WE321")*type = EEVelType::WE321;
-				if (name == "WE123")*type = EEVelType::WE123;
-				if (name == "WQ")*type = EEVelType::WQ;
-				if (name == "WM")*type = EEVelType::WM;
-				if (name == "DXYZT")*type = EEVelType::DXYZT;
-				if (name == "DXYZ")*type = EEVelType::DXYZ;
-				if (name == "DRTZ")*type = EEVelType::DRTZ;
-				if (name == "DXYT")*type = EEVelType::DXYT;
-				if (name == "DXY")*type = EEVelType::DXY;
-				if (name == "DRT")*type = EEVelType::DRT;
-				if (name == "DX")*type = EEVelType::DX;
-				if (name == "DA")*type = EEVelType::DA;
-				if (name == "UNKNOWN")*type = EEVelType::UNKNOWN;
+			}, [](VelType* type, std::string_view name)->void {
+				if (name == "VA")*type = VelType::VA;
+				if (name == "VS")*type = VelType::VS;
+				if (name == "VE121")*type = VelType::VE121;
+				if (name == "VE123")*type = VelType::VE123;
+				if (name == "VE131")*type = VelType::VE131;
+				if (name == "VE132")*type = VelType::VE132;
+				if (name == "VE212")*type = VelType::VE212;
+				if (name == "VE213")*type = VelType::VE213;
+				if (name == "VE231")*type = VelType::VE231;
+				if (name == "VE232")*type = VelType::VE232;
+				if (name == "VE312")*type = VelType::VE312;
+				if (name == "VE313")*type = VelType::VE313;
+				if (name == "VE321")*type = VelType::VE321;
+				if (name == "VE323")*type = VelType::VE323;
+				if (name == "VQ")*type = VelType::VQ;
+				if (name == "VM")*type = VelType::VM;
+				if (name == "WA")*type = VelType::WA;
+				if (name == "WE121")*type = VelType::WE121;
+				if (name == "WE123")*type = VelType::WE123;
+				if (name == "WE131")*type = VelType::WE131;
+				if (name == "WE132")*type = VelType::WE132;
+				if (name == "WE212")*type = VelType::WE212;
+				if (name == "WE213")*type = VelType::WE213;
+				if (name == "WE231")*type = VelType::WE231;
+				if (name == "WE232")*type = VelType::WE232;
+				if (name == "WE312")*type = VelType::WE312;
+				if (name == "WE313")*type = VelType::WE313;
+				if (name == "WE321")*type = VelType::WE321;
+				if (name == "WE323")*type = VelType::WE323;
+				if (name == "WQ")*type = VelType::WQ;
+				if (name == "WM")*type = VelType::WM;
+				if (name == "DXYZT")*type = VelType::DXYZT;
+				if (name == "DXYZ")*type = VelType::DXYZ;
+				if (name == "DRTZ")*type = VelType::DRTZ;
+				if (name == "DXYT")*type = VelType::DXYT;
+				if (name == "DXY")*type = VelType::DXY;
+				if (name == "DRT")*type = VelType::DRT;
+				if (name == "DX")*type = VelType::DX;
+				if (name == "DY")*type = VelType::DY;
+				if (name == "DZ")*type = VelType::DZ;
+				if (name == "DA")*type = VelType::DA;
+				if (name == "DB")*type = VelType::DB;
+				if (name == "DC")*type = VelType::DC;
+				if (name == "UNKNOWN")*type = VelType::UNKNOWN;
 			});
 	
-		aris::core::class_<EEAccType>("EEAccType")
-			.textMethod([](EEAccType* type)->std::string {
+		aris::core::class_<AccType>("AccType")
+			.textMethod([](AccType* type)->std::string {
 				switch (*type) {
-				case EEAccType::AE313:return "AE313";
-				case EEAccType::AE321:return "AE321";
-				case EEAccType::AE123:return "AE123";
-				case EEAccType::AQ:return "AQ";
-				case EEAccType::AM:return "AM";
-				case EEAccType::XE313:return "XE313";
-				case EEAccType::XE321:return "XE321";
-				case EEAccType::XE123:return "XE123";
-				case EEAccType::XQ:return "XQ";
-				case EEAccType::XM:return "XM";
-				case EEAccType::D2XYZT:return "D2XYZT";
-				case EEAccType::D2XYZ:return "D2XYZ";
-				case EEAccType::D2RTZ:return "D2RTZ";
-				case EEAccType::D2XYT:return "D2XYT";
-				case EEAccType::D2XY:return "D2XY";
-				case EEAccType::D2RT:return "D2RT";
-				case EEAccType::D2X:return "D2X";
-				case EEAccType::D2A:return "D2A";
-				case EEAccType::UNKNOWN:return "UNKNOWN";
+				case AccType::AA:return "AA";
+				case AccType::AS:return "AS";
+				case AccType::AE313:return "AE313";
+				case AccType::AE321:return "AE321";
+				case AccType::AE123:return "AE123";
+				case AccType::AQ:return "AQ";
+				case AccType::AM:return "AM";
+				case AccType::XA:return "XA";
+				case AccType::XE313:return "XE313";
+				case AccType::XE321:return "XE321";
+				case AccType::XE123:return "XE123";
+				case AccType::XQ:return "XQ";
+				case AccType::XM:return "XM";
+				case AccType::D2XYZT:return "D2XYZT";
+				case AccType::D2XYZ:return "D2XYZ";
+				case AccType::D2RTZ:return "D2RTZ";
+				case AccType::D2XYT:return "D2XYT";
+				case AccType::D2XY:return "D2XY";
+				case AccType::D2RT:return "D2RT";
+				case AccType::D2X:return "D2X";
+				case AccType::D2A:return "D2A";
+				case AccType::UNKNOWN:return "UNKNOWN";
 				default:return "UNKNOWN";
 				}
-			}, [](EEAccType* type, std::string_view name)->void {
-				if (name == "AE313")*type = EEAccType::AE313;
-				if (name == "AE321")*type = EEAccType::AE321;
-				if (name == "AE123")*type = EEAccType::AE123;
-				if (name == "AQ")*type = EEAccType::AQ;
-				if (name == "AM")*type = EEAccType::AM;
-				if (name == "XE313")*type = EEAccType::XE313;
-				if (name == "XE321")*type = EEAccType::XE321;
-				if (name == "XE123")*type = EEAccType::XE123;
-				if (name == "XQ")*type = EEAccType::XQ;
-				if (name == "XM")*type = EEAccType::XM;
-				if (name == "D2XYZT")*type = EEAccType::D2XYZT;
-				if (name == "D2XYZ")*type = EEAccType::D2XYZ;
-				if (name == "D2RTZ")*type = EEAccType::D2RTZ;
-				if (name == "D2XYT")*type = EEAccType::D2XYT;
-				if (name == "D2XY")*type = EEAccType::D2XY;
-				if (name == "D2RT")*type = EEAccType::D2RT;
-				if (name == "D2X")*type = EEAccType::D2X;
-				if (name == "D2A")*type = EEAccType::D2A;
-				if (name == "UNKNOWN")*type = EEAccType::UNKNOWN;
+			}, [](AccType* type, std::string_view name)->void {
+				if (name == "AA")*type = AccType::AA;
+				if (name == "AS")*type = AccType::AS;
+				if (name == "AE121")*type = AccType::AE121;
+				if (name == "AE123")*type = AccType::AE123;
+				if (name == "AE131")*type = AccType::AE131;
+				if (name == "AE132")*type = AccType::AE132;
+				if (name == "AE212")*type = AccType::AE212;
+				if (name == "AE213")*type = AccType::AE213;
+				if (name == "AE231")*type = AccType::AE231;
+				if (name == "AE232")*type = AccType::AE232;
+				if (name == "AE312")*type = AccType::AE312;
+				if (name == "AE313")*type = AccType::AE313;
+				if (name == "AE321")*type = AccType::AE321;
+				if (name == "AE323")*type = AccType::AE323;
+				if (name == "AQ")*type = AccType::AQ;
+				if (name == "AM")*type = AccType::AM;
+				if (name == "XA")*type = AccType::XA;
+				if (name == "XE121")*type = AccType::XE121;
+				if (name == "XE123")*type = AccType::XE123;
+				if (name == "XE131")*type = AccType::XE131;
+				if (name == "XE132")*type = AccType::XE132;
+				if (name == "XE212")*type = AccType::XE212;
+				if (name == "XE213")*type = AccType::XE213;
+				if (name == "XE231")*type = AccType::XE231;
+				if (name == "XE232")*type = AccType::XE232;
+				if (name == "XE312")*type = AccType::XE312;
+				if (name == "XE313")*type = AccType::XE313;
+				if (name == "XE321")*type = AccType::XE321;
+				if (name == "XE323")*type = AccType::XE323;
+				if (name == "XQ")*type = AccType::XQ;
+				if (name == "XM")*type = AccType::XM;
+				if (name == "D2XYZT")*type = AccType::D2XYZT;
+				if (name == "D2XYZ")*type = AccType::D2XYZ;
+				if (name == "D2RTZ")*type = AccType::D2RTZ;
+				if (name == "D2XYT")*type = AccType::D2XYT;
+				if (name == "D2XY")*type = AccType::D2XY;
+				if (name == "D2RT")*type = AccType::D2RT;
+				if (name == "D2X")*type = AccType::D2X;
+				if (name == "D2Y")*type = AccType::D2Y;
+				if (name == "D2Z")*type = AccType::D2Z;
+				if (name == "D2A")*type = AccType::D2A;
+				if (name == "D2B")*type = AccType::D2B;
+				if (name == "D2C")*type = AccType::D2C;
+				if (name == "UNKNOWN")*type = AccType::UNKNOWN;
 			});
-			//FT,        // 力与转矩，     6维末端， 6维向量
-			//	FS,        // 力旋量，       6维末端， 6维向量
-			//	TORQUE,    // 转矩，         3维末端， 3维向量
-			//	FORCE,     // 3维力，        3维末端， 3维向量
-			//	FXYZ_TZ,   // 3维转矩，      4维末端， 4维向量
-			//	FXY_TZ,    // Fxy和Tz，      3维末端， 3维向量
-			//	FX,        // Fx，           1维末端， 1维向量
-			//	TZ,        // Tz，           1维末端， 1维向量
-			//	UNKNOWN,
-		aris::core::class_<EEFceType>("EEFceType")
-			.textMethod([](EEFceType* type)->std::string {
+
+		aris::core::class_<FceType>("FceType")
+			.textMethod([](FceType* type)->std::string {
 				switch (*type) {
-				case EEFceType::FT:return "FT";
-				case EEFceType::FS:return "FS";
-				case EEFceType::TORQUE:return "TORQUE";
-				case EEFceType::FORCE:return "FORCE";
-				case EEFceType::FXYZ_TZ:return "FXYZ_TZ";
-				case EEFceType::FXY_TZ:return "FXY_TZ";
-				case EEFceType::FX:return "FX";
-				case EEFceType::TZ:return "TZ";
-				case EEFceType::UNKNOWN:return "UNKNOWN";
+				case FceType::FT:return "FT";
+				case FceType::FS:return "FS";
+				case FceType::FXYZ_TZ:return "FXYZ_TZ";
+				case FceType::FXYZ:return "FXYZ";
+				case FceType::TXYZ:return "TXYZ";
+				case FceType::FXY_TZ:return "FXY_TZ";
+				case FceType::FXY:return "FXY";
+				case FceType::FX:return "FX";
+				case FceType::FY:return "FY";
+				case FceType::FZ:return "FZ";
+				case FceType::TX:return "TX";
+				case FceType::TY:return "TY";
+				case FceType::TZ:return "TZ";
+				case FceType::UNKNOWN:return "UNKNOWN";
 				default:return "UNKNOWN";
 				}
-			}, [](EEFceType* type, std::string_view name)->void {
-				if (name == "FT")*type = EEFceType::FT;
-				if (name == "FS")*type = EEFceType::FS;
-				if (name == "TORQUE")*type = EEFceType::TORQUE;
-				if (name == "FORCE")*type = EEFceType::FORCE;
-				if (name == "FXYZ_TZ")*type = EEFceType::FXYZ_TZ;
-				if (name == "FXY_TZ")*type = EEFceType::FXY_TZ;
-				if (name == "FX")*type = EEFceType::FX;
-				if (name == "TZ")*type = EEFceType::TZ;
-				if (name == "UNKNOWN")*type = EEFceType::UNKNOWN;
+			}, [](FceType* type, std::string_view name)->void {
+				if (name == "FT")*type = FceType::FT;
+				if (name == "FS")*type = FceType::FS;
+				if (name == "FXYZ_TZ")*type = FceType::FXYZ_TZ;
+				if (name == "TXYZ")*type = FceType::TXYZ;
+				if (name == "FXYZ")*type = FceType::FXYZ;
+				if (name == "FXY_TZ")*type = FceType::FXY_TZ;
+				if (name == "FXY")*type = FceType::FXY;
+				if (name == "FX")*type = FceType::FX;
+				if (name == "FY")*type = FceType::FY;
+				if (name == "FZ")*type = FceType::FZ;
+				if (name == "TX")*type = FceType::TX;
+				if (name == "TY")*type = FceType::TY;
+				if (name == "TZ")*type = FceType::TZ;
+				if (name == "UNKNOWN")*type = FceType::UNKNOWN;
 			});
 
 	}		

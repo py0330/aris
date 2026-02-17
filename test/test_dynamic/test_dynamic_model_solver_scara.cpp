@@ -85,7 +85,8 @@ void test_scara_forward_solver(){
 
 		m->setInputPos(q);
 
-		if (m->forwardKinematics())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (m->forwardKinematics())
+			std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 	}
 }
 void test_scara_inverse_solver(){
@@ -96,6 +97,18 @@ void test_scara_inverse_solver(){
 
 	const double input_series[5]{ aris::PI * 0 / 2.5, aris::PI * 1 / 2.5, aris::PI * 2 / 2.5, aris::PI * 3 / 2.5, aris::PI * 4 / 2.5 };
 	for (int i = 0; i < 5 * 5 * 5 * 5; ++i){
+		// 先置为零，并正解 //
+		double q0[4]{ 0,0,0,0 };
+		m->setInputPos(q0);
+		if (m->forwardKinematics())
+			std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (!s_is_equal(m->generalMotionPool()[0].pSize(), pe_ee_i, m->generalMotionPool()[0].p(), 1e-9)) {
+			std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;
+			dsp(1, m->generalMotionPool()[0].pSize(), m->generalMotionPool()[0].p());
+			dsp(1, ee.pSize(), ee_p);
+		}
+
+		// 正解 //
 		double q[4]{
 			input_series[(i / 1) % 5],
 			input_series[(i / 5) % 5],
@@ -171,11 +184,14 @@ void test_scara_vel() {
 
 	double result[6];
 	m->getInputPos(result);
-	if (!s_is_equal(EE_SIZE, result, input_pos, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(EE_SIZE, result, input_pos, 1e-9))
+		std::cout << "failed" << std::endl;
 	m->getInputVel(result);
-	if (!s_is_equal(EE_SIZE, result, input_vel, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(EE_SIZE, result, input_vel, 1e-9))
+		std::cout << "failed" << std::endl;
 	m->getInputAcc(result);
-	if (!s_is_equal(EE_SIZE, result, input_acc, 1e-9))std::cout << "failed" << std::endl;
+	if (!s_is_equal(EE_SIZE, result, input_acc, 1e-9))
+		std::cout << "failed" << std::endl;
 
 	// 验证雅可比 //
 	auto &inv = dynamic_cast<aris::dynamic::InverseKinematicSolver&>(m->solverPool().at(0));

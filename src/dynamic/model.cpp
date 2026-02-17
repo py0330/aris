@@ -37,8 +37,20 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::core::PointerArray<Calibrator, Element>> calibrator_pool_;
 		Part* ground_{ nullptr };
 
-		std::vector<EEType> ee_types_;
-		Size end_effector_pos_size_{ 0 }, end_effector_vel_size_{ 0 }, end_effector_acc_size_{ 0 }, end_effector_fce_size_{ 0 };
+		std::vector<char> mem_;
+		
+		// ee & mot types //
+		Size ee_size_{ 0 }, mot_size_{ 0 };
+		PosType* ee_pos_types_;
+		VelType* ee_vel_types_;
+		AccType* ee_acc_types_;
+		FceType* ee_fce_types_;
+		PosType* mot_pos_types_;
+		VelType* mot_vel_types_;
+		AccType* mot_acc_types_;
+		FceType* mot_fce_types_;
+
+		//Size end_effector_pos_size_{ 0 }, end_effector_vel_size_{ 0 }, end_effector_acc_size_{ 0 }, end_effector_fce_size_{ 0 };
 	};
 	auto Model::init()->void { 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void{
@@ -133,19 +145,70 @@ namespace aris::dynamic{
 			s.allocateMemory();
 
 		// init model base data //
+		imp_->ee_size_ = this->generalMotionPool().size();
+		imp_->mot_size_ = this->motionPool().size();
+		
+		Size mem_size = 0;
+		core::allocMem(mem_size, imp_->ee_pos_types_, imp_->ee_size_);
+		core::allocMem(mem_size, imp_->ee_vel_types_, imp_->ee_size_);
+		core::allocMem(mem_size, imp_->ee_acc_types_, imp_->ee_size_);
+		core::allocMem(mem_size, imp_->ee_fce_types_, imp_->ee_size_);
+		core::allocMem(mem_size, imp_->mot_pos_types_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->mot_vel_types_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->mot_acc_types_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->mot_fce_types_, imp_->mot_size_);
+		
+		imp_->mem_.resize(mem_size, char(0));
+
+		imp_->ee_pos_types_ = core::getMem(imp_->mem_.data(), imp_->ee_pos_types_);
+		imp_->ee_vel_types_ = core::getMem(imp_->mem_.data(), imp_->ee_vel_types_);
+		imp_->ee_acc_types_ = core::getMem(imp_->mem_.data(), imp_->ee_acc_types_);
+		imp_->ee_fce_types_ = core::getMem(imp_->mem_.data(), imp_->ee_fce_types_);
+		imp_->mot_pos_types_ = core::getMem(imp_->mem_.data(), imp_->mot_pos_types_);
+		imp_->mot_vel_types_ = core::getMem(imp_->mem_.data(), imp_->mot_vel_types_);
+		imp_->mot_acc_types_ = core::getMem(imp_->mem_.data(), imp_->mot_acc_types_);
+		imp_->mot_fce_types_ = core::getMem(imp_->mem_.data(), imp_->mot_fce_types_);
+		
+		for (auto i = 0; i < generalMotionPool().size(); ++i) {
+			imp_->ee_pos_types_[i] = generalMotionPool()[i].posType();
+			imp_->ee_vel_types_[i] = generalMotionPool()[i].velType();
+			imp_->ee_acc_types_[i] = generalMotionPool()[i].accType();
+			imp_->ee_fce_types_[i] = generalMotionPool()[i].fceType();
+		}
+		for (auto i = 0; i < motionPool().size(); ++i) {
+			imp_->mot_pos_types_[i] = motionPool()[i].posType();
+			imp_->mot_vel_types_[i] = motionPool()[i].velType();
+			imp_->mot_acc_types_[i] = motionPool()[i].accType();
+			imp_->mot_fce_types_[i] = motionPool()[i].fceType();
+		}
+
+		/*
+
+
 		imp_->end_effector_pos_size_ = 0;
 		imp_->end_effector_vel_size_ = 0;
 		imp_->end_effector_acc_size_ = 0;
 		imp_->end_effector_fce_size_ = 0;
 
-		imp_->ee_types_.clear();
+		imp_->ee_pos_types_.clear();
+		imp_->ee_vel_types_.clear();
+		imp_->ee_acc_types_.clear();
+		imp_->ee_fce_types_.clear();
 		for (auto& m : generalMotionPool()) {
 			imp_->end_effector_pos_size_ += m.pSize();
 			imp_->end_effector_vel_size_ += m.vSize();
 			imp_->end_effector_acc_size_ += m.aSize();
 			imp_->end_effector_fce_size_ += m.fSize();
-			imp_->ee_types_.push_back(m.eeType());
+			imp_->ee_pos_types_.push_back(m.posType());
+			imp_->ee_vel_types_.push_back(m.velType());
+			imp_->ee_acc_types_.push_back(m.accType());
+			imp_->ee_fce_types_.push_back(m.fceType());
 		}
+		
+		
+		*/
+		
+		
 	}
 	auto Model::inverseRootNumber()const->int { 
 		return solverPool()[0].rootNumber();
@@ -194,36 +257,64 @@ namespace aris::dynamic{
 		return rank < u.nJf();
 	}
 
-	auto Model::eeTypes()const noexcept->const EEType* {
-		return imp_->ee_types_.data();
-	}
-	auto Model::eeSize()const noexcept->aris::Size {
-		return imp_->ee_types_.size();
-	}
 	
-	auto Model::inputPosSize()const noexcept->Size { return motionPool().size(); }
-	auto Model::inputVelSize()const noexcept->Size { return motionPool().size(); }
-	auto Model::inputAccSize()const noexcept->Size { return motionPool().size(); }
-	auto Model::inputFceSize()const noexcept->Size { return motionPool().size(); }
+	auto Model::eeSize()const noexcept->aris::Size {
+		return imp_->ee_size_;
+	}
+	auto Model::eePosTypes()const noexcept->const PosType* {
+		return imp_->ee_pos_types_;
+	}
+	auto Model::eeVelTypes()const noexcept->const VelType* {
+		return imp_->ee_vel_types_;
+	}
+	auto Model::eeAccTypes()const noexcept->const AccType* {
+		return imp_->ee_acc_types_;
+	}
+	auto Model::eeFceTypes()const noexcept->const FceType* {
+		return imp_->ee_fce_types_;
+	}
 
+	auto Model::motSize()const noexcept->aris::Size {
+		return imp_->mot_size_;
+	}
+	auto Model::motPosTypes()const noexcept->const PosType* {
+		return imp_->mot_pos_types_;
+	}
+	auto Model::motVelTypes()const noexcept->const VelType* {
+		return imp_->mot_vel_types_;
+	}
+	auto Model::motAccTypes()const noexcept->const AccType* {
+		return imp_->mot_acc_types_;
+	}
+	auto Model::motFceTypes()const noexcept->const FceType* {
+		return imp_->mot_fce_types_;
+	}
+
+	auto Model::inputPosSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputPosAt(Size idx)const noexcept->double{
 		return *this->motionPool()[idx].p();
 	}
 	auto Model::setInputPosAt(Size idx, double mp)noexcept->void {
 		this->motionPool()[idx].setP(&mp);
 	}
+	
+	auto Model::inputVelSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputVelAt(Size idx)const noexcept->double {
 		return this->motionPool()[idx].mv();
 	}
 	auto Model::setInputVelAt(Size idx, double mv)noexcept->void {
 		this->motionPool()[idx].setV(&mv);
 	}
+	
+	auto Model::inputAccSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputAccAt(Size idx)const noexcept->double {
 		return this->motionPool()[idx].ma();
 	}
 	auto Model::setInputAccAt(Size idx, double ma)noexcept->void {
 		this->motionPool()[idx].setA(&ma);
 	}
+	
+	auto Model::inputFceSize()const noexcept->Size { return motionPool().size(); }
 	auto Model::inputFceAt(Size idx)const noexcept->double {
 		return this->motionPool()[idx].mf();
 	}
@@ -231,7 +322,7 @@ namespace aris::dynamic{
 		this->motionPool()[idx].setF(&mf);
 	}
 
-	auto Model::outputPosSize()const noexcept->Size { return imp_->end_effector_pos_size_;}
+	auto Model::outputPosSize()const noexcept->Size { return s_pos_type_size(imp_->ee_size_, imp_->ee_pos_types_);}
 	auto Model::outputPosAt(Size idx)const noexcept->const double* {
 		return generalMotionPool()[idx].p();
 	}
@@ -239,7 +330,7 @@ namespace aris::dynamic{
 		generalMotionPool()[idx].setP(pos);
 	}
 
-	auto Model::outputVelSize()const noexcept->Size { return imp_->end_effector_vel_size_; }
+	auto Model::outputVelSize()const noexcept->Size { return s_vel_type_size(imp_->ee_size_, imp_->ee_vel_types_);}
 	auto Model::outputVelAt(Size idx)const noexcept->const double* {
 		return generalMotionPool()[idx].v();
 	}
@@ -247,7 +338,7 @@ namespace aris::dynamic{
 		generalMotionPool()[idx].setV(vel);
 	}
 
-	auto Model::outputAccSize()const noexcept->Size { return imp_->end_effector_acc_size_; }
+	auto Model::outputAccSize()const noexcept->Size { return s_acc_type_size(imp_->ee_size_, imp_->ee_acc_types_);; }
 	auto Model::outputAccAt(Size idx)const noexcept->const double* {
 		return generalMotionPool()[idx].a();
 	}
@@ -255,7 +346,7 @@ namespace aris::dynamic{
 		generalMotionPool()[idx].setA(acc);
 	}
 
-	auto Model::outputFceSize()const noexcept->Size { return imp_->end_effector_fce_size_; }
+	auto Model::outputFceSize()const noexcept->Size { return s_fce_type_size(imp_->ee_size_, imp_->ee_fce_types_);; }
 	auto Model::outputFceAt(Size idx)const noexcept->const double* {
 		return generalMotionPool()[idx].f();
 	}
@@ -485,7 +576,7 @@ namespace aris::dynamic{
 	struct MultiModel::Imp {
 		std::unique_ptr<aris::core::PointerArray<ModelBase>> models_;
 		std::vector<aris::dynamic::Marker*> tools_, wobjs_;
-		std::vector<EEType> ee_types_;
+		std::vector<PosType> ee_pos_types_;
 	};
 
 	auto MultiModel::inverseKinematics()noexcept->int {
@@ -526,16 +617,16 @@ namespace aris::dynamic{
 	}
 
 	auto MultiModel::init()->void {
-		imp_->ee_types_.clear();
+		imp_->ee_pos_types_.clear();
 
 		for (auto& m : subModels()) {
 			// init sub model //
 			m.init();
 
 			// init ee_types //
-			auto begin_idx = imp_->ee_types_.size();
-			imp_->ee_types_.resize(imp_->ee_types_.size() + m.eeSize());
-			std::copy_n(m.eeTypes(), m.eeSize(), imp_->ee_types_.begin() + begin_idx);
+			auto begin_idx = imp_->ee_pos_types_.size();
+			imp_->ee_pos_types_.resize(imp_->ee_pos_types_.size() + m.eeSize());
+			std::copy_n(m.eePosTypes(), m.eeSize(), imp_->ee_pos_types_.begin() + begin_idx);
 		}
 	}
 
@@ -548,12 +639,13 @@ namespace aris::dynamic{
 		return false;
 	}
 
-	auto MultiModel::eeTypes()const noexcept->const EEType* {
-		return imp_->ee_types_.data();
-	}
 	auto MultiModel::eeSize()const noexcept->aris::Size {
-		return imp_->ee_types_.size();
+		return imp_->ee_pos_types_.size();
 	}
+	auto MultiModel::eePosTypes()const noexcept->const PosType* {
+		return imp_->ee_pos_types_.data();
+	}
+	
 
 	auto MultiModel::inputPosSize()const noexcept->aris::Size {
 		aris::Size size = 0;
@@ -784,7 +876,6 @@ namespace aris::dynamic{
 				return subModels()[i].setOutputFceAt(idx - k, fce);
 		}
 	}
-
 
 	auto MultiModel::resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void {
 		imp_->models_.reset(pool);
@@ -1052,23 +1143,23 @@ namespace aris::dynamic{
 
 
 	// to be removed //
-	auto MultiModel::getEeTypes() -> std::vector<EEType> {
-		return std::vector<EEType>(eeTypes(), eeTypes() + eeSize());
+	auto MultiModel::getEeTypes() -> std::vector<PosType> {
+		return std::vector<PosType>(eePosTypes(), eePosTypes() + eeSize());
 	}
-	auto MultiModel::getMotionTypes()->std::vector<EEType> {
+	auto MultiModel::getMotionTypes()->std::vector<PosType> {
 		std::vector<Size> model_ids(subModels().size());
 		std::iota(model_ids.begin(), model_ids.end(), 0);
 		return getMotionTypes(model_ids);
 	}
-	auto MultiModel::getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType> {
-		std::vector<EEType> mot_types;
+	auto MultiModel::getMotionTypes(const std::vector<Size>& submodel_ids)->std::vector<PosType> {
+		std::vector<PosType> mot_types;
 
 		for (auto id : submodel_ids) {
 			auto& m = subModels()[id];
 
 			if (auto model = dynamic_cast<aris::dynamic::Model*>(&m)) {
 				for (auto& mot : model->motionPool()) {
-					mot_types.push_back(mot.eeType());
+					mot_types.push_back(mot.posType());
 				}
 			}
 		}
@@ -1091,23 +1182,23 @@ namespace aris::dynamic{
 		}
 	}
 
-	auto MultiModel::getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<EEType> {
-		std::vector<EEType> ee_types;
+	auto MultiModel::getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<PosType> {
+		std::vector<PosType> ee_types;
 
 		for (Size i = 0; i < submodel_ids.size(); ++i) {
 			auto current_size = ee_types.size();
 			auto& m = subModels()[submodel_ids[i]];
 			ee_types.resize(ee_types.size() + m.eeSize());
-			std::copy_n(m.eeTypes(), m.eeSize(), ee_types.begin() + current_size);
+			std::copy_n(m.eePosTypes(), m.eeSize(), ee_types.begin() + current_size);
 		}
 		return ee_types;
 	}
-	auto MultiModel::getSubEeTypes(Size submodel_num, const Size* submodel_ids, EEType* ee_types_out) -> void {
+	auto MultiModel::getSubEeTypes(Size submodel_num, const Size* submodel_ids, PosType* ee_types_out) -> void {
 		Size id = 0;
 		
 		for (Size i = 0; i < submodel_num; ++i) {
 			auto& m = subModels()[submodel_ids[i]];
-			std::copy_n(m.eeTypes(), m.eeSize(), ee_types_out + id);
+			std::copy_n(m.eePosTypes(), m.eeSize(), ee_types_out + id);
 			id += m.eeSize();
 		}
 	}
@@ -1180,7 +1271,7 @@ namespace aris::dynamic{
 
 
 
-	//auto MultiModel::getMotionTypes(Size submodel_num, const Size* submodel_ids, EEType* mot_type_out) -> void {
+	//auto MultiModel::getMotionTypes(Size submodel_num, const Size* submodel_ids, PosType* mot_type_out) -> void {
 	//	Size id = 0;
 
 	//	for (Size i = 0; i < submodel_num; ++i) {
@@ -1194,7 +1285,7 @@ namespace aris::dynamic{
 	//		}
 	//	}
 	//}
-	//auto MultiModel::getMotionTypes(EEType* mot_types) -> void {
+	//auto MultiModel::getMotionTypes(PosType* mot_types) -> void {
 	//	Size id = 0;
 	//	for (Size model_id = 0; model_id < subModels().size(); ++model_id) {
 	//		auto& m = subModels()[model_id];

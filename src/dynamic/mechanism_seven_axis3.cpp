@@ -332,7 +332,9 @@ namespace aris::dynamic
 
 			for (int i = 0; i < 8; ++i)
 			{
-				if (sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), imp_->axis_angle, i, diff_q[solution_num]))
+				double mpm[16];
+				imp_->ee->getMpm(mpm);
+				if (sevenAxisInverse(imp_->seven_axis_param, mpm, imp_->axis_angle, i, diff_q[solution_num]))
 				{
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 7; ++j)
@@ -379,7 +381,9 @@ namespace aris::dynamic
 		}
 		else
 		{
-			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), imp_->axis_angle, imp_->which_root_, q))
+			double mpm[16];
+			imp_->ee->getMpm(mpm);
+			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, mpm, imp_->axis_angle, imp_->which_root_, q))
 			{
 				for (aris::Size i = 0; i < 7; ++i)
 				{

@@ -30,10 +30,17 @@ namespace aris::dynamic{
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool { return false; }
 
 		// EE & Motion types //
-		auto virtual eeTypes()const noexcept->const EEType* { return nullptr; }
 		auto virtual eeSize()const noexcept->aris::Size { return 0; }
-		auto virtual motTypes()const noexcept->const EEType* { return nullptr; }
+		auto virtual eePosTypes()const noexcept->const PosType* { return nullptr; }
+		auto virtual eeVelTypes()const noexcept->const VelType* { return nullptr; }
+		auto virtual eeAccTypes()const noexcept->const AccType* { return nullptr; }
+		auto virtual eeFceTypes()const noexcept->const FceType* { return nullptr; }
+
 		auto virtual motSize()const noexcept->aris::Size { return 0; }
+		auto virtual motPosTypes()const noexcept->const PosType* { return nullptr; }
+		auto virtual motVelTypes()const noexcept->const VelType* { return nullptr; }
+		auto virtual motAccTypes()const noexcept->const AccType* { return nullptr; }
+		auto virtual motFceTypes()const noexcept->const FceType* { return nullptr; }
 
 		// input variables //
 		auto virtual inputPosSize()const noexcept->Size { return 0; }

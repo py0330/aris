@@ -246,7 +246,7 @@ namespace aris::dynamic{
 	auto ARIS_API s_pe2pq(const double* pe_in, double* pq_out = nullptr, const char* eu_type_in = "313") noexcept->double*;
 	auto ARIS_API s_iv2im(const double* iv_in, double* im_out = nullptr) noexcept->double*;
 	auto ARIS_API s_im2iv(const double* im_in, double* iv_out = nullptr) noexcept->double*;
-	auto ARIS_API s_i32im(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
+	auto ARIS_API s_i32im(const double mass_in, const double * in_in, const double *pm_in, double *im_out = nullptr) noexcept->double *;
 
 	// 以下函数为同一物理量在不同坐标系之间的转换函数 //
 	auto ARIS_API s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->double *;

@@ -87,7 +87,7 @@ const char xml_file_ur5[] =
 "        <Motion name=\"motion_5\" active=\"true\" prt_m=\"L6\" prt_n=\"L5\" mak_i=\"joint_5_i\" mak_j=\"joint_5_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
 "    </MotionPoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" active=\"false\" pose_type=\"POSE_MATRIX\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee\" active=\"false\" pos_type=\"PM\" vel_type=\"VA\" acc_type=\"AA\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"ground\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
 "    </GeneralMotionPoolElement>"
 "	 <ForcePoolElement name=\"force_pool\">"
 "		 <SingleComponentForce name=\"F1\" active=\"true\" prt_m=\"L1\" prt_n=\"ground\" mak_i=\"joint_0_i\" mak_j=\"joint_0_j\" component=\"5\"/>"
@@ -275,7 +275,7 @@ const char xml_file_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee_mot\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot\" pos_type=\"PM\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -522,8 +522,8 @@ const char xml_file_ur5_on_stewart[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"        <GeneralMotion name=\"ee_mot\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee\" pos_type=\"PM\" active=\"false\" is_end_effector=\"true\" prt_m=\"L6\" prt_n=\"up\" mak_i=\"ee_makI\" mak_j=\"ee_makJ\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"        <GeneralMotion name=\"ee_mot\" pos_type=\"PM\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -792,9 +792,9 @@ const char xml_file_multi[] =
 "		<SingleComponentForce name=\"f6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" component=\"2\"/>"
 "	</ForcePoolElement>"
 "    <GeneralMotionPoolElement name=\"general_motion_pool\">"
-"        <GeneralMotion name=\"ee_mot0\" pose_type=\"POSE_MATRIX\" active=\"true\" is_end_effector=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
-"		     <GeneralMotion name=\"ee_mot1\" pose_type=\"POSE_MATRIX\" active=\"true\" is_end_effector=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
-"        <GeneralMotion name=\"ee_mot2\" pose_type=\"POSE_MATRIX\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot0\" pos_type=\"PM\" active=\"true\" is_end_effector=\"true\" prt_m=\"part_3\" prt_n=\"ground\" mak_i=\"general_motion_0_i\" mak_j=\"general_motion_0_j\" cf=\"{0 , 0 , 0 , 0 , 0 , 0}\"/>"
+"		     <GeneralMotion name=\"ee_mot1\" pos_type=\"PM\" active=\"true\" is_end_effector=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
+"        <GeneralMotion name=\"ee_mot2\" pos_type=\"PM\" active=\"false\" is_end_effector=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "    </GeneralMotionPoolElement>"
 "    <SolverPoolElement name=\"solver_pool\">"
 "        <UniversalSolver name=\"us\" max_iter_count=\"100\" max_error=\"1e-14\"/>"
@@ -1576,7 +1576,7 @@ void test_3R(){
 
 	// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 	auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
-	end_effector.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	end_effector.setPosType(aris::dynamic::PosType::PM);
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -1982,7 +1982,7 @@ void bench_3R()
 
 		// 添加末端，第一个参数表明末端位于link3上，第二个参数表明末端的位姿是相对于地面的，后两个参数定义了末端的起始位姿
 		auto &end_effector = m.addGeneralMotionByPe(link3, m.ground(), end_effector_position_and_euler321, "321");
-		end_effector.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+		end_effector.setPosType(aris::dynamic::PosType::PM);
 		////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
@@ -2423,8 +2423,8 @@ auto test_clb()->void
 }
 
 
-void test_model_solver()
-{
+void test_model_solver(){
+
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
 	test_single_body();
 	test_float_5_bar();
@@ -2436,14 +2436,14 @@ void test_model_solver()
 	test_multi_systems();
 	test_spatial_3R();
 
-	bench_3R();
-	bench_ur5();
-	bench_stewart();
-	bench_multi_systems();
+	//bench_3R();
+	//bench_ur5();
+	//bench_stewart();
+	//bench_multi_systems();
 
-	//test_ur5_calibration();
+	test_ur5_calibration();
 
-	//test_clb();
+	test_clb();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;
 }
 

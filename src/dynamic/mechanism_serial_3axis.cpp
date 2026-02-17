@@ -231,7 +231,9 @@ namespace aris::dynamic
 				for (int i = 0; i < 2; ++i)
 				{
 					// inverse
-					s_rm2re(*imp_->ee->mpm(), diff_q[i], "123", 4);
+					double pm[16];
+					imp_->ee->getMpm(pm);
+					s_rm2re(pm, diff_q[i], "123", 4);
 					diff_q[i][1] = -diff_q[i][1];
 					
 					// solution 2
@@ -298,7 +300,9 @@ namespace aris::dynamic
 		}
 		
 		// normal
-		double ee[3]{ imp_->ee->mpm()[0][3],imp_->ee->mpm()[1][3],imp_->ee->mpm()[2][3] };
+		double mpm[16];
+		imp_->ee->getMpm(mpm);
+		double ee[3]{mpm[3], mpm[7], mpm[11]};
 
 		if (imp_->which_root_ == 4)
 		{

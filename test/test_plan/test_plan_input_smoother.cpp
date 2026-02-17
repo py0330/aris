@@ -232,7 +232,7 @@ auto test_input_smoother_2() -> void {
 	const int A_NUM = 0;
 
 	//  INIT TG //
-	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+	tg.setEeTypes({ aris::dynamic::PosType::PE321 });
 	double init_pe[EE_NUM * 6]{ 0.45, 0, 0.75,   aris::PI, 1.0,   aris::PI };
 	double init_vel[EE_NUM * 2 + A_NUM]{ 1,1 };
 	tg.insertLinePos(1, init_pe, init_vel, init_vel, init_vel, init_vel);
@@ -301,7 +301,7 @@ auto test_input_smoother_2() -> void {
 	puma->setOutputPos(init_pe);
 	puma->inverseKinematics();
 
-	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::EULER321);
+	dynamic_cast<aris::dynamic::GeneralMotion&>(puma->generalMotionPool()[0]).setPosType(aris::dynamic::PosType::PE321);
 	double input_init[6]{ -1,0,0,0,0,0 };
 	puma->getInputPos(input_init);
 
@@ -357,7 +357,178 @@ auto test_input_smoother_2() -> void {
 }
 
 
+auto test_input_interpolator_7axis() -> int {
 
+	// ============================================================================
+	// 仿真参数 //
+	const bool seg_debug_flag = false; // 是否逐段打印 //
+	const int cmd_cnt_max = 3; // 模拟指令执行次数 // 
+	const int step_cnt_max = 20000; // 单次执行最大步数 //
+
+	// 规划器参数 //
+	const double vel = 1000;
+	const double ome = 1000;
+	const double acc = 100;
+	const double jerk = 1000;
+	const double zone = 0.01;
+
+	const double joint_vel = 1.5;
+	const double joint_acc = 5.0;
+	// ============================================================================
+	const int JOINT_NUM = 7;
+	const int EE_DIM = 6;
+	const double DT = 0.001; // 控制周期 // 
+	const double pi = 3.141592653589793;
+
+
+	auto arm_id = 1;// 0:left 1:right
+	double init_arm_angle = 0;
+
+	// 解析 xml
+	aris::dynamic::MultiModel dualArm;
+	aris::core::fromXmlFile(dualArm, ARIS_INSTALL_PATH + std::string("/resource/test_plan/dual_arm.xml"));
+
+	auto& arm = dynamic_cast<aris::dynamic::Model&>(dualArm.subModels().at(arm_id));
+	auto& ee = dynamic_cast<aris::dynamic::GeneralMotion&>(arm.generalMotionPool().at(0));
+	auto& arm_angle = dynamic_cast<aris::dynamic::Motion&>(arm.generalMotionPool().at(1));
+
+	// 真机数据 //
+	double joints1[JOINT_NUM]{ 149.982, -43.4585, -30.0078, -74.5814, 137.039, 49.1006, 55.3223 };
+	double ee1[EE_DIM]{ 0.203427, -0.420417, 0.263479, 117.546, 42.114, 222.485 };
+
+	double joints2[JOINT_NUM]{ 98.0283, -59.5074, -30.0078, -53.0331, 100.313, 68.8685, 2.34352 };
+	double ee2[EE_DIM]{ -0.202153, -0.476769, 0.346417, 95.5752, -19.3522, 279.021 };
+
+	// 仿真时，人为给定初始状态 //
+	for (int i = 0; i < JOINT_NUM; i++) {
+		joints1[i] *= pi / 180.0;
+		joints2[i] *= pi / 180.0;
+	}
+	for (int i = 0; i < 3; i++) {
+		ee1[i + 3] *= pi / 180.0;
+		ee2[i + 3] *= pi / 180.0;
+	}
+
+	double arm_joint1[1]{ joints1[2] }; // 臂角等于第三个关节角 //
+	double arm_joint2[1]{ joints2[2] };
+
+	dualArm.init();
+
+	arm.setInputPos(joints1);
+	arm_angle.setP(arm_joint1);
+	arm.forwardKinematics();
+
+	double current_ee_pos[EE_DIM]{ 0.0 };
+	ee.getMpe(current_ee_pos, "321");
+	arm_angle.getP(&init_arm_angle);
+
+	// tg & ii //
+	aris::plan::TrajectoryGenerator tg;
+	aris::plan::InputInterpolator ii;
+
+	// 设置 InputInterpolator
+	{
+		ii.setInputSize(JOINT_NUM);
+		ii.setDt(DT);
+		ii.allocateMemory();
+
+		ii.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
+			double output[6];
+			auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
+			ee.setMpe(output, "321");
+
+			arm_angle.setP(&init_arm_angle);
+
+			if (arm.inverseKinematics()) {
+				std::cout << "++++++++ IK ERROR +++++++" << std::endl;
+			};
+			arm.getInputPos(p);
+			return ret;
+			});
+	}
+
+	// 数据输出文件初始化 //
+	std::vector<double> result_data;
+
+	// 模拟多次执行指令 //
+	for (int cmd_cnt = 0; cmd_cnt < 3; cmd_cnt++) {
+		// 两点间往返 //
+		static bool target_flag = true;
+		double target_ee[EE_DIM]{ 0.0 };
+		if (target_flag) {
+			target_flag = false;
+			for (int i = 0; i < EE_DIM; i++) {
+				target_ee[i] = ee2[i];
+			}
+		}
+		else {
+			target_flag = true;
+			for (int i = 0; i < EE_DIM; i++) {
+				target_ee[i] = ee1[i];
+			}
+		}
+
+		// 设置 TrajectoryGenerator //
+		static bool local_flag{ true };
+		static int index = 1;
+		const double vel_lim[2]{ vel, ome };
+		const double acc_lim[2]{ acc, acc };
+		const double jerk_lim[2]{ jerk, jerk };
+		const double zone_lim[2]{ zone, zone };
+
+		if (local_flag) {
+			tg.setEeTypes({ aris::dynamic::PosType::PE321 });
+			tg.setDt(DT);
+
+			ee.getMpe(current_ee_pos, "321");
+			tg.insertLinePos(index++, current_ee_pos, vel_lim, acc_lim, jerk_lim, zone_lim);
+		}
+		tg.insertLinePos(index++, target_ee, vel_lim, acc_lim, jerk_lim, zone_lim);
+
+
+		if (local_flag) {
+			local_flag = false; // 前面也有用到，但只在这里翻转即可 //
+			ii.init(joints1);
+		}
+
+
+		// 模拟实时循环 //
+		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
+			// 初始化 //
+			if (step_cnt * 1e-4 >= ii.finalS() || ii.retCodeAt(step_cnt * 1e-4) <= 0) {
+				// 前瞻 4 + interpolate_size 个数据 //
+				for (int i = 0; i < 4 + ii.interpolationSize(); ++i) {
+					if (ii.generateInput() == 0)
+						break;
+				}
+			}
+			
+			// 生成数据 //
+			if (ii.finalRetCode() && (ii.finalS() - step_cnt*1e-4) < 100 * DT) {
+				ii.generateInput();
+			}
+			
+			double joint_ref[JOINT_NUM]{ 0.0 };
+			auto ret = ii.getInputAt(step_cnt*1e-4, joint_ref);  //获取下一个关节路径点
+
+			// 输出关节角度 //
+			result_data.resize(result_data.size() + JOINT_NUM);
+			std::copy_n(joint_ref, JOINT_NUM, result_data.end() - JOINT_NUM);
+
+			if (ret <= 0) {
+				std::cout << "  CMD[" << cmd_cnt << "] " << "Finished at CNT[" << step_cnt << "], RET[" << ret << "]" << std::endl;
+				break;
+			}
+		}
+
+		tg.clearUsedPos();
+		std::cout << "========================================" << std::endl;
+	}
+
+	aris::dynamic::dlmwrite(result_data.size() / JOINT_NUM, JOINT_NUM, result_data.data(), "/Mac/Home/Documents/MATLAB/test/data_ori.txt");
+	std::cout << "Test Finished. " << std::endl;
+	return 0;
+}
 
 
 auto test_input_smoother_7axis()->int {
@@ -428,11 +599,11 @@ auto test_input_smoother_7axis()->int {
 	
 	aris::plan::TrajectoryGenerator tg;
 	aris::plan::InputInterpolator ii;
-	aris::plan::InputSmoother sp;
+	aris::plan::InputSmoother is;
 
 	// 设置 InputSmoother //
-	sp.setInputSize(JOINT_NUM);
-	sp.setDt(DT);
+	is.setInputSize(JOINT_NUM);
+	is.setDt(DT);
 
 	// 最大速度、加速度 //
 	std::vector<double> max_vels(JOINT_NUM), min_vels(JOINT_NUM), max_accs(JOINT_NUM), min_accs(JOINT_NUM);
@@ -442,14 +613,14 @@ auto test_input_smoother_7axis()->int {
 		max_accs[i] = joint_acc;
 		min_accs[i] = -joint_acc;
 	}
-	sp.setMaxVel(aris::core::Matrix(JOINT_NUM, 1, max_vels.data()));
-	sp.setMinVel(aris::core::Matrix(JOINT_NUM, 1, min_vels.data()));
-	sp.setMaxAcc(aris::core::Matrix(JOINT_NUM, 1, max_accs.data()));
-	sp.setMinAcc(aris::core::Matrix(JOINT_NUM, 1, min_accs.data()));
-	sp.allocateMemory(); //这个函数一定要放在这个位置才行！
+	is.setMaxVel(aris::core::Matrix(JOINT_NUM, 1, max_vels.data()));
+	is.setMinVel(aris::core::Matrix(JOINT_NUM, 1, min_vels.data()));
+	is.setMaxAcc(aris::core::Matrix(JOINT_NUM, 1, max_accs.data()));
+	is.setMinAcc(aris::core::Matrix(JOINT_NUM, 1, min_accs.data()));
+	is.allocateMemory(); //这个函数一定要放在这个位置才行！
 
 	// 设置反解 //
-	sp.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
+	is.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
 		double output[6];
 		auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
 		ee.setMpe(output, "321");
@@ -463,15 +634,29 @@ auto test_input_smoother_7axis()->int {
 		return ret;
 		});
 
-	// 数据输出文件初始化 //
-	std::string filename = "C:/Mac/Home/Desktop/test_data/data.csv";
-	std::ofstream file(filename);
-	if (!file.is_open()) {
-		std::cerr << "Error: Could not open motion_data.csv" << std::endl;
-		return -1;
+	// 设置 InputInterpolator
+	{
+		ii.setInputSize(JOINT_NUM);
+		ii.setDt(DT);
+		ii.allocateMemory();
+
+		ii.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
+			double output[6];
+			auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
+			ee.setMpe(output, "321");
+
+			arm_angle.setP(&init_arm_angle);
+
+			if (arm.inverseKinematics()) {
+				std::cout << "++++++++ IK ERROR +++++++" << std::endl;
+			};
+			arm.getInputPos(p);
+			return ret;
+			});
 	}
-	file.precision(15);
-	file.setf(std::ios::fixed);
+
+	// 数据输出文件初始化 //
+	std::vector<double> result_data;
 
 	// 模拟多次执行指令 //
 	for (int cmd_cnt = 0; cmd_cnt < 3; cmd_cnt++) {
@@ -500,7 +685,7 @@ auto test_input_smoother_7axis()->int {
 		const double zone_lim[2]{ zone, zone };
 
 		if (local_flag) {
-			tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+			tg.setEeTypes({ aris::dynamic::PosType::PE321 });
 			tg.setDt(DT);
 
 			ee.getMpe(current_ee_pos, "321");
@@ -511,101 +696,29 @@ auto test_input_smoother_7axis()->int {
 
 		if (local_flag) {
 			local_flag = false; // 前面也有用到，但只在这里翻转即可 //
-
-			// 设置 InputInterpolator
-			ii.setInputSize(JOINT_NUM);
-			ii.setDt(DT);
-			ii.allocateMemory();
-			
-			ii.setInputGenerator([&ee, &arm, &arm_angle, &tg, &init_arm_angle](double* p)->std::int64_t {
-				double output[6];
-				auto ret = tg.getEePosAndMoveDt(output); // output 是pe321
-				ee.setMpe(output, "321");
-
-				arm_angle.setP(&init_arm_angle);
-
-				if (arm.inverseKinematics()) {
-					std::cout << "++++++++ IK ERROR +++++++" << std::endl;
-				};
-				arm.getInputPos(p);
-				return ret;
-			});
-
-			sp.init(joints1);
+			is.init(joints1);
 		}
 
 		// 模拟实时循环 //
 		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
 			double joint_ref[JOINT_NUM]{ 0.0 };
-			auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
+			auto ret = is.getNextInput(joint_ref);  //获取下一个关节路径点
 
 			// 输出关节角度 //
-			file << step_cnt << ",";
-			for (int i = 0; i < JOINT_NUM; i++) {
-				file << joint_ref[i] << ",";
-			}
-			file << std::endl;
+			result_data.resize(result_data.size() + JOINT_NUM);
+			std::copy_n(joint_ref, JOINT_NUM, result_data.end() - JOINT_NUM);
 			
 			if (ret <= 0) {
 				std::cout << "  CMD[" << cmd_cnt << "] " << "Finished at CNT[" << step_cnt << "], RET[" << ret << "]" << std::endl;
 				break;
 			}
 		}
-		double joint_ref[JOINT_NUM]{ 0.0 };
-		auto ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
-		std::cout << "ret:" << ret << std::endl;
-		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
 
-		ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
-		std::cout << "ret:" << ret << std::endl;
-		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
-
-		ret = sp.getNextInput(joint_ref);  //获取下一个关节路径点
-		std::cout << "ret:" << ret << std::endl;
-		aris::dynamic::dsp(1, JOINT_NUM, joint_ref);
-
-		/*
-
-		// 模拟实时循环 //
-		double joint_ref[JOINT_NUM]{ 0.0 };
-		arm.getInputPos(joint_ref);
-		ii.init(joint_ref);
-		for (int step_cnt = 0; step_cnt < step_cnt_max; step_cnt++) {
-			if (ii.finalIdx() - step_cnt < 50 && ii.finalRetCode())
-				ii.generateInput();
-
-			auto ret = ii.getInput((step_cnt+1)*4e-4 + 12e-3,joint_ref);  //获取下一个关节路径点
-
-			// 输出关节角度 //
-			file << step_cnt << ",";
-			for (int i = 0; i < JOINT_NUM; i++) {
-				file << joint_ref[i] << ",";
-			}
-			file << std::endl;
-			
-			if (ret <= 0) {
-				std::cout << "  CMD[" << cmd_cnt << "] " << "Finished at CNT[" << step_cnt << "], RET[" << ret << "]" << std::endl;
-				break;
-			}
-		}
-		*/
-		
 		tg.clearUsedPos();
-		// tg.clearAllPos(); // 不能直接清除所有的点！
 		std::cout << "========================================" << std::endl;
-
-
-
-
-
-
-
-
-
 	}
 
-	file.close();
-
+	aris::dynamic::dlmwrite(result_data.size()/JOINT_NUM, JOINT_NUM, result_data.data(), "/Mac/Home/Documents/MATLAB/test/data.txt");
 	std::cout << "Test Finished. " << std::endl;
 	return 0;
 }
@@ -616,7 +729,7 @@ void test_input_smoother(){
 	//test_input_smoother_sin();
 	//test_input_smoother_cos();
 	//test_input_smoother_2();
-
+	test_input_interpolator_7axis();
 	test_input_smoother_7axis();
 
 	std::cout << "-----------------test processor finished------------" << std::endl << std::endl;

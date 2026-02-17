@@ -52,7 +52,7 @@ namespace aris::dynamic{
 	auto ModelBase::getOutputPos(double* pos)const noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_pos_size(eeTypes()[i]);
+			auto s = s_pos_type_size(eePosTypes()[i]);
 			aris::dynamic::s_vc(s, outputPosAt(i), pos + idx);
 			idx += s;
 		}
@@ -60,7 +60,7 @@ namespace aris::dynamic{
 	auto ModelBase::setOutputPos(const double* pos)noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_pos_size(eeTypes()[i]);
+			auto s = s_pos_type_size(eePosTypes()[i]);
 			setOutputPosAt(i, pos + idx);
 			idx += s;
 		}
@@ -68,7 +68,7 @@ namespace aris::dynamic{
 	auto ModelBase::getOutputVel(double* vel)const noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_vel_size(eeTypes()[i]);
+			auto s = s_vel_type_size(eeVelTypes()[i]);
 			aris::dynamic::s_vc(s, outputVelAt(i), vel + idx);
 			idx += s;
 		}
@@ -76,7 +76,7 @@ namespace aris::dynamic{
 	auto ModelBase::setOutputVel(const double* vel)noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_vel_size(eeTypes()[i]);
+			auto s = s_vel_type_size(eeVelTypes()[i]);
 			setOutputVelAt(i, vel + idx);
 			idx += s;
 		}
@@ -84,7 +84,7 @@ namespace aris::dynamic{
 	auto ModelBase::getOutputAcc(double* acc)const noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_acc_size(eeTypes()[i]);
+			auto s = s_acc_type_size(eeAccTypes()[i]);
 			aris::dynamic::s_vc(s, outputAccAt(i), acc + idx);
 			idx += s;
 		}
@@ -92,7 +92,7 @@ namespace aris::dynamic{
 	auto ModelBase::setOutputAcc(const double* acc)noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_acc_size(eeTypes()[i]);
+			auto s = s_acc_type_size(eeAccTypes()[i]);
 			setOutputAccAt(i, acc + idx);
 			idx += s;
 		}
@@ -100,7 +100,7 @@ namespace aris::dynamic{
 	auto ModelBase::getOutputFce(double* fce)const noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_fce_size(eeTypes()[i]);
+			auto s = s_fce_type_size(eeFceTypes()[i]);
 			aris::dynamic::s_vc(s, outputFceAt(i), fce + idx);
 			idx += s;
 		}
@@ -108,7 +108,7 @@ namespace aris::dynamic{
 	auto ModelBase::setOutputFce(const double* fce)noexcept->void {
 		Size idx = 0;
 		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_ee_type_fce_size(eeTypes()[i]);
+			auto s = s_fce_type_size(eeFceTypes()[i]);
 			setOutputFceAt(i, fce + idx);
 			idx += s;
 		}

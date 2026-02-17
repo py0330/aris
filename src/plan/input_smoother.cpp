@@ -670,7 +670,6 @@ namespace aris::plan {
 					double ds3 = ds + d2s3 * dt_;
 					double s3 = std::max(s2_ + ds3 * dt_, s2_);
 
-					
 					s1_ = s2_;
 					s2_ = s3;
 					ds0_ = (s2_ - s1_)/dt_;

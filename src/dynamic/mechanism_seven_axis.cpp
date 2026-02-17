@@ -406,7 +406,9 @@ namespace aris::dynamic{
 			double diff_norm[8];
 
 			for (int i = 0; i < 8; ++i){
-				if (sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), *imp_->arm_angle->p(), i, diff_q[solution_num])) {
+				double mpm[16];
+				imp_->ee->getMpm(mpm);
+				if (sevenAxisInverse(imp_->seven_axis_param, mpm, *imp_->arm_angle->p(), i, diff_q[solution_num])) {
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 7; ++j){
 						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
@@ -447,7 +449,9 @@ namespace aris::dynamic{
 			return 0;
 		}
 		else{
-			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, *imp_->ee->mpm(), *imp_->arm_angle->p(), imp_->which_root_, q)){
+			double mpm[16];
+			imp_->ee->getMpm(mpm);
+			if (double q[7]; sevenAxisInverse(imp_->seven_axis_param, mpm, *imp_->arm_angle->p(), imp_->which_root_, q)){
 				for (aris::Size i = 0; i < 7; ++i){
 					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]){
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];

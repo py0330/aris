@@ -766,29 +766,7 @@ namespace aris::dynamic{
 	auto SevenAxisInverseKinematicSolver4::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
 		double ee_pos[17]{}, root_mem[7]{};
 
-		switch (imp_->EE->poseType()) {
-		case GeneralMotion::PoseType::EULER123:
-			s_pe2pm(output, ee_pos, "123");
-			ee_pos[16] = output[6];
-			break;
-		case GeneralMotion::PoseType::EULER321:
-			s_pe2pm(output, ee_pos, "321");
-			ee_pos[16] = output[6];
-			break;
-		case GeneralMotion::PoseType::EULER313:
-			s_pe2pm(output, ee_pos, "313");
-			ee_pos[16] = output[6];
-			break;
-		case GeneralMotion::PoseType::QUATERNION:
-			s_pq2pm(output, ee_pos);
-			ee_pos[16] = output[7];
-			break;
-		case GeneralMotion::PoseType::POSE_MATRIX:
-			s_vc(16, output, ee_pos);
-			ee_pos[16] = output[16];
-			break;
-		}
-		
+		ee_pos[16] = output[s_pos_type_size(imp_->EE->posType())];
 
 		constexpr double input_period[7]{
 			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,

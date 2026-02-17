@@ -139,7 +139,7 @@ namespace aris::plan {
 	}
 	
 	// 根据 tools 和 wobjs 的相对 pos（pos的表达取决于 ee_types）,来计算对应part的位姿
-	auto computePartPmByTwPos(aris::Size ee_size, aris::Size part_size, aris::dynamic::EEType *ee_types, 
+	auto computePartPmByTwPos(aris::Size ee_size, aris::Size part_size, aris::dynamic::PosType *ee_types, 
 		aris::dynamic::Part** parts, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, 
 		aris::Size* order, bool* set_tool, const double *twpos, const aris::Size* tw_mem_pos, double *part_pms)->void
 	{
@@ -154,7 +154,7 @@ namespace aris::plan {
 			auto tw_id = order[i];
 
 			double relative_pm[16];
-			s_ee_pos2pm(ee_types[i], twpos + tw_mem_pos[tw_id], relative_pm);
+			s_pos2pm(ee_types[i], twpos + tw_mem_pos[tw_id], relative_pm);
 
 			auto tool_pm_in_part = *tools[tw_id]->prtPm();
 			auto wobj_pm_in_part = *wobjs[tw_id]->prtPm();
@@ -200,7 +200,7 @@ namespace aris::plan {
 	// 当 ee 的 makI 和 makJ 作为 tools 和 wobjs 时，可以直接计算 eepos
 	// 
 	// 
-	auto computeTwPosByPartPm(aris::Size ee_size, aris::Size part_size, aris::dynamic::EEType* ee_types,
+	auto computeTwPosByPartPm(aris::Size ee_size, aris::Size part_size, aris::dynamic::PosType* ee_types,
 		aris::dynamic::Part** parts, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs,
 		const double* part_pms, double* tw_pos)->void
 	{
@@ -226,8 +226,8 @@ namespace aris::plan {
 			aris::dynamic::s_pm_dot_pm(part_i_pm, eei_pm_in_part, result2);
 			aris::dynamic::s_inv_pm_dot_pm(result1, result2, relative_pm);
 
-			aris::dynamic::s_ee_pm2pos(ee_types[i], relative_pm, tw_pos + idx);
-			idx += s_ee_type_pos_size(ee_types[i]);
+			aris::dynamic::s_pm2pos(relative_pm, ee_types[i], tw_pos + idx);
+			idx += s_pos_type_size(ee_types[i]);
 		}
 	}
 
@@ -240,7 +240,7 @@ namespace aris::plan {
 		aris::dynamic::Marker** tools_, **wobjs_, **ee_makIs_, **ee_makJs_; // equals ee_size
 		aris::dynamic::Part** parts_; // equals parts_num，所有需要被设置的parts，每引进一个ee，就需要设置一个part的位姿，但是可能有环，因此不是ee_size
 		
-		aris::dynamic::EEType* ee_types_; // equals ee_size
+		aris::dynamic::PosType* ee_types_; // equals ee_size
 		aris::Size *tw_order_, *ee_order_, *ee_pos_mem_pos_;
 		bool* tw_set_tool_, *ee_set_tool_;
 		double* part_pms_;
@@ -271,9 +271,9 @@ namespace aris::plan {
 			
 			// 计算 ee_pos_size //
 			{
-				std::vector<aris::dynamic::EEType> ee_types(ee_size_);
+				std::vector<aris::dynamic::PosType> ee_types(ee_size_);
 				model_->getSubEeTypes(sub_id_list_.size(), sub_id_list_.data(), ee_types.data());
-				ee_pos_size_ = aris::dynamic::s_ee_type_pos_size(ee_size_, ee_types.data());
+				ee_pos_size_ = aris::dynamic::s_pos_type_size(ee_size_, ee_types.data());
 			}
 			part_size_ = part_set.size();
 			
@@ -327,7 +327,7 @@ namespace aris::plan {
 			// 设置 ee_pos_mem_pos //
 			for (aris::Size i = 0, idx = 0; i < ee_size_; ++i) {
 				ee_pos_mem_pos_[i] = idx;
-				idx += s_ee_type_pos_size(ee_types_[i]);
+				idx += s_pos_type_size(ee_types_[i]);
 			}
 		}
 
@@ -759,8 +759,8 @@ namespace aris::plan {
 	}
 
 	// 配置末端类型 //
-	auto MultimodelPlanner::eeTypes()const -> const std::vector<aris::dynamic::EEType>& {
-		return imp_->tg_.eeTypes();
+	auto MultimodelPlanner::eePosTypes()const -> const std::vector<aris::dynamic::PosType>& {
+		return imp_->tg_.eePosTypes();
 	}
 
 	auto MultimodelPlanner::inputSize() -> int {

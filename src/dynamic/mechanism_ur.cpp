@@ -475,13 +475,7 @@ namespace aris::dynamic{
 	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
 		double ee_pos[16]{}, root_mem[6]{};
 
-		switch (imp_->EE->poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pe2pm(output, ee_pos, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pe2pm(output, ee_pos, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pe2pm(output, ee_pos, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(output, ee_pos); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, output, ee_pos); break;
-		}
+		s_pos2pm(imp_->EE->posType(), output, ee_pos);
 
 		const double input_period[6]{
 			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,
@@ -674,7 +668,7 @@ namespace aris::dynamic{
 			ur_param.H2 = p[7];
 			ur_param.W2 = param.dh_init[5];
 			auto local_m1 = aris::dynamic::createModelUr(ur_param);
-			dynamic_cast<aris::dynamic::GeneralMotion&>(local_m1->generalMotionPool()[0]).setPoseType(aris::dynamic::GeneralMotion::PoseType::QUATERNION);
+			dynamic_cast<aris::dynamic::GeneralMotion&>(local_m1->generalMotionPool()[0]).setPosType(aris::dynamic::PosType::PQ);
 			
 			aris::dynamic::Model* m1 = local_m1.get();
 

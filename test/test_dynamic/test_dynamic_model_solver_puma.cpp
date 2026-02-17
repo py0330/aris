@@ -103,7 +103,7 @@ void test_puma_forward_solver(){
 void test_puma_inverse_solver(){
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 	auto &ee = dynamic_cast<aris::dynamic::GeneralMotion&>(m->generalMotionPool().at(0));
-	ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+	ee.setPosType(aris::dynamic::PosType::PM);
 	m->init();
 
 	double ee_pm[16];
@@ -141,7 +141,7 @@ void test_puma_inverse_solver(){
 		auto new_m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(new_m->solverPool().at(0));
 		auto &new_ee = dynamic_cast<aris::dynamic::GeneralMotion&>(new_m->generalMotionPool().at(0));
-		new_ee.setPoseType(aris::dynamic::GeneralMotion::PoseType::POSE_MATRIX);
+		new_ee.setPosType(aris::dynamic::PosType::PM);
 		new_m->init();
 
 		for (int i = 0; i < 8; ++i){
@@ -151,10 +151,12 @@ void test_puma_inverse_solver(){
 
 			if (new_m->forwardKinematics())std::cout << "forward failed" << std::endl;
 			new_ee.updP();
-			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
-			{
+
+			double mpm[16];
+			new_ee.getMpm(mpm);
+			if (!s_is_equal(16, ee_pm, mpm, 1e-9)){
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;
-				dsp(4, 4, *ee.mpm());
+				dsp(4, 4, mpm);
 			}
 
 			double input_result[6], input_result2[6];
@@ -172,7 +174,10 @@ void test_puma_inverse_solver(){
 			if (!s_is_equal(6, input_result, input_result2, 1e-10))
 			{
 				std::cout << __FILE__ << __LINE__ << " failed root:" << i << std::endl;
-				dsp(4, 4, *ee.mpm());
+				
+				double mpm[16];
+				ee.getMpm(mpm);
+				dsp(4, 4, mpm);
 			}
 		}
 	}

@@ -16,7 +16,7 @@ auto test_trajectory_1()->void {
 	const int A_NUM = 2;
 
 	//  INIT TG //
-	tg.setEeTypes({ aris::dynamic::EEType::X,aris::dynamic::EEType::X,aris::dynamic::EEType::PQ, aris::dynamic::EEType::PQ, });
+	tg.setEeTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::PQ, aris::dynamic::PosType::PQ, });
 	double init_pe[EE_NUM * 6]{ 0,0,0,0,0,0, 0,0,0,0,0,0 };
 	double init_pq[EE_NUM * 7 + A_NUM]{ 0,0 };
 	double init_vel[EE_NUM * 2 + A_NUM]{ 1,1,1,1,1,1 };
@@ -182,7 +182,7 @@ auto test_trajectory_2()->void {
 
 	// 构造规划器 //
 	aris::plan::TrajectoryGenerator tg;
-	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+	tg.setEeTypes({ aris::dynamic::PosType::PE321 });
 	
 	// 构造数据 //
 	double pes[PE_SIZE][6 * EE_NUM];
@@ -262,11 +262,11 @@ auto test_trajectory_3()->void {
 
 	//  INIT TG //
 	tg.setEeTypes({ 
-		aris::dynamic::EEType::X,
-		aris::dynamic::EEType::X,
-		aris::dynamic::EEType::XYZT,
-		aris::dynamic::EEType::PQ, 
-		aris::dynamic::EEType::PQ,
+		aris::dynamic::PosType::X,
+		aris::dynamic::PosType::X,
+		aris::dynamic::PosType::XYZT,
+		aris::dynamic::PosType::PQ, 
+		aris::dynamic::PosType::PQ,
 		});
 	double init_pe[PQ_NUM * 6]{ 0,0,0,0,0,0, 0,0,0,0,0,0 };
 	double init_pq[P_SIZE]{ 0,0,0,0,0,0 };
@@ -465,7 +465,7 @@ auto test_trajectory_4()->void {
 
 	// 构造规划器 //
 	aris::plan::TrajectoryGenerator tg;
-	tg.setEeTypes({ aris::dynamic::EEType::PE321 });
+	tg.setEeTypes({ aris::dynamic::PosType::PE321 });
 
 
 
@@ -565,7 +565,7 @@ auto test_trajectory_5() -> void {
 	const int POINT_NUM = 3;
 
 	//  INIT TG //
-	tg.setEeTypes({ aris::dynamic::EEType::X,aris::dynamic::EEType::X,aris::dynamic::EEType::RTZ});
+	tg.setEeTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::RTZ});
 	double init_pos[EE_POS_SIZE]{ 0,0,0,0,0};
 	double init_vel[EE_VEL_SIZE]{ 1,1,1,1 };
 

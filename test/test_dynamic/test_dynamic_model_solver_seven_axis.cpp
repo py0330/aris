@@ -70,17 +70,17 @@ void test_seven_axis_inverse_solver(){
 		m->setOutputPos(output);
 		m->inverseKinematics();
 		m->getInputPos(input);
-		dsp(1, 7, input);
+		//dsp(1, 7, input);
 
 		m->setInputPos(zeros);
 		m->forwardKinematics();
 		m->getOutputPos(result);
-		dsp(1, 7, result);
+		//dsp(1, 7, result);
 
 		m->setInputPos(input);
 		m->forwardKinematics();
 		m->getOutputPos(result);
-		dsp(1, 7, result);
+		//dsp(1, 7, result);
 
 		std::cout << std::endl << "---------------------" << std::endl;
 	}
@@ -144,11 +144,11 @@ void test_seven_axis_inverse_solver2()
 
 		std::cout << "inverse ret:" << m->inverseKinematics() << std::endl;
 		m->getInputPos(result);
-		dsp(1, 7, result);
+		//dsp(1, 7, result);
 
 		std::cout << "forward ret:" << m->forwardKinematics() << std::endl;
 		m->getOutputPos(result);
-		dsp(1, 7, result);
+		//dsp(1, 7, result);
 
 		std::cout << std::endl << "---------------------" << std::endl;
 	}
@@ -277,9 +277,9 @@ void test_model_solver_seven_axis()
 {
 	
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
-	//test_seven_axis_inverse_solver2();
-	//test_seven_axis_inverse_solver3();
-	//test_seven_axis_inverse_solver4();
+	test_seven_axis_inverse_solver2();
+	test_seven_axis_inverse_solver3();
+	test_seven_axis_inverse_solver4();
 
 	aris::dynamic::SevenAxisParam2 param;
 

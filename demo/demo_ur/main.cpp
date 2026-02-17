@@ -149,7 +149,9 @@ int main()
 		std::cout <<"failed"<<std::endl;
 
 	std::cout << std::setprecision(16);
-	dsp(4, 4, *ee.mpm());
+	double mpm[16];
+	ee.getMpm(mpm);
+	dsp(4, 4, mpm);
 
 	for (int i = 0; i < 100; ++i) {
 		ee.setMpe(std::array<double, 6>{0.7, 0.1 + std::sin(i*0.1) * 0.1, 0.2, 0, PI + 0.2, -PI / 2.0 + 0.1}.data(), "321");
@@ -178,7 +180,9 @@ int main()
 		std::cout << "failed" << std::endl;
 
 	ee.updP();
-	dsp(4, 4, *ee.mpm());
+	double mpm2[16];
+	ee.getMpm(mpm2);
+	dsp(4, 4, mpm2);
 
 	double pin[6]{ -0.22007211565796,
 		- 1.39951770491866,
@@ -194,7 +198,12 @@ int main()
 	}
 	forward_kinematic.kinPos();
 	ee.updP();
-	dsp(4, 4, *ee.mpm());
+	{
+		double mpm[16];
+		ee.getMpm(mpm);
+		dsp(4, 4, mpm);
+	}
+
 
 
 	/*

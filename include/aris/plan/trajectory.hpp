@@ -22,8 +22,12 @@ namespace aris::plan{
 	class ARIS_API TrajectoryGenerator {
 	public:
 		// 配置末端类型 //
-		auto eeTypes()const-> const std::vector<aris::dynamic::EEType>&;
-		auto setEeTypes(const std::vector<aris::dynamic::EEType>& ee_types)->void;
+		auto eePosTypes()const-> const std::vector<aris::dynamic::PosType>&;
+		auto setEeTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void;
+		auto eeVelTypes()const -> const std::vector<aris::dynamic::VelType>&;
+		auto setEeVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void;
+		auto eeAccTypes()const -> const std::vector<aris::dynamic::AccType>&;
+		auto setEeAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void;
 
 		// 真实世界的时间间隔 //
 		auto dt()const->double;
@@ -81,6 +85,8 @@ namespace aris::plan{
 
 		// 返回当前所有的节点 id //
 		auto unusedNodeIds()const->std::vector<std::int64_t>;
+
+		auto allocateMemory() -> void;
 
 		~TrajectoryGenerator();
 		TrajectoryGenerator();

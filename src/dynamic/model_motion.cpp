@@ -16,6 +16,28 @@
 #include "aris/dynamic/model_motion.hpp"
 
 namespace aris::dynamic{
+	struct MotionBase::Imp {
+		PosType pos_type_{ PosType::UNKNOWN };
+		VelType vel_type_{ VelType::UNKNOWN };
+		AccType acc_type_{ AccType::UNKNOWN };
+		FceType fce_type_{ FceType::UNKNOWN };
+		double mem_[48]{ 0.0 }; // 3*16 = 48
+	};
+	
+	auto MotionBase::setPosType(PosType type) -> void { imp_->pos_type_ = type; }
+	auto MotionBase::posType()const->PosType { return imp_->pos_type_; }
+	auto MotionBase::setVelType(VelType type) -> void { imp_->vel_type_ = type; }
+	auto MotionBase::velType()const->VelType { return imp_->vel_type_; }
+	auto MotionBase::setAccType(AccType type) -> void { imp_->acc_type_ = type; }
+	auto MotionBase::accType()const->AccType { return imp_->acc_type_; }
+	auto MotionBase::setFceType(FceType type) -> void { imp_->fce_type_ = type; }
+	auto MotionBase::fceType()const->FceType { return imp_->fce_type_; }
+
+	auto MotionBase::p()const noexcept->const double* { return imp_->mem_;}
+	auto MotionBase::v()const noexcept->const double* { return imp_->mem_ + 16; }
+	auto MotionBase::a()const noexcept->const double* { return imp_->mem_ + 32; }
+	auto MotionBase::f()const noexcept->const double* { return cf(); }
+
 	auto MotionBase::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
 		double pm_j2i[16], ps_j2i[6];
 		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
@@ -67,6 +89,22 @@ namespace aris::dynamic{
 		s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), pm_i2j);
 		cptPFromPm(pm_i2j, const_cast<double*>(this->p()));
 	}
+	auto MotionBase::updV() noexcept->void {
+		double vs[6];
+		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
+
+		double v[16];
+		s_vs2vel(posType(), p(), vs, velType(), v);
+		setV(v);
+	}
+	auto MotionBase::updA() noexcept->void {
+		double vs[6], as[6];
+		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
+
+		double a[16];
+		s_as2acc(posType(), p(), VelType::VS, vs, as, accType(), a);
+		setA(a);
+	}
 	auto MotionBase::updMakIPm() noexcept->void {
 		double pm_j_i[16];
 		cptPmFromP(p(), pm_j_i);
@@ -78,6 +116,13 @@ namespace aris::dynamic{
 		s_inv_pm(pm_j_i, inv_pm);
 		makJ()->setPm(*makI(), inv_pm);
 	}
+	MotionBase::~MotionBase() = default;
+	MotionBase::MotionBase(const std::string& name, Marker* makI, Marker* makJ, bool active):Constraint(name, makI, makJ, active), imp_(new Imp)
+	{
+
+	}
+	ARIS_DEFINE_BIG_FOUR_CPP(MotionBase);
+	
 	struct Motion::Imp {
 		Size clb_frc_id_{ 0 }, clb_id_{ 0 };
 		Size component_axis_{ 2 };
@@ -85,7 +130,8 @@ namespace aris::dynamic{
 		double rotate_range_{ 0.0 };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
-		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 }, mf_{ 0 };
+
+		double mf_{ 0 };
 		double loc_cm_I[6]{ 0,0,0,0,0,1 };
 	};
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
@@ -177,29 +223,7 @@ namespace aris::dynamic{
 	auto Motion::cptPError(const double* p1, const double* p2)->double {
 		return std::abs(axis() > 2 ? s_put_into_period(*p1, (*p2)/2.0 / aris::PI, 2*aris::PI) - (*p2) : (*p1) - (*p2));
 	}
-	auto Motion::p() const noexcept->const double* { return &imp_->mp_;/*imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_;*/ }
-	auto Motion::updP() noexcept->void{
-		double mp;
-		double pm_i2j[16];
-		s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), pm_i2j);
-		cptPFromPm(pm_i2j, &mp);
-		setMp(mp);
-	}
-	auto Motion::setP(const double *mp) noexcept->void { imp_->mp_ = *mp;/*imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_;*/ }
-	auto Motion::v() const noexcept->const double* { return &imp_->mv_; }
-	auto Motion::updV() noexcept->void {
-		double vs_i2j[6];
-		makI()->getVs(*makJ(), vs_i2j);
-		setMv(vs_i2j[axis()]);
-	}
-	auto Motion::setV(const double *mv) noexcept->void { imp_->mv_ = *mv; }
-	auto Motion::a() const noexcept->const double* { return &imp_->ma_; }
-	auto Motion::updA() noexcept->void {
-		double as_i2j[6];
-		makI()->getAs(*makJ(), as_i2j);
-		setMa(as_i2j[axis()]);
-	}
-	auto Motion::setA(const double *ma) noexcept->void { imp_->ma_ = *ma; }
+
 	auto Motion::f() const noexcept->const double* { 
 		const_cast<Motion*>(this)->imp_->mf_ = mfDyn() + mfFrc();
 		return &imp_->mf_; 
@@ -215,6 +239,16 @@ namespace aris::dynamic{
 		
 		if(axis > 2)
 			const_cast<double*>(locCmI())[axis - 3] = imp_->pitch_ / 2 / PI;
+
+		PosType axis2postype[6]{ PosType::X, PosType::Y, PosType::Z,PosType::A, PosType::B, PosType::C };
+		VelType axis2veltype[6]{ VelType::DX, VelType::DY, VelType::DZ,VelType::DA, VelType::DB, VelType::DC };
+		AccType axis2acctype[6]{ AccType::D2X, AccType::D2Y, AccType::D2Z,AccType::D2A, AccType::D2B, AccType::D2C };
+		FceType axis2fcetype[6]{ FceType::FX, FceType::FY, FceType::FZ,FceType::TX, FceType::TY, FceType::TZ };
+
+		setPosType(axis2postype[axis]);
+		setVelType(axis2veltype[axis]);
+		setAccType(axis2acctype[axis]);
+		setFceType(axis2fcetype[axis]);
 	}
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
 	auto Motion::pitch()const noexcept->double {
@@ -231,13 +265,18 @@ namespace aris::dynamic{
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
 	auto Motion::mfDyn() const noexcept->double { return *cf(); }
 	auto Motion::setMfDyn(double mf_dyn) noexcept->void { setCf(&mf_dyn); }
-	auto Motion::mfFrc() const noexcept->double { return s_sgn(imp_->mv_, frcZeroCheck())*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
+	auto Motion::mfFrc() const noexcept->double { 
+		return s_sgn(*v(), frcZeroCheck()) * frcCoe()[0] + (*v()) * frcCoe()[1] + (*a()) * frcCoe()[2];
+	}
 	auto Motion::mpOffset()const noexcept->double { return imp_->mp_offset_; }
 	auto Motion::setMpOffset(double mp_offset)noexcept->void { imp_->mp_offset_ = mp_offset; }
 	auto Motion::mpFactor()const noexcept->double { return imp_->mp_factor_; }
 	auto Motion::setMpFactor(double mp_factor)noexcept->void { imp_->mp_factor_ = mp_factor; }
-	auto Motion::mpInternal()const noexcept->double { return mp2mpInternal(imp_->mp_); }
-	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mpInternal2mp(mp_internal); }
+	auto Motion::mpInternal()const noexcept->double { return mp2mpInternal(*p()); }
+	auto Motion::setMpInternal(double mp_internal)noexcept->void { 
+		double p = mpInternal2mp(mp_internal);
+		setP(&p);
+	}
 	auto Motion::mp2mpInternal(double mp)const noexcept->double {
 		return (mp + imp_->mp_offset_) * imp_->mp_factor_;
 	}
@@ -248,6 +287,8 @@ namespace aris::dynamic{
 	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset
 		, double mp_factor, bool active) : MotionBase(name, makI, makJ, active)
 	{
+
+
 		imp_->mp_offset_ = mp_offset;
 		imp_->mp_factor_ = mp_factor;
 
@@ -257,48 +298,6 @@ namespace aris::dynamic{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
-	struct GeneralMotion::Imp {
-		double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
-		mutable double p_[16]{ 0.0 }, v_[6]{ 0.0 }, a_[6]{ 0.0 };
-		PoseType pose_type_{PoseType::EULER321};
-		VelType vel_type_{ VelType::VEL };
-		AccType acc_type_{ AccType::ACC };
-		FceType fce_type_{ FceType::FCE };
-	};
-	auto GeneralMotion::setPoseType(PoseType type)->void {
-		imp_->pose_type_ = type;
-	}
-	auto GeneralMotion::poseType()const->PoseType {
-		return imp_->pose_type_;
-	}
-	auto GeneralMotion::setVelType(VelType type)->void {
-		imp_->vel_type_ = type;
-	}
-	auto GeneralMotion::velType()const->VelType {
-		return imp_->vel_type_;
-	}
-	auto GeneralMotion::setAccType(AccType type)->void {
-		imp_->acc_type_ = type;
-	}
-	auto GeneralMotion::accType()const->AccType {
-		return imp_->acc_type_;
-	}
-	auto GeneralMotion::setFceType(FceType type)->void {
-		imp_->fce_type_ = type;
-	}
-	auto GeneralMotion::fceType()const->FceType {
-		return imp_->fce_type_;
-	}
-	auto GeneralMotion::eeType()const->EEType {
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:return EEType::PE123;
-		case GeneralMotion::PoseType::EULER321:return EEType::PE321;
-		case GeneralMotion::PoseType::EULER313:return EEType::PE313;
-		case GeneralMotion::PoseType::QUATERNION:return EEType::PQ;
-		case GeneralMotion::PoseType::POSE_MATRIX:return EEType::PM;
-		default:return EEType::UNKNOWN;
-		}
-	}
 	auto GeneralMotion::locCmI() const noexcept->const double*{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 		return loc_cm_I;
@@ -319,93 +318,39 @@ namespace aris::dynamic{
 
 		s_pm2ps(pm_i2j_diff, ps_i2j_diff);
 		s_vc(6, ps_i2j_diff, cp);
-		
-		
-		//// Pi : mak I 的实际位置
-		//// Pj : mak J 的实际位置
-		//// Pit: mak I 应该达到的位置
-		//// Pc : 需补偿的位姿
-		////
-		//// 补偿位姿位于 mak I 内，因此有：
-		//// Pi * Pc = Pit
-		////
-		//// 理论上应该有：
-		//// Pit = Pj * mpm
-		////
-		//// 于是：
-		//// Pc = Pi^-1 * Pj * mpm
-
-		//double mpm[16];
-
-		//switch (poseType()) {
-		//case GeneralMotion::PoseType::EULER123:s_pe2pm(mp, mpm, "123"); break;
-		//case GeneralMotion::PoseType::EULER321:s_pe2pm(mp, mpm, "321"); break;
-		//case GeneralMotion::PoseType::EULER313:s_pe2pm(mp, mpm, "313"); break;
-		//case GeneralMotion::PoseType::QUATERNION:s_pq2pm(mp, mpm); break;
-		//case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, mp, mpm); break;
-		//}
-
-
-		//double pm_it[16];
-		//s_pm_dot_pm(makJ_pm, mpm, pm_it);
-
-		//double pm_c[16], ps_c[6];
-		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
-		//s_pm2ps(pm_c, ps_c);
-
-		//// locCmI为单位矩阵，此时无需相乘
-		//s_vc(6, ps_c, cp);
 	}
 	auto GeneralMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
 		double pm[16];
 		s_inv_pm(makI_pm, pm);
 		s_tmf(pm, dm);
 	}
-	auto GeneralMotion::cptCv(double *cv)const noexcept->void { s_inv_tv(*mpm(), mvs(), cv); }
-	auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-	auto GeneralMotion::cptPFromPm(const double* mak_i2j, double* p)const noexcept->void {
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pm2pe(mak_i2j, p, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pm2pe(mak_i2j, p, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pm2pe(mak_i2j, p, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pm2pq(mak_i2j, p); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, mak_i2j, p); break;
-		}
+	auto GeneralMotion::cptCv(double *cv)const noexcept->void { 
+		double vs[6];
+		getMvs(vs);
+
+		double mpm[16];
+		getMpm(mpm);
+		s_inv_tv(mpm, vs, cv);
 	}
-	auto GeneralMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pe2pm(p, pm_i2j, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pe2pm(p, pm_i2j, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pe2pm(p, pm_i2j, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(p, pm_i2j); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, p, pm_i2j); break;
-		}
+	auto GeneralMotion::cptCa(double *ca)const noexcept->void { 
+		Constraint::cptCa(ca);
+
+		double as[6];
+		getMas(as);
+
+		double mpm[16];
+		getMpm(mpm);
+
+		s_inv_tva(mpm, as, ca);
 	}
 	auto GeneralMotion::cptPError(const double* p1, const double* p2)->double {
-		double pq1[7], pq2[7];
+		double pm1[16], pm2[16], pq1[7], pq2[7];
 
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:
-			s_pe2pq(p1, pq1, "123");
-			s_pe2pq(p2, pq2, "123");
-			break;
-		case GeneralMotion::PoseType::EULER321:
-			s_pe2pq(p1, pq1, "321");
-			s_pe2pq(p2, pq2, "321");
-			break;
-		case GeneralMotion::PoseType::EULER313:
-			s_pe2pq(p1, pq1, "313");
-			s_pe2pq(p2, pq2, "313");
-			break;
-		case GeneralMotion::PoseType::QUATERNION:
-			s_vc(7, p1, pq1);
-			s_vc(7, p2, pq2);
-			break;
-		case GeneralMotion::PoseType::POSE_MATRIX:
-			s_pm2pq(p1, pq1);
-			s_pm2pq(p2, pq2);
-			break;
-		}
+		s_pos2pm(posType(), p1, pm1);
+		s_pm2pq(pm1, pq1);
+
+		s_pos2pm(posType(), p2, pm2);
+		s_pm2pq(pm2, pq2);
 
 		if (s_vv(4, pq1 + 3, pq2 + 3) < 0)
 			s_iv(4, pq2 + 3);
@@ -417,178 +362,128 @@ namespace aris::dynamic{
 
 		return max_error;
 	}
-	auto GeneralMotion::pSize()const noexcept->Size { 
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:return 6;
-		case GeneralMotion::PoseType::EULER321:return 6;
-		case GeneralMotion::PoseType::EULER313:return 6;
-		case GeneralMotion::PoseType::QUATERNION:return 7;
-		case GeneralMotion::PoseType::POSE_MATRIX:return 16;
-		default:return 6;
-		}
+
+	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { 
+		double pm[16];
+		s_pe2pm(pe, pm, type);
+		s_pos2pos(PosType::PM, pm, posType(), const_cast<double*>(p()));
 	}
-	auto GeneralMotion::p()const noexcept->const double* { 
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pm2pe(*imp_->mpm_, imp_->p_, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pm2pe(*imp_->mpm_, imp_->p_, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pm2pe(*imp_->mpm_, imp_->p_, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pm2pq(*imp_->mpm_, imp_->p_); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, *imp_->mpm_, imp_->p_); break;
-		}
-		
-		return imp_->p_; 
+	auto GeneralMotion::setMpq(const double* pq) noexcept->void { 
+		s_pos2pos(PosType::PQ, pq, posType(), const_cast<double*>(p()));
 	}
-	auto GeneralMotion::updP() noexcept->void { s_inv_pm_dot_pm(*makJ()->pm(), *makI()->pm(), *imp_->mpm_); }
-	auto GeneralMotion::setP(const double* mp) noexcept->void { 
-		switch (poseType()) {
-		case GeneralMotion::PoseType::EULER123:s_pe2pm(mp, *imp_->mpm_, "123"); break;
-		case GeneralMotion::PoseType::EULER321:s_pe2pm(mp, *imp_->mpm_, "321"); break;
-		case GeneralMotion::PoseType::EULER313:s_pe2pm(mp, *imp_->mpm_, "313"); break;
-		case GeneralMotion::PoseType::QUATERNION:s_pq2pm(mp, *imp_->mpm_); break;
-		case GeneralMotion::PoseType::POSE_MATRIX:s_vc(16, mp, *imp_->mpm_); break;
-		}
+	auto GeneralMotion::setMpm(const double* pm) noexcept->void { 
+		s_pos2pos(PosType::PM, pm, posType(), const_cast<double*>(p()));
 	}
-	auto GeneralMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
-	auto GeneralMotion::vSize()const noexcept->Size {
-		switch (velType()) {
-		case GeneralMotion::VelType::VEL:return 6;
-		case GeneralMotion::VelType::VEL_SCREW:return 6;
-		default:return 6;
-		}
+	auto GeneralMotion::getMpe(double* pe, const char *type)const noexcept->void { 
+		// tbd, 目前因为 PosType 没法直接转为字符串表达的欧拉角... //
+		double pm[16];
+		s_pos2pos(posType(), p(), PosType::PM, pm);
+		s_pm2pe(pm, pe, type);
 	}
-	auto GeneralMotion::v()const noexcept->const double* { 
-		switch (velType()) {
-		case GeneralMotion::VelType::VEL: getMva(imp_->v_);	break;
-		case GeneralMotion::VelType::VEL_SCREW:s_vc(6, imp_->mvs_, imp_->v_); break;
-		}
-		return imp_->v_;
+	auto GeneralMotion::getMpq(double* pq)const noexcept->void { 
+		s_pos2pos(posType(), p(), PosType::PQ, pq);
 	}
-	auto GeneralMotion::updV() noexcept->void { s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), imp_->mvs_); }
-	auto GeneralMotion::setV(const double* mv) noexcept->void { 
-		switch (velType()) {
-		case GeneralMotion::VelType::VEL: setMva(mv);break;
-		case GeneralMotion::VelType::VEL_SCREW:setMvs(mv); break;
-		}
+	auto GeneralMotion::getMpm(double* pm)const noexcept->void { 
+		s_pos2pos(posType(), p(), PosType::PM, pm);
 	}
-	auto GeneralMotion::getV(double* mv)const noexcept->void {
-		switch (velType()) {
-		case GeneralMotion::VelType::VEL: getMva(mv); break;
-		case GeneralMotion::VelType::VEL_SCREW:getMvs(mv); break;
-		}
-	}
-	auto GeneralMotion::aSize()const noexcept->Size {
-		switch (accType()) {
-		case GeneralMotion::AccType::ACC:return 6;
-		case GeneralMotion::AccType::ACC_SCREW:return 6;
-		default:return 6;
-		}
-	}
-	auto GeneralMotion::a()const noexcept->const double* { 
-		switch (accType()) {
-		case GeneralMotion::AccType::ACC: getMaa(imp_->a_);	break;
-		case GeneralMotion::AccType::ACC_SCREW:s_vc(6, imp_->mas_, imp_->a_); break;
-		}
-		return imp_->a_;
-	}
-	auto GeneralMotion::updA() noexcept->void { s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), imp_->mas_); }
-	auto GeneralMotion::setA(const double* ma) noexcept->void {
-		switch (accType()) {
-		case GeneralMotion::AccType::ACC: setMaa(ma); break;
-		case GeneralMotion::AccType::ACC_SCREW:setMas(ma); break;
-		}
-	}
-	auto GeneralMotion::getA(double* ma)const noexcept->void {
-		switch (accType()) {
-		case GeneralMotion::AccType::ACC: getMaa(ma); break;
-		case GeneralMotion::AccType::ACC_SCREW:getMas(ma); break;
-		}
-	}
-	auto GeneralMotion::mpm()const noexcept->const double4x4& { return imp_->mpm_; }
-	auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
-	auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
-	auto GeneralMotion::setMpm(const double* pm) noexcept->void { s_vc(16, pm, *imp_->mpm_); }
-	auto GeneralMotion::getMpe(double* pe, const char *type)const noexcept->void { s_pm2pe(*imp_->mpm_, pe, type); }
-	auto GeneralMotion::getMpq(double* pq)const noexcept->void { s_pm2pq(*imp_->mpm_, pq); }
-	auto GeneralMotion::getMpm(double* pm)const noexcept->void { s_vc(16, *imp_->mpm_, pm); }
-	auto GeneralMotion::mvs()const noexcept->const double6& { return imp_->mvs_; }
+	
 	auto GeneralMotion::setMve(const double* ve, const char *type) noexcept->void {
-		double pe[6];
-		s_pm2pe(*mpm(), pe, type);
-		s_ve2vs(pe, ve, imp_->mvs_, type);
+		// tbd, 目前因为 PosType 没法直接转为字符串表达的欧拉角... //
+		double pm[16], pe[6], vs[6];
+		s_pos2pos(posType(), p(), PosType::PM, pm);
+
+		s_pm2pe(pm, pe, type);
+		s_ve2vs(pe, ve, vs, type);
+
+		s_vel2vel(posType(), p(), VelType::VS, vs, velType(), const_cast<double*>(v()));
 	}
 	auto GeneralMotion::setMvq(const double* vq) noexcept->void {
-		double pq[7];
-		s_pm2pq(*mpm(), pq);
-		s_vq2vs(pq, vq, imp_->mvs_);
+		s_vel2vel(posType(), p(), VelType::VQ, vq, velType(), const_cast<double*>(v()));
 	}
-	auto GeneralMotion::setMvm(const double* vm) noexcept->void { s_vm2vs(*mpm(), vm, imp_->mvs_); }
+	auto GeneralMotion::setMvm(const double* vm) noexcept->void { 
+		s_vel2vel(posType(), p(), VelType::VM, vm, velType(), const_cast<double*>(v()));
+	}
 	auto GeneralMotion::setMva(const double* va) noexcept->void {
-		double pp[3];
-		s_pm2pp(*mpm(), pp);
-		s_va2vs(pp, va, imp_->mvs_);
+		s_vel2vel(posType(), p(), VelType::VA, va, velType(), const_cast<double*>(v()));
 	}
-	auto GeneralMotion::setMvs(const double* vs) noexcept->void { s_vc(6, vs, imp_->mvs_); }
+	auto GeneralMotion::setMvs(const double* vs) noexcept->void { 
+		s_vel2vel(posType(), p(), VelType::VS, vs, velType(), const_cast<double*>(v()));
+	}
 	auto GeneralMotion::getMve(double* ve, const char *type)const noexcept->void {
-		double pe[6];
-		s_pm2pe(*mpm(), pe, type);
-		s_vs2ve(imp_->mvs_, pe, ve, type);
+		// tbd, 目前因为 PosType 没法直接转为字符串表达的欧拉角... //
+		double pm[16], pe[6], vs[6];
+		s_pos2pos(posType(), p(), PosType::PM, pm);
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VS, vs);
+
+		s_pm2pe(pm, pe, type);
+		s_vs2ve(vs, pe, ve, type);
 	}
 	auto GeneralMotion::getMvq(double* vq)const noexcept->void {
-		double pq[7];
-		s_pm2pq(*mpm(), pq);
-		s_vs2vq(imp_->mvs_, pq, vq);
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VQ, vq);
 	}
-	auto GeneralMotion::getMvm(double* vm)const noexcept->void { s_vs2vm(imp_->mvs_, *mpm(), vm); }
+	auto GeneralMotion::getMvm(double* vm)const noexcept->void { 
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VM, vm);
+	}
 	auto GeneralMotion::getMva(double* va)const noexcept->void {
-		double pp[3];
-		s_pm2pp(*mpm(), pp);
-		s_vs2va(imp_->mvs_, pp, va);
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VA, va);
 	}
-	auto GeneralMotion::getMvs(double* vs)const noexcept->void { s_vc(6, imp_->mvs_, vs); }
-	auto GeneralMotion::mas()const noexcept->const double6& { return imp_->mas_; }
+	auto GeneralMotion::getMvs(double* vs)const noexcept->void { 
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VS, vs);
+	}
+	
 	auto GeneralMotion::setMae(const double* ae, const char *type) noexcept->void {
-		double pe[6], ve[6];
-		s_pm2pe(*mpm(), pe, type);
-		s_vs2ve(mvs(), pe, ve, type);
-		s_ae2as(pe, ve, ae, imp_->mas_, nullptr, type);
+		// tbd, 目前因为 PosType 没法直接转为字符串表达的欧拉角... //
+		double pm[16], pe[6], ve[6], as[6], vs[6];
+		s_pos2pos(posType(), p(), PosType::PM, pm);
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VS, vs);
+
+		s_pm2pe(pm, pe, type);
+		s_vs2ve(vs, pe, ve, type);
+		s_ae2as(pe, ve, ae, as, nullptr, type);
+		
+		s_acc2acc(posType(), p(), velType(), v(), AccType::AS, as, accType(), const_cast<double*>(a()));
 	}
 	auto GeneralMotion::setMaq(const double* aq) noexcept->void {
-		double pq[7], vq[7];
-		s_pm2pq(*mpm(), pq);
-		s_vs2vq(mvs(), pq, vq);
-		s_aq2as(pq, vq, aq, imp_->mas_);
+		s_acc2acc(posType(), p(), velType(), v(), AccType::AQ, aq, accType(), const_cast<double*>(a()));
 	}
 	auto GeneralMotion::setMam(const double* am) noexcept->void	{
-		double vm[16];
-		getMvm(vm);
-		s_am2as(*mpm(), vm, am, imp_->mas_);
+		s_acc2acc(posType(), p(), velType(), v(), AccType::AM, am, accType(), const_cast<double*>(a()));
 	}
 	auto GeneralMotion::setMaa(const double* aa) noexcept->void	{
-		double pp[3], va[6];
-		s_pm2pp(*mpm(), pp);
-		s_vs2va(mvs(), pp, va);
-		s_aa2as(pp, va, aa, imp_->mas_);
+		s_acc2acc(posType(), p(), velType(), v(), AccType::AA, aa, accType(), const_cast<double*>(a()));
 	}
-	auto GeneralMotion::setMas(const double* as) noexcept->void { s_vc(6, as, imp_->mas_); }
+	auto GeneralMotion::setMas(const double* as) noexcept->void { 
+		s_acc2acc(posType(), p(), velType(), v(), AccType::AS, as, accType(), const_cast<double*>(a()));
+	}
 	auto GeneralMotion::getMae(double* ae, const char *type)const noexcept->void {
-		double pe[6];
-		s_pm2pe(*mpm(), pe, type);
-		s_as2ae(mvs(), mas(), pe, ae, nullptr, type);
+		// tbd, 目前因为 PosType 没法直接转为字符串表达的欧拉角... //
+		double pm[16], pe[6], vs[6], as[6];
+		s_pos2pos(posType(), p(), PosType::PM, pm);
+		s_vel2vel(posType(), p(), velType(), v(), VelType::VS, vs);
+		s_acc2acc(posType(), p(), velType(), v(), accType(), a(), AccType::AS, as);
+
+		s_pm2pe(pm, pe, type);
+		s_as2ae(vs, as, pe, ae, nullptr, type);
 	}
 	auto GeneralMotion::getMaq(double* aq)const noexcept->void {
-		double pq[7];
-		s_pm2pq(*mpm(), pq);
-		s_as2aq(mvs(), mas(), pq, aq);
+		s_acc2acc(posType(), p(), velType(), v(), accType(), a(), AccType::AQ, aq);
 	}
-	auto GeneralMotion::getMam(double* am)const noexcept->void { s_as2am(mvs(), mas(), *mpm(), am); }
+	auto GeneralMotion::getMam(double* am)const noexcept->void { 
+		s_acc2acc(posType(), p(), velType(), v(), accType(), a(), AccType::AM, am);
+	}
 	auto GeneralMotion::getMaa(double* aa)const noexcept->void {
-		double pp[3];
-		s_pm2pp(*mpm(), pp);
-		s_as2aa(mvs(), mas(), pp, aa);
+		s_acc2acc(posType(), p(), velType(), v(), accType(), a(), AccType::AA, aa);
 	}
-	auto GeneralMotion::getMas(double* as)const noexcept->void { s_vc(6, imp_->mas_, as); }
+	auto GeneralMotion::getMas(double* as)const noexcept->void { 
+		s_acc2acc(posType(), p(), velType(), v(), accType(), a(), AccType::AS, as);
+	}
 	GeneralMotion::~GeneralMotion() = default;
-	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {}
+	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {
+		setPosType(PosType::PE321);
+		setVelType(VelType::VA);
+		setAccType(AccType::AA);
+		setFceType(FceType::FT);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	auto PointMotion::locCmI() const noexcept->const double* {
@@ -651,42 +546,16 @@ namespace aris::dynamic{
 
 		s_va(3, ap_in_makI, ca);
 	}
-	auto PointMotion::cptPFromPm(const double *mak_i2j, double* p)const noexcept->void {
-		s_pm2pp(mak_i2j, p);
-	}
-	auto PointMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		s_eye(4, pm_i2j);
-		pm_i2j[3] = p[0];
-		pm_i2j[7] = p[1];
-		pm_i2j[11] = p[2];
-	}
-	auto PointMotion::updV() noexcept->void { 
-		double vs[6], pp[3];
-		s_pm2pp(*makI()->pm(), pp);
-		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
-		s_vs2vp(vs, pp, v_);
-	}
-	auto PointMotion::updA() noexcept->void { 
-		double as[6], vs[6], pp[3];
-		s_pm2pp(*makI()->pm(), pp);
-		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), as, vs);
-		s_as2ap(vs, as, pp, a_);
-	}
+
 	PointMotion::~PointMotion() = default;
-	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionTemplate(name, makI, makJ, active){}
+	PointMotion::PointMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active){
+		setPosType(PosType::XYZ);
+		setVelType(VelType::DXYZ);
+		setAccType(AccType::D2XYZ);
+		setFceType(FceType::FXYZ);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PointMotion);
 
-	struct SphericalMotion::Imp {
-		double mrm_[3][3]{ { 0 } };
-		mutable double p_[16]{ 0.0 };
-		SphericalMotion::PoseType pose_type_{ SphericalMotion::PoseType::EULER123 };
-	};
-	auto SphericalMotion::setPoseType(PoseType type)->void{
-		imp_->pose_type_ = type;
-	}
-	auto SphericalMotion::poseType()const->PoseType {
-		return imp_->pose_type_;
-	}
 	auto SphericalMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[18]{
 			0,0,0,
@@ -729,34 +598,27 @@ namespace aris::dynamic{
 	auto SphericalMotion::cptCa(double* ca)const noexcept->void {
 		// tbd
 	}
-	auto SphericalMotion::cptPFromPm(const double* mak_i2j, double* p)const noexcept->void {
-		s_pm2re(mak_i2j, p, "123");
-	}
-	auto SphericalMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		s_eye(4, pm_i2j);
-		s_re2pm(p, pm_i2j, "123");
-	}
 	auto SphericalMotion::cptPError(const double* p1, const double* p2)->double {
 		double q1[4], q2[4];
 
-		switch (poseType()) {
-		case SphericalMotion::PoseType::EULER123:
+		switch (posType()) {
+		case PosType::RE123:
 			s_re2rq(p1, q1, "123");
 			s_re2rq(p2, q2, "123");
 			break;
-		case SphericalMotion::PoseType::EULER321:
+		case PosType::RE321:
 			s_re2rq(p1, q1, "321");
 			s_re2rq(p2, q2, "321");
 			break;
-		case SphericalMotion::PoseType::EULER313:
+		case PosType::RE313:
 			s_re2rq(p1, q1, "313");
 			s_re2rq(p2, q2, "313");
 			break;
-		case SphericalMotion::PoseType::QUATERNION:
+		case PosType::RQ:
 			s_vc(4, p1, q1);
 			s_vc(4, p2, q2);
 			break;
-		case SphericalMotion::PoseType::POSE_MATRIX:
+		case PosType::RM:
 			s_rm2rq(p1, q1);
 			s_rm2rq(p2, q2);
 			break;
@@ -771,49 +633,16 @@ namespace aris::dynamic{
 		}
 		return max_error;
 	}
-	auto SphericalMotion::pSize()const noexcept->Size {
-		switch (poseType()) {
-		case SphericalMotion::PoseType::EULER123:return 3;
-		case SphericalMotion::PoseType::EULER321:return 3;
-		case SphericalMotion::PoseType::EULER313:return 3;
-		case SphericalMotion::PoseType::QUATERNION:return 4;
-		case SphericalMotion::PoseType::POSE_MATRIX:return 9;
-		default:return 6;
-		}
-	}
-	auto SphericalMotion::p()const noexcept->const double* {
-		switch (poseType()) {
-		case SphericalMotion::PoseType::EULER123:s_rm2re(*imp_->mrm_, imp_->p_, "123"); break;
-		case SphericalMotion::PoseType::EULER321:s_rm2re(*imp_->mrm_, imp_->p_, "321"); break;
-		case SphericalMotion::PoseType::EULER313:s_rm2re(*imp_->mrm_, imp_->p_, "313"); break;
-		case SphericalMotion::PoseType::QUATERNION:s_rm2rq(*imp_->mrm_, imp_->p_); break;
-		case SphericalMotion::PoseType::POSE_MATRIX:s_vc(9, *imp_->mrm_, imp_->p_); break;
-		}
 
-		return imp_->p_;
-	}
-	auto SphericalMotion::updP() noexcept->void { s_mm(3, 3, 3, *makJ()->pm(), T(4), *makI()->pm(), 4, *imp_->mrm_, 3); }
-	auto SphericalMotion::setP(const double* mp) noexcept->void {
-		switch (poseType()) {
-		case SphericalMotion::PoseType::EULER123:s_re2rm(mp, *imp_->mrm_, "123"); break;
-		case SphericalMotion::PoseType::EULER321:s_re2rm(mp, *imp_->mrm_, "321"); break;
-		case SphericalMotion::PoseType::EULER313:s_re2rm(mp, *imp_->mrm_, "313"); break;
-		case SphericalMotion::PoseType::QUATERNION:s_rq2rm(mp, *imp_->mrm_); break;
-		case SphericalMotion::PoseType::POSE_MATRIX:s_vc(9, mp, *imp_->mrm_); break;
-		}
-	}
-	auto SphericalMotion::getP(double* mp)const noexcept->void { s_vc(pSize(), p(), mp); }
-	auto SphericalMotion::updV() noexcept->void {
-		// tbd
-	}
-	auto SphericalMotion::updA() noexcept->void {
-		// tbd
-	}
 	SphericalMotion::~SphericalMotion() = default;
-	SphericalMotion::SphericalMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
+	SphericalMotion::SphericalMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionBase(name, makI, makJ, active) {
+		setPosType(PosType::RE123);
+		setVelType(VelType::WA);
+		setAccType(AccType::XA);
+		setFceType(FceType::TXYZ);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(SphericalMotion);
 
-	struct XyztMotion::Imp { double rotate_range_{ std::numeric_limits<double>::quiet_NaN() }; };
 	auto XyztMotion::locCmI() const noexcept->const double* {
 		static const double loc_cm_I[24]{
 			1,0,0,0,
@@ -929,52 +758,6 @@ namespace aris::dynamic{
 		// 角度 //
 		ca[3] += a()[3];
 	}
-	auto XyztMotion::cptPFromPm(const double* pm_i2j, double* p)const noexcept->void {
-		auto period = 2 * aris::PI;
-
-		double mp_internal = std::atan2(pm_i2j[4] - pm_i2j[1], pm_i2j[0] + pm_i2j[5]);
-
-		auto mid = std::isfinite(rotateRange()) ? rotateRange() : this->p()[3] / period;
-		// 对mid取整、取余 //
-		auto t = std::trunc(mid);
-		auto mod = mid - t;
-
-		// 将 mp 置于【-周期，+周期】 内
-		mp_internal = std::fmod(mp_internal, period);
-
-		// 将 mp 置于【mod-半个周期，mod+半个周期】 内
-		while (mp_internal > (mod + 0.5) * period) mp_internal -= period;
-		while (mp_internal < (mod - 0.5) * period) mp_internal += period;
-
-		// 叠加需偏移的整数个周期
-		mp_internal += t * period;
-
-		p[0] = pm_i2j[3];
-		p[1] = pm_i2j[7];
-		p[2] = pm_i2j[11];
-		p[3] = mp_internal;
-	}
-	auto XyztMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		s_eye(4, pm_i2j);
-		pm_i2j[3] = p[0];
-		pm_i2j[7] = p[1];
-		pm_i2j[11] = p[2];
-		s_rmz(p[3], pm_i2j, 4);
-	}
-	auto XyztMotion::updV() noexcept->void {
-		double mvs[6];
-		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), mvs);
-		s_vs2vp(mvs, p_, v_);
-		v_[3] = mvs[5];
-	}
-	auto XyztMotion::updA() noexcept->void {
-		double mvs[6], mas[6];
-		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), mas, mvs);
-		s_as2ap(mvs, mas, p_, a_);
-		a_[3] = mas[5];
-	}
-	auto XyztMotion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
-	auto XyztMotion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
 	auto XyztMotion::cptPError(const double* p1, const double* p2)->double {
 		double max_error = 0;
 		for (int i = 0; i < 3; ++i) {
@@ -985,7 +768,12 @@ namespace aris::dynamic{
 		return max_error;
 	}
 	XyztMotion::~XyztMotion() = default;
-	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
+	XyztMotion::XyztMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) : MotionBase(name, makI, makJ, active) {
+		setPosType(PosType::XYZT);
+		setVelType(VelType::DXYZT);
+		setAccType(AccType::D2XYZT);
+		setFceType(FceType::FXYZ_TZ);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(XyztMotion);
 
 	auto PlanarMotion::locCmI() const noexcept->const double* {
@@ -1083,17 +871,6 @@ namespace aris::dynamic{
 		// 角度 //
 		ca[2] += a()[2];
 	}
-	auto PlanarMotion::cptPFromPm(const double* pm_i2j, double* p)const noexcept->void {
-		p[0] = pm_i2j[3];
-		p[1] = pm_i2j[7];
-		p[2] = std::atan2(pm_i2j[4] - pm_i2j[1], pm_i2j[0] + pm_i2j[5]);
-	}
-	auto PlanarMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		s_eye(4, pm_i2j);
-		pm_i2j[3] = p[0];
-		pm_i2j[7] = p[1];
-		s_rmz(p[2], pm_i2j, 4);
-	}
 	auto PlanarMotion::cptPError(const double* p1, const double* p2)->double {
 		double max_error = 0;
 		for (int i = 0; i < 2; ++i) {
@@ -1103,24 +880,13 @@ namespace aris::dynamic{
 
 		return max_error;
 	}
-	auto PlanarMotion::updV() noexcept->void {
-		double mvs[6], vp[3];
-		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), mvs);
-		s_vs2vp(mvs, p(), vp);
-		v_[0] = vp[0];
-		v_[1] = vp[1];
-		v_[2] = mvs[5];
-	}
-	auto PlanarMotion::updA() noexcept->void {
-		double mvs[6], mas[6], ap[3];
-		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), mas, mvs);
-		s_as2ap(mvs, mas, p(), ap);
-		a_[0] = ap[0];
-		a_[1] = ap[1];
-		a_[2] = mas[5];
-	}
 	PlanarMotion::~PlanarMotion() = default;
-	PlanarMotion::PlanarMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
+	PlanarMotion::PlanarMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionBase(name, makI, makJ, active) {
+		setPosType(PosType::XYT);
+		setVelType(VelType::DXYT);
+		setAccType(AccType::D2XYT);
+		setFceType(FceType::FXY_TZ);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanarMotion);
 
 	auto XyMotion::locCmI() const noexcept->const double* {
@@ -1208,31 +974,14 @@ namespace aris::dynamic{
 
 		s_va(2, ap_in_makI, ca);
 	}
-	auto XyMotion::cptPFromPm(const double* pm_i2j, double* p)const noexcept->void {
-		p[0] = pm_i2j[3];
-		p[1] = pm_i2j[7];
-	}
-	auto XyMotion::cptPmFromP(const double* p, double* pm_i2j)const noexcept->void {
-		s_eye(4, pm_i2j);
-		pm_i2j[3] = p[0];
-		pm_i2j[7] = p[1];
-	}
-	auto XyMotion::updV() noexcept->void {
-		double mvs[6], vp[3];
-		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), mvs);
-		s_vs2vp(mvs, p(), vp);
-		p_[0] = vp[0];
-		p_[1] = vp[1];
-	}
-	auto XyMotion::updA() noexcept->void {
-		double mvs[6], mas[6], ap[3];
-		s_inv_as2as(*makJ()->pm(), makJ()->vs(), makJ()->as(), makI()->vs(), makI()->as(), mas, mvs);
-		s_as2ap(mvs, mas, p(), ap);
-		a_[0] = ap[0];
-		a_[1] = ap[1];
-	}
+
 	XyMotion::~XyMotion() = default;
-	XyMotion::XyMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionTemplate(name, makI, makJ, active) {}
+	XyMotion::XyMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionBase(name, makI, makJ, active) {
+		setPosType(PosType::XY);
+		setVelType(VelType::DXY);
+		setAccType(AccType::D2XY);
+		setFceType(FceType::FXY);
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(XyMotion);
 
 	ARIS_REGISTRATION{
@@ -1253,6 +1002,9 @@ namespace aris::dynamic{
 			.prop("mp", &setMp, &getMp)
 			.prop("mv", &setMv, &getMv)
 			.prop("ma", &setMa, &getMa)
+			.prop("pos_type", &MotionBase::setPosType, &MotionBase::posType)
+			.prop("vel_type", &MotionBase::setVelType, &MotionBase::velType)
+			.prop("acc_type", &MotionBase::setAccType, &MotionBase::accType)
 			;
 
 		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
@@ -1268,82 +1020,12 @@ namespace aris::dynamic{
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
-		aris::core::class_<GeneralMotion::PoseType>("GENERAL_MOTION_POS_TYPE")
-			.textMethod([](GeneralMotion::PoseType*type)->std::string {
-					switch (*type) {
-					case GeneralMotion::PoseType::EULER123:return "EULER123";
-					case GeneralMotion::PoseType::EULER321:return "EULER321";
-					case GeneralMotion::PoseType::EULER313:return "EULER313";
-					case GeneralMotion::PoseType::QUATERNION:return "QUATERNION";
-					case GeneralMotion::PoseType::POSE_MATRIX:return "POSE_MATRIX";
-					default:return "EULER123";
-					}
-				}, [](GeneralMotion::PoseType* type, std::string_view name)->void {
-					if (name == "EULER123")*type = GeneralMotion::PoseType::EULER123;
-					if (name == "EULER321")*type = GeneralMotion::PoseType::EULER321;
-					if (name == "EULER313")*type = GeneralMotion::PoseType::EULER313;
-					if (name == "QUATERNION")*type = GeneralMotion::PoseType::QUATERNION;
-					if (name == "POSE_MATRIX")*type = GeneralMotion::PoseType::POSE_MATRIX;
-				
-				})
-			;
-
-		aris::core::class_<GeneralMotion::VelType>("GENERAL_MOTION_VEL_TYPE")
-			.textMethod([](GeneralMotion::VelType*type)->std::string {
-					switch (*type) {
-					case GeneralMotion::VelType::VEL:return "VEL";
-					case GeneralMotion::VelType::VEL_SCREW:return "VEL_SCREW";
-					default:return "VEL";
-					}
-				}, [](GeneralMotion::VelType* type, std::string_view name)->void {
-					if (name == "VEL")*type = GeneralMotion::VelType::VEL;
-					if (name == "VEL_SCREW")*type = GeneralMotion::VelType::VEL_SCREW;
-				})
-			;
-
-		aris::core::class_<GeneralMotion::AccType>("GENERAL_MOTION_ACC_TYPE")
-			.textMethod([](GeneralMotion::AccType*type)->std::string {
-					switch (*type) {
-					case GeneralMotion::AccType::ACC:return "ACC";
-					case GeneralMotion::AccType::ACC_SCREW:return "ACC_SCREW";
-					default:return "ACC";
-					}
-				}, [](GeneralMotion::AccType* type, std::string_view name)->void {
-					if (name == "ACC")*type = GeneralMotion::AccType::ACC;
-					if (name == "ACC_SCREW")*type = GeneralMotion::AccType::ACC_SCREW;
-				})
-			;
-
 		aris::core::class_<GeneralMotion>("GeneralMotion")
 			.inherit<aris::dynamic::MotionBase>()
-			.prop("pose_type", &GeneralMotion::setPoseType, &GeneralMotion::poseType)
-			.prop("vel_type", &GeneralMotion::setVelType, &GeneralMotion::velType)
-			.prop("acc_type", &GeneralMotion::setAccType, &GeneralMotion::accType)
-			;
-
-		aris::core::class_<SphericalMotion::PoseType>("SPHERICAL_MOTION_POS_TYPE")
-			.textMethod([](SphericalMotion::PoseType* type)->std::string {
-			switch (*type) {
-			case SphericalMotion::PoseType::EULER123:return "EULER123";
-			case SphericalMotion::PoseType::EULER321:return "EULER321";
-			case SphericalMotion::PoseType::EULER313:return "EULER313";
-			case SphericalMotion::PoseType::QUATERNION:return "QUATERNION";
-			case SphericalMotion::PoseType::POSE_MATRIX:return "POSE_MATRIX";
-			default:return "EULER123";
-			}
-				}, [](SphericalMotion::PoseType* type, std::string_view name)->void {
-					if (name == "EULER123")*type = SphericalMotion::PoseType::EULER123;
-					if (name == "EULER321")*type = SphericalMotion::PoseType::EULER321;
-					if (name == "EULER313")*type = SphericalMotion::PoseType::EULER313;
-					if (name == "QUATERNION")*type = SphericalMotion::PoseType::QUATERNION;
-					if (name == "POSE_MATRIX")*type = SphericalMotion::PoseType::POSE_MATRIX;
-
-				})
 			;
 
 		aris::core::class_<SphericalMotion>("SphericalMotion")
 			.inherit<aris::dynamic::MotionBase>()
-			.prop("pose_type", &SphericalMotion::setPoseType, &SphericalMotion::poseType)
 			;
 
 		aris::core::class_<PointMotion>("PointMotion")
@@ -1352,7 +1034,7 @@ namespace aris::dynamic{
 
 		aris::core::class_<XyztMotion>("XyztMotion")
 			.inherit<aris::dynamic::MotionBase>()
-			.prop("rotate_range", &XyztMotion::setRotateRange, &XyztMotion::rotateRange)
+			//.prop("rotate_range", &XyztMotion::setRotateRange, &XyztMotion::rotateRange)
 			;
 
 		aris::core::class_<PlanarMotion>("PlanarMotion")

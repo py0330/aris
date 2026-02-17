@@ -9,33 +9,6 @@
 
 using namespace aris::dynamic;
 
-
-namespace aris::dynamic {
-	//auto s_eye_in_hand_calib(int n, const double* pq_obj_in_eye, const double* pq_tool_in_base, double* eye_in_tool) -> void {
-	//	std::cout << "aaa" << std::endl;
-	//}
-
-	//auto s_put_into_period(double value, double which_period, double period) -> double {
-	//	// 获取当前值的
-	//	auto ret = std::fmod(value, period);
-
-	//	// 整数周期 
-	//	auto t = std::trunc(which_period);
-	//	// 取余的周期
-	//	auto mod = which_period - t;
-
-	//	while (ret > (mod + 0.5) * period) ret -= period;
-	//	while (ret < (mod - 0.5) * period) ret += period;
-
-	//	ret += t * period;
-
-
-	//	std::cout << "ccc" << std::endl;
-	//	return ret;
-	//}
-
-}
-
 void test_eye_in_hand(){
 	const double pe_eye_in_tool[6]{ 0.1,0.2,0.3,0.111,0.221,0.832 };
 	double pq_eye_in_tool[7];
@@ -280,10 +253,10 @@ void test_eye_to_hand3() {
 void test_kinematics(){
 	std::cout << std::endl << "-----------------test kinematics--------------------" << std::endl;
 
-	//test_eye_in_hand();
+	test_eye_in_hand();
 	//test_eye_in_hand2();
-	//test_eye_to_hand();
-	test_eye_to_hand3();
+	test_eye_to_hand();
+	//test_eye_to_hand3();
 
 	std::cout << "-----------------test kinematics finished-----------" << std::endl << std::endl;
 }
