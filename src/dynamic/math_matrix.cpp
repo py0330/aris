@@ -84,7 +84,7 @@ namespace aris::dynamic {
 		const double* CI, const double* ci0,
 		double* x, double* mem)->double
 	{
-		unsigned int l;
+		aris::Size l;
 		
 		const double* np = nullptr;
 
@@ -112,20 +112,20 @@ namespace aris::dynamic {
 
 		
 
-		int* A = reinterpret_cast<int*>(u_old + nCE + nCI);
-		int* A_old = A + nCE + nCI;
-		int* iai = A_old + nCE + nCI;
+		aris::Size* A = reinterpret_cast<aris::Size*>(u_old + nCE + nCI);
+		aris::Size* A_old = A + nCE + nCI;
+		aris::Size* iai = A_old + nCE + nCI;
 		bool* iaexcl = reinterpret_cast<bool*>(iai + nCE + nCI);
 
 		double f_value, psi, c1, c2, sum, ss, R_norm;
 		const double inf = std::numeric_limits<double>::has_infinity ? std::numeric_limits<double>::infinity() : 1.0E300;
 		double t, t1, t2;
 
-		unsigned int iq = 0, iter = 0;
+		aris::Size iq = 0, iter = 0;
 		/////////////////////////////// PART 1, compute unconstrained solution ////////////////
 		// compute trace of G //
 		c1 = 0.0;
-		for (int i = 0; i < nG; i++)
+		for (aris::Size i = 0; i < nG; i++)
 			c1 += G[at(i, i, G_t)];
 
 		// decompose the matrix G in the form L^T L and init J //
@@ -144,7 +144,7 @@ namespace aris::dynamic {
 
 		// c1 * c2 is an estimate for cond(G) //
 		c2 = 0.0;
-		for (int i = 0; i < nG; i++)
+		for (aris::Size i = 0; i < nG; i++)
 			c2 += J[at(i, i, J_t)];
 
 		// init R and R_norm //
@@ -163,7 +163,7 @@ namespace aris::dynamic {
 		dsp(1, nG, x);
 #endif
 
-		auto add_constraint = [](int nG, unsigned int &iq, double &R_norm, double *R, double* J, double* d)->bool {
+		auto add_constraint = [](aris::Size nG, aris::Size &iq, double &R_norm, double *R, double* J, double* d)->bool {
 #ifdef ARIS_DEBUG_QP
 			std::cout << "Add constraint " << iq << '/';
 #endif
@@ -171,7 +171,7 @@ namespace aris::dynamic {
 			// d[j] to zero.
 			// if it is already zero we don't have to do anything, except of
 			// decreasing j
-			for (int j = nG - 1; j >= iq + 1; j--){
+			for (aris::Size j = nG - 1; j >= iq + 1; j--){
 				// The Givens rotation is done with the matrix (cc cs, cs -cc).
 				// If cc is one, then element (j) of d is zero compared with element
 				// (j - 1). Hence we don't have to do anything.
@@ -200,7 +200,7 @@ namespace aris::dynamic {
 				}
 
 				double xny = ss / (1.0 + cc);
-				for (int k = 0; k < nG; k++){
+				for (aris::Size k = 0; k < nG; k++){
 					double t1 = J[at(k, j - 1, nG)];
 					double t2 = J[at(k, j, nG)];
 					J[at(k, j - 1, nG)] = t1 * cc + t2 * ss;
@@ -213,7 +213,7 @@ namespace aris::dynamic {
 			// To update R we have to put the iq components of the d vector
 			// into column iq - 1 of R
 			//
-			for (int i = 0; i < iq; i++)
+			for (aris::Size i = 0; i < iq; i++)
 				R[at(i, iq - 1, nG)] = d[i];
 #ifdef ARIS_DEBUG_QP
 			std::cout << iq << std::endl;
@@ -232,14 +232,14 @@ namespace aris::dynamic {
 			R_norm = std::max<double>(R_norm, std::abs(d[iq - 1]));
 			return true;
 		};
-		auto delete_constraint = [](int nG, int nCE, unsigned int &iq, int l, double *J, double *u, double *R, int* A)->void{
+		auto delete_constraint = [](aris::Size nG, aris::Size nCE, aris::Size &iq, aris::Size l, double *J, double *u, double *R, aris::Size* A)->void{
 #ifdef ARIS_DEBUG_QP
 			std::cout << "Delete constraint " << l << ' ' << iq;
 #endif
 			double cc, ss, h, xny, t1, t2;
 
 			// Find the index qq for active constraint l to be removed //
-			int qq = std::find(A + nCE, A + iq, l) - A;
+			aris::Size qq = static_cast<aris::Size>(std::find(A + nCE, A + iq, l) - A);
 			if (qq == iq)
 			{
 				std::ostringstream os;
@@ -248,11 +248,11 @@ namespace aris::dynamic {
 			}
 
 			// remove the constraint from the active set and the duals //
-			for (int i = qq; i < iq - 1; i++)
+			for (aris::Size i = qq; i < iq - 1; i++)
 			{
 				A[i] = A[i + 1];
 				u[i] = u[i + 1];
-				for (int j = 0; j < nG; j++)
+				for (aris::Size j = 0; j < nG; j++)
 					R[at(j, i, nG)] = R[at(j, i + 1, nG)];
 			}
 
@@ -260,7 +260,7 @@ namespace aris::dynamic {
 			u[iq - 1] = u[iq];
 			A[iq] = 0;
 			u[iq] = 0.0;
-			for (int j = 0; j < iq; j++)
+			for (aris::Size j = 0; j < iq; j++)
 				R[at(j, iq - 1, nG)] = 0.0;
 
 			// constraint has been fully removed //
@@ -272,7 +272,7 @@ namespace aris::dynamic {
 			if (iq == 0)
 				return;
 
-			for (int j = qq; j < iq; j++){
+			for (aris::Size j = qq; j < iq; j++){
 				cc = R[at(j, j, nG)];
 				ss = R[at(j + 1, j, nG)];
 				h = std::sqrt(cc * cc + ss * ss);
@@ -291,14 +291,14 @@ namespace aris::dynamic {
 					R[at(j, j, nG)] = h;
 
 				xny = ss / (1.0 + cc);
-				for (int k = j + 1; k < iq; k++)
+				for (aris::Size k = j + 1; k < iq; k++)
 				{
 					t1 = R[at(j, k, nG)];
 					t2 = R[at(j + 1, k, nG)];
 					R[at(j, k, nG)] = t1 * cc + t2 * ss;
 					R[at(j + 1, k, nG)] = xny * (t1 + R[at(j, k, nG)]) - t2;
 				}
-				for (int k = 0; k < nG; k++)
+				for (aris::Size k = 0; k < nG; k++)
 				{
 					t1 = J[at(k, j, nG)];
 					t2 = J[at(k, j + 1, nG)];
@@ -309,7 +309,7 @@ namespace aris::dynamic {
 		};
 
 		/////////////////////////////// PART 2, add equality constraints to the working set A ////////////////
-		for (int i = 0; i < nCE; i++){
+		for (aris::Size i = 0; i < nCE; i++){
 			auto np = CE + at(i, 0, nG);
 			auto np_t = CE_t;
 
@@ -350,9 +350,9 @@ namespace aris::dynamic {
 
 			// compute the new solution value //
 			f_value += 0.5 * (t2 * t2) * s_vv(nG, z, np);
-			A[i] = -i - 1;
+			A[i] = -1 - i;
 
-			if (!add_constraint(nG, iq, R_norm, R, J, d)){
+			if (!add_constraint((aris::Size)nG, iq, R_norm, R, J, d)){
 				// Equality constraints are linearly dependent
 				throw std::runtime_error("Constraints are linearly dependent");
 				return f_value;
@@ -361,7 +361,7 @@ namespace aris::dynamic {
 
 		/////////////////////////////// PART 3, add inequality constraints to the working set A ////////////////
 		// set iai = K \ A //
-		for (int i = 0; i < nCI; i++)
+		for (aris::Size i = 0; i < nCI; i++)
 			iai[i] = i;
 
 #ifdef ARIS_DEBUG_QP
@@ -374,19 +374,19 @@ namespace aris::dynamic {
 		dsp(1, nG, x);
 #endif
 		// step 1: choose a violated constraint //
-		for (int i = nCE; i < iq; i++){
+		for (aris::Size i = nCE; i < iq; i++){
 			iai[A[i]] = -1;
 		}
 
 		// compute s[x] = ci^T * x + ci0 for all elements of K \ A //
 		ss = 0.0;
 		psi = 0.0; // this value will contain the sum of all infeasibilities 
-		int ip = 0;    // ip will be the index of the chosen violated constraint 
+		aris::Size ip = 0;    // ip will be the index of the chosen violated constraint 
 		
 		s_vc(nCI, ci0, s);
 		s_mms(nCI, 1, nG, CI, x, s);
 		
-		for (int i = 0; i < nCI; i++){
+		for (aris::Size i = 0; i < nCI; i++){
 			iaexcl[i] = true;
 			psi += std::min(s[i], sum);
 		}
@@ -406,7 +406,7 @@ namespace aris::dynamic {
 		std::copy_n(x, nG, x_old);
 
 	l2: // Step 2: check for feasibility and determine a new S-pair //
-		for (int i = 0; i < nCI; i++){
+		for (aris::Size i = 0; i < nCI; i++){
 			if (s[i] < ss && iai[i] != -1 && iaexcl[i]){
 				ss = s[i];
 				ip = i;
@@ -462,7 +462,7 @@ namespace aris::dynamic {
 		// Compute t1: partial step length (maximum step in dual space without violating dual feasibility //
 		t1 = inf; // +inf //
 		// find the index l s.t. it reaches the minimum of u+[x] / r //
-		for (int k = nCE; k < iq; k++){
+		for (aris::Size k = nCE; k < iq; k++){
 			if (r[k] > 0.0){
 				if (u[k] / r[k] < t1){
 					t1 = u[k] / r[k];
@@ -496,7 +496,7 @@ namespace aris::dynamic {
 		// case (ii): step in dual space //
 		if (t2 >= inf){
 			// set u = u +  t * [-r 1] and drop constraint l from the active set A //
-			for (int k = 0; k < iq; k++)
+			for (aris::Size k = 0; k < iq; k++)
 				u[k] -= t * r[k];
 			u[iq] += t;
 			iai[l] = l;
@@ -555,14 +555,14 @@ namespace aris::dynamic {
 				std::cout << "iai:" << std::endl;
 				dsp(1, nCI+ nCE, iai);
 #endif
-				for (int i = 0; i < nCI; i++)
+				for (aris::Size i = 0; i < nCI; i++)
 					iai[i] = i;
-				for (int i = nCE; i < iq; i++){
+				for (aris::Size i = nCE; i < iq; i++){
 					A[i] = A_old[i];
 					u[i] = u_old[i];
 					iai[A[i]] = -1;
 				}
-				for (int i = 0; i < nG; i++)
+				for (aris::Size i = 0; i < nG; i++)
 					x[i] = x_old[i];
 				goto l2; // go to step 2 //
 			}

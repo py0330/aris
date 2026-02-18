@@ -289,7 +289,7 @@ namespace aris::core{
 		std::map<SOCKET_T, SocketRecvData> recv_data_;
 		std::list<SOCKET_T> recv_sockets_;
 
-		std::function<int(decltype(socket(AF_INET, SOCK_STREAM, 0)), aris::core::Msg &)> onReceivedMsg;
+		std::function<int(SOCKET_T, aris::core::Msg &)> onReceivedMsg;
 		std::function<int(SocketMultiIo *, const char *data, int size)> onReceivedData;
 		std::function<int(SocketMultiIo *, const char *, int)> onReceivedConnection;
 		std::function<int(SocketMultiIo *)> onLoseConnection;

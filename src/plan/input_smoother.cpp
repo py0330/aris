@@ -345,7 +345,7 @@ namespace aris::plan {
 		return imp_->input_size_;
 	}
 	auto InputInterpolator::setPoolSize(aris::Size size) -> void {
-		imp_->look_head_size_ = size;
+		imp_->look_head_size_ = static_cast<int>(size);
 	}
 	auto InputInterpolator::poolSize() -> aris::Size {
 		return imp_->look_head_size_;

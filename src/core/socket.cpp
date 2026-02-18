@@ -85,7 +85,7 @@ namespace aris::core{
 		for (; result < size; ){
 			int ret = recv(s, data + result, size - result, 0);
 			if (ret <= 0){
-				aris_close(s);
+				aris_close(SOCKET_T(s));
 				result = ret;
 				break;
 			}
@@ -281,11 +281,11 @@ namespace aris::core{
 			// 需要用close_lck 来确保本段代码不会被stop中断 //
 			std::unique_lock<std::recursive_mutex> close_lck(close_mutex_, std::defer_lock);
 			if (!close_lck.try_lock()){
-				aris_close(recv_socket_);
+				aris_close(SOCKET_T(recv_socket_));
 			}
 			else{
 				shutdown(recv_socket_, 2);
-				aris_close(recv_socket_);
+				aris_close(SOCKET_T(recv_socket_));
 				
 				std::unique_lock<std::recursive_mutex> state_lck(state_mutex_);
 				state_ = State::IDLE;
@@ -315,7 +315,7 @@ namespace aris::core{
 				
 				std::unique_lock<std::recursive_mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock()){
-					aris_close(imp->lisn_socket_);
+					aris_close(SOCKET_T(imp->lisn_socket_));
 					imp->state_ = State::IDLE;
 					imp->accept_thread_.detach();
 					return;
@@ -334,7 +334,7 @@ namespace aris::core{
 				if (res <= 0){
 					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED, res);
 					shutdown(imp->recv_socket_, 2);
-					aris_close(imp->recv_socket_);
+					aris_close(SOCKET_T(imp->recv_socket_));
 					continue;
 				}
 
@@ -346,7 +346,7 @@ namespace aris::core{
 				catch (std::exception &){
 					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_INVALID_KEY);
 					shutdown(imp->recv_socket_, 2);
-					aris_close(imp->recv_socket_);
+					aris_close(SOCKET_T(imp->recv_socket_));
 					continue;
 				}
 				server_key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -372,12 +372,12 @@ namespace aris::core{
 					"Connection: Upgrade\r\n"
 					"Sec-WebSocket-Accept: " + ret_hey + std::string("\r\n\r\n");
 
-				auto ret = aris_send(imp->recv_socket_, shake_hand.c_str(), static_cast<int>(shake_hand.size()), 0);
+				auto ret = aris_send(SOCKET_T(imp->recv_socket_), shake_hand.c_str(), static_cast<int>(shake_hand.size()), 0);
 				
 				if (ret == -1){
 					ARIS_LOG(WEBSOCKET_SHAKE_HAND_FAILED_LOOSE_CONNECTION);
 					shutdown(imp->recv_socket_, 2);
-					aris_close(imp->recv_socket_);
+					aris_close(SOCKET_T(imp->recv_socket_));
 					continue;
 				};
 			}
@@ -386,7 +386,7 @@ namespace aris::core{
 		}
 		
 		shutdown(imp->lisn_socket_, 2);
-		aris_close(imp->lisn_socket_);
+		aris_close(SOCKET_T(imp->lisn_socket_));
 
 		// 否则,开始开启数据线程 //
 		if (imp->onReceivedConnection)imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
@@ -447,7 +447,7 @@ namespace aris::core{
 				char data[1024];
 				int ret = recv(imp->recv_socket_, data, 1024, 0);
 				if (ret <= 0) {
-					aris_close(imp->recv_socket_);
+					aris_close(SOCKET_T(imp->recv_socket_));
 					imp->lose_tcp(); return;
 				}
 				if (ret > 0 && imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
@@ -629,7 +629,7 @@ namespace aris::core{
 			break;
 		case State::WAITING_FOR_CONNECTION:
 			shutdown(imp_->lisn_socket_, 2);
-			aris_close(imp_->lisn_socket_);
+			aris_close(SOCKET_T(imp_->lisn_socket_));
 			while (imp_->accept_thread_.joinable())
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			break;
@@ -643,7 +643,7 @@ namespace aris::core{
 				break;
 			case Type::UDP:
 			case Type::UDP_RAW:
-				if (aris_close(imp_->recv_socket_) < 0) ARIS_LOG(SOCKET_SHUT_CLOSE_ERROR, errno);
+				if (aris_close(SOCKET_T(imp_->recv_socket_)) < 0) ARIS_LOG(SOCKET_SHUT_CLOSE_ERROR, errno);
 				break;
 			}
 
@@ -746,7 +746,7 @@ namespace aris::core{
 		// 设置socketopt选项,使得地址在程序结束后立即可用 //
 		int nvalue = 1;
 		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0) {
-			aris_close(imp_->lisn_socket_);
+			aris_close(SOCKET_T(imp_->lisn_socket_));
 			THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
 		}
 			
@@ -760,14 +760,14 @@ namespace aris::core{
 #ifdef WIN32
 			int err = WSAGetLastError();
 #endif
-			aris_close(imp_->lisn_socket_);
+			aris_close(SOCKET_T(imp_->lisn_socket_));
 			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
 		if (connectType() == Type::TCP || connectType() == Type::TCP_RAW || connectType() == Type::WEB || connectType() == Type::WEB_RAW){
 			// 监听lisn_socket_描述符 //
 			if (listen(imp_->lisn_socket_, 5) == -1) {
-				aris_close(imp_->lisn_socket_);
+				aris_close(SOCKET_T(imp_->lisn_socket_));
 				THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
 			}
 
@@ -782,7 +782,7 @@ namespace aris::core{
 #ifdef WIN32
 			DWORD read_timeout = 10;
 			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0) {
-				aris_close(imp_->lisn_socket_);
+				aris_close(SOCKET_T(imp_->lisn_socket_));
 				THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
 			}
 #endif
@@ -889,7 +889,7 @@ namespace aris::core{
 #ifdef UNIX
 			if (fcntl(imp_->recv_socket_, F_SETFL, O_NONBLOCK) < 0) {
 #endif
-				aris_close(imp_->recv_socket_);
+				aris_close(SOCKET_T(imp_->recv_socket_));
 				THROW_FILE_LINE("Socket can't connect, because can't set time out\n");
 			}
 		}
@@ -915,11 +915,11 @@ namespace aris::core{
 					// connection pending
 					int ret = select(0, NULL, &setW, &setE, &time_out);
 					if (ret < 0){
-						aris_close(imp_->recv_socket_);
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
 					}
 					else if (ret == 0) {
-						aris_close(imp_->recv_socket_);
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						WSASetLastError(WSAETIMEDOUT);
 						THROW_FILE_LINE("Socket can't connect, because time out\n");
 					}
@@ -931,13 +931,13 @@ namespace aris::core{
 						// connection failed
 						int err = 0, err_size = sizeof(int);
 						getsockopt(imp_->recv_socket_, SOL_SOCKET, SO_ERROR, (char*) &err, &err_size);
-						aris_close(imp_->recv_socket_);
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						WSASetLastError(err);
 						THROW_FILE_LINE("Socket can't connect, because failed to FD_ISSET\n");
 					}
 				}
 				else {
-					aris_close(imp_->recv_socket_);
+					aris_close(SOCKET_T(imp_->recv_socket_));
 					THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 				}
 #endif
@@ -997,15 +997,15 @@ namespace aris::core{
 				time_out.tv_usec = static_cast<decltype(time_out.tv_usec)>((imp_->connect_time_out_ % 1000) * 1000);
 
 				#ifdef WIN32
-							if (WSAGetLastError() == WSAEWOULDBLOCK) {
-								// connection pending
-								int ret = select(0, NULL, &setW, &setE, &time_out);
-								if (ret < 0) {
-									aris_close(imp_->recv_socket_);
+				if (WSAGetLastError() == WSAEWOULDBLOCK) {
+					// connection pending
+					int ret = select(0, NULL, &setW, &setE, &time_out);
+					if (ret < 0) {
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						THROW_FILE_LINE("Socket can't connect, because failed to select\n");
 					}
 					else if (ret == 0) {
-						aris_close(imp_->recv_socket_);
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						WSASetLastError(WSAETIMEDOUT);
 						THROW_FILE_LINE("Socket can't connect, because time out\n");
 					}
@@ -1017,13 +1017,13 @@ namespace aris::core{
 						// connection failed
 						int err = 0, err_size = sizeof(int);
 						getsockopt(imp_->recv_socket_, SOL_SOCKET, SO_ERROR, (char*)&err, &err_size);
-						aris_close(imp_->recv_socket_);
+						aris_close(SOCKET_T(imp_->recv_socket_));
 						WSASetLastError(err);
 						THROW_FILE_LINE("Socket can't connect, because failed to FD_ISSET\n");
 					}
 				}
 				else {
-					aris_close(imp_->recv_socket_);
+					aris_close(SOCKET_T(imp_->recv_socket_));
 					THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 				}
 #endif
@@ -1087,7 +1087,7 @@ namespace aris::core{
 				"Sec-WebSocket-Version: 13\r\n"
 				"Sec-WebSocket-Key: w4v7O6xFTi36lq3RNcgctw==\r\n\r\n" };
 
-			if(aris_send(imp_->recv_socket_, handshake_text, static_cast<int>(std::strlen(handshake_text)), 0) == -1)
+			if(aris_send(SOCKET_T(imp_->recv_socket_), handshake_text, static_cast<int>(std::strlen(handshake_text)), 0) == -1)
 				THROW_FILE_LINE("Socket can't connect, web sock error 1\n");
 
 			char recv_data[1024]{ 0 };
@@ -1127,16 +1127,16 @@ namespace aris::core{
 		case State::WORKING:{
 			switch (imp_->type_){
 			case Type::TCP:
-				if (aris_send(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
+				if (aris_send(SOCKET_T(imp_->recv_socket_), reinterpret_cast<const char *>(&data.header()), static_cast<int>(data.size() + sizeof(MsgHeader)), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
 			case Type::WEB:{
 				auto packed_data = imp_->is_server_ 
-					? pack_data_server(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader))
-					: pack_data_client(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader));
-				if (aris_send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
+					? pack_data_server(reinterpret_cast<const char*>(&data.header()), static_cast<int>(data.size() + sizeof(MsgHeader)))
+					: pack_data_client(reinterpret_cast<const char*>(&data.header()), static_cast<int>(data.size() + sizeof(MsgHeader)));
+				if (aris_send(SOCKET_T(imp_->recv_socket_), packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
@@ -1173,7 +1173,7 @@ namespace aris::core{
 		case State::WORKING:{
 			switch (imp_->type_){
 			case Type::TCP_RAW: {
-				if (aris_send(imp_->recv_socket_, data, size, 0) == -1)
+				if (aris_send(SOCKET_T(imp_->recv_socket_), data, size, 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
@@ -1181,7 +1181,7 @@ namespace aris::core{
 			}
 			case Type::WEB_RAW:{
 				auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
-				if (aris_send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
+				if (aris_send(SOCKET_T(imp_->recv_socket_), packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;

@@ -26,7 +26,7 @@
 
 int main(int argc, char *argv[]){
 	
-	//test_matrix();
+	test_matrix();
 	//test_poly();
 	//test_interval();
 	//test_optimization();

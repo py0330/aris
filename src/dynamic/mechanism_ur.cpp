@@ -686,7 +686,7 @@ namespace aris::dynamic{
 
 			// calib eye in hand //
 			std::vector<double> mem(16 * n * n);
-			s_eye_in_hand_calib(n, pq_obj_in_eye, pq_tool_in_base.data(), pq_eye_in_tool, mem.data());
+			s_eye_in_hand_calib((int)n, pq_obj_in_eye, pq_tool_in_base.data(), pq_eye_in_tool, mem.data());
 
 			// compute obj in base at each point //
 			std::vector<double> pq_obj_in_base(n * 7);

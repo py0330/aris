@@ -209,7 +209,7 @@ namespace aris::dynamic{
 				double cm[6][6], vs[6];
 
 				s_inv_tv(*p.pm(), p.vs(), vs);
-				s_cmf(vs, *cm);
+			 s_cmf(vs, *cm);
 				s_mm(imp_->m_, 6, 6, D + at(0, row, imp_->dyn_m_), imp_->dyn_m_, *cm, 6, B + at(0, row, imp_->dyn_m_), imp_->dyn_m_);
 
 				row += 6;
@@ -380,7 +380,7 @@ namespace aris::dynamic{
 
 				// make actual fce //
 				fce[j].push_back(0.0);
-				for (int k = 0; k < filter_size; ++k){
+				for (Size k = 0; k < filter_size; ++k){
 					fce[j].back() += mtx[i * line_num * filter_size + k * line_num + j * mot_data_num + fce_at] / filter_size * torque_constant[j];
 				}
 			}
@@ -416,8 +416,8 @@ namespace aris::dynamic{
 		std::vector<aris::Size> p(num * m());
 
 		Size rows{ 0 }, cols{ n() };
-		for (int i = 0; i < num; ++i){
-			for (int j = 0; j < model()->motionPool().size(); ++j){
+		for (Size i = 0; i < num; ++i) {
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				this->model()->motionPool()[j].setP(&pos[j][i]);
 				this->model()->motionPool()[j].setV(&vel[j][i]);
 				this->model()->motionPool()[j].setA(&acc[j][i]);
@@ -427,12 +427,12 @@ namespace aris::dynamic{
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < model()->motionPool().size(); ++j){
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				this->model()->motionPool()[j].setF(&fce[j][i]);
 			}
 			this->clb();
 
-			for (int j = 0; j < model()->motionPool().size(); ++j){
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				// 考虑速度死区 //
 				if (std::abs(this->model()->motionPool()[j].mv()) < velocityDeadZone()[j])continue;
 
@@ -507,8 +507,8 @@ namespace aris::dynamic{
 		std::vector<aris::Size> p(num * m());
 
 		Size rows{ 0 }, cols{ n() };
-		for (int i = 0; i < num; ++i) {
-			for (int j = 0; j < model()->motionPool().size(); ++j) {
+		for (Size i = 0; i < num; ++i) {
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				this->model()->motionPool()[j].setP(&pos[j][i]);
 				this->model()->motionPool()[j].setV(&vel[j][i]);
 				this->model()->motionPool()[j].setA(&acc[j][i]);
@@ -518,12 +518,12 @@ namespace aris::dynamic{
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < model()->motionPool().size(); ++j) {
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				this->model()->motionPool()[j].setF(&fce[j][i]);
 			}
 			this->clb();
 
-			for (int j = 0; j < model()->motionPool().size(); ++j) {
+			for (Size j = 0; j < model()->motionPool().size(); ++j) {
 				// 考虑速度死区 //
 				if (std::abs(this->model()->motionPool()[j].mv()) < velocityDeadZone()[j])continue;
 
@@ -602,8 +602,8 @@ namespace aris::dynamic{
 		std::vector<std::vector<double> > f(model()->motionPool().size(), std::vector<double>(num));
 		std::vector<std::vector<double> > ff(model()->motionPool().size(), std::vector<double>(num));
 		std::vector<std::vector<double> > fd(model()->motionPool().size(), std::vector<double>(num));
-		for (int i = 0; i < num; ++i){
-			for (int j = 0; j < model()->motionPool().size(); ++j){
+		for (Size i = 0; i < num; ++i){
+			for (Size j = 0; j < model()->motionPool().size(); ++j){
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
 				this->model()->motionPool()[j].setMa(acc[j][i]);
@@ -613,7 +613,7 @@ namespace aris::dynamic{
 			this->model()->solverPool().at(1).kinVel();
 			this->model()->solverPool().at(2).dynAccAndFce();
 
-			for (int j = 0; j < model()->motionPool().size(); ++j)	{
+			for (Size j = 0; j < model()->motionPool().size(); ++j)	{
 				f[j][i] = this->model()->motionPool()[j].mf();
 			}
 		}
@@ -621,21 +621,20 @@ namespace aris::dynamic{
 		
 
 
-
 		std::cout << "dynamic finished, now output results" << std::endl;
 
 		std::filesystem::create_directories(imp_->verify_result_path);
 
-		for (int i = 0; i<model()->motionPool().size(); ++i){
+		for (Size i = 0; i<model()->motionPool().size(); ++i){
 			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
 
-			std::snprintf(posn, sizeof(posn), (imp_->verify_result_path + "/pos%d.txt").c_str(), i);
-			std::snprintf(veln, sizeof(veln), (imp_->verify_result_path + "/vel%d.txt").c_str(), i);
-			std::snprintf(accn, sizeof(accn), (imp_->verify_result_path + "/acc%d.txt").c_str(), i);
-			std::snprintf(fcen, sizeof(fcen), (imp_->verify_result_path + "/fce%d.txt").c_str(), i);
-			std::snprintf(fn, sizeof(fn), (imp_->verify_result_path + "/f%d.txt").c_str(), i);
-			std::snprintf(ffn, sizeof(ffn), (imp_->verify_result_path + "/ff%d.txt").c_str(), i);
-			std::snprintf(fdn, sizeof(fdn), (imp_->verify_result_path + "/fd%d.txt").c_str(), i);
+			std::snprintf(posn, sizeof(posn), (imp_->verify_result_path + "/pos%zu.txt").c_str(), i);
+			std::snprintf(veln, sizeof(veln), (imp_->verify_result_path + "/vel%zu.txt").c_str(), i);
+			std::snprintf(accn, sizeof(accn), (imp_->verify_result_path + "/acc%zu.txt").c_str(), i);
+			std::snprintf(fcen, sizeof(fcen), (imp_->verify_result_path + "/fce%zu.txt").c_str(), i);
+			std::snprintf(fn, sizeof(fn), (imp_->verify_result_path + "/f%zu.txt").c_str(), i);
+			std::snprintf(ffn, sizeof(ffn), (imp_->verify_result_path + "/ff%zu.txt").c_str(), i);
+			std::snprintf(fdn, sizeof(fdn), (imp_->verify_result_path + "/fd%zu.txt").c_str(), i);
 
 			dlmwrite(num, 1, pos[i].data(), posn);
 			dlmwrite(num, 1, vel[i].data(), veln);
@@ -716,7 +715,7 @@ namespace aris::dynamic{
 				this->model()->motionPool()[j].setMf(fce[j][i]);
 			}
 			this->clb();
-			
+
 			std::copy_n(this->A(), m()*n(), A.data() + i * m() * n());
 			std::copy_n(this->b(), m(), b.data() + i * m());
 		}
@@ -772,7 +771,7 @@ namespace aris::dynamic{
 		std::vector<std::vector<double> > f(6, std::vector<double>(num));
 		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
 		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
-		for (int i = 0; i < num; ++i){
+		for (Size i = 0; i < num; ++i){
 			for (int j = 0; j < 6; ++j){
 				this->model()->motionPool()[j].setMp(pos[j][i]);
 				this->model()->motionPool()[j].setMv(vel[j][i]);
@@ -797,10 +796,6 @@ namespace aris::dynamic{
 
 
 		std::cout << "dynamic finished, now output results" << std::endl;
-
-
-		//dsp(1, 3, this->model()->motionPool()[0].frcCoe());
-
 
 
 		
@@ -1525,30 +1520,28 @@ namespace aris::dynamic{
 				gm->getMae(ae123, "123");
 				for (Size i = 0; i < 6; ++i)
 				{
-					std::string akima = gm->name() + "_" + axis_names[i] + "_akima";
+				std::string akima = gm->name() + "_" + axis_names[i] + "_akima";
 					std::string akima_func = "AKISPL(time,0," + akima + ")";
 					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
 					std::string func = pos == -1 ? akima_func : polynomial_func;
 
 					// 构建akima曲线 //
-					if (pos == -1)
-					{
+					if (pos == -1){
 						file << "data_element create spline &\r\n"
 							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
 							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gm) * 6 + i << "  &\r\n"
 							<< "    units = m &\r\n"
 							<< "    x = " << time.at(0);
-						for (auto p = time.begin() + 1; p < time.end(); ++p)
-						{
+						for (auto p = time.begin() + 1; p < time.end(); ++p){
 							file << "," << *p;
 						}
 						file << "    y = " << gm_akima.at(gm->id()).at(0).at(i);
-						for (auto p = gm_akima.at(gm->id()).begin() + 1; p < gm_akima.at(gm->id()).end(); ++p)
-						{
+						for (auto p = gm_akima.at(gm->id()).begin() + 1; p < gm_akima.at(gm->id()).end(); ++p){
 							file << "," << p->at(i);
 						}
 						file << " \r\n!\r\n";
 					}
+
 					file << "variable modify  &\r\n"
 						<< "	variable_name = ." << model_name << "." << gm->name() << "." << axis_names[i] << "_type  &\r\n"
 						<< "	integer_value = 1 \r\n"
@@ -1599,25 +1592,24 @@ namespace aris::dynamic{
 				double mv[6]{ gmp->v()[0],gmp->v()[1],gmp->v()[2],0,0,0 };
 				double ma[6]{ gmp->a()[0],gmp->a()[1],gmp->a()[2],0,0,0 };
 
-				for (Size i = 0; i < 6; ++i)
-				{
+				for (Size i = 0; i < 6; ++i){
 					std::string akima = gmp->name() + "_" + axis_names[i] + "_akima";
 					std::string akima_func = "AKISPL(time,0," + akima + ")";
 					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << mp[i] << " + " << mv[i] << " * time + " << ma[i] * 0.5 << " * time * time").str();
 					std::string func = pos == -1 ? akima_func : polynomial_func;
 
 					// 构建akima曲线 //
-					if (pos == -1){
+					if (pos == -1) {
 						file << "data_element create spline &\r\n"
 							<< "    spline_name = ." << model_name + "." + akima + " &\r\n"
 							<< "    adams_id = " << model()->motionPool().size() + adamsID(*gmp) * 6 + i << "  &\r\n"
 							<< "    units = m &\r\n"
 							<< "    x = " << time.at(0);
-						for (auto p = time.begin() + 1; p < time.end(); ++p){
+						for (auto p = time.begin() + 1; p < time.end(); ++p) {
 							file << "," << *p;
 						}
 						file << "    y = " << gm_akima.at(gmp->id()).at(0).at(i);
-						for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p){
+						for (auto p = gm_akima.at(gmp->id()).begin() + 1; p < gm_akima.at(gmp->id()).end(); ++p) {
 							file << "," << p->at(i);
 						}
 						file << " \r\n!\r\n";
@@ -1919,6 +1911,7 @@ namespace aris::dynamic{
 
 		//	//for (auto &t : imp_->time_)ss << t << std::endl;
 		//};
+
 		
 		aris::core::class_<SimResult::TimeResult>("TimeResult")
 			;

@@ -1,4 +1,4 @@
-#include <filesystem>
+﻿#include <filesystem>
 #include <random>
 #include <chrono>
 #include <algorithm>
@@ -11,8 +11,7 @@
 #include "aris/ext/json.hpp"
 #include "aris/ext/fifo_map.hpp"
 
-namespace aris::server
-{
+namespace aris::server{
 	using Matrix = aris::core::Matrix;
 
 	template <typename TP>
