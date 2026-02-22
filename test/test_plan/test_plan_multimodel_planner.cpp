@@ -337,6 +337,8 @@ auto test_multimodel_async_planner_two_arm() -> void {
 	multi_model.subModels()[1].setInputPos(joints1);
 	multi_model.subForwardKinematics(sub_num, sub_id);
 
+	std::cout << aris::core::toXmlString(multi_model) << std::endl;
+
 	// 构造规划器 //
 	MultimodelPlanner mmp;
 	mmp.setModel(multi_model);
@@ -363,7 +365,15 @@ auto test_multimodel_async_planner_two_arm() -> void {
 		double j[3]{ 1000,1000,1000 };
 		double z[3]{ 0,0,0 };
 
-		std::vector<std::pair<std::string, std::string>> tw{ std::pair<std::string, std::string>({ std::string(""),std::string("") }), std::pair<std::string, std::string>({ std::string(""),std::string("") }) };
+		//std::vector<std::pair<std::string, std::string>> tw{ 
+		//	std::pair<std::string, std::string>({ std::string(""),std::string("") }), 
+		//	std::pair<std::string, std::string>({ std::string(""),std::string("") }) 
+		//};
+		std::vector<std::pair<std::string, std::string>> tw{ 
+			std::pair<std::string, std::string>({ std::string("RightArm.L7.tool0"),std::string("RightArm.ground.wobj0") }),
+			std::pair<std::string, std::string>({ std::string(""),std::string("") })
+		};
+		//std::vector<std::pair<std::string, std::string>> tw{ std::pair<std::string, std::string>({ std::string("LeftArm.L7.tool0"),std::string("LeftArm.ground.wobj0") }), std::pair<std::string, std::string>({ std::string(""),std::string("") }) };
 		auto id = mmp.insertLinePos(tw, ee2, v, a, j, z);
 		id = mmp.insertLinePos(tw, ee1, v, a, j, z);
 		id = mmp.insertLinePos(tw, ee2, v, a, j, z);

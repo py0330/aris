@@ -67,7 +67,7 @@ namespace aris::plan{
 		auto setSubModelId(std::vector<aris::Size> id_list) -> void;
 		auto subModelId() -> const std::vector<aris::Size> &;
 
-		auto eePosTypes()const -> const std::vector<aris::dynamic::PosType>&;
+		auto outputPosTypes()const -> const std::vector<aris::dynamic::PosType>&;
 		auto inputSize() -> int;
 
 		auto setMaxPos(aris::core::Matrix pos) -> void;

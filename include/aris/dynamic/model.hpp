@@ -238,49 +238,41 @@ namespace aris::dynamic{
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
 		// EE types //
-		auto virtual eeSize()const noexcept->aris::Size override;
-		auto virtual eePosTypes()const noexcept->const PosType* override;
-		auto virtual eeVelTypes()const noexcept->const VelType* override;
-		auto virtual eeAccTypes()const noexcept->const AccType* override;
-		auto virtual eeFceTypes()const noexcept->const FceType* override;
+		auto virtual outputSize()const noexcept->aris::Size override;
+		auto virtual outputPosTypes()const noexcept->const PosType* override;
+		auto virtual outputVelTypes()const noexcept->const VelType* override;
+		auto virtual outputAccTypes()const noexcept->const AccType* override;
+		auto virtual outputFceTypes()const noexcept->const FceType* override;
 
-		auto virtual motSize()const noexcept->aris::Size override;
-		auto virtual motPosTypes()const noexcept->const PosType* override;
-		auto virtual motVelTypes()const noexcept->const VelType* override;
-		auto virtual motAccTypes()const noexcept->const AccType* override;
-		auto virtual motFceTypes()const noexcept->const FceType* override;
+		auto virtual inputSize()const noexcept->aris::Size override;
+		auto virtual inputPosTypes()const noexcept->const PosType* override;
+		auto virtual inputVelTypes()const noexcept->const VelType* override;
+		auto virtual inputAccTypes()const noexcept->const AccType* override;
+		auto virtual inputFceTypes()const noexcept->const FceType* override;
 
-		// input variables //
-		auto virtual inputPosSize()const noexcept->Size override;                         
+		// input variables //                       
 		auto virtual inputPosAt(Size idx)const noexcept->double override;                 
 		auto virtual setInputPosAt(Size idx, double p)noexcept->void override;
 
-		auto virtual inputVelSize()const noexcept->Size override;
 		auto virtual inputVelAt(Size idx)const noexcept->double override;
 		auto virtual setInputVelAt(Size idx, double v)noexcept->void override;
 
-		auto virtual inputAccSize()const noexcept->Size override;
 		auto virtual inputAccAt(Size idx)const noexcept->double override;
 		auto virtual setInputAccAt(Size idx, double a)noexcept->void override;
 
-		auto virtual inputFceSize()const noexcept->Size override;
 		auto virtual inputFceAt(Size idx)const noexcept->double override;
 		auto virtual setInputFceAt(Size idx, double f)noexcept->void override;
 
 		// output variables //
-		auto virtual outputPosSize()const noexcept->aris::Size override;
 		auto virtual outputPosAt(Size idx)const noexcept->const double* override;
 		auto virtual setOutputPosAt(Size idx, const double* pos)noexcept->void override;
 
-		auto virtual outputVelSize()const noexcept->aris::Size override;
 		auto virtual outputVelAt(Size idx)const noexcept->const double* override;
 		auto virtual setOutputVelAt(Size idx, const double* vel)noexcept->void override;
 
-		auto virtual outputAccSize()const noexcept->aris::Size override;
 		auto virtual outputAccAt(Size idx)const noexcept->const double* override;
 		auto virtual setOutputAccAt(Size idx, const double* acc)noexcept->void override;
 
-		auto virtual outputFceSize()const noexcept->aris::Size override;
 		auto virtual outputFceAt(Size idx)const noexcept->const double* override;
 		auto virtual setOutputFceAt(Size idx, const double* fce)noexcept->void override;
 		/// @}
@@ -403,8 +395,17 @@ namespace aris::dynamic{
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool override;
 
 		// EE types //
-		auto virtual eeSize()const noexcept->aris::Size override;
-		auto virtual eePosTypes()const noexcept->const PosType* override;
+		auto virtual outputSize()const noexcept->aris::Size override;
+		auto virtual outputPosTypes()const noexcept->const PosType* override;
+		auto virtual outputVelTypes()const noexcept->const VelType* override;
+		auto virtual outputAccTypes()const noexcept->const AccType* override;
+		auto virtual outputFceTypes()const noexcept->const FceType* override;
+
+		auto virtual inputSize()const noexcept->aris::Size override;
+		auto virtual inputPosTypes()const noexcept->const PosType* override;
+		auto virtual inputVelTypes()const noexcept->const VelType* override;
+		auto virtual inputAccTypes()const noexcept->const AccType* override;
+		auto virtual inputFceTypes()const noexcept->const FceType* override;
 
 		// inputs //
 		auto virtual inputPosSize()const noexcept->Size override;
@@ -462,42 +463,42 @@ namespace aris::dynamic{
 		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
 
 		// sub kin & dyn //
-		auto virtual subInverseKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subInverseKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].inverseKinematics())
 					return ret;
 			}
 			return 0;
 		}
-		auto virtual subForwardKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subForwardKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].forwardKinematics())
 					return ret;
 			}
 			return 0;
 		}
-		auto virtual subInverseKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subInverseKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].inverseKinematicsVel())
 					return ret;
 			}
 			return 0;
 		}
-		auto virtual subForwardKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subForwardKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].forwardKinematicsVel())
 					return ret;
 			}
 			return 0;
 		}
-		auto virtual subInverseDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subInverseDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].inverseDynamics())
 					return ret;
 			}
 			return 0;
 		}
-		auto virtual subForwardDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
+		auto subForwardDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
 			for (Size i = 0; i < sub_id_num; ++i) {
 				if (auto ret = subModels()[sub_id[i]].forwardDynamics())
 					return ret;
@@ -505,41 +506,57 @@ namespace aris::dynamic{
 			return 0;
 		}
 
-		auto virtual subEeSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		// additional sub input & output api
+		auto getSubOutputMotions(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
+		auto getSubInputMotions(Size submodel_num, const Size* submodel_ids, Motion** mots_out) -> void;
 
 		// sub input //
-		auto virtual subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
-		auto virtual setSubInputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+		auto subInputSize(Size sub_id_num, const Size* sub_id)const noexcept -> Size;
+		auto getSubInputPosTypes(Size submodel_num, const Size* submodel_ids, PosType* mot_pos_types_out) -> void;
+		auto getSubInputVelTypes(Size submodel_num, const Size* submodel_ids, VelType* mot_vel_types_out) -> void;
+		auto getSubInputAccTypes(Size submodel_num, const Size* submodel_ids, AccType* mot_acc_types_out) -> void;
+		auto getSubInputFceTypes(Size submodel_num, const Size* submodel_ids, FceType* mot_fce_types_out) -> void;
 
-		auto virtual subInputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubInputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
-		auto virtual setSubInputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+		auto subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto setSubInputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
 
-		auto virtual subInputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubInputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
-		auto virtual setSubInputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+		auto subInputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto setSubInputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
 
-		auto virtual subInputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubInputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
-		auto virtual setSubInputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+		auto subInputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto setSubInputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+
+		auto subInputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto setSubInputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
 
 		// sub output //
-		auto virtual subOutputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubOutputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
-		auto virtual setSubOutputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+		auto subOutputSize(Size sub_id_num, const Size* sub_id)const noexcept -> Size;
+		// the mag size is norm num of output, e.g. for 6D pos xyzabs, the mag size is 2
+		auto subOutputPosMagSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputPosTypes(Size submodel_num, const Size* submodel_ids, PosType* ee_pos_types_out) -> void;
+		auto getSubOutputVelTypes(Size submodel_num, const Size* submodel_ids, VelType* ee_vel_types_out) -> void;
+		auto getSubOutputAccTypes(Size submodel_num, const Size* submodel_ids, AccType* ee_acc_types_out) -> void;
+		auto getSubOutputFceTypes(Size submodel_num, const Size* submodel_ids, FceType* ee_fce_types_out) -> void;
+		
+		auto subOutputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto setSubOutputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
 
-		auto virtual subOutputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubOutputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
-		auto virtual setSubOutputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+		auto subOutputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto setSubOutputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
 
-		auto virtual subOutputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubOutputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
-		auto virtual setSubOutputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+		auto subOutputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto setSubOutputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
 
-		auto virtual subOutputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto virtual getSubOutputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
-		auto virtual setSubOutputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+		auto subOutputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto setSubOutputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
 
 		// 方便函数 //
 		auto updP()->void {
@@ -564,46 +581,7 @@ namespace aris::dynamic{
 		auto findMarker(std::string_view name)->aris::dynamic::Marker*;
 		auto findVariable(std::string_view name)->aris::dynamic::Variable*;
 
-		// to be removed
-		auto getEeTypes() -> std::vector<PosType>;
-		auto getMotionTypes(const std::vector<Size>& submodel_ids) -> std::vector<PosType>;
-		auto getMotionTypes() -> std::vector<PosType>;
 
-		// 获取对应子模型中的末端数量，使用【vector 或 原始内存】来表达
-		auto getSubEeSize(const std::vector<Size>& submodel_ids)->std::vector<Size>;
-		auto getSubEeSize(Size submodel_num, const Size* submodel_ids, Size* ee_num_out) -> void;
-
-		// 获取【某些】子模型中的末端种类，使用【vector 或 原始内存】来表达
-		auto getSubEeTypes(const std::vector<Size>& submodel_ids)->std::vector<PosType>;
-		auto getSubEeTypes(Size submodel_num, const Size *submodel_ids, PosType*ee_types_out) -> void;
-
-		// 获取【某些】子模型中的末端地址，使用【vector 或 原始内存】来表达
-		auto getSubEes(const std::vector<Size>& submodel_ids)->std::vector<MotionBase*>;
-		auto getSubEes(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
-		
-		auto getEes()->std::vector<MotionBase*>;
-		auto getEes(MotionBase**) -> void;
-
-		// 获取对应子模型中的电机数量
-		auto getMotionNumOfSubModels(const std::vector<Size>& submodel_ids)->std::vector<Size>;
-		auto getMotionNumOfSubModels(Size submodel_num, const Size* submodel_ids, Size* mot_num_out) -> void;
-		
-		// 获取【某些 or 全部】子模型中的电机种类，使用【vector 或 原始内存】来表达
-		
-		//auto getMotionTypes(Size submodel_num, const Size* submodel_ids, PosType* mot_types_out) -> void;
-		//auto getMotionTypes(PosType*) -> void;
-		
-		// 获取【某些 or 全部】子模型中的电机地址，使用【vector 或 原始内存】来表达
-		auto getMotions(const std::vector<Size>& submodel_ids)->std::vector<Motion*>;
-		auto getMotions()->std::vector<Motion*>;
-		auto getMotions(Size submodel_num, const Size* submodel_ids, Motion** mots_out) -> void;
-		auto getMotions(Motion**) -> void;
-		
-		// 获取【某些 or 全部】子模型中的电机 id，使用【vector 或 原始内存】来表达
-		auto getMotionIds(const std::vector<Size>& submodel_ids)->std::vector<Size>;
-		auto getMotionIds()->std::vector<Size>;
-		auto getMotionIds(Size submodel_num, const Size* submodel_ids, Size *mot_ids_out) -> void;
-		auto getMotionIds(Size* ids_out)->void;
 
 		virtual ~MultiModel();
 		explicit MultiModel();

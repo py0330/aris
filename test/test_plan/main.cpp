@@ -13,8 +13,8 @@
 int main(int argc, char *argv[]){
 	//test_move_follower();
 	//test_function();
-	test_input_smoother();
-	//test_multimodel_planner();
+	//test_input_smoother();
+	test_multimodel_planner();
 	//test_scurve();
 	//test_path();
 	//test_trajectory();

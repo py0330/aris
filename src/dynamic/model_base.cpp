@@ -17,6 +17,22 @@
 #include "aris/dynamic/math_matrix.hpp"
 
 namespace aris::dynamic{
+	auto ModelBase::inputPosSize()const noexcept->Size {
+		return inputSize();
+	}
+	auto ModelBase::inputVelSize()const noexcept->Size {
+		return inputSize();
+	}
+	auto ModelBase::inputAccSize()const noexcept->Size {
+		return inputSize();
+	}
+	auto ModelBase::inputFceSize()const noexcept->Size {
+		return inputSize();
+	}
+	auto ModelBase::inputPosMagSize()const noexcept->Size {
+		return s_pos_type_mag_size(inputSize(), inputPosTypes());
+	}
+	
 	auto ModelBase::getInputPos(double* pos)const noexcept->void {
 		for (int i = 0; i < inputPosSize(); ++i)
 			pos[i] = inputPosAt(i);
@@ -49,66 +65,82 @@ namespace aris::dynamic{
 		for (int i = 0; i < inputFceSize(); ++i) 
 			setInputFceAt(i, fce[i]);
 	}
+	
+	auto ModelBase::outputPosSize()const noexcept->Size {
+		return s_pos_type_size(outputSize(), outputPosTypes());
+	}
+	auto ModelBase::outputVelSize()const noexcept->Size {
+		return s_vel_type_size(outputSize(), outputVelTypes());
+	}
+	auto ModelBase::outputAccSize()const noexcept->Size {
+		return s_acc_type_size(outputSize(), outputAccTypes());
+	}
+	auto ModelBase::outputFceSize()const noexcept->Size {
+		return s_fce_type_size(outputSize(), outputFceTypes());
+	}
+	auto ModelBase::outputPosMagSize()const noexcept->Size {
+		return s_pos_type_mag_size(outputSize(), outputPosTypes());
+	}
 	auto ModelBase::getOutputPos(double* pos)const noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_pos_type_size(eePosTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_pos_type_size(outputPosTypes()[i]);
 			aris::dynamic::s_vc(s, outputPosAt(i), pos + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::setOutputPos(const double* pos)noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_pos_type_size(eePosTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_pos_type_size(outputPosTypes()[i]);
 			setOutputPosAt(i, pos + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::getOutputVel(double* vel)const noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_vel_type_size(eeVelTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_vel_type_size(outputVelTypes()[i]);
 			aris::dynamic::s_vc(s, outputVelAt(i), vel + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::setOutputVel(const double* vel)noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_vel_type_size(eeVelTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_vel_type_size(outputVelTypes()[i]);
 			setOutputVelAt(i, vel + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::getOutputAcc(double* acc)const noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_acc_type_size(eeAccTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_acc_type_size(outputAccTypes()[i]);
 			aris::dynamic::s_vc(s, outputAccAt(i), acc + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::setOutputAcc(const double* acc)noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_acc_type_size(eeAccTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_acc_type_size(outputAccTypes()[i]);
 			setOutputAccAt(i, acc + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::getOutputFce(double* fce)const noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_fce_type_size(eeFceTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_fce_type_size(outputFceTypes()[i]);
 			aris::dynamic::s_vc(s, outputFceAt(i), fce + idx);
 			idx += s;
 		}
 	}
 	auto ModelBase::setOutputFce(const double* fce)noexcept->void {
 		Size idx = 0;
-		for (int i = 0; i < eeSize(); ++i) {
-			auto s = s_fce_type_size(eeFceTypes()[i]);
+		for (int i = 0; i < outputSize(); ++i) {
+			auto s = s_fce_type_size(outputFceTypes()[i]);
 			setOutputFceAt(i, fce + idx);
 			idx += s;
 		}

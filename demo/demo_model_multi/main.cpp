@@ -42,8 +42,8 @@ auto MoveL::prepareNrt()->void{
 
 	auto model = dynamic_cast<aris::dynamic::MultiModel*>(modelBase());
 	// 根据解析获得以下参数：
-	param.ees = model->getEes();
-	param.ee_types = model->getEeTypes();
+	//param.ees = model->getEes();
+	//param.ee_types = model->getEeTypes();
 	param.sub_ee_num = { 1,1 };// 子模型里末端的个数，其实就是 submodel().generalMotionPool().size()
 	param.submodels = { &model->subModels()[0], &model->subModels()[1] };
 	param.ee_tools = { nullptr, model->tools()[0] }; // 外部轴没有tool，所以是nullptr
@@ -51,17 +51,14 @@ auto MoveL::prepareNrt()->void{
 	param.vels = { 0.1, 0.5 * aris::PI, 0.3 }; // 外部轴速度只有一个，机器人有角速度和线速度，两维
 	param.accs = { 0.1, 0.8 * aris::PI, 0.6 }; // 同上
 
+	//auto motion_ids = model->getMotionIds({2,0});
+	
+	//auto ees = model->getSubOutputMotions({2,0});
 
 
-	/// <summary>
-	/// /////////////////////////////////////////////////////////////////////////
-	/// </summary>
-	/// <returns></returns>
-
-	auto motion_ids = model->getMotionIds({2,0});
-	auto ees = model->getSubEes({2,0});
-	auto ee_types = model->getSubEeTypes({ 2,0 });
-	auto ee_nums = model->getSubEeSize({ 2,0 });
+	//std::vector<aris::dynamic::PosType> ee_types(model->subOutputSize(2,));
+	//auto ee_types = model->getSubOutputPosTypes({ 2,0 });
+	//auto ee_nums = model->getSubEeSize({ 2,0 });
 
 	double input_pos[7];
 	aris::Size pos_id = 0;
