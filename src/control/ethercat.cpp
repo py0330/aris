@@ -62,7 +62,7 @@ namespace aris::control{
 	auto PdoEntry::setBitSize(Size size)->void { imp_->bit_size_ = size; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
 	PdoEntry::~PdoEntry() = default;
-	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size){
+	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size):imp_(new Imp) {
 		imp_->index_ = index;
 		imp_->subindex_ = sub_index;
 		imp_->bit_size_ = bit_size;

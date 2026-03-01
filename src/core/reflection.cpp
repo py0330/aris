@@ -542,6 +542,12 @@ namespace aris::core{
 		aris::core::class_<std::uint64_t>("uint64")
 			.textMethod(u62s, u6fs);
 
+		// clang on windows has a bug that causes std::size_t's hash code to be the same as uint64_t's, so we have to use a workaround to avoid the conflict //	
+	#if defined(__clang__)
+		aris::core::class_<std::size_t>("size_t")
+			.textMethod([](std::size_t* v)->std::string { return std::to_string(*v); }, [](std::size_t* v, std::string_view str)->void { *v = std::strtoull(str.data(), nullptr, 0); });
+	#endif
+
 		aris::core::class_<float>("float")
 			.textMethod(f2s, ffs);
 

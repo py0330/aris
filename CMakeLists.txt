@@ -12,12 +12,27 @@ set(CMAKE_CXX_STANDARD 17)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
-if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}")
+include(GNUInstallDirs)
+
+# Choose a reasonable install prefix on macOS (prefer Homebrew prefix on Apple Silicon).
+if(APPLE)
+	if(EXISTS "/opt/homebrew")
+		set(DEFAULT_PREFIX "/opt/homebrew")
+	else()
+		set(DEFAULT_PREFIX "/usr/local")
+	endif()
+	if(NOT DEFINED CMAKE_INSTALL_PREFIX OR CMAKE_INSTALL_PREFIX STREQUAL "${CMAKE_SOURCE_DIR}/install" OR CMAKE_INSTALL_PREFIX STREQUAL "" OR CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+		set(CMAKE_INSTALL_PREFIX "${DEFAULT_PREFIX}/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix" FORCE)
+	endif()
+	# Use macOS rpath handling suitable for @rpath-based installs
+	set(CMAKE_MACOSX_RPATH ON)
+elseif(UNIX)
+	# default install prefix for generic UNIX
+	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix")
 	add_custom_target(uninstall rm -r /usr/aris)
-endif(UNIX)
+endif()
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}")
+	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix")
 endif(WIN32)
 
 ## set definitions to disable some warning ##

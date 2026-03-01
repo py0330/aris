@@ -17,6 +17,10 @@
 #include <sys/types.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #undef min
@@ -227,32 +231,38 @@ namespace aris::core{
 #endif
 
 #ifdef UNIX
-		int count = 0;
 		int nIndex = 0;
 		char path[TASK_NAME_LEN] = { 0 };
-		char cParam[100] = { 0 };
 		char *proName = path;
 
+#if defined(__APPLE__)
+		uint32_t size = TASK_NAME_LEN;
+		if (_NSGetExecutablePath(path, &size) != 0)
+		{
+			THROW_FILE_LINE("Current System Not Support retrieving executable path.");
+		}
+		nIndex = (int)strlen(path) - 1;
+#else
+		int count = 0;
+		char cParam[100] = { 0 };
 		pid_t pId = getpid();
 		std::snprintf(cParam, sizeof(cParam), "/proc/%d/exe", pId);
 		count = readlink(cParam, path, TASK_NAME_LEN);
 
 		if (count < 0 || count >= TASK_NAME_LEN)
 		{
-			THROW_FILE_LINE("Current System Not Surport Proc.\n");
+			THROW_FILE_LINE("Current System Not Support Proc.\n");
 		}
-		else
-		{
-			nIndex = count - 1;
+		nIndex = count - 1;
+#endif
 
-			for (; nIndex >= 0; nIndex--)
+		for (; nIndex >= 0; nIndex--)
+		{
+			if (path[nIndex] == '/')
 			{
-				if (path[nIndex] == '/')
-				{
-					nIndex++;
-					proName += nIndex;
-					break;
-				}
+				nIndex++;
+				proName += nIndex;
+				break;
 			}
 		}
 #endif
@@ -276,32 +286,38 @@ namespace aris::core{
 #endif
 
 #ifdef UNIX
-		int count = 0;
 		int nIndex = 0;
 		char path[TASK_NAME_LEN] = { 0 };
-		char cParam[100] = { 0 };
 		char* proName = path;
 
+#if defined(__APPLE__)
+		uint32_t size = TASK_NAME_LEN;
+		if (_NSGetExecutablePath(path, &size) != 0)
+		{
+			THROW_FILE_LINE("Current System Not Support retrieving executable path.");
+		}
+		nIndex = (int)strlen(path) - 1;
+#else
+		int count = 0;
+		char cParam[100] = { 0 };
 		pid_t pId = getpid();
 		std::snprintf(cParam, sizeof(cParam), "/proc/%d/exe", pId);
 		count = readlink(cParam, path, TASK_NAME_LEN);
 
 		if (count < 0 || count >= TASK_NAME_LEN)
 		{
-			THROW_FILE_LINE("Current System Not Surport Proc.\n");
+			THROW_FILE_LINE("Current System Not Support Proc.\n");
 		}
-		else
-		{
-			nIndex = count - 1;
+		nIndex = count - 1;
+#endif
 
-			for (; nIndex >= 0; nIndex--)
+		for (; nIndex >= 0; nIndex--)
+		{
+			if (path[nIndex] == '/')
 			{
-				if (path[nIndex] == '/')
-				{
-					nIndex++;
-					proName += nIndex;
-					break;
-				}
+				nIndex++;
+				proName += nIndex;
+				break;
 			}
 		}
 		return std::string(path, nIndex);
