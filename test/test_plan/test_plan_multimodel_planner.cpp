@@ -321,8 +321,6 @@ auto test_multimodel_async_planner_two_arm() -> void {
 		ee2[i + 3] *= aris::PI / 180.0;
 	}
 	
-
-
 	// 构造模型 //
 	aris::Size sub_num = 1;
 	aris::Size sub_id[1]{ 1 };
@@ -336,8 +334,6 @@ auto test_multimodel_async_planner_two_arm() -> void {
 
 	multi_model.subModels()[1].setInputPos(joints1);
 	multi_model.subForwardKinematics(sub_num, sub_id);
-
-	std::cout << aris::core::toXmlString(multi_model) << std::endl;
 
 	// 构造规划器 //
 	MultimodelPlanner mmp;
@@ -378,6 +374,9 @@ auto test_multimodel_async_planner_two_arm() -> void {
 		id = mmp.insertLinePos(tw, ee1, v, a, j, z);
 		id = mmp.insertLinePos(tw, ee2, v, a, j, z);
 	}
+
+	//aris::dynamic::dsp(1, 7, ee2);
+
 	//std::cout << aris::core::toJsonString(multi_model) << std::endl;
 
 	//for (int i = 0; i < PE_SIZE; ++i) {
@@ -408,6 +407,13 @@ auto test_multimodel_async_planner_two_arm() -> void {
 		//mmp.setTargetSpeedRatio(0.1);
 
 		m++;
+
+		
+		if (m < 100) {
+			std::cout << "count:" << m << std::endl;
+			aris::dynamic::dsp(1, 7, input_pos);
+		}
+			
 
 		vec.resize(m * multi_model.subInputPosSize(sub_num, sub_id), 0.0);
 		std::copy_n(input_pos, multi_model.subInputPosSize(sub_num, sub_id), vec.data() + multi_model.subInputPosSize(sub_num, sub_id) * (m - 1));

@@ -5,6 +5,9 @@
 #include"aris/plan/async_generator.hpp"
 #include"aris/plan/speed_regulator.hpp"
 
+#include "aris/core/error.hpp"
+#include "aris/core/etc.hpp"
+
 //#define DEBUG_ARIS_MMP
 
 #ifdef DEBUG_ARIS_MMP
@@ -12,7 +15,6 @@ std::vector<double> input_;
 #endif
 
 namespace aris::plan {
-
 
 	// 根据 tools 和 wobjs 计算反解前每个tools 和 wobjs的设置顺序，连接地面的最先设置，之后连接已经设置的part的再进行设置
 	// 
@@ -48,10 +50,10 @@ namespace aris::plan {
 				if (found < order + ee_size) {
 					auto found_part = std::find(parts, parts + part_size, &tools[*found]->fatherPart());
 					if (found_part >= parts + part_size)
-						return -2002;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED;
 
 					if (parts_setted[found_part - parts] > 0)
-						return -2001;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE;
 
 					parts_setted[found_part - parts] = 1;
 					std::swap(order[i], *found);
@@ -67,10 +69,10 @@ namespace aris::plan {
 				if (found < order + ee_size) {
 					auto found_part = std::find(parts, parts + part_size, &wobjs[*found]->fatherPart());
 					if (found_part >= parts + part_size)
-						return -2002;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED;
 
 					if (parts_setted[found_part - parts] > 0)
-						return -2001;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE;
 
 					parts_setted[found_part - parts] = 1;
 					std::swap(order[i], *found);
@@ -87,10 +89,10 @@ namespace aris::plan {
 				if (found < order + ee_size) {
 					auto found_part = std::find(parts, parts + part_size, &tools[*found]->fatherPart());
 					if (found_part >= parts + part_size)
-						return -2002;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED;
 
 					if (parts_setted[found_part - parts] > 0)
-						return -2001;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE;
 
 					parts_setted[found_part - parts] = 1;
 					std::swap(order[i], *found);
@@ -107,10 +109,10 @@ namespace aris::plan {
 				if (found < order + ee_size) {
 					auto found_part = std::find(parts, parts + part_size, &wobjs[*found]->fatherPart());
 					if (found_part >= parts + part_size)
-						return -2002;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED;
 
 					if (parts_setted[found_part - parts] > 0)
-						return -2001;
+						return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE;
 
 					parts_setted[found_part - parts] = 1;
 					std::swap(order[i], *found);
@@ -123,7 +125,7 @@ namespace aris::plan {
 				auto found_part_i = std::find(parts, parts + part_size, &tools[i]->fatherPart());
 				auto found_part_j = std::find(parts, parts + part_size, &wobjs[i]->fatherPart());
 				if (found_part_j >= parts + part_size || found_part_i >= parts + part_size){
-					return -2002;
+					return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED;
 				}
 				parts_setted[found_part_i - parts] = 1;
 				parts_setted[found_part_j - parts] = 1;
@@ -131,7 +133,7 @@ namespace aris::plan {
 			}
 
 			if (std::find(parts_setted, parts_setted + part_size, 0) < parts_setted + part_size) {
-				return -2001;
+				return ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE;
 			}
 		}
 
@@ -502,7 +504,7 @@ namespace aris::plan {
 
 				model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
 
-				int ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
+				auto ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
 				if (ik_ret)
 					return ik_ret;
 
@@ -623,9 +625,11 @@ namespace aris::plan {
 			// 如果坐标系有变化，重新插入 INIT //
 			if (tools != last_tool_ || wobjs != last_wobj_) {
 				std::vector<double> tw_init_pos(model_->subOutputPosSize(sub_id_list_.size(), sub_id_list_.data()));
-				tw_.selectTw(last_tool_.data(), last_wobj_.data());
+				if(tw_.selectTw(last_tool_.data(), last_wobj_.data()))
+					THROW_FILE_LINE("invalid last tool and wobj");
 				tw_.setTwPos(last_tw_pos_.data());
-				tw_.selectTw(tools.data(), wobjs.data());
+				if (tw_.selectTw(tools.data(), wobjs.data()))
+					THROW_FILE_LINE("invalid tool and wobj");
 				tw_.getTwPos(tw_init_pos.data());
 				
 				std::copy(tools.begin(), tools.end(), last_tool_.begin());
@@ -653,7 +657,6 @@ namespace aris::plan {
 			id_++;
 			return id_;
 		}
-
 		auto insCircle(TW& tool_wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 			// 获取坐标系 //
 			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
@@ -870,6 +873,19 @@ namespace aris::plan {
 	auto MultimodelPlanner::insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 		return imp_->insLine(tw, ee_pos, vel, acc, jerk, zone);
 	}
+	auto MultimodelPlanner::insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		auto tool_str_vec = aris::core::split(tools, ';');
+		auto wobj_str_vec = aris::core::split(wobjs, ';');
+
+		TW tw;
+		for (Size i = 0; i < std::max(tool_str_vec.size(), wobj_str_vec.size()); ++i) {
+			auto tool = i < tool_str_vec.size() ? aris::core::trimLR(tool_str_vec[i]) : std::string("");
+			auto wobj = i < wobj_str_vec.size() ? aris::core::trimLR(wobj_str_vec[i]) : std::string("");
+			tw.push_back(std::pair(tool, wobj));
+		}
+
+		return insertLinePos(tw, ee_pos, vel, acc, jerk, zone);
+	}
 
 	// 插入新的数据，并重规划 //
 	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
@@ -910,7 +926,6 @@ namespace aris::plan {
 	auto MultimodelPlanner::actualSpeedRatio() -> double {
 		return imp_->sr_.actualSpeedRatio();
 	}
-
 
 	////////////////// PART 3 RT operation ////////////////
 	auto MultimodelPlanner::getNextInput(double* p) -> std::int64_t {

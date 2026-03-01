@@ -57,7 +57,15 @@
 
 */
 
+
+// plan input smoother
+
+
+
+#define ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_SET_TWICE -2001
 #define ARIS_ERROR_PLAN_TOOL_WOBJ_PART_SET_TWICE      aris::core::LogLvl::kError, -2001, {"PART %s /'s pose has been set twice", "杆件 %s 的位姿被设置了两次"}
+
+#define ARIS_ERROR_CODE_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED -2002
 #define ARIS_ERROR_PLAN_TOOL_WOBJ_PART_UNRWCOGNIZED   aris::core::LogLvl::kError, -2002, {"PART unrecognized", "杆件不连接末端，不应被设置"}
 
 

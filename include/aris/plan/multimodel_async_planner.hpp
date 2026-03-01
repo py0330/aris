@@ -107,6 +107,7 @@ namespace aris::plan{
 
 		// 插入新的数据，并重规划 //
 		auto insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
 		// 插入新的数据，并重规划 //
 		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;

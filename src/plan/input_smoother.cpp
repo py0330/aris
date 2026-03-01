@@ -428,30 +428,30 @@ namespace aris::plan {
 			
 			Size mem_size = 0;
 			core::allocMem(mem_size, max_poss_, input_size_);
-			core::allocMem(mem_size, max_vels_, input_size_);
-			core::allocMem(mem_size, max_accs_, input_size_);
 			core::allocMem(mem_size, min_poss_, input_size_);
+			core::allocMem(mem_size, max_vels_, input_size_);
 			core::allocMem(mem_size, min_vels_, input_size_);
+			core::allocMem(mem_size, max_accs_, input_size_);
 			core::allocMem(mem_size, min_accs_, input_size_);
-			core::allocMem(mem_size, p1_back_, input_size_);
-			core::allocMem(mem_size, p2_back_, input_size_);
 			core::allocMem(mem_size, p1_, input_size_);
 			core::allocMem(mem_size, p2_, input_size_);
 			core::allocMem(mem_size, p3_, input_size_);
+			core::allocMem(mem_size, p1_back_, input_size_);
+			core::allocMem(mem_size, p2_back_, input_size_);
 
 			mem_.resize(mem_size, char(0));
 
 			max_poss_ = core::getMem(mem_.data(), max_poss_);
-			max_vels_ = core::getMem(mem_.data(), max_vels_);
-			max_accs_ = core::getMem(mem_.data(), max_accs_);
 			min_poss_ = core::getMem(mem_.data(), min_poss_);
+			max_vels_ = core::getMem(mem_.data(), max_vels_);
 			min_vels_ = core::getMem(mem_.data(), min_vels_);
+			max_accs_ = core::getMem(mem_.data(), max_accs_);
 			min_accs_ = core::getMem(mem_.data(), min_accs_);
-			p1_back_ = core::getMem(mem_.data(), p1_back_);
-			p2_back_ = core::getMem(mem_.data(), p2_back_);
 			p1_ = core::getMem(mem_.data(), p1_);
 			p2_ = core::getMem(mem_.data(), p2_);
 			p3_ = core::getMem(mem_.data(), p3_);
+			p1_back_ = core::getMem(mem_.data(), p1_back_);
+			p2_back_ = core::getMem(mem_.data(), p2_back_);
 
 			// 设置相关的值 //
 			if (!max_pos_mat_.empty())
@@ -469,30 +469,6 @@ namespace aris::plan {
 			
 			T_ = look_head_size_ * dt_;
 		};
-		
-		auto check_if_ok(const double* p1, const double* p2, const double* p3) -> int {
-			// here is condition //
-			for (int idx = 0; idx < input_size_; ++idx) {
-				double v2 = (p3[idx] - p2[idx]);
-				double v1 = (p2[idx] - p1[idx]);
-				double a = (v2 - v1);
-
-				if (v2 > max_vels_[idx] || v2 < min_vels_[idx] || a > max_accs_[idx] || a < min_accs_[idx]) {
-					return idx;
-				}
-			}
-			return input_size_;
-		};
-		auto inline check_if_ok_by_v(const double* v1, const double* v2) -> int {
-			// here is condition //
-			for (int idx = 0; idx < input_size_; ++idx) {
-				double a = (v2[idx] - v1[idx]);
-				if (v2[idx] > max_vels_[idx] || v2[idx] < min_vels_[idx] || a > max_accs_[idx] || a < min_accs_[idx]) {
-					return idx;
-				}
-			}
-			return input_size_;
-		};
 		auto test_next_input(double d2s) -> bool {
 			double s2 = s2_;
 			double s3 = s2 + (s2_ - s1_) + d2s * dt_ * dt_;
@@ -505,7 +481,6 @@ namespace aris::plan {
 			// p2 存储 p2
 			for (int i = 0; i < input_size_; ++i)
 				p1_[i] = p2_[i] - p1_[i];
-			
 
 			for (int i = 0; i < look_head_size_ + 1; ++i) {
 				// 判断是否成功 //
@@ -521,12 +496,12 @@ namespace aris::plan {
 				// p1 存储 v1
 				// p2 存储 v2
 				// p3 不变
-				for (int i = 0; i < input_size_; ++i) {
-					p2_[i] = p3_[i] - p2_[i];
+				for (int j = 0; j < input_size_; ++j) {
+					p2_[j] = p3_[j] - p2_[j];
 
 					// 检查速度及加速度是否超限 //
-					double a = (p2_[i] - p1_[i]);
-					if (p2_[i] > max_vels_[i] || p2_[i] < min_vels_[i] || a > max_accs_[i] || a < min_accs_[i]) {
+					double a = (p2_[j] - p1_[j]);
+					if (p2_[j] > max_vels_[j] || p2_[j] < min_vels_[j] || a > max_accs_[j] || a < min_accs_[j]) {
 						return false;
 					}
 				}

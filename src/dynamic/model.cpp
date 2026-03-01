@@ -555,13 +555,6 @@ namespace aris::dynamic{
 	Model::Model(Model&&)noexcept = default;
 	Model& Model::operator=(Model&&)noexcept = default;
 
-	auto trimLR(std::string_view input)->std::string {
-		std::string ret(input);
-		ret.erase(0, ret.find_first_not_of(" \t\n\r\f\v"));// trim l
-		ret.erase(ret.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
-		return ret;
-	}
-
 	struct MultiModel::Imp {
 		std::unique_ptr<aris::core::PointerArray<ModelBase>> models_;
 		std::vector<aris::dynamic::Marker*> tools_, wobjs_;
@@ -1263,7 +1256,7 @@ namespace aris::dynamic{
 		name = name.substr(name.find_first_of('.') + 1);
 
 		auto found_model = std::find_if(subModels().begin(), subModels().end(), [model_name](const auto& variable)->auto{
-			return trimLR(variable.name()) == trimLR(model_name);
+			return aris::core::trimLR(variable.name()) == aris::core::trimLR(model_name);
 		});
 
 		if (found_model == subModels().end()) 
@@ -1275,13 +1268,13 @@ namespace aris::dynamic{
 			auto marker_name = name.substr(0, name.find_first_of('.'));
 			
 			auto found_part = std::find_if(model->partPool().begin(), model->partPool().end(), [part_name](const auto& variable)->auto {
-				return trimLR(variable.name()) == trimLR(part_name);
+				return aris::core::trimLR(variable.name()) == aris::core::trimLR(part_name);
 				});
 
 			if (found_part == model->partPool().end()) return nullptr;
 
 			auto found_marker = std::find_if(found_part->markerPool().begin(), found_part->markerPool().end(), [marker_name](const auto& variable)->auto {
-				return trimLR(variable.name()) == trimLR(marker_name);
+				return aris::core::trimLR(variable.name()) == aris::core::trimLR(marker_name);
 				});
 
 			if (found_marker == found_part->markerPool().end()) return nullptr;
@@ -1304,14 +1297,14 @@ namespace aris::dynamic{
 		auto variable_name = name.substr(0, name.find_first_of('.'));
 
 		auto found_model = std::find_if(subModels().begin(), subModels().end(), [model_name](const auto& variable)->auto{
-			return trimLR(variable.name()) == trimLR(model_name);
+			return aris::core::trimLR(variable.name()) == aris::core::trimLR(model_name);
 		});
 
 		if (found_model == subModels().end() || !dynamic_cast<aris::dynamic::Model*>(&*found_model)) return nullptr;
 
 		auto model = dynamic_cast<aris::dynamic::Model*>(&*found_model);
 		auto found_variable = std::find_if(model->variablePool().begin(), model->variablePool().end(), [variable_name](const auto& variable)->auto{
-			return trimLR(variable.name()) == trimLR(variable_name);
+			return aris::core::trimLR(variable.name()) == aris::core::trimLR(variable_name);
 		});
 
 		if (found_variable == model->variablePool().end()) return nullptr;

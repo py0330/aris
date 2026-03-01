@@ -1231,7 +1231,7 @@ namespace aris::plan {
 	}
 
 	// make nodes //
-	auto make_node(aris::Size replan_num, Node* this_node, Node* last_node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
+	auto make_node(bool if_need_connect, Node* this_node, Node* last_node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
 		Node::NodeType node_type, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone
 	)->void {
 		
@@ -1285,32 +1285,32 @@ namespace aris::plan {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line3, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 2) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line2, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 1) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 
 				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 3) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 1) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 
 
@@ -1328,32 +1328,32 @@ namespace aris::plan {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Circle3, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 2) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Circle2, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 1) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, replan_num > 0);
+					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 
 				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 3) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 				else if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 1) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, replan_num > 0);
+					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 
 				break;
@@ -1537,7 +1537,7 @@ namespace aris::plan {
 
 				// 初始化最新的节点 //
 				ins_node.id_ = id;
-				make_node(replan_num, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+				make_node(replan_num > 0, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 
 				// 重规划 scurve
 				auto scurve_size = aris::dynamic::s_pos_type_mag_size(ee_pos_types_.size(), ee_pos_types_.data());
@@ -1546,7 +1546,7 @@ namespace aris::plan {
 				// 查看是否重规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。
 				if (replan_ret != 0) {
 					nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
-					make_node(0, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+					make_node(false, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 					replan_nodes((int)scurve_size, ee_pos_types_, std::prev(nodes_.end(), 2), std::prev(nodes_.end(), 1), nodes_.end());
 					std::prev(nodes_.end(), 2)->next_node_.exchange(&ins_node);
 					insert_success = true;
@@ -1901,7 +1901,7 @@ namespace aris::plan {
 		// 初始化节点 //
 		auto scurve_size = aris::dynamic::s_pos_type_mag_size(outputPosTypes().size(), outputPosTypes().data());
 		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
-		make_node(0, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
+		make_node(false, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 node 为 current_node_ 或 将此node设置为之前node的下一个值 //
