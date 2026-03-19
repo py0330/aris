@@ -113,6 +113,12 @@ namespace aris::dynamic {
 		//     当 mpFactor() = pi/180 时，周期 p 是 360 
 		auto setRotateRange(double range)noexcept->void;
 		auto rotateRange()const noexcept->double;
+
+		auto setMaxMp(double max_mp)noexcept -> void;
+		auto maxMp()const noexcept -> double;
+
+		auto setMinMp(double min_mp)noexcept -> void;
+		auto minMp()const noexcept -> double;
 		
 		auto mfDyn() const noexcept->double;
 		auto setMfDyn(double mf_dyn) noexcept->void;

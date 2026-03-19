@@ -128,6 +128,7 @@ namespace aris::dynamic{
 		Size component_axis_{ 2 };
 		double pitch_{ 0.0 };
 		double rotate_range_{ 0.0 };
+		double max_mp_{ std::numeric_limits<double>::max() }, min_mp_{ std::numeric_limits<double>::lowest() };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 
@@ -261,6 +262,10 @@ namespace aris::dynamic{
 	}
 	auto Motion::setRotateRange(double range)noexcept->void { imp_->rotate_range_ = range; }
 	auto Motion::rotateRange()const noexcept->double { return imp_->rotate_range_; }
+	auto Motion::setMaxMp(double max_mp)noexcept -> void { imp_->max_mp_ = max_mp; }
+	auto Motion::maxMp()const noexcept -> double { return imp_->max_mp_; }
+	auto Motion::setMinMp(double min_mp)noexcept -> void { imp_->min_mp_ = min_mp; }
+	auto Motion::minMp()const noexcept -> double { return imp_->min_mp_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
 	auto Motion::mfDyn() const noexcept->double { return *cf(); }

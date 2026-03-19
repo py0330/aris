@@ -459,7 +459,7 @@ namespace aris::dynamic{
 
 		// 设置电机位置 //
 		for (aris::Size i = 0; i < 6; ++i) {
-			imp_->motions[i]->setMpInternal(input_pos[i]);
+			imp_->motions[i]->setMp(input_pos[i]);
 		}
 
 		return 0;
@@ -469,19 +469,25 @@ namespace aris::dynamic{
 		
 		s_pos2pm(imp_->EE->posType(), output, ee_pos);
 
-		constexpr double input_period[6]{
-			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,
-		};
+		// 前处理 //
+		constexpr int INUM = 6;
+		double input_period[INUM], min_input[INUM], max_input[INUM], internal_current_input[INUM];
+		for (int i = 0; i < INUM; ++i) {
+			auto& mot = model()->motionPool()[i];
+			input_period[i] = 2.0 * aris::PI;
+			min_input[i] = mot.minMp();
+			max_input[i] = mot.maxMp();
+			internal_current_input[i] = current_input ? mot.mp2mpInternal(current_input[i]) : mot.mpInternal();
+		}
 
-		if (current_input == nullptr) {
-			double current_input_pos[6];
-			for (int i = 0; i < 6; ++i)
-				current_input_pos[i] = model()->motionPool()[i].mpInternal();
-			return s_ik(6, rootNumber(), &imp_->puma_param, pumaInverse, which_root, ee_pos, input, root_mem, input_period, current_input_pos);
+		auto ret = s_ik(6, rootNumber(), &imp_->puma_param, pumaInverse, which_root, ee_pos, input, root_mem, input_period, internal_current_input, min_input, max_input);
+
+		// 后处理 //
+		for (int i = 0; i < INUM; ++i) {
+			input[i] = model()->motionPool()[i].mpInternal2mp(input[i]);
 		}
-		else {
-			return s_ik(6, rootNumber(), &imp_->puma_param, pumaInverse, which_root, ee_pos, input, root_mem, input_period, current_input);
-		}
+
+		return ret;
 	}
 	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {

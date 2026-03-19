@@ -28,11 +28,11 @@ if(APPLE)
 	set(CMAKE_MACOSX_RPATH ON)
 elseif(UNIX)
 	# default install prefix for generic UNIX
-	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix")
+	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix" FORCE)
 	add_custom_target(uninstall rm -r /usr/aris)
 endif()
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix")
+	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}" CACHE PATH "Install path prefix" FORCE)
 endif(WIN32)
 
 ## set definitions to disable some warning ##

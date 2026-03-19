@@ -94,6 +94,14 @@ namespace aris::dynamic{
 	// period        : 周期值，常见的是 2*pi
 	auto ARIS_API s_put_near_value(double value, double current_value, double period)->double;
 
+	// value         : 输入值
+	// period        : 周期值，常见的是 2*pi
+	// range_left    : range 左侧
+	// range_right   : range 右侧
+	//
+	// 返回          : 0 success, -1 failed
+	auto ARIS_API s_put_into_range(double value, double period, double range_left, double range_right, double& result)->int;
+
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 	///
 	/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
@@ -668,7 +676,8 @@ namespace aris::dynamic{
 	//    roots_mem : 计算所需的内存，大小应为 root_size
 	// root_periods : 解的周期，例如转动轴周期为 2 PI，如果为 inf 或 nan，则说明没有周期
 	// current_root : 当前解，用于在 which_root < 0 或 >= root_num 时，选择解
-	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem, const double* root_periods = nullptr, const double* current_root = nullptr)->int;
+	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem
+		, const double* root_periods = nullptr, const double* current_root = nullptr, const double* input_min = nullptr, const double* input_max = nullptr)->int;
 
 }
 
