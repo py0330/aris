@@ -433,8 +433,8 @@ namespace aris::plan {
 			for (int j = 0; j < input_size_; ++j) {
 				double max_p = max_pos_ ? max_pos_[j] : 1e10;
 				double min_p = min_pos_ ? min_pos_[j] : -1e10;
-				ins_nodes[j].p_ = std::min(p3_[j], max_pos_[j]);
-				ins_nodes[j].p_ = std::max(ins_nodes[j].p_, min_pos_[j]);
+				ins_nodes[j].p_ = std::min(p3_[j], max_p);
+				ins_nodes[j].p_ = std::max(ins_nodes[j].p_, min_p);
 				make_interp6_weno_with_limits(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j], max_p, min_p);
 				//make_interp6(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
 				//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
