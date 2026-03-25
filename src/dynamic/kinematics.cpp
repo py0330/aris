@@ -45,14 +45,19 @@ namespace aris::dynamic{
 		return value;
 	}
 	auto s_put_into_range(double value, double period, double range_left, double range_right, double &result)->int {
+		if (value <= range_right && value >= range_left) {
+			result = value;
+			return 0;
+		}
+			
 		if (std::isfinite(value) && std::isfinite(period) && period != 0) {
-			double mid = (range_right / 2 + range_left / 2);
-			mid = std::max(mid, range_left + period / 2);
-			mid = std::min(mid, range_right - period / 2);
+			auto target = (period < range_right - range_left) 
+				? value < range_left ? range_left + period / 2 : range_right - period / 2
+				: (range_left + range_right) / 2;
 
-			double diff_v = value - mid;
+			double diff_v = value - target;
 			auto compensate_v = std::fmod(diff_v, period);
-			result = mid + (std::abs(compensate_v) <= period / 2 ? compensate_v : -s_sgn2(compensate_v) * (period - std::abs(compensate_v)));
+			result = target + (std::abs(compensate_v) <= period / 2 ? compensate_v : -s_sgn2(compensate_v) * (period - std::abs(compensate_v)));
 
 			return range_left <= result && result <= range_right ? 0 : -1;
 		}
@@ -2100,9 +2105,10 @@ namespace aris::dynamic{
 				if (func(dh, ee_pos, current_root, i, roots_mem) >= 0) {
 					// 采用 无穷 范数来比较两组向量，即只看差值最大的那一个数据
 					double this_norm = 0;
-					for (int j = 0; j < root_size; ++j) {
-						// 如果有周期，根据周期进行设置 //
-						if (root_periods) {
+					
+					// 如果有周期，根据周期进行设置 //
+					if (root_periods) {
+						for (int j = 0; j < root_size; ++j) {
 							// 放置到当前根所在的周期 //
 							if (current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
 								roots_mem[j] = s_put_near_value(roots_mem[j], current_root[j], root_periods[j]);
@@ -2116,10 +2122,10 @@ namespace aris::dynamic{
 								solution_num--;
 								continue;
 							}
-						}
 
-						auto diff = current_root ? std::abs(roots_mem[j] - current_root[j]) : std::abs(roots_mem[j]);
-						this_norm = std::max(diff, this_norm);
+							auto diff = current_root ? std::abs(roots_mem[j] - current_root[j]) : std::abs(roots_mem[j]);
+							this_norm = std::max(diff, this_norm);
+						}
 					}
 
 					if (max_diff_norm > this_norm) {
@@ -2134,12 +2140,24 @@ namespace aris::dynamic{
 		}
 		else {
 			if (func(dh, ee_pos, current_root, which_root, input_pos) >= 0) {
-				// 贴近当前根
-				for (int j = 0; j < root_size; ++j) {
-					if (root_periods && current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
-						input_pos[j] = s_put_near_value(input_pos[j], current_root[j], root_periods[j]);
+				int ret = 0;
+				// 如果有周期，根据周期进行设置 //
+				if (root_periods) {
+					for (int j = 0; j < root_size; ++j) {
+						// 放置到当前根所在的周期 //
+						if (current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
+							input_pos[j] = s_put_near_value(input_pos[j], current_root[j], root_periods[j]);
+
+						// 放置到限制范围内
+						auto min_p = input_min ? input_min[j] : std::numeric_limits<double>::lowest();
+						auto max_p = input_max ? input_max[j] : std::numeric_limits<double>::max();
+						if (s_put_into_range(input_pos[j], root_periods[j], min_p, max_p, input_pos[j])) {
+							// 无法放到限制范围内，暂不处理 //
+							ret = 1;
+						}
+					}
 				}
-				return 0;
+				return ret;
 			}
 			else
 				return -2;

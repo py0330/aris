@@ -33,6 +33,9 @@ namespace aris::plan{
 		auto inputSize() -> int;
 		auto setDt(double dt) -> void;
 		auto dt() -> double;
+		auto setMaxPosPtr(const double* max_poss) -> void;
+		auto setMinPosPtr(const double* min_poss) -> void;
+
 		auto poolSize() -> aris::Size;
 		auto setPoolSize(aris::Size size) -> void;
 
@@ -43,7 +46,6 @@ namespace aris::plan{
 		auto getInputAt(double s, double* p) -> std::int64_t;
 		auto retCodeAt(double s) -> std::int64_t;
 
-		//auto getFinalInput(double *p) -> std::int64_t;
 		auto finalRetCode() -> std::int64_t;
 		auto finalS()-> double;
 		

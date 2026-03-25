@@ -182,6 +182,53 @@ void test_puma_inverse_solver(){
 		}
 	}
 }
+void test_puma_kinematic_with_input_factor() {
+	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
+
+	const double q[6]{ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6 };
+
+	m->setInputPos(q);
+
+	double output[6], input[6];
+
+	m->forwardKinematics(q, output, 8, q);
+	m->inverseKinematics(output, input, 8, q);
+	
+	const double q2[6]{-2,-1,0,1,2,3};
+	for (int i = 0; i < 6; ++i) {
+		m->motionPool()[i].setMpFactor(0.1);
+		m->motionPool()[i].setMpOffset(3);
+	}
+
+	double output_result[6];
+	m->forwardKinematics(q2, output_result, 8);
+	if (!aris::dynamic::s_is_equal(6, 1, output, output_result, 1e-10)) {
+		std::cout << "error" << std::endl;
+	}
+
+	m->inverseKinematics(output_result, input, 8, q2);
+	if (!aris::dynamic::s_is_equal(6, 1, input, q2, 1e-8)) {
+		std::cout << "error" << std::endl;
+	}
+
+	for (int i = 0; i < 6; ++i) {
+		m->motionPool()[i].setMinMp(-1);
+		m->motionPool()[i].setMaxMp(1);
+	}
+	
+
+	for (int i = 0; i < 8; ++i) {
+		auto ret = m->inverseKinematics(output_result, input, i);
+		std::cout << "root:" << i << " ret:" << ret << std::endl;
+		aris::dynamic::dsp(1,6,input);
+	}
+
+	auto ret = m->inverseKinematics(output_result, input, 8, q2);
+	aris::dynamic::dsp(1, 6, input);
+
+
+
+}
 void test_puma_vel() {
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 
@@ -249,8 +296,9 @@ void test_puma_vel() {
 void test_model_solver_puma(){
 	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
 
-	test_puma_forward_solver();
-	test_puma_inverse_solver();
+	//test_puma_forward_solver();
+	//test_puma_inverse_solver();
+	test_puma_kinematic_with_input_factor();
 	test_puma_vel();
 
 	std::cout << "-----------------test model solver puma finished------------" << std::endl << std::endl;

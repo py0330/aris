@@ -23,7 +23,6 @@ private:
 };
 
 auto MoveL::prepareNrt()->void{
-	
 	// p,v,a,j,z //
 	auto pos_mtx = matrixParam("pos");
 	auto vel_mtx = matrixParam("vel");
@@ -47,8 +46,6 @@ auto MoveL::prepareNrt()->void{
 	// insert line //
 	id_ = mmp.insertLinePos(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
 	mmp.updateInsertPos();
-
-	
 }
 auto MoveL::executeRT()->int{
 	double p[100];
@@ -149,18 +146,13 @@ int main(){
 	while (auto ret = mvl.executeRT()) {
 		mvl.setCount(mvl.count() + 1);
 
-		std::cout << mvl.count() << "  " << ret << std::endl;
-		if (mvl.count() < 100) {
-			
-			aris::dynamic::dsp(1, 7, input_pos);
-		}
-		
+		//std::cout << mvl.count() << "  " << ret << std::endl;
 
-		if (mvl.count() == 5223)
-			std::cout << "debug" << std::endl;
-
-		if (ret < 0)
+		if (ret < 0) {
+			std::cout << "ret:" << ret << std::endl;
 			break;
+		}
+			
 	}
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;

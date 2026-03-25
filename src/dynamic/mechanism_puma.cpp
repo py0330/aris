@@ -192,7 +192,6 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	
 
 	struct PumaInverseKinematicSolver::Imp {
 		PumaParamLocal puma_param;
@@ -439,9 +438,11 @@ namespace aris::dynamic{
 
 		// 设置所有杆件位置 //
 		for (aris::Size i = 0; i < 6; ++i) {
+			auto rot_angle = imp_->motions[i]->mp2mpInternal(input_pos[i]);
+
 			if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1]) {
 				double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-				double pe[6]{ 0, 0, 0, 0, 0, input_pos[i] };
+				double pe[6]{ 0, 0, 0, 0, 0, rot_angle };
 				s_pe2pm(pe, pm_rot);
 				s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
 				s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
@@ -449,7 +450,7 @@ namespace aris::dynamic{
 			}
 			else {
 				double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-				double pe[6]{ 0, 0, 0, 0, 0, -input_pos[i] };
+				double pe[6]{ 0, 0, 0, 0, 0, -rot_angle };
 				s_pe2pm(pe, pm_rot);
 				s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
 				s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
@@ -475,16 +476,18 @@ namespace aris::dynamic{
 		for (int i = 0; i < INUM; ++i) {
 			auto& mot = model()->motionPool()[i];
 			input_period[i] = 2.0 * aris::PI;
-			min_input[i] = mot.minMp();
-			max_input[i] = mot.maxMp();
+			min_input[i] = mot.mp2mpInternal(mot.minMp());
+			max_input[i] = mot.mp2mpInternal(mot.maxMp());
 			internal_current_input[i] = current_input ? mot.mp2mpInternal(current_input[i]) : mot.mpInternal();
 		}
 
 		auto ret = s_ik(6, rootNumber(), &imp_->puma_param, pumaInverse, which_root, ee_pos, input, root_mem, input_period, internal_current_input, min_input, max_input);
 
 		// 后处理 //
-		for (int i = 0; i < INUM; ++i) {
-			input[i] = model()->motionPool()[i].mpInternal2mp(input[i]);
+		if (ret >= 0) {
+			for (int i = 0; i < INUM; ++i) {
+				input[i] = model()->motionPool()[i].mpInternal2mp(input[i]);
+			}
 		}
 
 		return ret;

@@ -410,10 +410,7 @@ namespace aris::plan {
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
 		using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
 		
-		std::list<ToolWobjNode> tool_wobjs_;
-		std::list<ToolWobjNode>::iterator current_node_;
 		std::int64_t id_{ 1 };
-
 		ToolWobjNode tw_pool_[TW_POOL_SIZE];
 
 		MarkerVec last_tool_, last_wobj_;
@@ -890,6 +887,19 @@ namespace aris::plan {
 	// 插入新的数据，并重规划 //
 	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 		return imp_->insCircle(tw, ee_pos, mid_pos, vel, acc, jerk, zone);
+	}
+	auto MultimodelPlanner::insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		auto tool_str_vec = aris::core::split(tools, ';');
+		auto wobj_str_vec = aris::core::split(wobjs, ';');
+
+		TW tw;
+		for (Size i = 0; i < std::max(tool_str_vec.size(), wobj_str_vec.size()); ++i) {
+			auto tool = i < tool_str_vec.size() ? aris::core::trimLR(tool_str_vec[i]) : std::string("");
+			auto wobj = i < wobj_str_vec.size() ? aris::core::trimLR(wobj_str_vec[i]) : std::string("");
+			tw.push_back(std::pair(tool, wobj));
+		}
+
+		return insertCirclePos(tw, ee_pos, mid_pos, vel, acc, jerk, zone);
 	}
 
 	auto MultimodelPlanner::updateInsertPos() -> void {

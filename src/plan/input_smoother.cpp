@@ -231,6 +231,129 @@ namespace aris::plan {
 			}
 		}
 
+		// 三次插值用 6 个数据，带位置限制 //
+		auto make_interp6_weno_with_limits(InterpNode& node0, InterpNode& node1, InterpNode& node2, InterpNode& node3, InterpNode& node4, InterpNode& node5, double pmax, double pmin) -> void {
+			//(2*p1)/dt_^3 - (2*p2)/dt_^3 + v1/dt_^2 + v2/dt_^2
+			//(3*p2)/dt_^2 - (3*p1)/dt_^2 - (2*v1)/dt_ - v2/dt_
+			//                                               v1
+			//                                               p1
+			{
+				auto cpt_v = [](double p0, double p1, double p2, double p3, double p4)->double {
+
+					// 左侧二次插值、中间二次插值、右边二次插值 //
+					// 在权重为 1/6，2/3，1/6 时，三者之和为高次插值 (y0 - 8*y1 + 8*y3 - y4)/(12*T)
+					//
+					auto v_left = (p0 - 4 * p1 + 3 * p2) / 2;
+					auto v_mid = (p3 - p1) / 2;
+					auto v_right = (-3 * p2 + 4 * p3 - p4) / 2;
+
+					// 实际权重根据二次曲率确定 //
+					auto left_c = (p0 - 2 * p1 + p2);
+					auto mid_c = (p1 - 2 * p2 + p3);
+					auto right_c = (p2 - 2 * p3 + p4);
+
+					// 计算权重
+					auto alpha1 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + std::abs(left_c * left_c));
+					auto alpha2 = 2.0 / 3.0 / (std::numeric_limits<double>::epsilon() + std::abs(mid_c * mid_c));
+					auto alpha3 = 1.0 / 6.0 / (std::numeric_limits<double>::epsilon() + std::abs(right_c * right_c));
+
+					// 归一化 //
+					auto sum_alpha = alpha1 + alpha2 + alpha3;
+					auto w1 = alpha1 / sum_alpha;
+					auto w3 = alpha3 / sum_alpha;
+					auto w2 = 1.0 - w1 - w3;
+
+					// 计算速度
+					return w1 * v_left + w2 * v_mid + w3 * v_right;
+					};
+
+				auto v2 = cpt_v(node0.p_, node1.p_, node2.p_, node3.p_, node4.p_);
+				auto v3 = cpt_v(node1.p_, node2.p_, node3.p_, node4.p_, node5.p_);
+				auto v4 = cpt_v(node2.p_, node3.p_, node4.p_, node5.p_, node5.p_);
+				auto v5 = cpt_v(node3.p_, node4.p_, node5.p_, node5.p_, node5.p_);
+
+				// 下推考虑 p 极值的 vmax 和 vmin
+				// 先求：
+				// 
+				///////////////////////////////// SUB problem 1：
+				// 等效于已知 p0，pmax
+				// 求 vmax，
+				// 
+				// [p0 vmax] -> [pmax 0] 在 t = 0-1 区间内插值最大值不超 pmax
+				// 不失一般性，可令 p0 = 0，pmax = 1
+				// 
+				// 插值最大值在 v = 0 处，因此速度曲线必须单调递减至0，因此速度极值不在 t = 0-1 区间内
+				// 于是加速度为0的点，至少要大于1
+				// 
+				// 6*k3*t + 2*k2 == 0
+				// -k2/(3*k3) >= 1
+				// 
+				// =>
+				// 
+				// vmax < 3*pmax
+				// 
+				///////////////////////////////// SUB problem 2：
+				// 推导运动 [0 3*pmax] -> [p1 -3*(pmax-p1)] 的位置极值依然小于 pmax
+				// 不失一般性，令 pmax = 1 
+				// 
+				// 速度为0 时 为位置极值点：
+				// 
+				// v = 3*k3*t^2 + 2*k2*t + k1
+				// solve(v == 0, t)
+				// 
+				// 可得其位于区间【0，1】的根为：
+				// t = -((1 - p1)^(1/2) - 1)/p1
+				// 
+				// 将 t 带回插值方程
+				// p_upper = -(3*((1 - p1).^(1/2) - 1))./p1 - (3*((1 - p1).^(1/2) - 1).^2)./p1.^2 - ((1 - p1).^(1/2) - 1).^3./p1.^2
+				// 
+				// p_upper 最大值为 p1 = 1.0，即 pmax 处
+				// 
+				///////////////////////////////// SUB problem 3：
+				// 推导运动 [0 3*pmax] -> [p1 v1] 的位置极值依然小于 pmax，其中 v1 > -3*(pmax-p1)
+				// 
+				// 显然
+				// 
+				//
+
+				const double p2 = node2.p_;
+				const double p3 = node3.p_;
+				const double p4 = node4.p_;
+				const double p5 = node5.p_;
+
+				v2 = std::max({ 3.0 * (pmin - p2), -3.0 * (pmax - p2), v2 });
+				v2 = std::min({ 3.0 * (pmax - p2), -3.0 * (pmin - p2), v2 });
+				v3 = std::max({ 3.0 * (pmin - p3), -3.0 * (pmax - p3), v3 });
+				v3 = std::min({ 3.0 * (pmax - p3), -3.0 * (pmin - p3), v3 });
+				v4 = std::max({ 3.0 * (pmin - p4), -3.0 * (pmax - p4), v4 });
+				v4 = std::min({ 3.0 * (pmax - p4), -3.0 * (pmin - p4), v4 });
+				v5 = std::max({ 3.0 * (pmin - p5), -3.0 * (pmax - p5), v5 });
+				v5 = std::min({ 3.0 * (pmax - p5), -3.0 * (pmin - p5), v5 });
+
+				
+
+
+				//node2.k3_ = 2 * (p1 - p2) + (v1 + v2); // 2*p1 - 2*p2 + p2 - p0 + p3 - p1
+				//node2.k2_ = 3 * (p2 - p1) - 2 * v1 - v2;//3*p2 - 3*p1 - 2*p1 + 2*p0 - 2*p2 + 2*p1
+				//node2.k1_ = v1; // p1 - p0
+				//node2.k0_ = p1;
+
+				node3.k3_ = 2 * (p2 - p3) + (v2 + v3);
+				node3.k2_ = 3 * (p3 - p2) - 2 * v2 - v3;
+				node3.k1_ = v2;
+				node3.k0_ = p2;
+
+				node4.k3_ = 2 * (p3 - p4) + (v3 + v4);
+				node4.k2_ = 3 * (p4 - p3) - 2 * v3 - v4;
+				node4.k1_ = v3;
+				node4.k0_ = p3;
+
+				node5.k3_ = 2 * (p4 - p5) + (v4 + v5);
+				node5.k2_ = 3 * (p5 - p4) - 2 * v4 - v5;
+				node5.k1_ = v4;
+				node5.k0_ = p4;
+			}
+		}
 
 		/////////////////////////////////////////////////////////////
 		InputGenerator input_generator_{ nullptr };
@@ -246,6 +369,7 @@ namespace aris::plan {
 		InterpNode* input_poss_{ nullptr };
 		std::int64_t* node_ids_{ nullptr };
 		double* p3_{ nullptr };
+		const double *max_pos_{ nullptr }, * min_pos_{ nullptr };
 
 		std::int64_t tg_idx_{ 0 };// 当前tg运行到的位置
 
@@ -307,8 +431,11 @@ namespace aris::plan {
 			
 			// 插值 //
 			for (int j = 0; j < input_size_; ++j) {
-				ins_nodes[j].p_ = p3_[j];
-				make_interp6_weno(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
+				double max_p = max_pos_ ? max_pos_[j] : 1e10;
+				double min_p = min_pos_ ? min_pos_[j] : -1e10;
+				ins_nodes[j].p_ = std::min(p3_[j], max_pos_[j]);
+				ins_nodes[j].p_ = std::max(ins_nodes[j].p_, min_pos_[j]);
+				make_interp6_weno_with_limits(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j], max_p, min_p);
 				//make_interp6(nodes0[j], nodes1[j], nodes2[j], nodes3[j], nodes4[j], ins_nodes[j]);
 				//make_interp4(nodes0[j], nodes1[j], nodes2[j], ins_nodes[j]);
 			}
@@ -361,6 +488,12 @@ namespace aris::plan {
 	}
 	auto InputInterpolator::init(const double* init_input_pos) -> void {
 		imp_->init_pos(init_input_pos);
+	}
+	auto InputInterpolator::setMaxPosPtr(const double* max_poss) -> void {
+		imp_->max_pos_ = max_poss;
+	}
+	auto InputInterpolator::setMinPosPtr(const double* min_poss) -> void {
+		imp_->min_pos_ = min_poss;
 	}
 	auto InputInterpolator::generateInput() -> std::int64_t {
 		return imp_->insert_nodes();
@@ -452,6 +585,16 @@ namespace aris::plan {
 			p3_ = core::getMem(mem_.data(), p3_);
 			p1_back_ = core::getMem(mem_.data(), p1_back_);
 			p2_back_ = core::getMem(mem_.data(), p2_back_);
+
+			std::fill_n(max_poss_, input_size_, 1e10);
+			std::fill_n(min_poss_, input_size_, -1e10);
+			std::fill_n(max_vels_, input_size_, 1e10);
+			std::fill_n(min_vels_, input_size_, -1e10);
+			std::fill_n(max_accs_, input_size_, 1e10);
+			std::fill_n(min_accs_, input_size_, -1e10);
+
+			ii_.setMaxPosPtr(max_poss_);
+			ii_.setMinPosPtr(min_poss_);
 
 			// 设置相关的值 //
 			if (!max_pos_mat_.empty())
