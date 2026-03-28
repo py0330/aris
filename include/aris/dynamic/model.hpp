@@ -250,6 +250,14 @@ namespace aris::dynamic{
 		auto virtual inputAccTypes()const noexcept->const AccType* override;
 		auto virtual inputFceTypes()const noexcept->const FceType* override;
 
+		// input limits //
+		auto virtual minInputPos()const noexcept->const double * override;
+		auto virtual maxInputPos()const noexcept->const double * override;
+		auto virtual minInputVel()const noexcept->const double * override;
+		auto virtual maxInputVel()const noexcept->const double * override;
+		auto virtual minInputAcc()const noexcept->const double * override;
+		auto virtual maxInputAcc()const noexcept->const double * override;
+
 		// input variables //                       
 		auto virtual inputPosAt(Size idx)const noexcept->double override;                 
 		auto virtual setInputPosAt(Size idx, double p)noexcept->void override;
@@ -407,6 +415,14 @@ namespace aris::dynamic{
 		auto virtual inputAccTypes()const noexcept->const AccType* override;
 		auto virtual inputFceTypes()const noexcept->const FceType* override;
 
+		// input limits //
+		auto virtual minInputPos()const noexcept->const double * override;
+		auto virtual maxInputPos()const noexcept->const double * override;
+		auto virtual minInputVel()const noexcept->const double * override;
+		auto virtual maxInputVel()const noexcept->const double * override;
+		auto virtual minInputAcc()const noexcept->const double * override;
+		auto virtual maxInputAcc()const noexcept->const double * override;
+
 		// inputs //
 		auto virtual inputPosSize()const noexcept->Size override;
 		auto virtual getInputPos(double* mp)const noexcept->void override;
@@ -509,6 +525,14 @@ namespace aris::dynamic{
 		// additional sub input & output api
 		auto getSubOutputMotions(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
 		auto getSubInputMotions(Size submodel_num, const Size* submodel_ids, Motion** mots_out) -> void;
+
+		// sub input limits //
+		auto getSubMinInputPos(Size submodel_num, const Size* submodel_ids, double* min_pos) -> void;
+		auto getSubMaxInputPos(Size submodel_num, const Size* submodel_ids, double* max_pos) -> void;
+		auto getSubMinInputVel(Size submodel_num, const Size* submodel_ids, double* min_vel) -> void;
+		auto getSubMaxInputVel(Size submodel_num, const Size* submodel_ids, double* max_vel) -> void;
+		auto getSubMinInputAcc(Size submodel_num, const Size* submodel_ids, double* min_acc) -> void;
+		auto getSubMaxInputAcc(Size submodel_num, const Size* submodel_ids, double* max_acc) -> void;
 
 		// sub input //
 		auto subInputSize(Size sub_id_num, const Size* sub_id)const noexcept -> Size;

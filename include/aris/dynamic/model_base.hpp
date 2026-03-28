@@ -29,6 +29,14 @@ namespace aris::dynamic{
 		// singular check //
 		auto virtual isSingular(double zero_check = 1e-7)noexcept->bool { return false; }
 
+		// input limits //
+		auto virtual minInputPos()const noexcept->const double * { return nullptr; }
+		auto virtual maxInputPos()const noexcept->const double * { return nullptr; }
+		auto virtual minInputVel()const noexcept->const double * { return nullptr; }
+		auto virtual maxInputVel()const noexcept->const double * { return nullptr; }
+		auto virtual minInputAcc()const noexcept->const double * { return nullptr; }
+		auto virtual maxInputAcc()const noexcept->const double * { return nullptr; }
+
 		// input variables //
 		// num of motion //
 		auto virtual inputSize()const noexcept->aris::Size { return 0; }

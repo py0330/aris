@@ -129,6 +129,8 @@ namespace aris::dynamic{
 		double pitch_{ 0.0 };
 		double rotate_range_{ 0.0 };
 		double max_mp_{ std::numeric_limits<double>::max() }, min_mp_{ std::numeric_limits<double>::lowest() };
+		double max_mv_{ std::numeric_limits<double>::max() }, min_mv_{ std::numeric_limits<double>::lowest() };
+		double max_ma_{ std::numeric_limits<double>::max() }, min_ma_{ std::numeric_limits<double>::lowest() };
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 
@@ -266,6 +268,14 @@ namespace aris::dynamic{
 	auto Motion::maxMp()const noexcept -> double { return imp_->max_mp_; }
 	auto Motion::setMinMp(double min_mp)noexcept -> void { imp_->min_mp_ = min_mp; }
 	auto Motion::minMp()const noexcept -> double { return imp_->min_mp_; }
+	auto Motion::setMaxMv(double max_mv)noexcept -> void { imp_->max_mv_ = max_mv; }
+	auto Motion::maxMv()const noexcept -> double { return imp_->max_mv_; }
+	auto Motion::setMinMv(double min_mv)noexcept -> void { imp_->min_mv_ = min_mv; }
+	auto Motion::minMv()const noexcept -> double { return imp_->min_mv_; }
+	auto Motion::setMaxMa(double max_ma)noexcept -> void { imp_->max_ma_ = max_ma; }
+	auto Motion::maxMa()const noexcept -> double { return imp_->max_ma_; }
+	auto Motion::setMinMa(double min_ma)noexcept -> void { imp_->min_ma_ = min_ma; }
+	auto Motion::minMa()const noexcept -> double { return imp_->min_ma_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
 	auto Motion::mfDyn() const noexcept->double { return *cf(); }
@@ -1025,6 +1035,12 @@ namespace aris::dynamic{
 			.prop("rotate_range", &Motion::setRotateRange, &Motion::rotateRange)
 			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
 			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
+			.prop("max_mp", &Motion::setMaxMp, &Motion::maxMp)
+			.prop("min_mp", &Motion::setMinMp, &Motion::minMp)
+			.prop("max_mv", &Motion::setMaxMv, &Motion::maxMv)
+			.prop("min_mv", &Motion::setMinMv, &Motion::minMv)
+			.prop("max_ma", &Motion::setMaxMa, &Motion::maxMa)
+			.prop("min_ma", &Motion::setMinMa, &Motion::minMa)
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 

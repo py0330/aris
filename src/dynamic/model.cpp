@@ -49,6 +49,9 @@ namespace aris::dynamic{
 		VelType* mot_vel_types_;
 		AccType* mot_acc_types_;
 		FceType* mot_fce_types_;
+
+		// input limits //
+		double *min_input_pos_, *max_input_pos_, *min_input_vel_, *max_input_vel_, *min_input_acc_, *max_input_acc_;
 	};
 	auto Model::init()->void { 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void{
@@ -155,7 +158,13 @@ namespace aris::dynamic{
 		core::allocMem(mem_size, imp_->mot_vel_types_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->mot_acc_types_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->mot_fce_types_, imp_->mot_size_);
-		
+		core::allocMem(mem_size, imp_->min_input_pos_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_pos_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->min_input_vel_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_vel_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->min_input_acc_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_acc_, imp_->mot_size_);
+
 		imp_->mem_.resize(mem_size, char(0));
 
 		imp_->ee_pos_types_ = core::getMem(imp_->mem_.data(), imp_->ee_pos_types_);
@@ -166,7 +175,13 @@ namespace aris::dynamic{
 		imp_->mot_vel_types_ = core::getMem(imp_->mem_.data(), imp_->mot_vel_types_);
 		imp_->mot_acc_types_ = core::getMem(imp_->mem_.data(), imp_->mot_acc_types_);
 		imp_->mot_fce_types_ = core::getMem(imp_->mem_.data(), imp_->mot_fce_types_);
-		
+		imp_->min_input_pos_ = core::getMem(imp_->mem_.data(), imp_->min_input_pos_);
+		imp_->max_input_pos_ = core::getMem(imp_->mem_.data(), imp_->max_input_pos_);
+		imp_->min_input_vel_ = core::getMem(imp_->mem_.data(), imp_->min_input_vel_);
+		imp_->max_input_vel_ = core::getMem(imp_->mem_.data(), imp_->max_input_vel_);
+		imp_->min_input_acc_ = core::getMem(imp_->mem_.data(), imp_->min_input_acc_);
+		imp_->max_input_acc_ = core::getMem(imp_->mem_.data(), imp_->max_input_acc_);
+
 		for (auto i = 0; i < generalMotionPool().size(); ++i) {
 			imp_->ee_pos_types_[i] = generalMotionPool()[i].posType();
 			imp_->ee_vel_types_[i] = generalMotionPool()[i].velType();
@@ -178,35 +193,13 @@ namespace aris::dynamic{
 			imp_->mot_vel_types_[i] = motionPool()[i].velType();
 			imp_->mot_acc_types_[i] = motionPool()[i].accType();
 			imp_->mot_fce_types_[i] = motionPool()[i].fceType();
+			imp_->min_input_pos_[i] = motionPool()[i].minMp();
+			imp_->max_input_pos_[i] = motionPool()[i].maxMp();
+			imp_->min_input_vel_[i] = motionPool()[i].minMv();
+			imp_->max_input_vel_[i] = motionPool()[i].maxMv();
+			imp_->min_input_acc_[i] = motionPool()[i].minMa();
+			imp_->max_input_acc_[i] = motionPool()[i].maxMa();
 		}
-
-		/*
-
-
-		imp_->end_effector_pos_size_ = 0;
-		imp_->end_effector_vel_size_ = 0;
-		imp_->end_effector_acc_size_ = 0;
-		imp_->end_effector_fce_size_ = 0;
-
-		imp_->ee_pos_types_.clear();
-		imp_->ee_vel_types_.clear();
-		imp_->ee_acc_types_.clear();
-		imp_->ee_fce_types_.clear();
-		for (auto& m : generalMotionPool()) {
-			imp_->end_effector_pos_size_ += m.pSize();
-			imp_->end_effector_vel_size_ += m.vSize();
-			imp_->end_effector_acc_size_ += m.aSize();
-			imp_->end_effector_fce_size_ += m.fSize();
-			imp_->ee_pos_types_.push_back(m.posType());
-			imp_->ee_vel_types_.push_back(m.velType());
-			imp_->ee_acc_types_.push_back(m.accType());
-			imp_->ee_fce_types_.push_back(m.fceType());
-		}
-		
-		
-		*/
-		
-		
 	}
 	auto Model::inverseRootNumber()const->int { 
 		return solverPool()[0].rootNumber();
@@ -253,6 +246,25 @@ namespace aris::dynamic{
 		s_householder_utp(u.mJf(), u.nJf(), u.Jf(), U, tau, p, rank, zero_check);
 
 		return rank < u.nJf();
+	}
+
+	auto Model::minInputPos()const noexcept->const double * {
+		return imp_->min_input_pos_;
+	}
+	auto Model::maxInputPos()const noexcept->const double * {
+		return imp_->max_input_pos_;
+	}
+	auto Model::minInputVel()const noexcept->const double * {
+		return imp_->min_input_vel_;
+	}
+	auto Model::maxInputVel()const noexcept->const double * {
+		return imp_->max_input_vel_;
+	}
+	auto Model::minInputAcc()const noexcept->const double * {
+		return imp_->min_input_acc_;
+	}
+	auto Model::maxInputAcc()const noexcept->const double * {
+		return imp_->max_input_acc_;
 	}
 
 	auto Model::outputSize()const noexcept->aris::Size {
@@ -572,6 +584,8 @@ namespace aris::dynamic{
 		AccType* mot_acc_types_;
 		FceType* mot_fce_types_;
 
+		// input limits //
+		double *min_input_pos_, *max_input_pos_, *min_input_vel_, *max_input_vel_, *min_input_acc_, *max_input_acc_;
 	};
 
 	auto MultiModel::inverseKinematics()noexcept->int {
@@ -634,6 +648,12 @@ namespace aris::dynamic{
 		core::allocMem(mem_size, imp_->mot_vel_types_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->mot_acc_types_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->mot_fce_types_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->min_input_pos_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_pos_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->min_input_vel_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_vel_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->min_input_acc_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->max_input_acc_, imp_->mot_size_);
 
 		imp_->mem_.resize(mem_size, char(0));
 
@@ -645,6 +665,12 @@ namespace aris::dynamic{
 		imp_->mot_vel_types_ = core::getMem(imp_->mem_.data(), imp_->mot_vel_types_);
 		imp_->mot_acc_types_ = core::getMem(imp_->mem_.data(), imp_->mot_acc_types_);
 		imp_->mot_fce_types_ = core::getMem(imp_->mem_.data(), imp_->mot_fce_types_);
+		imp_->min_input_pos_ = core::getMem(imp_->mem_.data(), imp_->min_input_pos_);
+		imp_->max_input_pos_ = core::getMem(imp_->mem_.data(), imp_->max_input_pos_);
+		imp_->min_input_vel_ = core::getMem(imp_->mem_.data(), imp_->min_input_vel_);
+		imp_->max_input_vel_ = core::getMem(imp_->mem_.data(), imp_->max_input_vel_);
+		imp_->min_input_acc_ = core::getMem(imp_->mem_.data(), imp_->min_input_acc_);
+		imp_->max_input_acc_ = core::getMem(imp_->mem_.data(), imp_->max_input_acc_);
 
 		Size ee_id = 0;
 		Size mot_id = 0;
@@ -659,6 +685,12 @@ namespace aris::dynamic{
 			std::copy_n(m.inputVelTypes(), m.inputSize(), imp_->mot_vel_types_ + mot_id);
 			std::copy_n(m.inputAccTypes(), m.inputSize(), imp_->mot_acc_types_ + mot_id);
 			std::copy_n(m.inputFceTypes(), m.inputSize(), imp_->mot_fce_types_ + mot_id);
+			std::copy_n(m.minInputPos(), m.inputSize(), imp_->min_input_pos_ + mot_id);
+			std::copy_n(m.maxInputPos(), m.inputSize(), imp_->max_input_pos_ + mot_id);
+			std::copy_n(m.minInputVel(), m.inputSize(), imp_->min_input_vel_ + mot_id);
+			std::copy_n(m.maxInputVel(), m.inputSize(), imp_->max_input_vel_ + mot_id);
+			std::copy_n(m.minInputAcc(), m.inputSize(), imp_->min_input_acc_ + mot_id);
+			std::copy_n(m.maxInputAcc(), m.inputSize(), imp_->max_input_acc_ + mot_id);
 			mot_id += m.inputSize();
 		}
 
@@ -672,6 +704,25 @@ namespace aris::dynamic{
 		}
 
 		return false;
+	}
+
+	auto MultiModel::minInputPos()const noexcept->const double * {
+		return imp_->min_input_pos_;
+	}
+	auto MultiModel::maxInputPos()const noexcept->const double * {
+		return imp_->max_input_pos_;
+	}
+	auto MultiModel::minInputVel()const noexcept->const double * {
+		return imp_->min_input_vel_;
+	}
+	auto MultiModel::maxInputVel()const noexcept->const double * {
+		return imp_->max_input_vel_;
+	}
+	auto MultiModel::minInputAcc()const noexcept->const double * {
+		return imp_->min_input_acc_;
+	}
+	auto MultiModel::maxInputAcc()const noexcept->const double * {
+		return imp_->max_input_acc_;
 	}
 
 	auto MultiModel::outputSize()const noexcept->aris::Size {
@@ -703,6 +754,31 @@ namespace aris::dynamic{
 	}
 	auto MultiModel::inputFceTypes()const noexcept->const FceType* {
 		return imp_->mot_fce_types_;
+	}
+
+	auto MultiModel::getSubMinInputPos(Size submodel_num, const Size* submodel_ids, double* min_pos) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].minInputPos(), subModels()[submodel_ids[i]].inputSize(), min_pos + k);
+	}
+	auto MultiModel::getSubMaxInputPos(Size submodel_num, const Size* submodel_ids, double* max_pos) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].maxInputPos(), subModels()[submodel_ids[i]].inputSize(), max_pos + k);
+	}
+	auto MultiModel::getSubMinInputVel(Size submodel_num, const Size* submodel_ids, double* min_vel) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].minInputVel(), subModels()[submodel_ids[i]].inputSize(), min_vel + k);
+	}
+	auto MultiModel::getSubMaxInputVel(Size submodel_num, const Size* submodel_ids, double* max_vel) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].maxInputVel(), subModels()[submodel_ids[i]].inputSize(), max_vel + k);
+	}
+	auto MultiModel::getSubMinInputAcc(Size submodel_num, const Size* submodel_ids, double* min_acc) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].minInputAcc(), subModels()[submodel_ids[i]].inputSize(), min_acc + k);
+	}
+	auto MultiModel::getSubMaxInputAcc(Size submodel_num, const Size* submodel_ids, double* max_acc) -> void {
+		for (Size i = 0, k = 0; i < submodel_num; k += subModels()[submodel_ids[i]].inputSize(), ++i)
+			std::copy_n(subModels()[submodel_ids[i]].maxInputAcc(), subModels()[submodel_ids[i]].inputSize(), max_acc + k);
 	}
 
 	auto MultiModel::inputPosSize()const noexcept->aris::Size {

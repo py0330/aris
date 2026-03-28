@@ -4,7 +4,7 @@
 
 #include "aris.hpp"
 
-aris::plan::MultimodelPlanner mmp;
+aris::plan::PlannerDispacher pd;
 
 double input_pos[100];
 
@@ -44,15 +44,18 @@ auto MoveL::prepareNrt()->void{
 	}
 		
 	// insert line //
-	id_ = mmp.insertLinePos(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
-	mmp.updateInsertPos();
+	pd.tryLockChanel(0, { 1 });
+	id_ = pd.insertLinePos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+	pd.updateInsertPos(0);
 }
 auto MoveL::executeRT()->int{
 	double p[100];
-	auto ret = mmp.getNextInput(input_pos);
+	auto ret = pd.getNextInput(0, input_pos);
 	return ret == id_ ? 0 : ret;
 }
-auto MoveL::collectNrt()->void{}
+auto MoveL::collectNrt()->void{
+	pd.releaseChanel(0);
+}
 MoveL::~MoveL() = default;
 MoveL::MoveL(const MoveL & other) = default;
 MoveL::MoveL(const std::string & name) {
@@ -94,10 +97,28 @@ auto createMultiModel() -> std::unique_ptr<aris::dynamic::MultiModel> {
 	aris::Size sub_num = 1;
 	aris::Size sub_id[1]{ 1 };
 
+	std::cout << "create multi model" << std::endl;
+	std::cout << ARIS_INSTALL_PATH << std::endl;
+
 	auto multi_model = std::make_unique<aris::dynamic::MultiModel>();
 	aris::core::fromXmlFile(*multi_model, ARIS_INSTALL_PATH + std::string("/resource/test_plan/dual_arm.xml"));
 
+	std::cout << "left" << std::endl;
+
 	auto& sub0 = dynamic_cast<aris::dynamic::Model&>(multi_model->subModels()[0]);
+
+	for(auto i = 0; i < 7; i++) {
+		auto& sub1 = dynamic_cast<aris::dynamic::Model&>(multi_model->subModels()[1]);
+		sub1.motionPool()[i].setMaxMv(1.5);
+		sub1.motionPool()[i].setMinMv(-1.5);
+		sub1.motionPool()[i].setMaxMa(5.0);
+		sub1.motionPool()[i].setMinMa(-5.0);
+
+		sub0.motionPool()[i].setMaxMv(1.5);
+		sub0.motionPool()[i].setMinMv(-1.5);
+		sub0.motionPool()[i].setMaxMa(5.0);
+		sub0.motionPool()[i].setMinMa(-5.0);
+	}
 
 	multi_model->init();
 
@@ -111,25 +132,17 @@ int main(){
 	auto multi_model = createMultiModel();
 
 	// 构造规划器 //
-	mmp.setModel(*multi_model);
-	mmp.setSubModelId({ 1 });
+	pd.setModel(*multi_model);
+	pd.setChanelSize(2);
+	pd.setDt(1e-3);
+	pd.init();
 
-	// 最大速度、加速度 //
-	std::vector<double> max_vels(7, 1.5);
-	std::vector<double> min_vels(7, -1.5);
-	std::vector<double> max_accs(7, 5.0);
-	std::vector<double> min_accs(7, -5.0);
+	pd.transferMatrix().push_back(aris::core::Matrix(4, 4));
+	pd.transferMatrix().push_back(aris::core::Matrix(3, 3));
+	pd.transferMatrix().push_back(aris::core::Matrix(2, 2));
 
-	mmp.setMaxVel(aris::core::Matrix(multi_model->inputPosSize(), 1, max_vels.data()));
-	mmp.setMinVel(aris::core::Matrix(multi_model->inputPosSize(), 1, min_vels.data()));
-	mmp.setMaxAcc(aris::core::Matrix(multi_model->inputPosSize(), 1, max_accs.data()));
-	mmp.setMinAcc(aris::core::Matrix(multi_model->inputPosSize(), 1, min_accs.data()));
+	std::cout << aris::core::toXmlString(pd) << std::endl;
 
-	mmp.setDt(1e-3);
-	mmp.allocateMemory();
-
-	mmp.init();
-	
 	// 构造mvl ，调试一下
 	MoveL mvl;
 	mvl.setModelBase(multi_model.get());
@@ -145,8 +158,6 @@ int main(){
 
 	while (auto ret = mvl.executeRT()) {
 		mvl.setCount(mvl.count() + 1);
-
-		//std::cout << mvl.count() << "  " << ret << std::endl;
 
 		if (ret < 0) {
 			std::cout << "ret:" << ret << std::endl;

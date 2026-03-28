@@ -116,9 +116,16 @@ namespace aris::dynamic {
 
 		auto setMaxMp(double max_mp)noexcept -> void;
 		auto maxMp()const noexcept -> double;
-
 		auto setMinMp(double min_mp)noexcept -> void;
 		auto minMp()const noexcept -> double;
+		auto setMaxMv(double max_mv)noexcept -> void;
+		auto maxMv()const noexcept -> double;
+		auto setMinMv(double min_mv)noexcept -> void;
+		auto minMv()const noexcept -> double;
+		auto setMaxMa(double max_ma)noexcept -> void;
+		auto maxMa()const noexcept -> double;
+		auto setMinMa(double min_ma)noexcept -> void;
+		auto minMa()const noexcept -> double;
 		
 		auto mfDyn() const noexcept->double;
 		auto setMfDyn(double mf_dyn) noexcept->void;

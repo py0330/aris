@@ -331,7 +331,8 @@ namespace aris::core{
 			std::is_object_v<typename C::value_type>, class_<Class_Type>&>
 		{
 			auto size_func = [size_f](Instance* ins)->std::size_t {
-				return size_f ? (*size_f)(ins->castToPointer<C>()) : ins->castToPointer<C>()->size();
+				// return size_f ? (*size_f)(ins->castToPointer<C>()) : ins->castToPointer<C>()->size();
+				return (*size_f)(ins->castToPointer<C>());
 			};
 			auto at_func = [at_f](Instance* ins, std::size_t id)->Instance {
 				return (*at_f)(ins->castToPointer<C>(), id); 

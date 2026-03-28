@@ -22,9 +22,6 @@
 /// 
 namespace aris::plan{
 
-	// 计算不同tools，wobjs下的设置顺序
-	//auto ARIS_API computeToolWobjOrder(aris::Size ee_size, aris::dynamic::MotionBase** ees, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, aris::Size* order, bool* is_setting_tool) -> int;
-
 	class ARIS_API ToolWobjSelector {
 	public:
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
@@ -134,9 +131,8 @@ namespace aris::plan{
 
 
 		////////////////// PART 3 RT operation ////////////////
+		
 		auto getNextInput(double* p) -> std::int64_t;
-
-
 
 		~MultimodelPlanner();
 		MultimodelPlanner();
@@ -147,6 +143,52 @@ namespace aris::plan{
 		std::unique_ptr<Imp> imp_;
 	};
 	
+	/// @brief 规划调度器
+	class ARIS_API PlannerDispacher {
+	public:
+		////////////////// PART 1 config ////////////////
+		
+		/// @brief 设置时间步长
+		/// @param dt 时间步长
+		auto setDt(double dt) -> void;
+		/// @brief 返回时间步长
+		/// @return 时间步长
+		auto dt() -> double;
+		
+		auto setModel(aris::dynamic::MultiModel& model)->void;
+		auto model() -> aris::dynamic::MultiModel&;
+
+		auto setChanelSize(int chanel_size)->void;
+		auto chanelSize() -> int;
+
+		auto transferMatrix() -> std::vector<aris::core::Matrix>&;
+
+		auto init()->void;
+		////////////////// PART 2 NRT operation ////////////////
+		auto tryLockChanel(int chanel, std::vector<aris::Size> submodel_ids)->int;
+		auto releaseChanel(int chanel)->int;
+
+		// 插入新的数据，并重规划 //
+		auto insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto updateInsertPos(int chanel)->void;
+
+		////////////////// PART 3 RT operation ////////////////
+		auto getNextInput(int chanel, double* p) -> std::int64_t;
+
+		auto setTargetSpeedRatio(int chanel, double ds) -> void; // 0 <= ds <= 1
+		auto targetSpeedRatio(int chanel) -> double;
+		auto actualSpeedRatio(int chanel) -> double;
+
+		~PlannerDispacher();
+		PlannerDispacher();
+		ARIS_DELETE_BIG_FOUR(PlannerDispacher);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	};
+
 }
 
 #endif
