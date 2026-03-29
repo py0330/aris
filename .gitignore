@@ -48,4 +48,5 @@ install_manifest.txt
 # for vscode
 .vscode/
 build/
+build-profile/
 /CppProperties.json

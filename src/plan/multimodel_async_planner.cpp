@@ -1,12 +1,13 @@
-﻿#include"aris/plan/multimodel_async_planner.hpp"
-#include"aris/plan/function.hpp"
-#include"aris/control/rt_timer.hpp"
-#include"aris/plan/input_smoother.hpp"
-#include"aris/plan/async_generator.hpp"
-#include"aris/plan/speed_regulator.hpp"
+﻿
+#include "aris/plan/function.hpp"
+#include "aris/plan/input_smoother.hpp"
+#include "aris/plan/async_generator.hpp"
+#include "aris/plan/speed_regulator.hpp"
+#include "aris/plan/multimodel_async_planner.hpp"
 
 #include "aris/core/error.hpp"
 #include "aris/core/etc.hpp"
+#include "aris/control/rt_timer.hpp"
 
 //#define DEBUG_ARIS_MMP
 
@@ -404,13 +405,13 @@ namespace aris::plan {
 		std::vector<double> ee_pos_, mid_pos_, vel_, acc_, jerk_, zone_;
 	};
 
-#define TW_POOL_SIZE 10000
+	#define TW_POOL_SIZE 10000
 
 	struct MultimodelPlanner::Imp {
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
 		using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
 		
-		std::int64_t id_{ 1 };
+		std::int64_t id_{ 1 }, ik_ret_{ 0 }, tg_ret_{ 0 };
 		ToolWobjNode tw_pool_[TW_POOL_SIZE];
 
 		MarkerVec last_tool_, last_wobj_;
@@ -492,19 +493,17 @@ namespace aris::plan {
 
 			// 设置回调 //
 			is_.setInputGenerator([this](double* p)->std::int64_t {
-				auto ret = tg_.getEePosAndMoveDt(tw_pos_);
+				tg_ret_ = tg_.getEePosAndMoveDt(tw_pos_);
 
-				auto& tw = tw_pool_[ret % TW_POOL_SIZE];
+				auto& tw = tw_pool_[tg_ret_ % TW_POOL_SIZE];
 				tw_rt_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
 				tw_rt_.setTwPos(tw_pos_);
 				tw_rt_.getEePos(ee_pos_);
 
 				model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
 
-				auto ik_ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
-				if (ik_ret)
-					return ik_ret;
-
+				ik_ret_ = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
+				
 				model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
 
 #ifdef DEBUG_ARIS_MMP
@@ -528,7 +527,7 @@ namespace aris::plan {
 				}
 #endif
 
-				return ret;
+				return tg_ret_;
 				});
 
 			ag_.setInputGenerator([this](double* p)->std::int64_t {
@@ -562,6 +561,9 @@ namespace aris::plan {
 		auto init() -> void {
 			stop();
 			
+			tg_ret_ = 0;
+			ik_ret_ = 0;
+
 			nodes_.clear();
 
 			std::vector<double> init_input_pos(model_->subInputPosSize(sub_id_list_.size(), sub_id_list_.data()));
@@ -733,6 +735,9 @@ namespace aris::plan {
 				}
 			}
 
+			// 更新完后清除 nodes_ //
+			nodes_.clear();
+
 			// resume //
 			if (is_aysnc_) {
 				ag_.resume();
@@ -856,6 +861,7 @@ namespace aris::plan {
 	}
 
 	////////////////// PART 2 NRT operation ////////////////
+
 	auto MultimodelPlanner::allocateMemory() -> void {
 		imp_->allocateMemory();
 	}
@@ -942,11 +948,18 @@ namespace aris::plan {
 		return imp_->get_next_input(p);
 	}
 
+    auto MultimodelPlanner::tgRet() -> std::int64_t {
+        return imp_->tg_ret_;
+    }
 
-	MultimodelPlanner::~MultimodelPlanner() {
-		stop();
-	}
-	MultimodelPlanner::MultimodelPlanner():imp_(new Imp) {}
+    auto MultimodelPlanner::ikRet() -> std::int64_t{
+        return imp_->ik_ret_;
+    }
+
+    MultimodelPlanner::~MultimodelPlanner(){
+        stop();
+    }
+    MultimodelPlanner::MultimodelPlanner():imp_(new Imp) {}
 
 	struct PlannerDispacher::Imp {
 		struct ChanelData{
@@ -981,7 +994,7 @@ namespace aris::plan {
 	auto PlannerDispacher::chanelSize() -> int {
 		return imp_->chanel_size_;
 	}
-	auto PlannerDispacher::transferMatrix() -> std::vector<aris::core::Matrix>& {
+	auto PlannerDispacher::transferMatrice() -> std::vector<aris::core::Matrix>& {
 		return imp_->transfer_matrix_;
 	}
 	auto PlannerDispacher::init()->void{
@@ -1040,8 +1053,13 @@ namespace aris::plan {
 			imp_->model_->getSubMaxInputAcc(submodel_ids.size(), submodel_ids.data(), mat.data());
 			imp_->chanel_data_vec_[chanel]->planner.setMaxAcc(mat);
 
+			// target_ds init 时会被重置 //
+			auto target_ds = imp_->chanel_data_vec_[chanel]->planner.targetSpeedRatio();
+
 			imp_->chanel_data_vec_[chanel]->planner.allocateMemory();
 			imp_->chanel_data_vec_[chanel]->planner.init();
+
+			imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(target_ds);
 			return 1; // successfully locked with new submodel //
 		}
 	}
@@ -1069,17 +1087,23 @@ namespace aris::plan {
 	}
 
 	auto PlannerDispacher::getNextInput(int chanel, double* p) -> std::int64_t {
-		//imp_->chanel_data_vec_[chanel]->planner.getNextInput(p);
-
-
-
 		return imp_->chanel_data_vec_[chanel]->planner.getNextInput(p);
 	}
 
-	auto PlannerDispacher::setTargetSpeedRatio(int chanel, double ds) -> void {
-		imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(ds);
-	}
-	auto PlannerDispacher::targetSpeedRatio(int chanel) -> double {
+    auto PlannerDispacher::tgRet(int chanel) -> std::int64_t{
+        return imp_->chanel_data_vec_[chanel]->planner.tgRet();
+    }
+    
+	auto PlannerDispacher::ikRet(int chanel) -> std::int64_t{
+        return imp_->chanel_data_vec_[chanel]->planner.ikRet();
+    }
+    
+
+	auto PlannerDispacher::setTargetSpeedRatio(int chanel, double ds) -> void
+    {
+        imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(ds);
+    }
+    auto PlannerDispacher::targetSpeedRatio(int chanel) -> double {
 		return imp_->chanel_data_vec_[chanel]->planner.targetSpeedRatio();
 	}
 	auto PlannerDispacher::actualSpeedRatio(int chanel) -> double {
@@ -1096,30 +1120,30 @@ namespace aris::plan {
 			std::vector<aris::core::Matrix> mats_;
 		};
 
-		auto joint_size = [](LocalMatList* pool)->std::size_t {
+		auto local_mat_size = [](LocalMatList* pool)->std::size_t {
 			return pool->mats_.size();
 		};
-		auto joint_at = [](LocalMatList* pool, std::size_t i)->aris::core::Matrix& {
+		auto local_mat_at = [](LocalMatList* pool, std::size_t i)->aris::core::Matrix& {
 			return pool->mats_.at(i);
 		};
-		auto joint_pushback = [](LocalMatList* pool, aris::core::Matrix *value)->void {
+		auto local_mat_pushback = [](LocalMatList* pool, aris::core::Matrix *value)->void {
 			pool->mats_.push_back(*value);
 		};
-		auto joint_clear = [](LocalMatList* pool)->void {
+		auto local_mat_clear = [](LocalMatList* pool)->void {
 			pool->mats_.clear();
 		};
 
 		aris::core::class_<LocalMatList>("PlannerDispacher::TransferMatrix")
-			.asRefArray(&joint_size, &joint_at, &joint_pushback, &joint_clear)
+			.asRefArray(&local_mat_size, &local_mat_at, &local_mat_pushback, &local_mat_clear)
 			;
 		
 		auto getTm = [](PlannerDispacher* m)->LocalMatList {
 			LocalMatList name_list;
-			name_list.mats_ = m->transferMatrix();
+			name_list.mats_ = m->transferMatrice();
 			return name_list; 
 		};
 		auto setTm = [](PlannerDispacher* m, LocalMatList name_list)->void {
-			m->transferMatrix() = name_list.mats_;
+			m->transferMatrice() = name_list.mats_;
 		};
 
 		aris::core::class_<PlannerDispacher>("PlannerDispacher")

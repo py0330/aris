@@ -274,7 +274,8 @@ namespace aris::plan {
 				if (ret2_ > 0) {
 					ret3_ = input_generator_(p3_);
 				}
-				else {
+				else{
+					ret3_ = ret2_;
 					aris::dynamic::s_vc(input_size_, p2_, p3_);
 				}
 

@@ -103,8 +103,6 @@ auto createMultiModel() -> std::unique_ptr<aris::dynamic::MultiModel> {
 	auto multi_model = std::make_unique<aris::dynamic::MultiModel>();
 	aris::core::fromXmlFile(*multi_model, ARIS_INSTALL_PATH + std::string("/resource/test_plan/dual_arm.xml"));
 
-	std::cout << "left" << std::endl;
-
 	auto& sub0 = dynamic_cast<aris::dynamic::Model&>(multi_model->subModels()[0]);
 
 	for(auto i = 0; i < 7; i++) {
@@ -137,34 +135,67 @@ int main(){
 	pd.setDt(1e-3);
 	pd.init();
 
-	pd.transferMatrix().push_back(aris::core::Matrix(4, 4));
-	pd.transferMatrix().push_back(aris::core::Matrix(3, 3));
-	pd.transferMatrix().push_back(aris::core::Matrix(2, 2));
+	//spd.transferMatrix().push_back(aris::core::Matrix(4, 4));
+	//pd.transferMatrix().push_back(aris::core::Matrix(3, 3));
+	//pd.transferMatrix().push_back(aris::core::Matrix(2, 2));
 
-	std::cout << aris::core::toXmlString(pd) << std::endl;
+	//std::cout << aris::core::toXmlString(pd) << std::endl;
 
-	// 构造mvl ，调试一下
-	MoveL mvl;
-	mvl.setModelBase(multi_model.get());
+	pd.setTargetSpeedRatio(0, 1);
 
-	mvl.command().init();
-	mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
-		"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
-		"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+	auto func = [&](){
+		// 构造mvl ，调试一下
+		MoveL mvl;
+		mvl.setModelBase(multi_model.get());
 
-	mvl.prepareNrt();
-	mvl.setCount(1);
+		mvl.command().init();
+		static int i = 0;
+		if(i%2 == 0){
+			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
+				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
 
-
-	while (auto ret = mvl.executeRT()) {
-		mvl.setCount(mvl.count() + 1);
-
-		if (ret < 0) {
-			std::cout << "ret:" << ret << std::endl;
-			break;
 		}
-			
-	}
+		else{
+			mvl.parse("mvl --pos={0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
+				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+		}
+		++i;
+
+
+		mvl.prepareNrt();
+		mvl.setCount(1);
+
+
+		while (auto ret = mvl.executeRT()) {
+			mvl.setCount(mvl.count() + 1);
+
+			if(mvl.count()%1000 == 0){
+				std::cout << mvl.count() << std::endl;
+			}
+				
+
+			if (ret < 0) {
+				std::cout << "ret:" << ret << std::endl;
+				aris::dynamic::dsp(1, 7, input_pos);
+				
+				static int i = 0;
+				if(++i > 5000)
+					break;
+				//break;
+			}
+				
+		}
+
+		std::cout << "mvl finished:" << mvl.count() << std::endl;
+
+	};
+
+
+
+	std::cout << aris::core::benchmark(100, func) << std::endl;
+
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;
 	std::cin.get();
