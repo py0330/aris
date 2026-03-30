@@ -232,7 +232,7 @@ auto test_input_smoother_2() -> void {
 	const int A_NUM = 0;
 
 	//  INIT TG //
-	tg.setEeTypes({ aris::dynamic::PosType::PE321 });
+	tg.setOutputPosTypes({ aris::dynamic::PosType::PE321 });
 	double init_pe[EE_NUM * 6]{ 0.45, 0, 0.75,   aris::PI, 1.0,   aris::PI };
 	double init_vel[EE_NUM * 2 + A_NUM]{ 1,1 };
 	tg.insertLinePos(1, init_pe, init_vel, init_vel, init_vel, init_vel);
@@ -477,7 +477,7 @@ auto test_input_interpolator_7axis() -> int {
 		const double zone_lim[2]{ zone, zone };
 
 		if (local_flag) {
-			tg.setEeTypes({ aris::dynamic::PosType::PE321 });
+			tg.setOutputPosTypes({ aris::dynamic::PosType::PE321 });
 			tg.setDt(DT);
 
 			ee.getMpe(current_ee_pos, "321");
@@ -685,7 +685,7 @@ auto test_input_smoother_7axis()->int {
 		const double zone_lim[2]{ zone, zone };
 
 		if (local_flag) {
-			tg.setEeTypes({ aris::dynamic::PosType::PE321 });
+			tg.setOutputPosTypes({ aris::dynamic::PosType::PE321 });
 			tg.setDt(DT);
 
 			ee.getMpe(current_ee_pos, "321");

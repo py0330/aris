@@ -23,11 +23,11 @@ namespace aris::plan{
 	public:
 		// 配置末端类型 //
 		auto outputPosTypes()const-> const std::vector<aris::dynamic::PosType>&;
-		auto setEeTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void;
+		auto setOutputPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void;
 		auto outputVelTypes()const -> const std::vector<aris::dynamic::VelType>&;
-		auto setEeVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void;
+		auto setOutputVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void;
 		auto outputAccTypes()const -> const std::vector<aris::dynamic::AccType>&;
-		auto setEeAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void;
+		auto setOutputAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void;
 
 		// 真实世界的时间间隔 //
 		auto dt()const->double;

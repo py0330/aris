@@ -157,7 +157,7 @@ int main(){
 
 		}
 		else{
-			mvl.parse("mvl --pos={0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
 		}
@@ -194,7 +194,7 @@ int main(){
 
 
 
-	std::cout << aris::core::benchmark(100, func) << std::endl;
+	std::cout << aris::core::benchmark(2, func) << std::endl;
 
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;

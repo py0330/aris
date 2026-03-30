@@ -128,7 +128,7 @@ auto test_move_follower_2() -> void {
 
 	////////////////////////////////////////// PART 3 设置 规划器 ///////////////////////
 	aris::plan::TrajectoryGenerator tg;    // 对应3个过程，走到工件上方、抓件、走回地面
-	tg.setEeTypes({ aris::dynamic::PosType::PE321, });
+	tg.setOutputPosTypes({ aris::dynamic::PosType::PE321, });
 	tg.setDt(dt);
 
 	// 插入 picking 过程中的点位
