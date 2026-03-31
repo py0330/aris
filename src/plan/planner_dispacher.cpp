@@ -8,21 +8,7 @@
 
 namespace aris::plan {
 
-    #define CHANEL_NODE_NUM 10000
 
-    enum class ChanelDataNodeType {
-		ResetInitPos,
-		Line,
-		Circle,
-        MoveJoint,
-        MoveAbsoluteJoint,
-	};
-
-    struct ChanelDataNode {
-        std::int64_t id_{ 0 };
-        ChanelDataNodeType type_{ ChanelDataNodeType::ResetInitPos };
-    };
-    
 
 	struct PlannerDispacher::Imp {
 		struct ChanelData {
@@ -30,8 +16,6 @@ namespace aris::plan {
 			std::vector<double> sub_transfer_mat_;
 			int lock_count{ 0 };
 			MultimodelPlanner planner;
-            ChanelDataNode node_pool_[CHANEL_NODE_NUM];
-            std::int64_t node_id_{ 1 };
 		};
 
 		int chanel_size_{ 0 };

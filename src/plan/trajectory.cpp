@@ -1799,9 +1799,6 @@ namespace aris::plan {
 			// check 是否全局结束，即所有指令都已执行完
 			if (current_node == next_node) {
 				s_ = current_node->s_end_;
-				imp_->ds_ = target_ds;
-				imp_->dds_ = 0.0;
-				imp_->ddds_ = 0.0;
 				get_node_data(outputPosTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
 				aris::dynamic::s_pos2pos(outputPosTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, outputPosTypes().data(), ee_pos);
 				
@@ -1814,6 +1811,12 @@ namespace aris::plan {
 					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_, imp_->internal_vel_);
 					s_vel2vel(imp_->ee_size_, imp_->internal_pos_type_, imp_->internal_pos_, imp_->internal_vel_type_, imp_->internal_vel_, imp_->out_vel_type_, ee_vel);
 				}
+				// to be removed //
+				imp_->ds_ = target_ds;
+				imp_->dds_ = 0.0;
+				imp_->ddds_ = 0.0;
+				// to be removed //
+
 				current_node->finished_ = true;
 				return 0;
 			}
@@ -1822,9 +1825,6 @@ namespace aris::plan {
 				// 如果此前没有结束过（例如后面的ResetInitPos是新插进来的），则返回当前指令的末尾状态，否则直接切换到下一条指令 //
 				if(!current_node->finished_){
 					s_ = current_node->s_end_;
-					imp_->ds_ = target_ds;
-					imp_->dds_ = 0.0;
-					imp_->ddds_ = 0.0;
 					get_node_data(outputPosTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
 					aris::dynamic::s_pos2pos(outputPosTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, outputPosTypes().data(), ee_pos);
 					if (ee_acc) {
@@ -1839,8 +1839,15 @@ namespace aris::plan {
 						//aris::dynamic::s_vc(imp_->internal_pos_size, imp_->internal_vel_, ee_vel);
 					}
 
-					current_node = current_node->next_node_.exchange(nullptr);
-					imp_->current_node_.store(current_node);
+					// to be removed //
+					imp_->ds_ = target_ds;
+					imp_->dds_ = 0.0;
+					imp_->ddds_ = 0.0;
+					// to be removed //
+
+					//current_node = current_node->next_node_.exchange(nullptr);
+					//imp_->current_node_.store(current_node);
+					current_node->finished_ = true;
 					return current_node->id_;
 				}
 				else{
@@ -1885,6 +1892,12 @@ namespace aris::plan {
 		
 		return current_node->id_;
 	}
+	auto TrajectoryGenerator::currentNodeId()const->std::int64_t{
+		return imp_->current_node_.load()->id_;
+	}
+    auto TrajectoryGenerator::isCurrentNodeFinished() const -> bool{
+        return imp_->current_node_.load()->finished_;
+    }
 	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 

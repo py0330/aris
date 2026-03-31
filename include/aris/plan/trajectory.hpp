@@ -65,6 +65,10 @@ namespace aris::plan{
 		//  node_id: 当前节点的 id 号，对应插入时的 id
 		auto getEePosAndMoveDt(double *ee_pos = nullptr, double *ee_vel = nullptr, double *ee_acc = nullptr)->std::int64_t;
 
+		auto currentNodeId()const->std::int64_t;
+
+		auto isCurrentNodeFinished()const->bool;
+
 		// 插入新的数据，并重规划 //
 		auto insertInitPos(std::int64_t id, const double* ee_pos)->void;
 
