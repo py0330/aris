@@ -403,16 +403,17 @@ namespace aris::plan {
 		std::int64_t id_{ 0 };
 		MAPNodeType type_{ MAPNodeType::ResetInitPos };
 		std::vector<double> ee_pos_, mid_pos_, vel_, acc_, jerk_, zone_;
+		std::vector<aris::dynamic::Marker*> tools_, wobjs_;
 	};
 
 	#define TW_POOL_SIZE 10000
 
 	struct MultimodelPlanner::Imp {
 		using MarkerVec = std::vector<aris::dynamic::Marker*>;
-		using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
+		//using ToolWobjNode = std::tuple<std::int64_t, MarkerVec, MarkerVec>;
 		
 		std::int64_t id_{ 1 }, ik_ret_{ 0 }, tg_ret_{ 0 };
-		ToolWobjNode tw_pool_[TW_POOL_SIZE];
+		MAPNode map_nodes_[TW_POOL_SIZE];
 
 		MarkerVec last_tool_, last_wobj_;
 		std::vector<double> last_tw_pos_;
@@ -485,19 +486,19 @@ namespace aris::plan {
 
 			model_->getSubOutputMotions(sub_id_list_.size(), sub_id_list_.data(), ees_);
 
-			// 更新 tw 仓 //
+			// 初始化 tw 仓 //
 			for (int i = 0; i < TW_POOL_SIZE; ++i) {
-				auto& tw = tw_pool_[i];
-				std::get<1>(tw).resize(input_psize, nullptr);
-				std::get<2>(tw).resize(input_psize, nullptr);
+				auto& node = map_nodes_[i];
+				node.tools_.resize(input_psize, nullptr);
+				node.wobjs_.resize(input_psize, nullptr);
 			}
 
 			// 设置回调 //
 			is_.setInputGenerator([this](double* p)->std::int64_t {
 				tg_ret_ = tg_.getEePosAndMoveDt(tw_pos_);
 
-				auto& tw = tw_pool_[tg_ret_ % TW_POOL_SIZE];
-				tw_rt_.selectTw(std::get<1>(tw).data(), std::get<2>(tw).data());
+				auto& node = map_nodes_[tg_ret_ % TW_POOL_SIZE];
+				tw_rt_.selectTw(node.tools_.data(), node.wobjs_.data());
 				tw_rt_.setTwPos(tw_pos_);
 				tw_rt_.getEePos(ee_pos_);
 
@@ -620,7 +621,7 @@ namespace aris::plan {
 
 			}
 
-			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
+			//map_nodes_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
 
 			// 如果坐标系有变化，重新插入 INIT //
 			if (tools != last_tool_ || wobjs != last_wobj_) {
@@ -631,9 +632,11 @@ namespace aris::plan {
 				if (tw_.selectTw(tools.data(), wobjs.data()))
 					THROW_FILE_LINE("invalid tool and wobj");
 				tw_.getTwPos(tw_init_pos.data());
+				 
 				
 				std::copy(tools.begin(), tools.end(), last_tool_.begin());
 				std::copy(wobjs.begin(), wobjs.end(), last_wobj_.begin());
+				std::copy(ee_pos, ee_pos + psize_, last_tw_pos_.begin());
 
 				nodes_.push_back({ 
 					id_, 
@@ -651,7 +654,9 @@ namespace aris::plan {
 					std::vector<double>(vel, vel + vdim_),
 					std::vector<double>(acc, acc + vdim_),
 					std::vector<double>(jerk, jerk + vdim_),
-					std::vector<double>(zone, zone + vdim_)
+					std::vector<double>(zone, zone + vdim_),
+					tools,
+					wobjs
 				});
 
 			id_++;
@@ -685,7 +690,7 @@ namespace aris::plan {
 				}
 			}
 
-			tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
+			//tw_pool_[id_ % TW_POOL_SIZE] = std::make_tuple(id_, tools, wobjs);
 
 			// 如果坐标系有变化，重新插入 INIT //
 			if (tools != last_tool_ || wobjs != last_wobj_) {
@@ -697,6 +702,7 @@ namespace aris::plan {
 
 				std::copy(tools.begin(), tools.end(), last_tool_.begin());
 				std::copy(wobjs.begin(), wobjs.end(), last_wobj_.begin());
+				std::copy(ee_pos, ee_pos + psize_, last_tw_pos_.begin());
 
 				nodes_.push_back({
 					id_,
@@ -714,7 +720,9 @@ namespace aris::plan {
 					std::vector<double>(vel, vel + vdim_),
 					std::vector<double>(acc, acc + vdim_),
 					std::vector<double>(jerk, jerk + vdim_),
-					std::vector<double>(zone, zone + vdim_)
+					std::vector<double>(zone, zone + vdim_),
+					tools,
+					wobjs
 				});
 
 			id_++;
@@ -728,9 +736,11 @@ namespace aris::plan {
 					tg_.insertInitPos(node.id_, node.ee_pos_.data());
 					break;
 				case MAPNodeType::Line:
+					map_nodes_[id_ % TW_POOL_SIZE] = node;
 					tg_.insertLinePos(node.id_, node.ee_pos_.data(), node.vel_.data(), node.acc_.data(), node.jerk_.data(), node.zone_.data());
 					break;
 				case MAPNodeType::Circle:
+					map_nodes_[id_ % TW_POOL_SIZE] = node;
 					tg_.insertCirclePos(node.id_, node.ee_pos_.data(), node.mid_pos_.data(), node.vel_.data(), node.acc_.data(), node.jerk_.data(), node.zone_.data());
 					break;
 				}

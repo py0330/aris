@@ -150,16 +150,25 @@ int main(){
 
 		mvl.command().init();
 		static int i = 0;
-		if(i%2 == 0){
+		if(i%4 == 0){
 			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
-
 		}
-		else{
+		else if(i%4 == 1){
+			mvl.parse("mvl --pos={-0.1821530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
+				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+		}
+		else if(i%4 == 2){
 			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+		}
+		else if(i%4 == 3){
+			mvl.parse("mvl --pos={-0.1821530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
+				"--tool={RightArm.L7.tool1} --wobj={RightArm.ground.wobj0}");
 		}
 		++i;
 
@@ -167,15 +176,13 @@ int main(){
 		mvl.prepareNrt();
 		mvl.setCount(1);
 
-
 		while (auto ret = mvl.executeRT()) {
 			mvl.setCount(mvl.count() + 1);
 
 			if(mvl.count()%1000 == 0){
 				std::cout << mvl.count() << std::endl;
 			}
-				
-
+			
 			if (ret < 0) {
 				std::cout << "ret:" << ret << std::endl;
 				aris::dynamic::dsp(1, 7, input_pos);
@@ -185,7 +192,6 @@ int main(){
 					break;
 				//break;
 			}
-				
 		}
 
 		std::cout << "mvl finished:" << mvl.count() << std::endl;
@@ -194,7 +200,7 @@ int main(){
 
 
 
-	std::cout << aris::core::benchmark(2, func) << std::endl;
+	std::cout << aris::core::benchmark(6, func) << std::endl;
 
 
 	std::cout << "demo_model_multi finished, press any key to continue" << std::endl;
