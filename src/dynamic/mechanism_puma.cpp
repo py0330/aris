@@ -80,7 +80,7 @@ namespace aris::dynamic{
 
 		double zero_check_{ 1e-10 };
 	};
-	auto pumaInverse(const void* para, const double* ee_pm, const double* current_input, int which_root, double* input)->int {
+	auto pumaInverse(const void* para, const double* ee_pm, const double* current_input, std::int64_t which_root, double* input)->int {
 		auto& param = *reinterpret_cast<const PumaParamLocal*>(para);
 		
 		
@@ -465,7 +465,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto PumaInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
+	auto PumaInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
 		double ee_pos[16]{}, root_mem[6]{};
 		
 		s_pos2pm(imp_->EE->posType(), output, ee_pos);

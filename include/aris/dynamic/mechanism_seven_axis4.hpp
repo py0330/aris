@@ -149,7 +149,7 @@ namespace aris::dynamic{
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinPosPure(const double* output, double* input, int which_root, const double* current_input = nullptr)->int override;
+		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)->int override;
 
 		virtual ~SevenAxisInverseKinematicSolver4();
 		explicit SevenAxisInverseKinematicSolver4();

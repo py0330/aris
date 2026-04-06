@@ -217,13 +217,13 @@ namespace aris::dynamic{
 		/// @{
 
 		// kinematics, not set state //
-		auto virtual inverseRootNumber()const->int override;
-		auto virtual whichInverseRoot(const double* output, const double* input)->int override;
-		auto virtual forwardRootNumber()const->int override;
-		auto virtual whichForwardRoot(const double* input, const double* output)->int override;
+		auto virtual inverseRootNumber()const->std::int64_t override;	
+		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int override;
+		auto virtual forwardRootNumber()const->std::int64_t override;
+		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int override;
 
-		auto virtual inverseKinematics(const double* output, double* input, int which_root, const double* current_input = nullptr)const noexcept->int override;
-		auto virtual forwardKinematics(const double* input, double* output, int which_root, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t* which_root = nullptr, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t* which_root = nullptr, const double* current_input = nullptr)const noexcept->int override;
 
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int override;
@@ -392,6 +392,17 @@ namespace aris::dynamic{
 	public:
 		auto virtual init()->void override;
 
+		// kinematics, not set state //
+		auto virtual inverseRootSize()const->int override;
+		auto virtual inverseRootNumber()const->std::int64_t override;
+		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int override;
+		auto virtual forwardRootSize()const->int override;
+		auto virtual forwardRootNumber()const->std::int64_t override;
+		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int override;
+
+		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int override;
+
 		// kinematics & dynamics //
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
@@ -477,50 +488,25 @@ namespace aris::dynamic{
 		auto resetSubModelPool(aris::core::PointerArray<ModelBase>* pool)->void;
 		auto subModels()->aris::core::PointerArray<ModelBase>&;
 		auto subModels()const->const aris::core::PointerArray<ModelBase>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->subModels(); }
+		
+		// sub kinematics, not set state //
+		auto subInverseRootSize(Size sub_num, const Size* sub_id)const->int;
+		auto subInverseRootNumber(Size sub_num, const Size* sub_id)const->std::int64_t;
+		auto subGetWhichSubInverseRoot(Size sub_num, const Size* sub_id, const double* output, const double* input, std::int64_t *which_root)->int;
+		auto subForwardRootSize(Size sub_num, const Size* sub_id)const->int;
+		auto subForwardRootNumber(Size sub_num, const Size* sub_id)const->std::int64_t;
+		auto subGetWhichSubForwardRoot(Size sub_num, const Size* sub_id, const double* input, const double* output, std::int64_t *which_root)->int;
+
+		auto subInverseKinematics(Size sub_num, const Size* sub_id, const double* output, double* input, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int;
+		auto subForwardKinematics(Size sub_num, const Size* sub_id, const double* input, double* output, const std::int64_t *which_root, const double* current_output = nullptr)const noexcept->int;
 
 		// sub kin & dyn //
-		auto subInverseKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].inverseKinematics())
-					return ret;
-			}
-			return 0;
-		}
-		auto subForwardKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].forwardKinematics())
-					return ret;
-			}
-			return 0;
-		}
-		auto subInverseKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].inverseKinematicsVel())
-					return ret;
-			}
-			return 0;
-		}
-		auto subForwardKinematicsVel(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].forwardKinematicsVel())
-					return ret;
-			}
-			return 0;
-		}
-		auto subInverseDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].inverseDynamics())
-					return ret;
-			}
-			return 0;
-		}
-		auto subForwardDynamics(Size sub_id_num, const Size* sub_id)noexcept->int {
-			for (Size i = 0; i < sub_id_num; ++i) {
-				if (auto ret = subModels()[sub_id[i]].forwardDynamics())
-					return ret;
-			}
-			return 0;
-		}
+		auto subInverseKinematics(Size sub_num, const Size* sub_id)noexcept->int;
+		auto subForwardKinematics(Size sub_num, const Size* sub_id)noexcept->int ;
+		auto subInverseKinematicsVel(Size sub_num, const Size* sub_id)noexcept->int;
+		auto subForwardKinematicsVel(Size sub_num, const Size* sub_id)noexcept->int;
+		auto subInverseDynamics(Size sub_num, const Size* sub_id)noexcept->int; 
+		auto subForwardDynamics(Size sub_num, const Size* sub_id)noexcept->int;
 
 		// additional sub input & output api
 		auto getSubOutputMotions(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
@@ -535,52 +521,52 @@ namespace aris::dynamic{
 		auto getSubMaxInputAcc(Size submodel_num, const Size* submodel_ids, double* max_acc) -> void;
 
 		// sub input //
-		auto subInputSize(Size sub_id_num, const Size* sub_id)const noexcept -> Size;
+		auto subInputSize(Size sub_num, const Size* sub_id)const noexcept -> Size;
 		auto getSubInputPosTypes(Size submodel_num, const Size* submodel_ids, PosType* mot_pos_types_out) -> void;
 		auto getSubInputVelTypes(Size submodel_num, const Size* submodel_ids, VelType* mot_vel_types_out) -> void;
 		auto getSubInputAccTypes(Size submodel_num, const Size* submodel_ids, AccType* mot_acc_types_out) -> void;
 		auto getSubInputFceTypes(Size submodel_num, const Size* submodel_ids, FceType* mot_fce_types_out) -> void;
 
-		auto subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubInputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
-		auto setSubInputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+		auto subInputPosSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputPos(Size sub_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto setSubInputPos(Size sub_num, const Size* sub_id, const double* mp)noexcept->void;
 
-		auto subInputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubInputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
-		auto setSubInputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+		auto subInputVelSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputVel(Size sub_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto setSubInputVel(Size sub_num, const Size* sub_id, const double* mv)noexcept->void;
 
-		auto subInputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubInputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
-		auto setSubInputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+		auto subInputAccSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputAcc(Size sub_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto setSubInputAcc(Size sub_num, const Size* sub_id, const double* ma)noexcept->void;
 
-		auto subInputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubInputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
-		auto setSubInputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+		auto subInputFceSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubInputFce(Size sub_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto setSubInputFce(Size sub_num, const Size* sub_id, const double* mf)noexcept->void;
 
 		// sub output //
-		auto subOutputSize(Size sub_id_num, const Size* sub_id)const noexcept -> Size;
+		auto subOutputSize(Size sub_num, const Size* sub_id)const noexcept -> Size;
 		// the mag size is norm num of output, e.g. for 6D pos xyzabs, the mag size is 2
-		auto subOutputPosMagSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
+		auto subOutputPosMagSize(Size sub_num, const Size* sub_id)const noexcept->Size;
 		auto getSubOutputPosTypes(Size submodel_num, const Size* submodel_ids, PosType* ee_pos_types_out) -> void;
 		auto getSubOutputVelTypes(Size submodel_num, const Size* submodel_ids, VelType* ee_vel_types_out) -> void;
 		auto getSubOutputAccTypes(Size submodel_num, const Size* submodel_ids, AccType* ee_acc_types_out) -> void;
 		auto getSubOutputFceTypes(Size submodel_num, const Size* submodel_ids, FceType* ee_fce_types_out) -> void;
 		
-		auto subOutputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubOutputPos(Size sub_id_num, const Size* sub_id, double* mp)const noexcept->void;
-		auto setSubOutputPos(Size sub_id_num, const Size* sub_id, const double* mp)noexcept->void;
+		auto subOutputPosSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputPos(Size sub_num, const Size* sub_id, double* mp)const noexcept->void;
+		auto setSubOutputPos(Size sub_num, const Size* sub_id, const double* mp)noexcept->void;
 
-		auto subOutputVelSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubOutputVel(Size sub_id_num, const Size* sub_id, double* mv)const noexcept->void;
-		auto setSubOutputVel(Size sub_id_num, const Size* sub_id, const double* mv)noexcept->void;
+		auto subOutputVelSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputVel(Size sub_num, const Size* sub_id, double* mv)const noexcept->void;
+		auto setSubOutputVel(Size sub_num, const Size* sub_id, const double* mv)noexcept->void;
 
-		auto subOutputAccSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubOutputAcc(Size sub_id_num, const Size* sub_id, double* ma)const noexcept->void;
-		auto setSubOutputAcc(Size sub_id_num, const Size* sub_id, const double* ma)noexcept->void;
+		auto subOutputAccSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputAcc(Size sub_num, const Size* sub_id, double* ma)const noexcept->void;
+		auto setSubOutputAcc(Size sub_num, const Size* sub_id, const double* ma)noexcept->void;
 
-		auto subOutputFceSize(Size sub_id_num, const Size* sub_id)const noexcept->Size;
-		auto getSubOutputFce(Size sub_id_num, const Size* sub_id, double* mf)const noexcept->void;
-		auto setSubOutputFce(Size sub_id_num, const Size* sub_id, const double* mf)noexcept->void;
+		auto subOutputFceSize(Size sub_num, const Size* sub_id)const noexcept->Size;
+		auto getSubOutputFce(Size sub_num, const Size* sub_id, double* mf)const noexcept->void;
+		auto setSubOutputFce(Size sub_num, const Size* sub_id, const double* mf)noexcept->void;
 
 		// 方便函数 //
 		auto updP()->void {

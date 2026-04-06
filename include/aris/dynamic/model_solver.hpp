@@ -1,6 +1,8 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_SOLVER_H_
 #define ARIS_DYNAMIC_MODEL_SOLVER_H_
 
+#include <cstdint>
+
 #include <aris/dynamic/model_basic.hpp>
 
 namespace aris::dynamic
@@ -15,16 +17,16 @@ namespace aris::dynamic
 		auto virtual kinVel()->int = 0;
 		auto virtual dynAccAndFce()->int = 0;
 
-		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root, const double* current_answer = nullptr)->int { return -1; };
-		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)->int = 0;
+		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)->int { return -1; };
+		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)->std::int64_t = 0;
 		auto virtual answerSize()->aris::Size = 0;
 
 		// 运动学的解个数 //
-		auto setRootNumber(int root_of_solver)->void;
-		auto rootNumber()const->int;
+		auto setRootNumber(std::int64_t root_of_solver)->void;
+		auto rootNumber()const->std::int64_t;
 		// 选择哪个解 //
-		auto setWhichRoot(int root_of_solver)->void;
-		auto whichRoot()const->int;
+		auto setWhichRoot(std::int64_t root_of_solver)->void;
+		auto whichRoot()const->std::int64_t;
 		auto error()const->double;
 		auto setError(double error)->void;
 		auto maxError()const->double;
@@ -49,9 +51,9 @@ namespace aris::dynamic
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 		
-		auto virtual kinPosPure(const double* motion_pos, double* answer, int which_root, const double* current_answer = nullptr)->int override;
+		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)->int override;
 		auto virtual answerSize()->aris::Size override;
-		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)->int override;
+		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)->std::int64_t override;
 
 		auto kinPosCompute()->int;                               // 进行计算
 		auto kinPosSetActiveMotionPos(const double* mp)->void;   // 将用户的作为 mp

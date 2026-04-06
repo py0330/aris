@@ -409,12 +409,6 @@ auto test_multimodel_async_planner_two_arm() -> void {
 		m++;
 
 		
-		if (m < 100) {
-			std::cout << "count:" << m << std::endl;
-			aris::dynamic::dsp(1, 7, input_pos);
-		}
-			
-
 		vec.resize(m * multi_model.subInputPosSize(sub_num, sub_id), 0.0);
 		std::copy_n(input_pos, multi_model.subInputPosSize(sub_num, sub_id), vec.data() + multi_model.subInputPosSize(sub_num, sub_id) * (m - 1));
 	}

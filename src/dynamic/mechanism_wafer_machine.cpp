@@ -49,7 +49,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto WaferMachineInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root, const double* current_answer)->int {
+	auto WaferMachineInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_answer)->int {
 		auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
 		
 		double a = dh[0];
@@ -133,7 +133,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto WaferMachineForwardKinematicSolver::kinPosPure(const double* input, double* output, int which_root, const double *current_answer)->int {
+	auto WaferMachineForwardKinematicSolver::kinPosPure(const double* input, double* output, std::int64_t which_root, const double *current_answer)->int {
 		auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
 
 		double a = dh[0];
@@ -211,7 +211,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto WaferMachineInverseKinematicSolverTwoArm::kinPosPure(const double* output, double* input, int which_root, const double* current_answer)->int {
+	auto WaferMachineInverseKinematicSolverTwoArm::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_answer)->int {
 		auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
 
 		double a = dh[0];
@@ -301,7 +301,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto WaferMachineForwardKinematicSolverTwoArm::kinPosPure(const double* input, double* output, int which_root, const double* current_answer)->int {
+	auto WaferMachineForwardKinematicSolverTwoArm::kinPosPure(const double* input, double* output, std::int64_t which_root, const double* current_answer)->int {
 		auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
 
 		double a = dh[0];

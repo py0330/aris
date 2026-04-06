@@ -1563,24 +1563,24 @@ namespace aris::plan {
 			} while (!insert_success);
 		}
 	};
-	auto TrajectoryGenerator::outputPosTypes()const-> const std::vector<aris::dynamic::PosType>& {
+	auto TrajectoryGenerator::posTypes()const-> const std::vector<aris::dynamic::PosType>& {
 		return imp_->ee_pos_types_;
 	}
-	auto TrajectoryGenerator::setOutputPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void {
+	auto TrajectoryGenerator::setPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void {
 		imp_->ee_pos_types_ = ee_types;
 		this->allocateMemory();
 	}
-	auto TrajectoryGenerator::outputVelTypes()const -> const std::vector<aris::dynamic::VelType>& {
+	auto TrajectoryGenerator::velTypes()const -> const std::vector<aris::dynamic::VelType>& {
 		return imp_->ee_vel_types_;
 	}
-	auto TrajectoryGenerator::setOutputVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void {
+	auto TrajectoryGenerator::setVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void {
 		imp_->ee_vel_types_ = ee_types;
 		this->allocateMemory();
 	}
-	auto TrajectoryGenerator::outputAccTypes()const -> const std::vector<aris::dynamic::AccType>& {
+	auto TrajectoryGenerator::accTypes()const -> const std::vector<aris::dynamic::AccType>& {
 		return imp_->ee_acc_types_;
 	}
-	auto TrajectoryGenerator::setOutputAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void {
+	auto TrajectoryGenerator::setAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void {
 		imp_->ee_acc_types_ = ee_types;
 		this->allocateMemory();
 	}
@@ -1799,8 +1799,8 @@ namespace aris::plan {
 			// check 是否全局结束，即所有指令都已执行完
 			if (current_node == next_node) {
 				s_ = current_node->s_end_;
-				get_node_data(outputPosTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-				aris::dynamic::s_pos2pos(outputPosTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, outputPosTypes().data(), ee_pos);
+				get_node_data(posTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+				aris::dynamic::s_pos2pos(posTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, posTypes().data(), ee_pos);
 				
 				if (ee_acc) {
 					aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
@@ -1825,8 +1825,8 @@ namespace aris::plan {
 				// 如果此前没有结束过（例如后面的ResetInitPos是新插进来的），则返回当前指令的末尾状态，否则直接切换到下一条指令 //
 				if(!current_node->finished_){
 					s_ = current_node->s_end_;
-					get_node_data(outputPosTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-					aris::dynamic::s_pos2pos(outputPosTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, outputPosTypes().data(), ee_pos);
+					get_node_data(posTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+					aris::dynamic::s_pos2pos(posTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, posTypes().data(), ee_pos);
 					if (ee_acc) {
 						aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
 						aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
@@ -1875,8 +1875,8 @@ namespace aris::plan {
 			}
 		}
 
-		get_node_data(outputPosTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
-		aris::dynamic::s_pos2pos(outputPosTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, outputPosTypes().data(), ee_pos);
+		get_node_data(posTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
+		aris::dynamic::s_pos2pos(posTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, posTypes().data(), ee_pos);
 		if (ee_acc) {
 			aris::dynamic::s_nv(imp_->internal_pos_size, imp_->ds_ * imp_->ds_, imp_->internal_acc_);
 			aris::dynamic::s_va(imp_->internal_pos_size, imp_->dds_, imp_->internal_vel_, imp_->internal_acc_);
@@ -1905,15 +1905,15 @@ namespace aris::plan {
 
 		// 转化 pos 表达 //
 		std::vector<double> ee_pos_internal(imp_->internal_pos_size), mid_pos_internal(imp_->internal_pos_size);
-		aris::dynamic::s_pos2pos(outputPosTypes().size(), outputPosTypes().data(), ee_pos, imp_->internal_pos_type_, ee_pos_internal.data());
+		aris::dynamic::s_pos2pos(posTypes().size(), posTypes().data(), ee_pos, imp_->internal_pos_type_, ee_pos_internal.data());
 
 		// 插入初始化指令 //
 		auto& nodes_ = imp_->nodes_;
-		auto& ins_node = nodes_.emplace_back(outputPosTypes().size());
+		auto& ins_node = nodes_.emplace_back(posTypes().size());
 		ins_node.id_ = id;
 
 		// 初始化节点 //
-		auto scurve_size = aris::dynamic::s_pos_type_mag_size(outputPosTypes().size(), outputPosTypes().data());
+		auto scurve_size = aris::dynamic::s_pos_type_mag_size(posTypes().size(), posTypes().data());
 		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
 		make_node(false, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());

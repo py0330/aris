@@ -762,7 +762,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto SevenAxisInverseKinematicSolver4::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
+	auto SevenAxisInverseKinematicSolver4::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
 		double ee_pos[17]{}, root_mem[7]{};
 
 		ee_pos[16] = output[s_pos_type_size(imp_->EE->posType())];

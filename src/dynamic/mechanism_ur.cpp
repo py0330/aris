@@ -84,7 +84,7 @@ namespace aris::dynamic{
 	//    .   |/
 	//   ---  *----> x
 	//       O
-	auto inverseUr(const void *para, const double*ee_pm, const double *current_input, int which_root, double*input)->int {
+	auto inverseUr(const void *para, const double*ee_pm, const double *current_input, std::int64_t which_root, double*input)->int {
 		auto& param = *reinterpret_cast<const UrParamLocal*>(para);
 		
 		const double &L1 = param.L1;
@@ -467,29 +467,37 @@ namespace aris::dynamic{
 
 		// 设置电机位置 //
 		for (aris::Size i = 0; i < 6; ++i) {
-			imp_->motions[i]->setMpInternal(input_pos[i]);
+			imp_->motions[i]->setMp(input_pos[i]);
 		}
 
 		return 0;
 	};
-	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
+	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
 		double ee_pos[16]{}, root_mem[6]{};
-
+		
 		s_pos2pm(imp_->EE->posType(), output, ee_pos);
 
-		const double input_period[6]{
-			aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,aris::PI * 2,
-		};
+		// 前处理 //
+		constexpr int INUM = 6;
+		double input_period[INUM], min_input[INUM], max_input[INUM], internal_current_input[INUM];
+		for (int i = 0; i < INUM; ++i) {
+			auto& mot = model()->motionPool()[i];
+			input_period[i] = 2.0 * aris::PI;
+			min_input[i] = mot.mp2mpInternal(mot.minMp());
+			max_input[i] = mot.mp2mpInternal(mot.maxMp());
+			internal_current_input[i] = current_input ? mot.mp2mpInternal(current_input[i]) : mot.mpInternal();
+		}
 
-		if (current_input == nullptr) {
-			double current_input_pos[6];
-			for (int i = 0; i < 6; ++i)
-				current_input_pos[i] = model()->motionPool()[i].mpInternal();
-			return s_ik(6, rootNumber(), &imp_->puma_param, inverseUr, which_root, ee_pos, input, root_mem, input_period, current_input_pos);
+		auto ret = s_ik(6, rootNumber(), &imp_->puma_param, inverseUr, which_root, ee_pos, input, root_mem, input_period, internal_current_input, min_input, max_input);
+
+		// 后处理 //
+		if (ret >= 0) {
+			for (int i = 0; i < INUM; ++i) {
+				input[i] = model()->motionPool()[i].mpInternal2mp(input[i]);
+			}
 		}
-		else {
-			return s_ik(6, rootNumber(), &imp_->puma_param, inverseUr, which_root, ee_pos, input, root_mem, input_period, current_input);
-		}
+
+		return ret;
 	}
 	UrInverseKinematicSolver::~UrInverseKinematicSolver() = default;
 	UrInverseKinematicSolver::UrInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {

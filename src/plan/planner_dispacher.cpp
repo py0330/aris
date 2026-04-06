@@ -62,10 +62,19 @@ namespace aris::plan {
 		if (chanel < 0 || chanel >= imp_->chanel_size_)
 			THROW_FILE_LINE("invalid chanel");
 
+		// If the same channel is already locked with the same submodels, allow re-entrant lock.
+		if (imp_->chanel_data_vec_[chanel]->lock_count > 0
+			&& imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
+			imp_->chanel_data_vec_[chanel]->lock_count++;
+			return imp_->chanel_data_vec_[chanel]->lock_count;
+		}
+
 		// check submodel conflict with other locked chanel, if conflict return -1 to indicate lock failed //
 		auto getActiveSubIds = [&]() -> std::vector<aris::Size> {
 			std::vector<aris::Size> active_sub_ids;
 			for (int i = 0; i < imp_->chanel_size_; ++i) {
+				if (i == chanel)
+					continue;
 				if (imp_->chanel_data_vec_[i]->lock_count > 0)
 					active_sub_ids.insert(active_sub_ids.end(), imp_->chanel_data_vec_[i]->submodel_ids.begin(), imp_->chanel_data_vec_[i]->submodel_ids.end());
 			}
@@ -79,41 +88,33 @@ namespace aris::plan {
 				return -1; // submodel conflict with other locked chanel, return -1 to indicate lock failed //
 		}
 
-		// if same submodel, directly lock and return lock count //
-		if (imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
-			// same submodel, directly lock //
-			imp_->chanel_data_vec_[chanel]->lock_count++;
-			return imp_->chanel_data_vec_[chanel]->lock_count;
-		}
-		else {
-			imp_->chanel_data_vec_[chanel]->lock_count++;
-			imp_->chanel_data_vec_[chanel]->submodel_ids = submodel_ids;
-			imp_->chanel_data_vec_[chanel]->planner.setSubModelId(submodel_ids);
+		imp_->chanel_data_vec_[chanel]->lock_count++;
+		imp_->chanel_data_vec_[chanel]->submodel_ids = submodel_ids;
+		imp_->chanel_data_vec_[chanel]->planner.setSubModelId(submodel_ids);
 
-			// limits //
-			aris::core::Matrix mat(imp_->model_->subInputPosSize(submodel_ids.size(), submodel_ids.data()), 1, 0.0);
-			imp_->model_->getSubMinInputPos(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMinPos(mat);
-			imp_->model_->getSubMaxInputPos(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMaxPos(mat);
-			imp_->model_->getSubMinInputVel(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMinVel(mat);
-			imp_->model_->getSubMaxInputVel(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMaxVel(mat);
-			imp_->model_->getSubMinInputAcc(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMinAcc(mat);
-			imp_->model_->getSubMaxInputAcc(submodel_ids.size(), submodel_ids.data(), mat.data());
-			imp_->chanel_data_vec_[chanel]->planner.setMaxAcc(mat);
+		// limits //
+		aris::core::Matrix mat(imp_->model_->subInputPosSize(submodel_ids.size(), submodel_ids.data()), 1, 0.0);
+		imp_->model_->getSubMinInputPos(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMinPos(mat);
+		imp_->model_->getSubMaxInputPos(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMaxPos(mat);
+		imp_->model_->getSubMinInputVel(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMinVel(mat);
+		imp_->model_->getSubMaxInputVel(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMaxVel(mat);
+		imp_->model_->getSubMinInputAcc(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMinAcc(mat);
+		imp_->model_->getSubMaxInputAcc(submodel_ids.size(), submodel_ids.data(), mat.data());
+		imp_->chanel_data_vec_[chanel]->planner.setMaxAcc(mat);
 
-			// target_ds init 时会被重置 //
-			auto target_ds = imp_->chanel_data_vec_[chanel]->planner.targetSpeedRatio();
+		// target_ds init 时会被重置 //
+		auto target_ds = imp_->chanel_data_vec_[chanel]->planner.targetSpeedRatio();
 
-			imp_->chanel_data_vec_[chanel]->planner.allocateMemory();
-			imp_->chanel_data_vec_[chanel]->planner.init();
+		imp_->chanel_data_vec_[chanel]->planner.allocateMemory();
+		imp_->chanel_data_vec_[chanel]->planner.init();
 
-			imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(target_ds);
-			return 1; // successfully locked with new submodel //
-		}
+		imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(target_ds);
+		return 1; // successfully locked with new submodel //
 	}
 
 	auto PlannerDispacher::releaseChanel(int chanel) -> int {
@@ -133,6 +134,12 @@ namespace aris::plan {
 	auto PlannerDispacher::insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
 		return imp_->chanel_data_vec_[chanel]->planner.insertCirclePos(tools, wobjs, ee_pos, mid_pos, vel, acc, jerk, zone);
 	}
+	auto PlannerDispacher::insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, const std::int64_t *which_root) -> std::int64_t {
+		return imp_->chanel_data_vec_[chanel]->planner.insertMoveJ(tools, wobjs, tw_pos, vel, acc, jerk, zone, which_root);
+	}
+    auto PlannerDispacher::insertMoveAbsJPos(int chanel, const double *joint_p, const double *joint_v, const double *joint_a, const double *joint_j, const double *joint_z) -> std::int64_t {
+        return imp_->chanel_data_vec_[chanel]->planner.insertMoveAbsJ(joint_p, joint_v, joint_a, joint_j, joint_z);
+    }
 	auto PlannerDispacher::updateInsertPos(int chanel) -> void {
 		imp_->chanel_data_vec_[chanel]->planner.updateInsertPos();
 	}

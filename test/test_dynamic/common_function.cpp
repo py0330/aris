@@ -26,7 +26,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 			input[j] = input_series[j][(i / (int)std::pow(linspace_num, j)) % linspace_num];
 		}
 
-		// Í¨¹ıÕı½âÉèÖÃ³õÖµ£¬¿¼ÂÇµ½·´½â¿ÉÄÜ»áÓĞ¶à½â£¬Òò´ËÕâÀï²»È¥±È½ÏÖ±½Ó·´½â»ØÀ´µÄÊäÈë //
+		// Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã³ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü»ï¿½ï¿½Ğ¶ï¿½â£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï²»È¥ï¿½È½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ //
 		m.setInputPos(input.data());
 		if (m.forwardKinematics()) {
 			//std::cout << __FILE__ << __LINE__ << " failed forward kinematics: perhaps outside the workspace" << std::endl;
@@ -36,20 +36,20 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 
 		m.getOutputPos(output.data());
 
-		// µÃµ½·´½âµÄÖµ //
+		// ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ //
 		if (m.inverseKinematics()) {
 			std::cout << __FILE__ << __LINE__ << " failed inverse kinematics" << std::endl;
 			continue;
 		}
 
-		// ÔÙ´ÎÕı½â£¬Ó¦¸ÃµÃµ½ÀàËÆµÄÖµ //
+		// ï¿½Ù´ï¿½ï¿½ï¿½ï¿½â£¬Ó¦ï¿½ÃµÃµï¿½ï¿½ï¿½ï¿½Æµï¿½Öµ //
 		int root_found = 0;
 		for (; root_found < m.forwardRootNumber(); ++root_found) {
 			std::vector<double> current_output(m.outputPosSize());
 			std::vector<double> current_input(m.inputPosSize());
 			m.getInputPos(current_input.data());
 
-			auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), root_found, current_output.data());
+			auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), &root_found, current_output.data());
 			if (ret == 0
 				&& aris::dynamic::s_is_finite(m.outputPosSize(), output_compare.data())
 				&& aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error))
@@ -65,7 +65,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 				m.getInputPos(current_input.data());
 				m.getOutputPos(current_output.data());
 
-				auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), root_found, current_output.data());
+				auto ret = m.forwardKinematics(current_input.data(), output_compare.data(), &root_found, current_output.data());
 				if (ret == 0
 					&& aris::dynamic::s_is_finite(m.outputPosSize(), output_compare.data())
 					&& aris::dynamic::s_is_equal(m.outputPosSize(), output.data(), output_compare.data(), error))

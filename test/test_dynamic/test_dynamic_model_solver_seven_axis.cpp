@@ -271,7 +271,7 @@ void test_seven_axis_inverse_solver4()
 
 
 	double result[17];
-	m->inverseKinematics(output0, input, 8, result);
+	m->inverseKinematics(output0, input, nullptr, result);
 }
 void test_model_solver_seven_axis()
 {

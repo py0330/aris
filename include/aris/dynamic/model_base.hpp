@@ -1,20 +1,49 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_BASE_H_
 #define ARIS_DYNAMIC_MODEL_BASE_H_
 
+#include <cstdint>
+
 #include <aris/dynamic/kinematics.hpp>
 
 namespace aris::dynamic{
 	class ARIS_API ModelBase: public aris::core::NamedObject{
 	public:
-		// kinematic roots // 
-		auto virtual inverseRootNumber()const->int { return 1; }
-		auto virtual whichInverseRoot(const double* output, const double* input)->int { return 0; }
-		auto virtual forwardRootNumber()const->int { return 1; }
-		auto virtual whichForwardRoot(const double* input, const double* output)->int { return 0; }
+		// kinematic roots //
+
+		/// @brief 单模型返回 1，多模型返回所有子模型的个数（包含子模型的子模型）
+		/// @return 单模型： 1，多模型：子模型个数（含子模型的子模型）
+		auto virtual inverseRootSize()const->int { return 1; }
+
+
+		/// @brief 逆解个数，多模型为所有子模型的逆解个数之积
+		/// @return 逆解个数，多模型返回：子模型的逆解个数之积
+		auto virtual inverseRootNumber()const->std::int64_t { return 1; }
+	
+		/// @brief 根据当前的输入和输出，确认当前的逆解是哪一个
+		/// @param output 输出位置
+		/// @param input 输入位置
+		/// @param which_root 逆解的编号，编号在 [0, inverseRootNumber()) 区间内
+		/// @return 0 成功，-1 失败
+		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int { return 0; }
+
+		/// @brief 单模型返回 1，多模型返回所有子模型的个数（包含子模型的子模型）
+		/// @return 单模型： 1，多模型：子模型个数（含子模型的子模型）
+		auto virtual forwardRootSize()const->int { return 1; }
+
+		/// @brief 正解个数，多模型为所有子模型的正解个数之积
+		/// @return 正解个数，多模型返回：子模型的正解个数之积
+		auto virtual forwardRootNumber()const->std::int64_t { return 1; }
+
+		/// @brief 根据当前的输入和输出，确认当前的正解是哪一个
+		/// @param input 输入位置
+		/// @param output 输出位置
+		/// @param which_root 正解的编号，编号在 [0, forwardRootNumber()) 区间内
+		/// @return 0 成功，-1 失败
+		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int { return 0; }
 
 		// kinematics & dynamics, not set state //
-		auto virtual inverseKinematics(const double* output, double* input, int which_root = 0, const double *current_input = nullptr)const noexcept->int { return -1; }
-		auto virtual forwardKinematics(const double* input, double* output, int which_root = 0, const double* current_input = nullptr)const noexcept->int { return -1; }
+		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t *which_root = nullptr, const double *current_input = nullptr)const noexcept->int { return -1; }
+		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t *which_root = nullptr, const double* current_input = nullptr)const noexcept->int { return -1; }
 
 		// kinematics & dynamics, set state //
 		auto virtual inverseKinematics()noexcept->int { return -1; }

@@ -162,11 +162,13 @@ void test_puma_inverse_solver(){
 			double input_result[6], input_result2[6];
 			new_m->getInputPos(input_result2);
 
-			if (new_m->inverseKinematics(ee_pm, input_result, i))
+			if (new_m->inverseKinematics(ee_pm, input_result, &i))
 				std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
-			if (new_m->whichInverseRoot(ee_pm, input_result) != i) {
-				new_m->whichInverseRoot(ee_pm, input_result);
+			int which_root;
+			new_m->getWhichInverseRoot(ee_pm, input_result, &which_root);
+			if (which_root != i) {
+				new_m->getWhichInverseRoot(ee_pm, input_result, &which_root);
 				std::cout << __FILE__ << __LINE__ << "which root failed" << std::endl;
 			}
 				
@@ -191,8 +193,8 @@ void test_puma_kinematic_with_input_factor() {
 
 	double output[6], input[6];
 
-	m->forwardKinematics(q, output, 8, q);
-	m->inverseKinematics(output, input, 8, q);
+	m->forwardKinematics(q, output, nullptr, q);
+	m->inverseKinematics(output, input, nullptr, q);
 	
 	const double q2[6]{-2,-1,0,1,2,3};
 	for (int i = 0; i < 6; ++i) {
@@ -201,12 +203,12 @@ void test_puma_kinematic_with_input_factor() {
 	}
 
 	double output_result[6];
-	m->forwardKinematics(q2, output_result, 8);
+	m->forwardKinematics(q2, output_result, nullptr);
 	if (!aris::dynamic::s_is_equal(6, 1, output, output_result, 1e-10)) {
 		std::cout << "error" << std::endl;
 	}
 
-	m->inverseKinematics(output_result, input, 8, q2);
+	m->inverseKinematics(output_result, input, nullptr, q2);
 	if (!aris::dynamic::s_is_equal(6, 1, input, q2, 1e-8)) {
 		std::cout << "error" << std::endl;
 	}
@@ -218,12 +220,12 @@ void test_puma_kinematic_with_input_factor() {
 	
 
 	for (int i = 0; i < 8; ++i) {
-		auto ret = m->inverseKinematics(output_result, input, i);
+		auto ret = m->inverseKinematics(output_result, input, &i);
 		std::cout << "root:" << i << " ret:" << ret << std::endl;
 		aris::dynamic::dsp(1,6,input);
 	}
 
-	auto ret = m->inverseKinematics(output_result, input, 8, q2);
+	auto ret = m->inverseKinematics(output_result, input, nullptr, q2);
 	aris::dynamic::dsp(1, 6, input);
 
 

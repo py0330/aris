@@ -22,10 +22,10 @@ namespace aris::dynamic {
 
 //#define ARIS_DEBUG_DELTA_SOLVER
 
-	auto deltaInverse(const void *para, const double *ee_xyza, const double *current_input, int which_root, double *input)->int {
+	auto deltaInverse(const void *para, const double *ee_xyza, const double *current_input, std::int64_t which_root, double *input)->int {
 		const double* param = reinterpret_cast<const double*>(para);
 		
-		for (int i = 0; i < 3; ++i) {
+		for (std::int64_t i = 0; i < 3; ++i) {
 			// 尺寸 //
 			const double& ax = param[0 + i * 11];
 			const double& ay = param[1 + i * 11];
@@ -63,7 +63,7 @@ namespace aris::dynamic {
 		input[3] = ee_xyza[3];
 		return 0;
 	}
-	auto deltaForward(const void *para, const double *input, const double* current_input, int which_root, double *ee_xyza)->int {
+	auto deltaForward(const void *para, const double *input, const double* current_input, std::int64_t which_root, double *ee_xyza)->int {
 		// 记p1 为 S1 S2 的中点位置，p2为末端到 S3 S4 中点的向量
 		//
 		// 于是对其中某一根支联，应有以下方程：
@@ -184,7 +184,7 @@ namespace aris::dynamic {
 
 		// 根据 p1 & p2 计算k
 		double p1[9], p2[9], k[9], s[3];
-		for (int i = 0; i < 3; ++i) {
+		for (std::int64_t i = 0; i < 3; ++i) {
 			const double& ax = param[0 + i * 11];
 			const double& ay = param[1 + i * 11];
 			const double& az = param[2 + i * 11];
@@ -360,7 +360,7 @@ namespace aris::dynamic {
 			for (auto &m : model()->motionPool()) m.updP();
 			return 0;
 		}
-		auto virtual kinPosPure(const double* output, double* input, int which_root, const double* current_input = nullptr)->int override {
+		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)->int override {
 			double root_mem[4]{};
 			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
 			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
@@ -444,7 +444,7 @@ namespace aris::dynamic {
 			for (auto &m : model()->generalMotionPool()) m.updP();
 			return 0;
 		}
-		auto virtual kinPosPure(const double* output, double* input, int which_root, const double* current_input = nullptr)->int override {
+		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)->int override {
 			double root_mem[4]{};
 			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
 			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
@@ -742,7 +742,7 @@ namespace aris::dynamic {
 		return model;
 	}
 
-	auto planarDeltaInverse(const double *param, const double *ee_xya, int which_root, double *input)->int {
+	auto planarDeltaInverse(const double *param, const double *ee_xya, std::int64_t which_root, double *input)->int {
 		// Planar Delta
 		//---------------------------------------------------------------------------------------------
 		// 包含4个自由度。共4个杆件  link1~4

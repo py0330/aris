@@ -16,19 +16,20 @@
 
 namespace aris::dynamic{
 	struct Solver::Imp{
-		int which_root_{ 0 }, root_num_{ 1 };
+		std::int64_t which_root_{ 0 };
+		std::int64_t root_num_{ 1 };
 		double max_error_{ 1e-10 };
 		Size max_iter_count_{ 100 };
 		double error_{ 0.0 };
 		Size iter_count_{ 0 };
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 	};
-	auto Solver::setRootNumber(int root_num)->void { 
+	auto Solver::setRootNumber(std::int64_t root_num)->void { 
 		imp_->root_num_ = root_num;
 	}
-	auto Solver::rootNumber()const->int { return imp_->root_num_; }
-	auto Solver::setWhichRoot(int root_of_solver)->void { imp_->which_root_ = root_of_solver; }
-	auto Solver::whichRoot()const->int { return imp_->which_root_; }
+	auto Solver::rootNumber()const->std::int64_t { return imp_->root_num_; }
+	auto Solver::setWhichRoot(std::int64_t root_of_solver)->void { imp_->which_root_ = root_of_solver; }
+	auto Solver::whichRoot()const->std::int64_t { return imp_->which_root_; }
 	
 	auto Solver::error()const->double { return imp_->error_; }
 	auto Solver::setError(double error)->void { imp_->error_ = error; }
@@ -1478,7 +1479,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, int which_root, const double* current_answer)->int {
+	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer)->int {
 		kinPosSetActiveMotionPos(motion_pos);
 		if (auto ret = kinPosCompute())
 			return ret;
@@ -1487,15 +1488,15 @@ namespace aris::dynamic{
 			return ret;
 		}
 	}
-	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)->int {
-		int solution_id = -1;
+	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)->std::int64_t {
+		std::int64_t solution_id = -1;
 		double error = std::numeric_limits<double>::infinity();
 
 		if (rootNumber() == 1) {
 			return 0;
 		}
 		else {
-			for (int i = 0; i < rootNumber(); ++i) {
+			for (std::int64_t i = 0; i < rootNumber(); ++i) {
 				if (auto ret = kinPosPure(motion_pos, imp_->pd_->deactive_mp_, i, answer); ret >= 0) {
 					aris::Size pos = 0;
 					double this_error = 0.0;

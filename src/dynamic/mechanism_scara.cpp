@@ -31,7 +31,7 @@ namespace aris::dynamic{
 		double mp_factor[4];
 	};
 	// 不考虑 pitch //
-	auto scaraInverse(const void* para, const double* ee_xyza, const double* current_input, int which_root, double* input)->int {
+	auto scaraInverse(const void* para, const double* ee_xyza, const double* current_input, std::int64_t which_root, double* input)->int {
 		auto &param = *reinterpret_cast<const ScaraParamLocal*>(para);
 		
 		const double& a = param.a;
@@ -324,7 +324,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, int which_root, const double* current_input)->int {
+	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
 		double root_mem[4]{};
 		const double input_period[4]{ aris::PI * 2, aris::PI * 2,std::numeric_limits<double>::infinity(),aris::PI * 2 };
 

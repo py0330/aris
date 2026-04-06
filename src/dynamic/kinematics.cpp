@@ -2096,19 +2096,19 @@ namespace aris::dynamic{
 		}
 	}
 
-	auto s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem
+	auto s_ik(int root_size, std::int64_t root_num, const void* dh, IkFunc func, std::int64_t which_root, const double* ee_pos, double* input_pos, double* roots_mem
 		, const double* root_periods, const double* current_root, const double* input_min, const double* input_max) -> int {
 		if (which_root >= root_num || which_root < 0) {
 			int solution_num = 0;
 			double max_diff_norm = std::numeric_limits<double>::infinity();
-			for (int i = 0; i < root_num; ++i) {
+			for (std::int64_t i = 0; i < root_num; ++i) {
 				if (func(dh, ee_pos, current_root, i, roots_mem) >= 0) {
 					// 采用 无穷 范数来比较两组向量，即只看差值最大的那一个数据
 					double this_norm = 0;
 					
 					// 如果有周期，根据周期进行设置 //
 					if (root_periods) {
-						for (int j = 0; j < root_size; ++j) {
+						for (std::int64_t j = 0; j < root_size; ++j) {
 							// 放置到当前根所在的周期 //
 							if (current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
 								roots_mem[j] = s_put_near_value(roots_mem[j], current_root[j], root_periods[j]);
@@ -2143,7 +2143,7 @@ namespace aris::dynamic{
 				int ret = 0;
 				// 如果有周期，根据周期进行设置 //
 				if (root_periods) {
-					for (int j = 0; j < root_size; ++j) {
+					for (std::int64_t j = 0; j < root_size; ++j) {
 						// 放置到当前根所在的周期 //
 						if (current_root && std::isfinite(root_periods[j]) && std::isfinite(current_root[j]))
 							input_pos[j] = s_put_near_value(input_pos[j], current_root[j], root_periods[j]);

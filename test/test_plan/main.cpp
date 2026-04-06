@@ -9,12 +9,14 @@
 #include "test_plan_input_smoother.h"
 #include "test_plan_move_follower.h"
 #include "test_plan_multimodel_planner.h"
+#include "test_plan_planner_dispacher.h"
 
 int main(int argc, char *argv[]){
 	//test_move_follower();
 	//test_function();
 	//test_input_smoother();
-	test_multimodel_planner();
+	//test_multimodel_planner();
+	test_planner_dispacher();
 	//test_scurve();
 	//test_path();
 	//test_trajectory();

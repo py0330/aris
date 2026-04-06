@@ -51,7 +51,7 @@ auto MoveL::prepareNrt()->void{
 auto MoveL::executeRT()->int{
 	double p[100];
 	auto ret = pd.getNextInput(0, input_pos);
-	return ret == id_ ? 0 : ret;
+	return ret <= id_ ? ret : 0;
 }
 auto MoveL::collectNrt()->void{
 	pd.releaseChanel(0);
@@ -74,6 +74,75 @@ MoveL::MoveL(const std::string & name) {
 		"	</GroupParam>"
 		"</Command>");
 }
+
+
+class MoveJ : public aris::core::CloneObject<MoveJ, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+	auto virtual collectNrt()->void override;
+
+	virtual ~MoveJ();
+	explicit MoveJ(const std::string& name = "MoveJ");
+	MoveJ(const MoveJ& other);
+
+private:
+	std::int64_t id_{ 0 };
+};
+
+auto MoveJ::prepareNrt()->void{
+	// p,v,a,j,z //
+	auto pos_mtx = matrixParam("pos");
+	auto vel_mtx = matrixParam("vel");
+	auto acc_mtx = matrixParam("acc");
+	auto jerk_mtx = matrixParam("jerk");
+	auto zone_mtx = matrixParam("zone");
+
+	// tool & wobj //
+	auto tools = stringParam("tool");
+	auto wobjs = stringParam("wobj");
+
+	if (tools.size() > 0 && tools.front() == '{' && tools.back() == '}') {
+		tools.erase(tools.begin());
+		tools.erase(tools.end() - 1);
+	}
+	if (wobjs.size() > 0 && wobjs.front() == '{' && wobjs.back() == '}') {
+		wobjs.erase(wobjs.begin());
+		wobjs.erase(wobjs.end() - 1);
+	}
+		
+	// insert line //
+	pd.tryLockChanel(0, { 1 });
+	id_ = pd.insertMoveJPos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+	pd.updateInsertPos(0);
+}
+auto MoveJ::executeRT()->int{
+	double p[100];
+	auto ret = pd.getNextInput(0, input_pos);
+	return ret <= id_ ? ret : 0;
+}
+auto MoveJ::collectNrt()->void{
+	pd.releaseChanel(0);
+}
+MoveJ::~MoveJ() = default;
+MoveJ::MoveJ(const MoveJ & other) = default;
+MoveJ::MoveJ(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"mvj\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"pos_type\" default=\"pe321\"/>"
+		"		<Param name=\"acc\" default=\"3.0\"/>"
+		"		<Param name=\"vel\" default=\"0.5\"/>"
+		"		<Param name=\"dec\" default=\"3.0\"/>"
+		"		<Param name=\"jerk\" default=\"5.0\"/>"
+		"		<Param name=\"zone\" default=\"5.0\"/>"
+		"		<Param name=\"tool\" default=\"0\"/>"
+		"		<Param name=\"wobj\" default=\"0\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
 
 auto createMultiModel() -> std::unique_ptr<aris::dynamic::MultiModel> {
 	// 真机数据 //
@@ -147,40 +216,51 @@ int main(){
 		// 构造mvl ，调试一下
 		MoveL mvl;
 		mvl.setModelBase(multi_model.get());
-
 		mvl.command().init();
+
+		MoveJ mvj;
+		mvj.setModelBase(multi_model.get());
+		mvj.command().init();
+		
+		aris::plan::Plan *plan_ptr = nullptr;
+
 		static int i = 0;
 		if(i%4 == 0){
 			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+
+			plan_ptr = &mvl;
 		}
 		else if(i%4 == 1){
 			mvl.parse("mvl --pos={-0.1821530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+			plan_ptr = &mvl;
 		}
 		else if(i%4 == 2){
-			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
-				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
+			mvj.parse("mvj --pos={-0.1621530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
+				"--vel={1000,1000,1000,1000,1000,1000,1000} --acc={100,100,100,100,100,100,100} --jerk={1000,1000,1000,1000,1000,1000,1000} --zone={0,0,0,0,0,0,0} "
 				"--tool={RightArm.L7.tool0} --wobj={RightArm.ground.wobj0}");
+			plan_ptr = &mvj;
 		}
 		else if(i%4 == 3){
 			mvl.parse("mvl --pos={-0.1821530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
 				"--tool={RightArm.L7.tool1} --wobj={RightArm.ground.wobj0}");
+			plan_ptr = &mvl;
 		}
 		++i;
 
 
-		mvl.prepareNrt();
-		mvl.setCount(1);
+		plan_ptr->prepareNrt();
+		plan_ptr->setCount(1);
 
-		while (auto ret = mvl.executeRT()) {
-			mvl.setCount(mvl.count() + 1);
+		while (auto ret = plan_ptr->executeRT()) {
+			plan_ptr->setCount(plan_ptr->count() + 1);
 
-			if(mvl.count()%1000 == 0){
-				std::cout << mvl.count() << std::endl;
+			if(plan_ptr->count()%1000 == 0){
+				std::cout << plan_ptr->count() << std::endl;
 			}
 			
 			if (ret < 0) {
@@ -194,7 +274,7 @@ int main(){
 			}
 		}
 
-		std::cout << "mvl finished:" << mvl.count() << std::endl;
+		std::cout << "mv finished:" << plan_ptr->count() << std::endl;
 
 	};
 

@@ -22,12 +22,12 @@ namespace aris::plan{
 	class ARIS_API TrajectoryGenerator {
 	public:
 		// 配置末端类型 //
-		auto outputPosTypes()const-> const std::vector<aris::dynamic::PosType>&;
-		auto setOutputPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void;
-		auto outputVelTypes()const -> const std::vector<aris::dynamic::VelType>&;
-		auto setOutputVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void;
-		auto outputAccTypes()const -> const std::vector<aris::dynamic::AccType>&;
-		auto setOutputAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void;
+		auto posTypes()const-> const std::vector<aris::dynamic::PosType>&;
+		auto setPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void;
+		auto velTypes()const -> const std::vector<aris::dynamic::VelType>&;
+		auto setVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void;
+		auto accTypes()const -> const std::vector<aris::dynamic::AccType>&;
+		auto setAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void;
 
 		// 真实世界的时间间隔 //
 		auto dt()const->double;

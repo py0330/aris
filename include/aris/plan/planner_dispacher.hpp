@@ -35,14 +35,16 @@ namespace aris::plan {
 		auto transferMatrice() -> std::vector<aris::core::Matrix>&;
 
 		auto init() -> void;
-        
+
 		////////////////// PART 2 NRT operation ////////////////
 		auto tryLockChanel(int chanel, std::vector<aris::Size> submodel_ids) -> int;
 		auto releaseChanel(int chanel) -> int;
 
 		// 插入新的数据，并重规划 //
-		auto insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
-		auto insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z, const std::int64_t *which_root) -> std::int64_t;
+		auto insertMoveAbsJPos(int chanel, const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z) -> std::int64_t;
 		auto updateInsertPos(int chanel) -> void;
 
 		////////////////// PART 3 RT operation ////////////////

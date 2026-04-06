@@ -16,7 +16,7 @@ auto test_trajectory_1()->void {
 	const int A_NUM = 2;
 
 	//  INIT TG //
-	tg.setOutputPosTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::PQ, aris::dynamic::PosType::PQ, });
+	tg.setPosTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::PQ, aris::dynamic::PosType::PQ, });
 	double init_pe[EE_NUM * 6]{ 0,0,0,0,0,0, 0,0,0,0,0,0 };
 	double init_pq[EE_NUM * 7 + A_NUM]{ 0,0 };
 	double init_vel[EE_NUM * 2 + A_NUM]{ 1,1,1,1,1,1 };
@@ -182,7 +182,7 @@ auto test_trajectory_2()->void {
 
 	// 构造规划器 //
 	aris::plan::TrajectoryGenerator tg;
-	tg.setOutputPosTypes({ aris::dynamic::PosType::PE321 });
+	tg.setPosTypes({ aris::dynamic::PosType::PE321 });
 	
 	// 构造数据 //
 	double pes[PE_SIZE][6 * EE_NUM];
@@ -261,7 +261,7 @@ auto test_trajectory_3()->void {
 	const int V_SIZE = PQ_NUM * 2 + 2 * XYZT_NUM + A_NUM;
 
 	//  INIT TG //
-	tg.setOutputPosTypes({ 
+	tg.setPosTypes({ 
 		aris::dynamic::PosType::X,
 		aris::dynamic::PosType::X,
 		aris::dynamic::PosType::XYZT,
@@ -465,7 +465,7 @@ auto test_trajectory_4()->void {
 
 	// 构造规划器 //
 	aris::plan::TrajectoryGenerator tg;
-	tg.setOutputPosTypes({ aris::dynamic::PosType::PE321 });
+	tg.setPosTypes({ aris::dynamic::PosType::PE321 });
 
 
 
@@ -565,7 +565,7 @@ auto test_trajectory_5() -> void {
 	const int POINT_NUM = 3;
 
 	//  INIT TG //
-	tg.setOutputPosTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::RTZ});
+	tg.setPosTypes({ aris::dynamic::PosType::X,aris::dynamic::PosType::X,aris::dynamic::PosType::RTZ});
 	double init_pos[EE_POS_SIZE]{ 0,0,0,0,0};
 	double init_vel[EE_VEL_SIZE]{ 1,1,1,1 };
 

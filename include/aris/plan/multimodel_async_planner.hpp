@@ -63,9 +63,6 @@ namespace aris::plan{
 		auto setSubModelId(std::vector<aris::Size> id_list) -> void;
 		auto subModelId() -> const std::vector<aris::Size> &;
 
-		auto outputPosTypes()const -> const std::vector<aris::dynamic::PosType>&;
-		auto inputSize() -> int;
-
 		auto setMaxPos(aris::core::Matrix pos) -> void;
 		auto maxPos() -> aris::core::Matrix;
 		auto setMaxVel(aris::core::Matrix vel) -> void;
@@ -109,6 +106,14 @@ namespace aris::plan{
 		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 		auto insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
+		// 插入新的数据，并重规划 //
+		auto insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr) -> std::int64_t;
+		auto insertMoveJ(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr) -> std::int64_t;
+
+		// 插入新的数据，并重规划 //
+		auto insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone) -> std::int64_t;
+
+
 		// 重规划 //
 		auto updateInsertPos()->void;
 
@@ -144,6 +149,14 @@ namespace aris::plan{
 		/// @param chanel 通道
 		/// @return 逆运动学返回值，一般来说 ret < 0 为报错
 		auto ikRet() -> std::int64_t;
+
+		/// @brief 获取输出位置类型
+		/// @return 输出位置类型向量
+		auto outputPosTypes()const -> const std::vector<aris::dynamic::PosType>&;
+
+		/// @brief 获取输入维数
+		/// @return 输入维数
+		auto inputSize() -> int;
 
 		~MultimodelPlanner();
 		MultimodelPlanner();

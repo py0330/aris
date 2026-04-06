@@ -665,7 +665,7 @@ namespace aris::dynamic{
 		return size;
 	}
 
-	using IkFunc = std::function<int(const void* dh, const double* ee_pos, const double*current_input, int which_root, double* input)>;
+	using IkFunc = std::function<int(const void* dh, const double* ee_pos, const double*current_input, std::int64_t which_root, double* input)>;
 	//    root_size : 解的大小，例如 puma 的解是 6 维
 	//     root_num : 解的个数，例如 puma 的反解的个数为 8 
 	//           dh : 反解需要用到的参数
@@ -676,7 +676,7 @@ namespace aris::dynamic{
 	//    roots_mem : 计算所需的内存，大小应为 root_size
 	// root_periods : 解的周期，例如转动轴周期为 2 PI，如果为 inf 或 nan，则说明没有周期
 	// current_root : 当前解，用于在 which_root < 0 或 >= root_num 时，选择解
-	auto ARIS_API s_ik(int root_size, int root_num, const void* dh, IkFunc func, int which_root, const double* ee_pos, double* input_pos, double* roots_mem
+	auto ARIS_API s_ik(int root_size, std::int64_t root_num, const void* dh, IkFunc func, std::int64_t which_root, const double* ee_pos, double* input_pos, double* roots_mem
 		, const double* root_periods = nullptr, const double* current_root = nullptr, const double* input_min = nullptr, const double* input_max = nullptr)->int;
 
 }
