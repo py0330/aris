@@ -8,8 +8,6 @@
 
 namespace aris::plan {
 
-
-
 	struct PlannerDispacher::Imp {
 		struct ChanelData {
 			std::vector<aris::Size> submodel_ids;
@@ -60,16 +58,14 @@ namespace aris::plan {
 
 	auto PlannerDispacher::tryLockChanel(int chanel, std::vector<aris::Size> submodel_ids) -> int {
 		if (chanel < 0 || chanel >= imp_->chanel_size_)
-			THROW_FILE_LINE("invalid chanel");
+			return -1; // chanel does not exist, return -1 to indicate lock failed //
 
-		// If the same channel is already locked with the same submodels, allow re-entrant lock.
-		if (imp_->chanel_data_vec_[chanel]->lock_count > 0
-			&& imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
-			imp_->chanel_data_vec_[chanel]->lock_count++;
-			return imp_->chanel_data_vec_[chanel]->lock_count;
+		// check if chanel is already locked with different submodel, if locked return -2 to indicate lock failed //
+		if (imp_->chanel_data_vec_[chanel]->lock_count > 0 && imp_->chanel_data_vec_[chanel]->submodel_ids != submodel_ids) {
+				return -2; // chanel is already locked with different submodel, return -2 to indicate lock failed //
 		}
 
-		// check submodel conflict with other locked chanel, if conflict return -1 to indicate lock failed //
+		// check submodel conflict with other locked chanel, if conflict return -3 to indicate lock failed //
 		auto getActiveSubIds = [&]() -> std::vector<aris::Size> {
 			std::vector<aris::Size> active_sub_ids;
 			for (int i = 0; i < imp_->chanel_size_; ++i) {
@@ -85,9 +81,18 @@ namespace aris::plan {
 
 		for (const auto& sub_id : submodel_ids) {
 			if (std::find(active_sub_ids.begin(), active_sub_ids.end(), sub_id) != active_sub_ids.end())
-				return -1; // submodel conflict with other locked chanel, return -1 to indicate lock failed //
+				return -3; // submodel conflict with other locked chanel, return -3 to indicate lock failed //
 		}
 
+
+		// If the same channel is already locked with the same submodels, allow re-entrant lock.
+		if (imp_->chanel_data_vec_[chanel]->lock_count > 0
+			&& imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
+			imp_->chanel_data_vec_[chanel]->lock_count++;
+			return imp_->chanel_data_vec_[chanel]->lock_count;
+		}
+
+		// lock chanel with new submodel //
 		imp_->chanel_data_vec_[chanel]->lock_count++;
 		imp_->chanel_data_vec_[chanel]->submodel_ids = submodel_ids;
 		imp_->chanel_data_vec_[chanel]->planner.setSubModelId(submodel_ids);
@@ -119,13 +124,13 @@ namespace aris::plan {
 
 	auto PlannerDispacher::releaseChanel(int chanel) -> int {
 		if (chanel < 0 || chanel >= imp_->chanel_size_)
-			THROW_FILE_LINE("invalid chanel");
+			return -1; // chanel does not exist, return -1 to indicate release failed
 		if (imp_->chanel_data_vec_[chanel]->lock_count > 0) {
 			imp_->chanel_data_vec_[chanel]->lock_count--;
 			imp_->chanel_data_vec_[chanel]->planner.clearUsedPos();
 			return 0; // successfully released
 		}
-		return -1; // channel was not locked, return -1 to indicate release failed
+		return -2; // channel was not locked, return -2 to indicate release failed
 	}
 
 	auto PlannerDispacher::insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
