@@ -11,14 +11,15 @@ namespace aris::plan {
 	struct PlannerDispacher::Imp {
 		struct ChanelData {
 			std::vector<aris::Size> submodel_ids;
-			std::vector<double> sub_transfer_mat_;
+			std::vector<aris::core::Matrix*> sub_transfer_mat_;
+			std::vector<double> sub_input_pos_; // for transfer matrix compute
 			int lock_count{ 0 };
 			MultimodelPlanner planner;
 		};
 
 		int chanel_size_{ 0 };
 		aris::dynamic::MultiModel* model_{ nullptr };
-		std::vector<aris::core::Matrix> transfer_matrix_;
+		std::vector<aris::core::Matrix> transfer_matrice_;
 		std::vector<std::unique_ptr<ChanelData>> chanel_data_vec_;
 		std::vector<double> input_;
 		double dt_{ 0.004 };
@@ -43,7 +44,7 @@ namespace aris::plan {
 		return imp_->chanel_size_;
 	}
 	auto PlannerDispacher::transferMatrice() -> std::vector<aris::core::Matrix>& {
-		return imp_->transfer_matrix_;
+		return imp_->transfer_matrice_;
 	}
 	auto PlannerDispacher::init() -> void {
 		imp_->chanel_data_vec_.clear();
@@ -96,6 +97,13 @@ namespace aris::plan {
 		imp_->chanel_data_vec_[chanel]->lock_count++;
 		imp_->chanel_data_vec_[chanel]->submodel_ids = submodel_ids;
 		imp_->chanel_data_vec_[chanel]->planner.setSubModelId(submodel_ids);
+
+		// transfer matrix //
+		imp_->chanel_data_vec_[chanel]->sub_transfer_mat_.resize(submodel_ids.size(), nullptr);
+		for (size_t i = 0; i < submodel_ids.size(); ++i) {
+			imp_->chanel_data_vec_[chanel]->sub_transfer_mat_[i] = imp_->transfer_matrice_.size() > submodel_ids[i] ? &imp_->transfer_matrice_[submodel_ids[i]] : nullptr;
+		}
+		imp_->chanel_data_vec_[chanel]->sub_input_pos_.resize(imp_->model_->subInputPosSize(submodel_ids.size(), submodel_ids.data()), 0.0);
 
 		// limits //
 		aris::core::Matrix mat(imp_->model_->subInputPosSize(submodel_ids.size(), submodel_ids.data()), 1, 0.0);
@@ -150,7 +158,27 @@ namespace aris::plan {
 	}
 
 	auto PlannerDispacher::getNextInput(int chanel, double* p) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.getNextInput(p);
+		auto &c = imp_->chanel_data_vec_[chanel];
+		
+		// get input from planner //
+		auto ret = c->planner.getNextInput(c->sub_input_pos_.data());
+		
+		// apply transfer matrix //
+		auto idx = 0;
+		for(int i = 0; i< c->submodel_ids.size(); ++i) {
+			auto mat = c->sub_transfer_mat_[i];
+			
+			auto n = imp_->model_->subInputPosSize(1, &c->submodel_ids[i]);
+			if(mat) {
+				aris::dynamic::s_mm(n, 1, n, mat->data(), c->sub_input_pos_.data()+idx, p+idx);
+			}
+			else{
+				aris::dynamic::s_vc(n, c->sub_input_pos_.data()+idx, p+idx);
+			}
+			idx += n;
+		}
+
+		return ret;
 	}
 
 	auto PlannerDispacher::tgRet(int chanel) -> std::int64_t {

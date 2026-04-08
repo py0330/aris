@@ -177,7 +177,7 @@ install(FILES ${PROJECT_BINARY_DIR}/aris-config.cmake DESTINATION "share/aris/cm
 ## install sh ##
 install(DIRECTORY sh DESTINATION .)
 
-## ȷ��install֮��Ķ����ƿ������ӵ�aris_lib
+## install aris_lib
 if(UNIX)
 	#change rpath
 	#https://bewaremypower.github.io/2019/09/05/%E9%93%BE%E6%8E%A5%E9%80%89%E9%A1%B9RPATH%E4%BB%A5%E5%8F%8A%E5%9C%A8cmake%E5%92%8Cgcc%E4%B8%AD%E7%9A%84%E4%BD%BF%E7%94%A8/
@@ -208,6 +208,108 @@ if(BUILD_TESTS)
 		endif()
 	endforeach(aris_test)
 endif(BUILD_TESTS)
+
+################################### build gtests for aris ####################################
+option(BUILD_GTESTS "build gtest-based aris tests" OFF)
+
+if(BUILD_GTESTS)
+	enable_testing()
+	set(ARIS_GTEST_DIR ${PROJECT_SOURCE_DIR}/gtest)
+
+	# Configure Google Test (if not already configured)
+	if(NOT TARGET gtest)
+		include(FetchContent)
+		FetchContent_Declare(
+			googletest
+			GIT_REPOSITORY https://github.com/google/googletest.git
+			GIT_TAG v1.13.0
+		)
+		set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+		FetchContent_MakeAvailable(googletest)
+	endif()
+	include(GoogleTest)
+
+	# Add Google Test target for test_plan_planner_dispacher
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_planner_dispacher.cpp)
+		add_executable(gtest_plan_planner_dispacher
+			gtest/test_plan/test_plan_planner_dispacher.cpp
+		)
+		target_link_libraries(gtest_plan_planner_dispacher ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_planner_dispacher PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_planner_dispacher)
+	endif()
+
+	# Add Google Test target for test_plan_multimodel_planner
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_multimodel_planner.cpp)
+		add_executable(gtest_plan_multimodel_planner
+			gtest/test_plan/test_plan_multimodel_planner.cpp
+		)
+		target_link_libraries(gtest_plan_multimodel_planner ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_multimodel_planner PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_multimodel_planner)
+	endif()
+
+	# Add Google Test target for test_plan_move_follower
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_move_follower.cpp)
+		add_executable(gtest_plan_move_follower
+			gtest/test_plan/test_plan_move_follower.cpp
+		)
+		target_link_libraries(gtest_plan_move_follower ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_move_follower PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_move_follower)
+	endif()
+
+	# Add Google Test target for test_plan_input_smoother
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_input_smoother.cpp)
+		add_executable(gtest_plan_input_smoother
+			gtest/test_plan/test_plan_input_smoother.cpp
+		)
+		target_link_libraries(gtest_plan_input_smoother ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_input_smoother PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_input_smoother)
+	endif()
+
+	# Add Google Test target for test_plan_function
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_function.cpp)
+		add_executable(gtest_plan_function
+			gtest/test_plan/test_plan_function.cpp
+		)
+		target_link_libraries(gtest_plan_function ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_function PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_function)
+	endif()
+
+	# Add Google Test target for test_plan_path
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_path.cpp)
+		add_executable(gtest_plan_path
+			gtest/test_plan/test_plan_path.cpp
+		)
+		target_link_libraries(gtest_plan_path ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_path PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_path)
+	endif()
+
+	# Add Google Test target for test_plan_scurve
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_scurve.cpp)
+		add_executable(gtest_plan_scurve
+			gtest/test_plan/test_plan_scurve.cpp
+		)
+		target_link_libraries(gtest_plan_scurve ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_scurve PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_scurve)
+	endif()
+
+	# Add Google Test target for test_plan_trajectory
+	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_trajectory.cpp)
+		add_executable(gtest_plan_trajectory
+			gtest/test_plan/test_plan_trajectory.cpp
+		)
+		target_link_libraries(gtest_plan_trajectory ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan_trajectory PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan_trajectory)
+	endif()
+
+endif(BUILD_GTESTS)
 ################################### build demos for aris ####################################
 option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)

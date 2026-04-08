@@ -528,7 +528,7 @@ auto test_planner_dispacher_insert_movej() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 	tw_pos.at(2) += 0.02;
 
-	auto node_id = dispacher.insertMoveJPos(0, "", "", tw_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+	auto node_id = dispacher.insertMoveJPos(0, "", "", tw_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (node_id <= 0) {
 		throw std::runtime_error("PlannerDispacher insertMoveJPos should return positive node id");
 	}
@@ -647,7 +647,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	movej_pos.at(1) -= 0.02;
 	movej_pos.at(2) += 0.05;
 
-	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (movej_id <= circle_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow movej insert should return increasing node id");
 	}
@@ -731,7 +731,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	std::vector<double> movej_pos = circle_target_pos;
 	movej_pos.at(2) += 0.02;
 
-	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (movej_id <= circle_id) {
 		throw std::runtime_error("PlannerDispacher batch-flow movej insert should return increasing node id");
 	}
@@ -815,7 +815,7 @@ auto test_planner_dispacher_many_points() -> void {
 
 		std::vector<double> movej_pos = circle_target_pos;
 		movej_pos.at(2) += (i % 2 == 0) ? 0.001 : -0.001;
-		auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+		auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 		if (movej_id <= circle_id) {
 			throw std::runtime_error("PlannerDispacher many-points movej insert should return increasing node id");
 		}
