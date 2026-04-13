@@ -318,7 +318,7 @@ int main() {
 
 	int a=1, b=2;
 	std::cout << ADD_TWO(a_and_b) << std::endl;
-	std::cout << (1+(a,b)) << std::endl;
+	//std::cout << (1+(a,b)) << std::endl;
 
 	D x;
 	B1* b1_ptr = &x;

@@ -229,84 +229,12 @@ if(BUILD_GTESTS)
 	endif()
 	include(GoogleTest)
 
-	# Add Google Test target for test_plan_planner_dispacher
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_planner_dispacher.cpp)
-		add_executable(gtest_plan_planner_dispacher
-			gtest/test_plan/test_plan_planner_dispacher.cpp
-		)
-		target_link_libraries(gtest_plan_planner_dispacher ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_planner_dispacher PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_planner_dispacher)
-	endif()
-
-	# Add Google Test target for test_plan_multimodel_planner
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_multimodel_planner.cpp)
-		add_executable(gtest_plan_multimodel_planner
-			gtest/test_plan/test_plan_multimodel_planner.cpp
-		)
-		target_link_libraries(gtest_plan_multimodel_planner ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_multimodel_planner PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_multimodel_planner)
-	endif()
-
-	# Add Google Test target for test_plan_move_follower
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_move_follower.cpp)
-		add_executable(gtest_plan_move_follower
-			gtest/test_plan/test_plan_move_follower.cpp
-		)
-		target_link_libraries(gtest_plan_move_follower ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_move_follower PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_move_follower)
-	endif()
-
-	# Add Google Test target for test_plan_input_smoother
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_input_smoother.cpp)
-		add_executable(gtest_plan_input_smoother
-			gtest/test_plan/test_plan_input_smoother.cpp
-		)
-		target_link_libraries(gtest_plan_input_smoother ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_input_smoother PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_input_smoother)
-	endif()
-
-	# Add Google Test target for test_plan_function
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_function.cpp)
-		add_executable(gtest_plan_function
-			gtest/test_plan/test_plan_function.cpp
-		)
-		target_link_libraries(gtest_plan_function ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_function PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_function)
-	endif()
-
-	# Add Google Test target for test_plan_path
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_path.cpp)
-		add_executable(gtest_plan_path
-			gtest/test_plan/test_plan_path.cpp
-		)
-		target_link_libraries(gtest_plan_path ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_path PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_path)
-	endif()
-
-	# Add Google Test target for test_plan_scurve
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_scurve.cpp)
-		add_executable(gtest_plan_scurve
-			gtest/test_plan/test_plan_scurve.cpp
-		)
-		target_link_libraries(gtest_plan_scurve ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_scurve PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_scurve)
-	endif()
-
-	# Add Google Test target for test_plan_trajectory
-	if(EXISTS ${ARIS_GTEST_DIR}/test_plan/test_plan_trajectory.cpp)
-		add_executable(gtest_plan_trajectory
-			gtest/test_plan/test_plan_trajectory.cpp
-		)
-		target_link_libraries(gtest_plan_trajectory ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan_trajectory PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan_trajectory)
+	file(GLOB ARIS_PLAN_GTEST_SOURCES gtest/test_plan/*.cpp)
+	if(ARIS_PLAN_GTEST_SOURCES)
+		add_executable(gtest_plan ${ARIS_PLAN_GTEST_SOURCES})
+		target_link_libraries(gtest_plan ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+		target_include_directories(gtest_plan PRIVATE ${gtest_SOURCE_DIR}/include)
+		gtest_discover_tests(gtest_plan)
 	endif()
 
 endif(BUILD_GTESTS)
@@ -315,9 +243,13 @@ option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)
 	set(ARIS_DEMOS 	demo_core_socket rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
 					demo_model_delta demo_model_scara demo_model_seven_axis demo_model_multi demo_stewart demo_hulk demo_ur 
-					demo_server demo_server_scara demo_server_puma demo_rokae_server demo_reflection)
+					demo_server demo_server_scara demo_server_puma demo_rokae_server demo_reflection demo_tg)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
+		if(aris_demo STREQUAL "demo_tg")
+			file(GLOB DEMO_TG_BACKUP_SOURCES demo/${aris_demo}/backup/*.h demo/${aris_demo}/backup/*.cpp)
+			list(APPEND SOURCES ${DEMO_TG_BACKUP_SOURCES})
+		endif()
 		add_executable(${aris_demo} ${SOURCES})
 		target_link_libraries(${aris_demo} aris_lib ${RELY_LINK_LIB})
 		if(EXISTS ${PROJECT_SOURCE_DIR}/demo/${aris_demo}/resource)

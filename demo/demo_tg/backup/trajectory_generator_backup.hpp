@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_PLAN_TRAJECTORY_H_
-#define ARIS_PLAN_TRAJECTORY_H_
+﻿#ifndef ARIS_PLAN_TRAJECTORY_BACKUP_H_
+#define ARIS_PLAN_TRAJECTORY_BACKUP_H_
 
 #include <list>
 #include <cmath>
@@ -19,7 +19,7 @@
 /// 
 /// 
 namespace aris::plan{
-	class ARIS_API TrajectoryGenerator {
+	class ARIS_API TrajectoryGeneratorBackup {
 	public:
 		// 配置末端类型 //
 		auto posTypes()const-> const std::vector<aris::dynamic::PosType>&;
@@ -95,9 +95,9 @@ namespace aris::plan{
 
 		auto allocateMemory() -> void;
 
-		~TrajectoryGenerator();
-		TrajectoryGenerator();
-		ARIS_DELETE_BIG_FOUR(TrajectoryGenerator);
+		~TrajectoryGeneratorBackup();
+		TrajectoryGeneratorBackup();
+		ARIS_DELETE_BIG_FOUR(TrajectoryGeneratorBackup);
 
 	private:
 		struct Imp;

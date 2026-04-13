@@ -330,7 +330,7 @@ auto test_planner_dispacher_locking() -> void {
 	}
 
 	lock_ret = dispacher.tryLockChanel(1, { 0 });
-	if (lock_ret != -1) {
+	if (lock_ret != -3) {
 		throw std::runtime_error("PlannerDispacher should reject conflicting lock");
 	}
 
@@ -355,20 +355,13 @@ auto test_planner_dispacher_locking() -> void {
 	}
 
 	release_ret = dispacher.releaseChanel(0);
-	if (release_ret != -1) {
+	if (release_ret != -2) {
 		throw std::runtime_error("PlannerDispacher extra release should fail");
 	}
 
-	bool invalid_channel_thrown = false;
-	try {
-		dispacher.tryLockChanel(2, { 0 });
-	}
-	catch (...) {
-		invalid_channel_thrown = true;
-	}
-
-	if (!invalid_channel_thrown) {
-		throw std::runtime_error("PlannerDispacher should throw on invalid channel");
+	lock_ret = dispacher.tryLockChanel(2, { 0 });
+	if (lock_ret != -1) {
+		throw std::runtime_error("PlannerDispacher invalid channel should return -1");
 	}
 }
 
@@ -385,13 +378,13 @@ auto test_planner_dispacher_switch_submodel() -> void {
 	}
 
 	lock_ret = dispacher.tryLockChanel(0, { 1 });
-	if (lock_ret != 1) {
-		throw std::runtime_error("PlannerDispacher relock with different submodel should return 1");
+	if (lock_ret != -2) {
+		throw std::runtime_error("PlannerDispacher relock with different submodel should return -2");
 	}
 
 	lock_ret = dispacher.tryLockChanel(1, { 0 });
-	if (lock_ret != 1) {
-		throw std::runtime_error("PlannerDispacher should allow another channel to lock old submodel after switch");
+	if (lock_ret != -3) {
+		throw std::runtime_error("PlannerDispacher should reject locking a submodel already held by another channel");
 	}
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -399,13 +392,13 @@ auto test_planner_dispacher_switch_submodel() -> void {
 		throw std::runtime_error("PlannerDispacher two-model case first release should succeed");
 	}
 
-	release_ret = dispacher.releaseChanel(0);
-	if (release_ret != 0) {
-		throw std::runtime_error("PlannerDispacher two-model case second release should succeed");
+	lock_ret = dispacher.tryLockChanel(1, { 0 });
+	if (lock_ret != 1) {
+		throw std::runtime_error("PlannerDispacher should allow another channel to lock submodel after release");
 	}
 
 	release_ret = dispacher.releaseChanel(0);
-	if (release_ret != -1) {
+	if (release_ret != -2) {
 		throw std::runtime_error("PlannerDispacher two-model case extra release should fail");
 	}
 

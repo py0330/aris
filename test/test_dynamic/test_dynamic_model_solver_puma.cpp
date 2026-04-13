@@ -162,12 +162,13 @@ void test_puma_inverse_solver(){
 			double input_result[6], input_result2[6];
 			new_m->getInputPos(input_result2);
 
-			if (new_m->inverseKinematics(ee_pm, input_result, &i))
+			std::int64_t root_index = i;
+			if (new_m->inverseKinematics(ee_pm, input_result, &root_index))
 				std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
-			int which_root;
+			std::int64_t which_root;
 			new_m->getWhichInverseRoot(ee_pm, input_result, &which_root);
-			if (which_root != i) {
+			if (which_root != root_index) {
 				new_m->getWhichInverseRoot(ee_pm, input_result, &which_root);
 				std::cout << __FILE__ << __LINE__ << "which root failed" << std::endl;
 			}
@@ -220,7 +221,8 @@ void test_puma_kinematic_with_input_factor() {
 	
 
 	for (int i = 0; i < 8; ++i) {
-		auto ret = m->inverseKinematics(output_result, input, &i);
+		std::int64_t root_index = i;
+		auto ret = m->inverseKinematics(output_result, input, &root_index);
 		std::cout << "root:" << i << " ret:" << ret << std::endl;
 		aris::dynamic::dsp(1,6,input);
 	}

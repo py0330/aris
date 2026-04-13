@@ -241,7 +241,7 @@ void test_create_scara() {
 	double input2[4];
 	m->inverseKinematics(output, input2, 0);
 
-	int root = 1;
+	std::int64_t root = 1;
 	m->inverseKinematics(output, input2, &root);
 
 

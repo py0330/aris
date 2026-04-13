@@ -1,4 +1,4 @@
-﻿#include"aris/plan/trajectory.hpp"
+﻿#include "trajectory_generator_backup.hpp"
 #include"aris/plan/function.hpp"
 
 namespace aris::plan {
@@ -1469,7 +1469,7 @@ namespace aris::plan {
 	//   n-1    o      n        
 	//          |
 	//   n      o      n       【end】
-	struct TrajectoryGenerator::Imp {
+	struct TrajectoryGeneratorBackup::Imp {
 		// 时间参数 //
 		double dt_{ 0.001 };
 		LargeNum s_{ 0.0 };
@@ -1566,87 +1566,87 @@ namespace aris::plan {
 			} while (!insert_success);
 		}
 	};
-	auto TrajectoryGenerator::posTypes()const-> const std::vector<aris::dynamic::PosType>& {
+	auto TrajectoryGeneratorBackup::posTypes()const-> const std::vector<aris::dynamic::PosType>& {
 		return imp_->ee_pos_types_;
 	}
-	auto TrajectoryGenerator::setPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void {
+	auto TrajectoryGeneratorBackup::setPosTypes(const std::vector<aris::dynamic::PosType>& ee_types)->void {
 		imp_->ee_pos_types_ = ee_types;
 		this->allocateMemory();
 	}
-	auto TrajectoryGenerator::velTypes()const -> const std::vector<aris::dynamic::VelType>& {
+	auto TrajectoryGeneratorBackup::velTypes()const -> const std::vector<aris::dynamic::VelType>& {
 		return imp_->ee_vel_types_;
 	}
-	auto TrajectoryGenerator::setVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void {
+	auto TrajectoryGeneratorBackup::setVelTypes(const std::vector<aris::dynamic::VelType>& ee_types) -> void {
 		imp_->ee_vel_types_ = ee_types;
 		this->allocateMemory();
 	}
-	auto TrajectoryGenerator::accTypes()const -> const std::vector<aris::dynamic::AccType>& {
+	auto TrajectoryGeneratorBackup::accTypes()const -> const std::vector<aris::dynamic::AccType>& {
 		return imp_->ee_acc_types_;
 	}
-	auto TrajectoryGenerator::setAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void {
+	auto TrajectoryGeneratorBackup::setAccTypes(const std::vector<aris::dynamic::AccType>& ee_types) -> void {
 		imp_->ee_acc_types_ = ee_types;
 		this->allocateMemory();
 	}
-	auto TrajectoryGenerator::maxReplanNum()const->int {
+	auto TrajectoryGeneratorBackup::maxReplanNum()const->int {
 		return imp_->max_replan_num_;
 	}
-	auto TrajectoryGenerator::setMaxReplanNum(int max_replan_num) -> void {
+	auto TrajectoryGeneratorBackup::setMaxReplanNum(int max_replan_num) -> void {
 		imp_->max_replan_num_ = max_replan_num;
 	}
-	auto TrajectoryGenerator::dt()const->double {
+	auto TrajectoryGeneratorBackup::dt()const->double {
 		return imp_->dt_;
 	}
-	auto TrajectoryGenerator::setDt(double dt)->void {
+	auto TrajectoryGeneratorBackup::setDt(double dt)->void {
 		imp_->dt_ = dt;
 	}
-	auto TrajectoryGenerator::currentS()const->double {
+	auto TrajectoryGeneratorBackup::currentS()const->double {
 		return imp_->s_;
 	}
-	auto TrajectoryGenerator::setCurrentS(double s)->void {
+	auto TrajectoryGeneratorBackup::setCurrentS(double s)->void {
 		imp_->s_ = s;
 	}
-	auto TrajectoryGenerator::currentArc()const->double {
+	auto TrajectoryGeneratorBackup::currentArc()const->double {
 		return imp_->arc_;
 	}
-	auto TrajectoryGenerator::currentDs()const->double {
+	auto TrajectoryGeneratorBackup::currentDs()const->double {
 		return imp_->ds_;
 	}
-	auto TrajectoryGenerator::setCurrentDs(double ds)->void {
+	auto TrajectoryGeneratorBackup::setCurrentDs(double ds)->void {
 		imp_->ds_ = ds;
 	}
-	auto TrajectoryGenerator::targetDs()const->double {
+	auto TrajectoryGeneratorBackup::targetDs()const->double {
 		return imp_->target_ds_;
 	}
-	auto TrajectoryGenerator::setTargetDs(double ds)->void {
+	auto TrajectoryGeneratorBackup::setTargetDs(double ds)->void {
 		imp_->target_ds_ = ds;
 	}
-	auto TrajectoryGenerator::currentDds()const->double {
+	auto TrajectoryGeneratorBackup::currentDds()const->double {
 		return imp_->dds_;
 	}
-	auto TrajectoryGenerator::setCurrentDds(double dds)->void {
+	auto TrajectoryGeneratorBackup::setCurrentDds(double dds)->void {
 		imp_->dds_ = dds;
 	}
-	auto TrajectoryGenerator::maxDds()const->double {
+	auto TrajectoryGeneratorBackup::maxDds()const->double {
 		return imp_->max_dds_;
 	}
-	auto TrajectoryGenerator::setMaxDds(double max_dds)->void {
+	auto TrajectoryGeneratorBackup::setMaxDds(double max_dds)->void {
 		imp_->max_dds_ = max_dds;
 	}
-	auto TrajectoryGenerator::maxDdds()const->double {
+	auto TrajectoryGeneratorBackup::maxDdds()const->double {
 		return imp_->max_ddds_;
 	}
-	auto TrajectoryGenerator::setMaxDdds(double max_ddds)->void {
+	auto TrajectoryGeneratorBackup::setMaxDdds(double max_ddds)->void {
 		imp_->max_ddds_ = max_ddds;
 	}
-	auto TrajectoryGenerator::leftNodeS()const->double {
+	auto TrajectoryGeneratorBackup::leftNodeS()const->double {
 		auto current_node = imp_->current_node_.load();
 		return current_node->s_end_ - imp_->s_;
 	}
-	auto TrajectoryGenerator::leftTotalS()const->double {
+	auto TrajectoryGeneratorBackup::leftTotalS()const->double {
 		return imp_->nodes_.back().s_end_ - imp_->s_;
 	}
 
-	auto TrajectoryGenerator::allocateMemory() -> void {
+	auto TrajectoryGeneratorBackup::allocateMemory() -> void {
 		auto outpos_size = aris::dynamic::s_pos_type_size(imp_->ee_pos_types_.size(), imp_->ee_pos_types_.data());
 
 		// 计算内部的类型 //
@@ -1788,11 +1788,11 @@ namespace aris::plan {
 		std::copy_n(internal_pos_type.size() == imp_->ee_vel_types_.size() ? imp_->ee_vel_types_.data() : imp_->internal_vel_type_, imp_->ee_size_, imp_->out_vel_type_);
 		std::copy_n(internal_pos_type.size() == imp_->ee_acc_types_.size() ? imp_->ee_acc_types_.data() : imp_->internal_acc_type_, imp_->ee_size_, imp_->out_acc_type_);
 	}
-	TrajectoryGenerator::~TrajectoryGenerator() = default;
-	TrajectoryGenerator::TrajectoryGenerator() :imp_(new Imp) {
+	TrajectoryGeneratorBackup::~TrajectoryGeneratorBackup() = default;
+	TrajectoryGeneratorBackup::TrajectoryGeneratorBackup() :imp_(new Imp) {
 		imp_->current_node_.store(nullptr);
 	}
-	auto TrajectoryGenerator::getEePosAndMoveDt(double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
+	auto TrajectoryGeneratorBackup::getEePosAndMoveDt(double* ee_pos, double* ee_vel, double* ee_acc)->std::int64_t {
 		auto current_node = imp_->current_node_.load();
 		auto next_node = current_node->next_node_.load();
 
@@ -1910,13 +1910,13 @@ namespace aris::plan {
 
 		return current_node->id_;
 	}
-	auto TrajectoryGenerator::currentNodeId()const->std::int64_t{
+	auto TrajectoryGeneratorBackup::currentNodeId()const->std::int64_t{
 		return imp_->current_node_.load()->id_;
 	}
-    auto TrajectoryGenerator::isCurrentNodeFinished() const -> bool{
+    auto TrajectoryGeneratorBackup::isCurrentNodeFinished() const -> bool{
         return imp_->current_node_.load()->finished_;
     }
-	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
+	auto TrajectoryGeneratorBackup::insertInitPos(std::int64_t id, const double* ee_pos)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
 		auto current_node = imp_->current_node_.load();
@@ -1943,7 +1943,7 @@ namespace aris::plan {
 		else
 			std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
 	}
-	auto TrajectoryGenerator::insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void{
+	auto TrajectoryGeneratorBackup::insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void{
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
 		// 如果当前指令队列为空，那么会插入ResetInitPos指令 //
@@ -1953,7 +1953,7 @@ namespace aris::plan {
 
 		imp_->insert_node(Node::NodeType::Line, id, ee_pos, ee_pos, vel, acc, jerk, zone);
 	}
-	auto TrajectoryGenerator::insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
+	auto TrajectoryGeneratorBackup::insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
 		// 如果当前指令队列为空，那么会插入ResetInitPos指令 //
@@ -1964,7 +1964,7 @@ namespace aris::plan {
 		imp_->insert_node(Node::NodeType::Circle, id, ee_pos, mid_pos, vel, acc, jerk, zone);
 	
 	}
-	auto TrajectoryGenerator::clearUsedPos()->void {
+	auto TrajectoryGeneratorBackup::clearUsedPos()->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
 		auto& nodes_ = imp_->nodes_;
@@ -1976,12 +1976,12 @@ namespace aris::plan {
 
 		nodes_.erase(nodes_.begin(), current_iter);
 	}
-	auto TrajectoryGenerator::clearAllPos()->void {
+	auto TrajectoryGeneratorBackup::clearAllPos()->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 		imp_->current_node_.store(nullptr);
 		imp_->nodes_.clear();
 	}
-	auto TrajectoryGenerator::unusedPosNum()->int {
+	auto TrajectoryGeneratorBackup::unusedPosNum()->int {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 		auto current_node = imp_->current_node_.load();
 		auto current_iter = std::find_if(imp_->nodes_.begin(), imp_->nodes_.end(), [current_node](auto& node)->bool {
@@ -1990,7 +1990,7 @@ namespace aris::plan {
 
 		return std::max((int)std::distance(current_iter, imp_->nodes_.end()) - 1, 0);
 	}
-	auto TrajectoryGenerator::unusedNodeIds()const->std::vector<std::int64_t> {
+	auto TrajectoryGeneratorBackup::unusedNodeIds()const->std::vector<std::int64_t> {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
 
 		auto current_node = imp_->current_node_.load();

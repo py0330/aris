@@ -1,5 +1,6 @@
 #include "common_function.h"
 #include <iostream>
+#include <cstdint>
 #include <aris/dynamic/dynamic.hpp>
 
 
@@ -43,7 +44,7 @@ auto test_model_kinematics_pos(aris::dynamic::ModelBase& m, int linspace_num, co
 		}
 
 		// �ٴ����⣬Ӧ�õõ����Ƶ�ֵ //
-		int root_found = 0;
+		std::int64_t root_found = 0;
 		for (; root_found < m.forwardRootNumber(); ++root_found) {
 			std::vector<double> current_output(m.outputPosSize());
 			std::vector<double> current_input(m.inputPosSize());

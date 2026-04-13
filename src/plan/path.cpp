@@ -6,7 +6,7 @@ namespace aris::plan{
 	// 使用3阶bezier曲线，控制点为：[p0, p1, p1, p2]
 	auto s_bezier3_blend_line_line(double s,
 		const double* p0, const double* p1, const double* p2,
-		double* p, double* dp, double* d2p)noexcept->void
+		double* p, double* dp, double* d2p, double *d3p)noexcept->void
 	{
 		//p = (p2 - p0).*s. ^ 3 - 3 * (p1 - p0).*s. ^ 2 + 3 * (p1 - p0).*s + p0;
 		//dp = 3 * (p2 - p0).*s. ^ 2 - 6 * (p1 - p0).*s + 3 * (p1 - p0);
@@ -42,71 +42,77 @@ namespace aris::plan{
 		d2p[0] = -6 * p1_minus_p0[0] + 6 * s * p2_minus_p0[0];
 		d2p[1] = -6 * p1_minus_p0[1] + 6 * s * p2_minus_p0[1];
 		d2p[2] = -6 * p1_minus_p0[2] + 6 * s * p2_minus_p0[2];
+
+		// make d3p //
+		if (d3p) {
+			d3p[0] = 6 * p2_minus_p0[0];
+			d3p[1] = 6 * p2_minus_p0[1];
+			d3p[2] = 6 * p2_minus_p0[2];
+		}
 	}
 
 	// p0-p1 为直线
 	// p1 位于圆弧上，center为圆心，axis垂直于圆弧所处平面
 	auto s_bezier3_blend_line_circle(double s,
 		const double* p0, const double* p1, const double* center, const double* axis, double theta,
-		double* p, double* dp, double* d2p)noexcept->void
+		double* p, double* dp, double* d2p, double *d3p)noexcept->void
 	{
-		double p1_minus_p0[3]{ p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
+		const double p1_minus_p0[3]{ p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
 
 		// rx & ry // 
-		double rx[3]{
+		const double rx[3]{
 			p1[0] - center[0],
 			p1[1] - center[1],
 			p1[2] - center[2],
 		};
-		double ry[3]{
+		const double ry[3]{
 			-axis[2] * rx[1] + axis[1] * rx[2],
 			axis[2] * rx[0] - axis[0] * rx[2],
 			-axis[1] * rx[0] + axis[0] * rx[1],
 		};
 
 		// line part
-		double tem = s * s * s - 3 * s * s + 3 * s;
-		double line_part[3]{
-			p1_minus_p0[0] * tem + p0[0],
-			p1_minus_p0[1] * tem + p0[1],
-			p1_minus_p0[2] * tem + p0[2],
-		};
-
+		double k = s * s * s - 3 * s * s + 3 * s;
+		double dk = 3 * s * s - 6 * s + 3;
+		double d2k = 6 * s - 6;
+		double d3k = 6;
 
 		// circle part
 		double s3t = s * s * s * theta;
+		double ds3t = 3 * s * s * theta;
+		double d2s3t = 6 * s * theta;
+		double d3s3t = 6 * theta;
+
 		double co = std::cos(s3t);
 		double si = std::sin(s3t);
-		double circle_part[3]{
-			center[0] + si * ry[0] + co * rx[0],
-			center[1] + si * ry[1] + co * rx[1],
-			center[2] + si * ry[2] + co * rx[2],
-		};
+		double dco = -ds3t * si;
+		double dsi = ds3t * co;
+		double d2co = -d2s3t * si - ds3t * dsi;
+		double d2si = d2s3t * co + ds3t * dco;
+		double d3co = -d3s3t * si - 2 * d2s3t * dsi - ds3t * d2si;
+		double d3si = d3s3t * co + 2 * d2s3t * dco + ds3t * d2co;
 
 		// p //
-		p[0] = line_part[0] + circle_part[0] - p1[0];
-		p[1] = line_part[1] + circle_part[1] - p1[1];
-		p[2] = line_part[2] + circle_part[2] - p1[2];
+		p[0] = p0[0] - p1[0] + k*p1_minus_p0[0] + si * ry[0] + co * rx[0];
+		p[1] = p0[1] - p1[1] + k*p1_minus_p0[1] + si * ry[1] + co * rx[1];
+		p[2] = p0[2] - p1[2] + k*p1_minus_p0[2] + si * ry[2] + co * rx[2];
 
 		// dp //
-		double j1 = 3 * s * s - 6 * s + 3;
-		double j2 = 3 * s * s * theta * co;
-		double j3 = -3 * s * s * theta * si;
-
-		dp[0] = j1 * p1_minus_p0[0] + j2 * ry[0] + j3 * rx[0];
-		dp[1] = j1 * p1_minus_p0[1] + j2 * ry[1] + j3 * rx[1];
-		dp[2] = j1 * p1_minus_p0[2] + j2 * ry[2] + j3 * rx[2];
+		dp[0] = dk * p1_minus_p0[0] + dsi * ry[0] + dco * rx[0];
+		dp[1] = dk * p1_minus_p0[1] + dsi * ry[1] + dco * rx[1];
+		dp[2] = dk * p1_minus_p0[2] + dsi * ry[2] + dco * rx[2];
 
 		// d2p //
-		double k1 = 6 * s * theta;
-		double k2 = 9 * s * s * s * s * theta * theta;
-		double k3 = k1 * co - k2 * si;
-		double k4 = -k2 * co - k1 * si;
-		double k5 = 6 * s - 6;
+		d2p[0] = d2k * p1_minus_p0[0] + d2si * ry[0] + d2co * rx[0];
+		d2p[1] = d2k * p1_minus_p0[1] + d2si * ry[1] + d2co * rx[1];
+		d2p[2] = d2k * p1_minus_p0[2] + d2si * ry[2] + d2co * rx[2];
 
-		d2p[0] = k5 * p1_minus_p0[0] + k3 * ry[0] + k4 * rx[0];
-		d2p[1] = k5 * p1_minus_p0[1] + k3 * ry[1] + k4 * rx[1];
-		d2p[2] = k5 * p1_minus_p0[2] + k3 * ry[2] + k4 * rx[2];
+		// make d3p //
+		if (d3p) {
+			d3p[0] = d3k * p1_minus_p0[0] + d3si * ry[0] + d3co * rx[0];
+			d3p[1] = d3k * p1_minus_p0[1] + d3si * ry[1] + d3co * rx[1];
+			d3p[2] = d3k * p1_minus_p0[2] + d3si * ry[2] + d3co * rx[2];
+		}
 	}
 
 	// p1 两圆弧交点
@@ -114,26 +120,26 @@ namespace aris::plan{
 	auto s_bezier3_blend_circle_circle(double s, const double* p1,
 		const double* c1, const double* ax1, double theta1,
 		const double* c2, const double* ax2, double theta2,
-		double* p, double* dp, double* d2p)noexcept->void
+		double* p, double* dp, double* d2p, double *d3p)noexcept->void
 	{
 		// rx & ry // 
-		double rx1[3]{
+		const double rx1[3]{
 			p1[0] - c1[0],
 			p1[1] - c1[1],
 			p1[2] - c1[2],
 		};
-		double ry1[3]{
+		const double ry1[3]{
 			-ax1[2] * rx1[1] + ax1[1] * rx1[2],
 			 ax1[2] * rx1[0] - ax1[0] * rx1[2],
 			-ax1[1] * rx1[0] + ax1[0] * rx1[1],
 		};
 
-		double rx2[3]{
+		const double rx2[3]{
 			p1[0] - c2[0],
 			p1[1] - c2[1],
 			p1[2] - c2[2],
 		};
-		double ry2[3]{
+		const double ry2[3]{
 			-ax2[2] * rx2[1] + ax2[1] * rx2[2],
 			 ax2[2] * rx2[0] - ax2[0] * rx2[2],
 			-ax2[1] * rx2[0] + ax2[0] * rx2[1],
@@ -141,13 +147,32 @@ namespace aris::plan{
 
 		// circle 1 & 2 
 		double s3t1 = (s - 1) * (s - 1) * (s - 1) * theta1;
+		double ds3t1 = -3 * (s - 1) * (s - 1) * theta1;
+		double d2s3t1 = 6 * (s - 1) * theta1;
+		double d3s3t1 = -6 * theta1;
+
 		double co1 = std::cos(s3t1);
 		double si1 = std::sin(s3t1);
-
+		double dco1 = -ds3t1 * si1;
+		double dsi1 = ds3t1 * co1;
+		double d2co1 = -d2s3t1 * si1 - ds3t1 * dsi1;
+		double d2si1 = d2s3t1 * co1 + ds3t1 * dco1;
+		double d3co1 = -d3s3t1 * si1 - 2 * d2s3t1 * dsi1 - ds3t1 * d2si1;
+		double d3si1 = d3s3t1 * co1 + 2 * d2s3t1 * dco1 + ds3t1 * d2co1;
 
 		double s3t2 = s * s * s * theta2;
+		double ds3t2 = 3 * s * s * theta2;
+		double d2s3t2 = 6 * s * theta2;
+		double d3s3t2 = 6 * theta2;
+
 		double co2 = std::cos(s3t2);
 		double si2 = std::sin(s3t2);
+		double dco2 = -ds3t2 * si2;
+		double dsi2 = ds3t2 * co2;
+		double d2co2 = -d2s3t2 * si2 - ds3t2 * dsi2;
+		double d2si2 = d2s3t2 * co2 + ds3t2 * dco2;
+		double d3co2 = -d3s3t2 * si2 - 2 * d2s3t2 * dsi2 - ds3t2 * d2si2;
+		double d3si2 = d3s3t2 * co2 + 2 * d2s3t2 * dco2 + ds3t2 * d2co2;
 
 
 
@@ -164,35 +189,26 @@ namespace aris::plan{
 		};
 
 		// p //
-		p[0] = circle1[0] + circle2[0] - p1[0];
-		p[1] = circle1[1] + circle2[1] - p1[1];
-		p[2] = circle1[2] + circle2[2] - p1[2];
+		p[0] = c1[0] + c2[0] - p1[0] + si1*ry1[0] + co1 * rx1[0] + si2 * ry2[0] + co2 * rx2[0];
+		p[1] = c1[1] + c2[1] - p1[1] + si1*ry1[1] + co1 * rx1[1] + si2 * ry2[1] + co2 * rx2[1];
+		p[2] = c1[2] + c2[2] - p1[2] + si1*ry1[2] + co1 * rx1[2] + si2 * ry2[2] + co2 * rx2[2];
 
 		// dp //
-		double m1 = 3 * (s - 1) * (s - 1) * theta1 * co1;
-		double m2 = -3 * (s - 1) * (s - 1) * theta1 * si1;
-		double m3 = 3 * s * s * theta2 * co2;
-		double m4 = -3 * s * s * theta2 * si2;
-
-		dp[0] = m1 * ry1[0] + m2 * rx1[0] + m3 * ry2[0] + m4 * rx2[0];
-		dp[1] = m1 * ry1[1] + m2 * rx1[1] + m3 * ry2[1] + m4 * rx2[1];
-		dp[2] = m1 * ry1[2] + m2 * rx1[2] + m3 * ry2[2] + m4 * rx2[2];
+		dp[0] = dsi1 * ry1[0] + dco1 * rx1[0] + dsi2 * ry2[0] + dco2 * rx2[0];
+		dp[1] = dsi1 * ry1[1] + dco1 * rx1[1] + dsi2 * ry2[1] + dco2 * rx2[1];
+		dp[2] = dsi1 * ry1[2] + dco1 * rx1[2] + dsi2 * ry2[2] + dco2 * rx2[2];
 
 		// d2p //
-		double j1 = 6 * (s - 1) * theta1;
-		double k1 = 9 * (s - 1) * (s - 1) * (s - 1) * (s - 1) * theta1 * theta1;
-		double j2 = 6 * s * theta2;
-		double k2 = 9 * s * s * s * s * theta2 * theta2;
+		d2p[0] = d2si1 * ry1[0] + d2co1 * rx1[0] + d2si2 * ry2[0] + d2co2 * rx2[0];
+		d2p[1] = d2si1 * ry1[1] + d2co1 * rx1[1] + d2si2 * ry2[1] + d2co2 * rx2[1];
+		d2p[2] = d2si1 * ry1[2] + d2co1 * rx1[2] + d2si2 * ry2[2] + d2co2 * rx2[2];
 
-		double n1 = j1 * co1 - k1 * si1;
-		double n2 = -k1 * co1 - j1 * si1;
-		double n3 = j2 * co2 - k2 * si2;
-		double n4 = -k2 * co2 - j2 * si2;
-
-
-		d2p[0] = n1 * ry1[0] + n2 * rx1[0] + n3 * ry2[0] + n4 * rx2[0];
-		d2p[1] = n1 * ry1[1] + n2 * rx1[1] + n3 * ry2[1] + n4 * rx2[1];
-		d2p[2] = n1 * ry1[2] + n2 * rx1[2] + n3 * ry2[2] + n4 * rx2[2];
+		// make d3p //
+		if (d3p) {
+			d3p[0] = d3si1 * ry1[0] + d3co1 * rx1[0] + d3si2 * ry2[0] + d3co2 * rx2[0];
+			d3p[1] = d3si1 * ry1[1] + d3co1 * rx1[1] + d3si2 * ry2[1] + d3co2 * rx2[1];
+			d3p[2] = d3si1 * ry1[2] + d3co1 * rx1[2] + d3si2 * ry2[2] + d3co2 * rx2[2];
+		}
 	}
 
 	// 【注】：这里的 theta 并非转角，而是转角的 2 倍
@@ -398,7 +414,7 @@ namespace aris::plan{
 
 	auto s_bezier3_blend_quaternion(double s,
 		const double* q0_input, const double* q1_input, const double* q2_input,
-		double* q, double* dq, double* d2q)noexcept->void
+		double* q, double* dq, double* d2q, double *d3p)noexcept->void
 	{
 		// 将q1用单位四元数代替 //
 		double q0[4], q2[4], inv_q1[4];
@@ -584,6 +600,112 @@ namespace aris::plan{
 
 	}
 
+	// 计算某个点最大的可能速度，从而让加速度不超最大加速度
+	auto ARIS_API s_bezier3_max_v_at(Size dim, const double* dp_ds_input, const double* d2p_ds2_input,
+		double max_a, double& v)noexcept->void
+	{
+		// see below comments
+
+		double darc_ds, d2arc_ds2, ds_darc, d2s_darc2;
+		s_bezier3_darc_ds(dim, dp_ds_input, d2p_ds2_input, darc_ds, d2arc_ds2, ds_darc, d2s_darc2);
+
+		double dp_darc[4];
+		aris::dynamic::s_vc(dim, ds_darc, dp_ds_input, dp_darc);
+
+		double d2p_darc2[4]; 
+		aris::dynamic::s_vc(dim, d2s_darc2, dp_ds_input, d2p_darc2);
+		aris::dynamic::s_va(dim, ds_darc * ds_darc, d2p_ds2_input, d2p_darc2);
+
+		double k1 = aris::dynamic::s_vv(dim, d2p_darc2, d2p_darc2);
+		double k2 = aris::dynamic::s_vv(dim, dp_darc, dp_darc);
+
+		v = darc_ds < 1e-7 ? 0.0 : std::pow((max_a*max_a / k1), 0.25);
+	}
+
+	// 	// 计算某个点最大的可能速度，从而让加速度不超最大加速度
+	auto ARIS_API s_bezier3_max_v_at(Size dim, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
+		double max_a, double max_j, double& v)noexcept->void
+	{
+		//
+		// 此外可以根据以下公式计算：
+		//
+		// dp_darc   = dp_ds * ds_darc
+		// d2p_darc2 = d2p_ds2 * ds_darc^2 + dp_ds * d2s_darc2
+		// d3p_darc3 = d3p_ds3 * ds_darc^3 + 3 * d2p_ds2 * ds_darc * d2s_darc2 + dp_ds * d3s_darc3
+		// 
+		// dp_dt   = dp_darc * darc_dt
+		// d2p_dt2 = d2p_darc2 * darc_dt^2 + dp_darc * d2arc_dt2
+		// d3p_dt3 = d3p_darc3 * darc_dt^3 + 3 * d2p_darc2 * darc_dt * d2arc_dt2 + dp_darc * d3arc_dt3
+		// 
+		// 因为 d2p_darc2 垂直于 dp_darc
+		// 
+		// ^T 表示转置
+		//
+		// a^2 = d2p_dt2^T * d2p_dt2
+		//     = d2p_darc2^T * d2p_darc2 * darc_dt^4 + dp_darc^T*dp_darc * d2arc_dt2^2
+		//     = k2 * darc_dt^4 + k1 * d2arc_dt2^2
+		//
+		// 假设曲线上的线速度大小不变，方向改变，求此时的 v, 即darc_dt
+		// 
+		// v = sqrt(a/sqrt(k2));
+		//
+		// j^2 = d3p_dt3^T * d3p_dt3
+		//   = d3p_darc3^T * d3p_darc3 * darc_dt^6 + 9 * d2p_darc2^T * d2p_darc2 * darc_dt^2 * d2arc_dt2^2 + dp_darc^T * dp_darc * d3arc_dt3^2
+		//   = d3p_darc3^T * d3p_darc3 * darc_dt^6 
+		//     + 9 * d2p_darc2^T * d2p_darc2 * darc_dt^2 * d2arc_dt2^2 
+		//     + dp_darc^T * dp_darc * d3arc_dt3^2
+		//     + 6 * d2p_darc2^T * d3p_darc3 * darc_dt^4 * d2arc_dt2
+		//     + 2 * dp_darc^T * d3p_darc3 * darc_dt^3 * d3arc_dt3
+		//     + 6 * dp_darc^T * d2p_darc2 * darc_dt * d2arc_dt2 * d3arc_dt3
+		//   = k3*darc_dt^6 + 9*k2*darc_dt^2*d2arc_dt2^2 + k1*d3arc_dt3^2 + 6*k6*darc_dt^4*d2arc_dt2 + 2*k5*darc_dt^3*d3arc_dt3 + 6*k4*darc_dt*d2arc_dt2*d3arc_dt3
+		// 
+		// 考虑到 k1 = 1，k4 = 0, 结束时, d2arc_dt2 = 0, d3arc_dt3 = 0 所以：
+		//   
+		// j^2 = k3*darc_dt^6
+		//
+		// where: 
+		// k1 = dp_darc^T * dp_darc = 1
+		// k2 = d2p_darc2^T * d2p_darc2
+		// k3 = d3p_darc3^T * d3p_darc3
+		// k4 = dp_darc^T * d2p_darc2 = 0
+		// k5 = dp_darc^T * d3p_darc3
+		// k6 = d2p_darc2^T * d3p_darc3
+		//
+		// 结束时，d2arc_dt2 = 0 所以：
+		// v = min{ (max_a*max_a / k2)^(1/4)，(max_j*max_j/k3)^(1/6) }
+		// 
+		// 结束时，d3arc_dt3 = max_j，
+		
+
+		double darc_ds, d2arc_ds2, ds_darc, d2s_darc2, d3arc_ds3, d3s_darc3;
+		s_bezier3_darc_ds(dim, dp_ds_input, d2p_ds2_input, d3p_ds3_input, darc_ds, d2arc_ds2, d3arc_ds3, ds_darc, d2s_darc2, d3s_darc3);
+
+		double dp_darc[4];
+		aris::dynamic::s_vc(dim, ds_darc, dp_ds_input, dp_darc);
+
+		double d2p_darc2[4]; 
+		aris::dynamic::s_vc(dim, d2s_darc2, dp_ds_input, d2p_darc2);
+		aris::dynamic::s_va(dim, ds_darc * ds_darc, d2p_ds2_input, d2p_darc2);
+
+		// d3p_darc3 = d3p_ds3 * ds_darc^3 + 3 * d2p_ds2 * ds_darc * d2s_darc2 + dp_ds * d3s_darc3
+		double d3p_darc3[4];
+		aris::dynamic::s_vc(dim, ds_darc * ds_darc * ds_darc, d3p_ds3_input, d3p_darc3);
+		aris::dynamic::s_va(dim, 3 * ds_darc * d2s_darc2, d2p_ds2_input, d3p_darc3);
+		aris::dynamic::s_va(dim, d3s_darc3, dp_ds_input, d3p_darc3);
+
+		// k1 = 1.0 because dp_darc is unit vector
+		double k1 = 1.0;
+		double k2 = aris::dynamic::s_vv(dim, d2p_darc2, d2p_darc2);
+		double k3 = aris::dynamic::s_vv(dim, d3p_darc3, d3p_darc3);
+
+		// double k4 = aris::dynamic::s_vv(dim, dp_darc, d2p_darc2); // 因为 d2p_darc2 垂直于 dp_darc，所以 k4 = dp_darc^T*d2p_darc2 = 0
+		// double k5 = aris::dynamic::s_vv(dim, dp_darc, d3p_darc3);
+		// double k6 = aris::dynamic::s_vv(dim, d2p_darc2, d3p_darc3);
+
+		v = darc_ds < 1e-7 ? 0.0 : std::min(std::pow((max_a*max_a / k2), 0.25), std::pow(((max_j*max_j) / k3), 0.16666666666666666));
+
+	}
+
 	auto s_bezier3_darc_ds(Size dim, const double* dp_ds_input, const double* d2p_ds2_input,
 		double& darc_ds, double& d2arc_ds2, double& ds_darc, double& d2s_darc2)noexcept->void
 	{
@@ -601,6 +723,49 @@ namespace aris::plan{
 
 		ds_darc = 1 / darc_ds;
 		d2s_darc2 = -d2arc_ds2 / darc_ds / darc_ds / darc_ds;
+	}
+
+	auto s_bezier3_darc_ds(Size dim, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
+		double& darc_ds, double& d2arc_ds2, double& d3arc_ds3, double& ds_darc, double& d2s_darc2, double& d3s_darc3)noexcept->void
+	{
+		
+		// darc_ds = sqrt(dp_ds*dp_ds)
+		darc_ds = aris::dynamic::s_norm(dim, dp_ds_input);
+
+
+		// d2arc_ds2 = (dp_ds·d2p_ds2) / darc_ds
+		d2arc_ds2 = darc_ds > 1e-8
+			? aris::dynamic::s_vv(dim, dp_ds_input, d2p_ds2_input) / darc_ds
+			: aris::dynamic::s_norm(dim, d2p_ds2_input);
+
+		// d3arc_ds3 = ((d2p_ds2·d2p_ds2 + dp_ds*d3p_ds3)*darc_ds - (dp_ds·d2p_ds2)*d2arc_ds2) / darc_ds^2
+		if(darc_ds > 1e-8){
+			double v_dot_j = aris::dynamic::s_vv(dim, dp_ds_input, d3p_ds3_input);
+			double a_dot_a = aris::dynamic::s_vv(dim, d2p_ds2_input, d2p_ds2_input);
+			double a_dot_v = aris::dynamic::s_vv(dim, d2p_ds2_input, dp_ds_input);
+			d3arc_ds3 = ((a_dot_a + v_dot_j) * darc_ds - a_dot_v * d2arc_ds2)/ (darc_ds * darc_ds);
+		}
+		else{
+			d3arc_ds3 = 0;
+		}
+
+		
+		//
+		// ds / dA = 1 / (dA / ds)
+		// d2s / dA2 = -[d(dA / ds) / dA] / (dA / ds) ^ 2
+		//			 = -[d2A / ds2 * ds / dA] / (dA / ds) ^ 2
+		//			 = -(d2A / ds2) / (dA / ds) ^ 3
+
+		if(darc_ds > 1e-8){
+			ds_darc = 1 / darc_ds;
+			d2s_darc2 = -d2arc_ds2 / darc_ds / darc_ds / darc_ds;
+			d3s_darc3 = (3*d2arc_ds2*d2arc_ds2 - darc_ds*d3arc_ds3)/(std::pow(darc_ds,5));
+		}
+		else{
+			ds_darc = 1e10;
+			d2s_darc2 = 1e10;
+			d3s_darc3 = 1e10;
+		}
 	}
 
 	auto s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50, EstimateBezierArcParam& param)noexcept->void{

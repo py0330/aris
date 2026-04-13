@@ -113,7 +113,7 @@ auto MoveJ::prepareNrt()->void{
 		
 	// insert line //
 	pd.tryLockChanel(0, { 1 });
-	id_ = pd.insertMoveJPos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+	id_ = pd.insertMoveJPos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
 	pd.updateInsertPos(0);
 }
 auto MoveJ::executeRT()->int{
