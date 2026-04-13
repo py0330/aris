@@ -1,198 +1,421 @@
 #include <aris/plan/plan.hpp>
-#include "backup/trajectory_generator_backup.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 namespace {
 
-struct DebugMonitor {
-    double prev_pe[6]{};
-    double prev_v_lin[3]{};
-    double prev_v_ang[3]{};
-    double prev_a_lin[3]{};
-    double prev_a_ang[3]{};
+auto default_vel_type(aris::dynamic::PosType type) -> aris::dynamic::VelType {
+    switch (type) {
+    case aris::dynamic::PosType::PE121:
+    case aris::dynamic::PosType::PE123:
+    case aris::dynamic::PosType::PE131:
+    case aris::dynamic::PosType::PE132:
+    case aris::dynamic::PosType::PE212:
+    case aris::dynamic::PosType::PE213:
+    case aris::dynamic::PosType::PE231:
+    case aris::dynamic::PosType::PE232:
+    case aris::dynamic::PosType::PE312:
+    case aris::dynamic::PosType::PE313:
+    case aris::dynamic::PosType::PE321:
+    case aris::dynamic::PosType::PE323:
+    case aris::dynamic::PosType::PM:
+    case aris::dynamic::PosType::PQ:
+        return aris::dynamic::VelType::VQ;
+    case aris::dynamic::PosType::RE121:
+    case aris::dynamic::PosType::RE123:
+    case aris::dynamic::PosType::RE131:
+    case aris::dynamic::PosType::RE132:
+    case aris::dynamic::PosType::RE212:
+    case aris::dynamic::PosType::RE213:
+    case aris::dynamic::PosType::RE231:
+    case aris::dynamic::PosType::RE232:
+    case aris::dynamic::PosType::RE312:
+    case aris::dynamic::PosType::RE313:
+    case aris::dynamic::PosType::RE321:
+    case aris::dynamic::PosType::RE323:
+    case aris::dynamic::PosType::RM:
+    case aris::dynamic::PosType::RQ:
+        return aris::dynamic::VelType::WQ;
+    case aris::dynamic::PosType::XYZT:
+        return aris::dynamic::VelType::DXYZT;
+    case aris::dynamic::PosType::XYZ:
+        return aris::dynamic::VelType::DXYZ;
+    case aris::dynamic::PosType::RTZ:
+        return aris::dynamic::VelType::DRTZ;
+    case aris::dynamic::PosType::XYT:
+        return aris::dynamic::VelType::DXYT;
+    case aris::dynamic::PosType::XY:
+        return aris::dynamic::VelType::DXY;
+    case aris::dynamic::PosType::RT:
+        return aris::dynamic::VelType::DRT;
+    case aris::dynamic::PosType::X:
+        return aris::dynamic::VelType::DX;
+    case aris::dynamic::PosType::Y:
+        return aris::dynamic::VelType::DY;
+    case aris::dynamic::PosType::Z:
+        return aris::dynamic::VelType::DZ;
+    case aris::dynamic::PosType::A:
+        return aris::dynamic::VelType::DA;
+    case aris::dynamic::PosType::B:
+        return aris::dynamic::VelType::DB;
+    case aris::dynamic::PosType::C:
+        return aris::dynamic::VelType::DC;
+    default:
+        return aris::dynamic::VelType::UNKNOWN;
+    }
+}
+
+struct LimitMonitor {
+    std::vector<aris::Size> group_dims;
+    std::vector<double> prev_pos;
+    std::vector<double> prev_speed_groups;
+    std::vector<double> prev_acc_groups;
     bool has_prev_pos{false};
     bool has_prev_speed{false};
     bool has_prev_acc{false};
 };
 
-auto norm3(const double v[3]) -> double {
-    return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+auto make_limit_monitor(const std::vector<aris::dynamic::PosType> &types) -> LimitMonitor {
+    LimitMonitor monitor;
+    aris::Size total_pos_size = 0;
+    for (auto type : types) {
+        total_pos_size += aris::dynamic::s_pos_type_size(type);
+        switch (type) {
+        case aris::dynamic::PosType::PE121:
+        case aris::dynamic::PosType::PE123:
+        case aris::dynamic::PosType::PE131:
+        case aris::dynamic::PosType::PE132:
+        case aris::dynamic::PosType::PE212:
+        case aris::dynamic::PosType::PE213:
+        case aris::dynamic::PosType::PE231:
+        case aris::dynamic::PosType::PE232:
+        case aris::dynamic::PosType::PE312:
+        case aris::dynamic::PosType::PE313:
+        case aris::dynamic::PosType::PE321:
+        case aris::dynamic::PosType::PE323:
+        case aris::dynamic::PosType::PM:
+        case aris::dynamic::PosType::PQ:
+            monitor.group_dims.push_back(3);
+            monitor.group_dims.push_back(3);
+            break;
+        case aris::dynamic::PosType::RE121:
+        case aris::dynamic::PosType::RE123:
+        case aris::dynamic::PosType::RE131:
+        case aris::dynamic::PosType::RE132:
+        case aris::dynamic::PosType::RE212:
+        case aris::dynamic::PosType::RE213:
+        case aris::dynamic::PosType::RE231:
+        case aris::dynamic::PosType::RE232:
+        case aris::dynamic::PosType::RE312:
+        case aris::dynamic::PosType::RE313:
+        case aris::dynamic::PosType::RE321:
+        case aris::dynamic::PosType::RE323:
+        case aris::dynamic::PosType::RM:
+        case aris::dynamic::PosType::RQ:
+            monitor.group_dims.push_back(3);
+            break;
+        case aris::dynamic::PosType::XYZT:
+            monitor.group_dims.push_back(3);
+            monitor.group_dims.push_back(1);
+            break;
+        case aris::dynamic::PosType::XYZ:
+        case aris::dynamic::PosType::RTZ:
+            monitor.group_dims.push_back(3);
+            break;
+        case aris::dynamic::PosType::XYT:
+            monitor.group_dims.push_back(2);
+            monitor.group_dims.push_back(1);
+            break;
+        case aris::dynamic::PosType::XY:
+        case aris::dynamic::PosType::RT:
+            monitor.group_dims.push_back(2);
+            break;
+        case aris::dynamic::PosType::X:
+        case aris::dynamic::PosType::Y:
+        case aris::dynamic::PosType::Z:
+        case aris::dynamic::PosType::A:
+        case aris::dynamic::PosType::B:
+        case aris::dynamic::PosType::C:
+            monitor.group_dims.push_back(1);
+            break;
+        default:
+            break;
+        }
+    }
+    aris::Size total_dim = 0;
+    for (auto dim : monitor.group_dims) total_dim += dim;
+    monitor.prev_pos.assign(total_pos_size, 0.0);
+    monitor.prev_speed_groups.assign(total_dim, 0.0);
+    monitor.prev_acc_groups.assign(total_dim, 0.0);
+    return monitor;
 }
 
-void calc_speed_from_pe321(const double *pe, double dt, DebugMonitor &m, double v_lin[3], double v_ang[3]) {
-    v_lin[0] = 0.0;
-    v_lin[1] = 0.0;
-    v_lin[2] = 0.0;
-    v_ang[0] = 0.0;
-    v_ang[1] = 0.0;
-    v_ang[2] = 0.0;
+auto default_output_vel_size(const std::vector<aris::dynamic::PosType> &types) -> aris::Size {
+    aris::Size size = 0;
+    for (auto type : types) {
+        size += aris::dynamic::s_vel_type_size(default_vel_type(type));
+    }
+    return size;
+}
 
-    if (!m.has_prev_pos) {
-        return;
+auto extract_limit_vectors(
+    const std::vector<aris::dynamic::PosType> &types,
+    const double *pos,
+    const double *vel,
+    double dt,
+    const LimitMonitor &monitor,
+    std::vector<double> &speed_groups,
+    std::vector<double> &speed_mags) -> void {
+    speed_groups.clear();
+    speed_mags.clear();
+
+    aris::Size pos_offset = 0;
+    aris::Size vel_offset = 0;
+    for (auto type : types) {
+        auto pos_size = aris::dynamic::s_pos_type_size(type);
+        auto vel_size = aris::dynamic::s_vel_type_size(default_vel_type(type));
+
+        switch (type) {
+        case aris::dynamic::PosType::PM:
+        case aris::dynamic::PosType::PQ:
+        case aris::dynamic::PosType::RE121:
+        case aris::dynamic::PosType::RE123:
+        case aris::dynamic::PosType::RE131:
+        case aris::dynamic::PosType::RE132:
+        case aris::dynamic::PosType::RE212:
+        case aris::dynamic::PosType::RE213:
+        case aris::dynamic::PosType::RE231:
+        case aris::dynamic::PosType::RE232:
+        case aris::dynamic::PosType::RE312:
+        case aris::dynamic::PosType::RE313:
+        case aris::dynamic::PosType::RE321:
+        case aris::dynamic::PosType::RE323:
+        case aris::dynamic::PosType::RM:
+        case aris::dynamic::PosType::RQ: {
+            double vs[6]{};
+            aris::dynamic::s_vel2vs(type, pos + pos_offset, default_vel_type(type), vel + vel_offset, vs);
+            if (aris::dynamic::s_pos_type_mov_dim(type) > 0) {
+                speed_groups.insert(speed_groups.end(), vs, vs + 3);
+                speed_mags.push_back(aris::dynamic::s_norm(3, vs));
+            }
+            if (aris::dynamic::s_pos_type_rot_dim(type) > 0) {
+                speed_groups.insert(speed_groups.end(), vs + 3, vs + 6);
+                speed_mags.push_back(aris::dynamic::s_norm(3, vs + 3));
+            }
+            break;
+        }
+        case aris::dynamic::PosType::XYZT: {
+            double xyz[3]{vel[vel_offset + 0], vel[vel_offset + 1], vel[vel_offset + 2]};
+            double t[1]{vel[vel_offset + 3]};
+            speed_groups.insert(speed_groups.end(), xyz, xyz + 3);
+            speed_mags.push_back(aris::dynamic::s_norm(3, xyz));
+            speed_groups.insert(speed_groups.end(), t, t + 1);
+            speed_mags.push_back(std::abs(t[0]));
+            break;
+        }
+        case aris::dynamic::PosType::X:
+        case aris::dynamic::PosType::Y:
+        case aris::dynamic::PosType::Z:
+        case aris::dynamic::PosType::A:
+        case aris::dynamic::PosType::B:
+        case aris::dynamic::PosType::C: {
+            double v1[1]{vel[vel_offset]};
+            speed_groups.insert(speed_groups.end(), v1, v1 + 1);
+            speed_mags.push_back(std::abs(v1[0]));
+            break;
+        }
+        default:
+            break;
+        }
+
+        pos_offset += pos_size;
+        vel_offset += vel_size;
+    }
+}
+
+auto monitor_one_step(
+    const std::vector<aris::dynamic::PosType> &types,
+    const double *pos,
+    const double *vel,
+    double dt,
+    LimitMonitor &monitor,
+    const double *vel_limits,
+    const double *acc_limits,
+    const double *jerk_limits,
+    std::vector<double> &speed_mags,
+    std::vector<double> &acc_mags,
+    std::vector<double> &jerk_mags,
+    double &max_acc_exceed,
+    double &max_acc_actual,
+    double &max_acc_limit,
+    int &max_acc_group,
+    double &max_jerk_exceed,
+    double &max_jerk_actual,
+    double &max_jerk_limit,
+    int &max_jerk_group,
+    double tol = 1e-3) -> void {
+    std::vector<double> speed_groups;
+    extract_limit_vectors(types, pos, vel, dt, monitor, speed_groups, speed_mags);
+
+    std::vector<double> acc_groups(speed_groups.size(), 0.0);
+    acc_mags.assign(speed_mags.size(), 0.0);
+    jerk_mags.assign(speed_mags.size(), 0.0);
+
+    aris::Size group_offset = 0;
+    for (aris::Size i = 0; i < speed_mags.size(); ++i) {
+        auto group_dim = monitor.group_dims[i];
+
+        (void)vel_limits;
+        if (monitor.has_prev_speed) {
+            double acc_sq = 0.0;
+            for (aris::Size j = 0; j < group_dim; ++j) {
+                auto acc_comp = (speed_groups[group_offset + j] - monitor.prev_speed_groups[group_offset + j]) / dt;
+                acc_groups[group_offset + j] = acc_comp;
+                acc_sq += acc_comp * acc_comp;
+            }
+            acc_mags[i] = std::sqrt(acc_sq);
+            auto bound = acc_limits[i] + tol;
+            auto exceed = acc_mags[i] - bound;
+            if (exceed > max_acc_exceed) {
+                max_acc_exceed = exceed;
+                max_acc_actual = acc_mags[i];
+                max_acc_limit = bound;
+                max_acc_group = static_cast<int>(i);
+            }
+        }
+
+        if (monitor.has_prev_acc) {
+            double jerk_sq = 0.0;
+            for (aris::Size j = 0; j < group_dim; ++j) {
+                auto jerk_comp = (acc_groups[group_offset + j] - monitor.prev_acc_groups[group_offset + j]) / dt;
+                jerk_sq += jerk_comp * jerk_comp;
+            }
+            jerk_mags[i] = std::sqrt(jerk_sq);
+            auto bound = jerk_limits[i] + tol;
+            auto exceed = jerk_mags[i] - bound;
+            if (exceed > max_jerk_exceed) {
+                max_jerk_exceed = exceed;
+                max_jerk_actual = jerk_mags[i];
+                max_jerk_limit = bound;
+                max_jerk_group = static_cast<int>(i);
+            }
+        }
+
+        group_offset += group_dim;
     }
 
-    double dp[3]{
-        pe[0] - m.prev_pe[0],
-        pe[1] - m.prev_pe[1],
-        pe[2] - m.prev_pe[2],
-    };
-    v_lin[0] = dp[0] / dt;
-    v_lin[1] = dp[1] / dt;
-    v_lin[2] = dp[2] / dt;
-
-    double pq_curr[7]{};
-    double pq_prev[7]{};
-    aris::dynamic::s_pos2pos(aris::dynamic::PosType::PE321, pe, aris::dynamic::PosType::PQ, pq_curr);
-    aris::dynamic::s_pos2pos(aris::dynamic::PosType::PE321, m.prev_pe, aris::dynamic::PosType::PQ, pq_prev);
-
-    double dot = 0.0;
-    for (int i = 3; i < 7; ++i) dot += pq_curr[i] * pq_prev[i];
-    if (dot < 0.0) {
-        for (int i = 3; i < 7; ++i) pq_curr[i] = -pq_curr[i];
-    }
-
-    double wq[4]{
-        (pq_curr[3] - pq_prev[3]) / dt,
-        (pq_curr[4] - pq_prev[4]) / dt,
-        (pq_curr[5] - pq_prev[5]) / dt,
-        (pq_curr[6] - pq_prev[6]) / dt,
-    };
-    aris::dynamic::s_wq2wa(pq_curr + 3, wq, v_ang);
+    monitor.prev_speed_groups = speed_groups;
+    monitor.prev_acc_groups = acc_groups;
+    std::copy(pos, pos + monitor.prev_pos.size(), monitor.prev_pos.begin());
+    monitor.has_prev_pos = true;
+    monitor.has_prev_speed = true;
+    monitor.has_prev_acc = true;
 }
 
 } // namespace
 
 int main() {
-    aris::plan::TrajectoryGeneratorBackup tg;
-    tg.setPosTypes({aris::dynamic::PosType::PE321});
+    aris::plan::TrajectoryGenerator tg;
+    const std::vector<aris::dynamic::PosType> types{
+        aris::dynamic::PosType::X,
+        aris::dynamic::PosType::XYZT,
+        aris::dynamic::PosType::PQ,
+    };
+    tg.setPosTypes(types);
     tg.setDt(0.001);
 
-    double p0[6]{0.45, 0.0, 0.75, aris::PI / 2.0, 0.0, aris::PI / 2.0};
-    double p1[6]{0.46, 0.02, 0.74, aris::PI / 2.0, 0.0, aris::PI / 2.0};
-    double p2[6]{0.43, -0.03, 0.76, aris::PI / 2.0, 0.0, aris::PI / 2.0};
-    double vel_limits[2]{0.2, 0.8};
-    double acc_limits[2]{1.0, 5.0};
-    double jerk_limits[2]{10.0, 20.0};
-    double zone[2]{0.001, 0.001};
-    constexpr double tol = 1e-3;
+    constexpr int total_size = 1 + 4 + 7;
+    constexpr int vel_size = 1 + 2 + 2;
 
-    tg.insertLinePos(1, p0, vel_limits, acc_limits, jerk_limits, zone);
+    double pq0[7]{};
+    double pq1[7]{};
+    double pq2[7]{};
+    double pq_mid[7]{};
+    double pe0[6]{0.45, 0.00, 0.75, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+    double pe1[6]{0.46, 0.02, 0.73, aris::PI / 2.0, 0.1, aris::PI / 2.0};
+    double pe2[6]{0.44, -0.03, 0.74, aris::PI / 2.0, -0.1, aris::PI / 2.0};
+    double pe_mid[6]{0.45, -0.01, 0.735, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+    aris::dynamic::s_pe2pq(pe0, pq0, "321");
+    aris::dynamic::s_pe2pq(pe1, pq1, "321");
+    aris::dynamic::s_pe2pq(pe2, pq2, "321");
+    aris::dynamic::s_pe2pq(pe_mid, pq_mid, "321");
 
-    const char *out_file = "/Users/panyang/Documents/MATLAB/test/demo_tg_line_debug.csv";
+    double p0[total_size]{0.0, 0.10, 0.20, 0.30, 0.00};
+    double p1[total_size]{0.2, 0.15, 0.25, 0.35, 0.10};
+    double p2[total_size]{-0.1, 0.12, 0.18, 0.33, -0.15};
+    double mid[total_size]{0.05, 0.13, 0.21, 0.34, -0.02};
+    std::copy_n(pq0, 7, p0 + 5);
+    std::copy_n(pq1, 7, p1 + 5);
+    std::copy_n(pq2, 7, p2 + 5);
+    std::copy_n(pq_mid, 7, mid + 5);
 
-    std::ofstream ofs(out_file);
+    double vel[vel_size]{0.2, 0.2, 0.6, 0.3, 0.8};
+    double acc[vel_size]{1.0, 2.0, 4.0, 2.0, 5.0};
+    double jerk[vel_size]{10.0, 10.0, 10.0, 10.0, 10.0};
+    double zone[vel_size]{0.0, 0.001, 0.001, 0.001, 0.001};
+
+    tg.insertLinePos(1, p0, vel, acc, jerk, zone);
+    std::vector<double> out(total_size, 0.0);
+    std::vector<double> vel_out(default_output_vel_size(types), 0.0);
+    (void)tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+
+    tg.insertLinePos(2, p1, vel, acc, jerk, zone);
+    tg.insertCirclePos(3, p2, mid, vel, acc, jerk, zone);
+
+    LimitMonitor monitor = make_limit_monitor(types);
+    std::vector<double> speed_mags, acc_mags, jerk_mags;
+
+    double max_acc_exceed = -1.0;
+    double max_acc_actual = 0.0;
+    double max_acc_limit = 0.0;
+    int max_acc_group = -1;
+    double max_jerk_exceed = -1.0;
+    double max_jerk_actual = 0.0;
+    double max_jerk_limit = 0.0;
+    int max_jerk_group = -1;
+
+    const char *csv_file = "/Users/panyang/Documents/MATLAB/test/demo_tg_mixed_debug.csv";
+    std::ofstream ofs(csv_file);
     ofs << std::fixed << std::setprecision(12);
-    ofs
-        << "step,time_s,ret,s,arc,left_node_s,left_total_s,"
-        << "pe_x,pe_y,pe_z,pe_a,pe_b,pe_c,"
-        << "pq_x,pq_y,pq_z,pq_qw,pq_qx,pq_qy,pq_qz,"
-        << "v_lin_norm,v_ang_norm,a_lin_norm,a_ang_norm,j_lin_norm,j_ang_norm,"
-        << "v_lin_over,v_ang_over,a_lin_over,a_ang_over,j_lin_over,j_ang_over\n";
-
-    DebugMonitor monitor;
-    double pe[6]{};
-
-    // First sampling follows test behavior.
-    auto ret = tg.getEePosAndMoveDt(pe, nullptr, nullptr);
-
-    tg.insertLinePos(2, p1, vel_limits, acc_limits, jerk_limits, zone);
-    tg.insertLinePos(3, p2, vel_limits, acc_limits, jerk_limits, zone);
+    ofs << "step,time_s,ret,node_id";
+    for (int i = 0; i < total_size; ++i) ofs << ",p" << i;
+    for (aris::Size i = 0; i < vel_out.size(); ++i) ofs << ",v" << i;
+    for (aris::Size i = 0; i < monitor.group_dims.size(); ++i) {
+        ofs << ",g" << i << "_v,g" << i << "_a,g" << i << "_j";
+    }
+    ofs << "\n";
 
     int step = 0;
-    double max_a_lin = 0.0;
-    double max_a_ang = 0.0;
-    double max_j_lin = 0.0;
-    double max_j_ang = 0.0;
-    double max_arc = 0.0;
+    for (; step < 200000; ++step) {
+        auto ret = tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+        monitor_one_step(types, out.data(), vel_out.data(), tg.dt(), monitor,
+            vel, acc, jerk,
+            speed_mags, acc_mags, jerk_mags,
+            max_acc_exceed, max_acc_actual, max_acc_limit, max_acc_group,
+            max_jerk_exceed, max_jerk_actual, max_jerk_limit, max_jerk_group);
 
-    for (; step < 100000; ++step) {
-        if (step > 0) {
-            ret = tg.getEePosAndMoveDt(pe, nullptr, nullptr);
+        ofs << step << ',' << (step * tg.dt()) << ',' << ret << ',' << tg.currentNodeId();
+        for (double v : out) ofs << ',' << v;
+        for (double v : vel_out) ofs << ',' << v;
+        for (aris::Size i = 0; i < monitor.group_dims.size(); ++i) {
+            ofs << ',' << speed_mags[i] << ',' << acc_mags[i] << ',' << jerk_mags[i];
         }
+        ofs << '\n';
 
-        double pq[7]{};
-        aris::dynamic::s_pos2pos(aris::dynamic::PosType::PE321, pe, aris::dynamic::PosType::PQ, pq);
-
-        double v_lin[3]{};
-        double v_ang[3]{};
-        calc_speed_from_pe321(pe, tg.dt(), monitor, v_lin, v_ang);
-
-        double a_lin[3]{};
-        double a_ang[3]{};
-        double j_lin[3]{};
-        double j_ang[3]{};
-
-        if (monitor.has_prev_speed) {
-            for (int i = 0; i < 3; ++i) {
-                a_lin[i] = (v_lin[i] - monitor.prev_v_lin[i]) / tg.dt();
-                a_ang[i] = (v_ang[i] - monitor.prev_v_ang[i]) / tg.dt();
-            }
-        }
-
-        if (monitor.has_prev_acc) {
-            for (int i = 0; i < 3; ++i) {
-                j_lin[i] = (a_lin[i] - monitor.prev_a_lin[i]) / tg.dt();
-                j_ang[i] = (a_ang[i] - monitor.prev_a_ang[i]) / tg.dt();
-            }
-        }
-
-        double v_lin_norm = norm3(v_lin);
-        double v_ang_norm = norm3(v_ang);
-        double a_lin_norm = norm3(a_lin);
-        double a_ang_norm = norm3(a_ang);
-        double j_lin_norm = norm3(j_lin);
-        double j_ang_norm = norm3(j_ang);
-
-        max_a_lin = std::max(max_a_lin, a_lin_norm);
-        max_a_ang = std::max(max_a_ang, a_ang_norm);
-        max_j_lin = std::max(max_j_lin, j_lin_norm);
-        max_j_ang = std::max(max_j_ang, j_ang_norm);
-
-        int v_lin_over = (v_lin_norm > vel_limits[0] + tol) ? 1 : 0;
-        int v_ang_over = (v_ang_norm > vel_limits[1] + tol) ? 1 : 0;
-        int a_lin_over = (a_lin_norm > acc_limits[0] + tol) ? 1 : 0;
-        int a_ang_over = (a_ang_norm > acc_limits[1] + tol) ? 1 : 0;
-        int j_lin_over = (j_lin_norm > jerk_limits[0] + tol) ? 1 : 0;
-        int j_ang_over = (j_ang_norm > jerk_limits[1] + tol) ? 1 : 0;
-
-        double current_s = tg.currentS();
-        double current_arc = tg.currentArc();
-        double left_node_s = tg.leftNodeS();
-        double left_total_s = tg.leftTotalS();
-
-        max_arc = std::max(max_arc, current_arc);
-
-        ofs
-            << step << ',' << (step * tg.dt()) << ',' << ret << ',' << current_s << ',' << current_arc << ',' << left_node_s << ',' << left_total_s << ','
-            << pe[0] << ',' << pe[1] << ',' << pe[2] << ',' << pe[3] << ',' << pe[4] << ',' << pe[5] << ','
-            << pq[0] << ',' << pq[1] << ',' << pq[2] << ',' << pq[3] << ',' << pq[4] << ',' << pq[5] << ',' << pq[6] << ','
-            << v_lin_norm << ',' << v_ang_norm << ',' << a_lin_norm << ',' << a_ang_norm << ',' << j_lin_norm << ',' << j_ang_norm << ','
-            << v_lin_over << ',' << v_ang_over << ',' << a_lin_over << ',' << a_ang_over << ',' << j_lin_over << ',' << j_ang_over << '\n';
-
-        for (int i = 0; i < 6; ++i) monitor.prev_pe[i] = pe[i];
-        for (int i = 0; i < 3; ++i) {
-            monitor.prev_v_lin[i] = v_lin[i];
-            monitor.prev_v_ang[i] = v_ang[i];
-            monitor.prev_a_lin[i] = a_lin[i];
-            monitor.prev_a_ang[i] = a_ang[i];
-        }
-        monitor.has_prev_pos = true;
-        monitor.has_prev_speed = true;
-        monitor.has_prev_acc = true;
-
-        if (ret == 0) {
-            break;
-        }
+        if (ret == 0) break;
     }
 
-    std::cout << "demo_tg finished at step=" << step << "\n";
-    std::cout << "max_a_lin=" << max_a_lin << ", max_a_ang=" << max_a_ang << "\n";
-    std::cout << "max_j_lin=" << max_j_lin << ", max_j_ang=" << max_j_ang << "\n";
-    std::cout << "max_arc=" << max_arc << "\n";
-    std::cout << "csv=" << out_file << "\n";
+    std::cout << "mixed finished at step=" << step << "\n";
+    std::cout << "max_acc_exceed=" << max_acc_exceed
+              << " (actual=" << max_acc_actual << ", limit=" << max_acc_limit << ", group=" << max_acc_group << ")\n";
+    std::cout << "max_jerk_exceed=" << max_jerk_exceed
+              << " (actual=" << max_jerk_actual << ", limit=" << max_jerk_limit << ", group=" << max_jerk_group << ")\n";
+    std::cout << "csv=" << csv_file << "\n";
+
     return 0;
 }

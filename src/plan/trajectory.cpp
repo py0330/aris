@@ -745,12 +745,12 @@ namespace aris::plan {
 		this_u.scurve_.pb_ = this_u.scurve_.pa_ + this_u.zone1_.length_ / 2.0 + this_u.zone2_.length_ / 2.0 + this_u.move_.length_;
 
 		// STEP 6. 考虑曲线的真实曲率（一部分加速度必须用来克服曲率），修正交融中点处的最大速度 //
-		double p50[4], dp50[4], d2p50[4];
+		double p50[4], dp50[4], d2p50[4], d3p50[4];
 		double vb;
 		s_bezier3_blend_line_circle(0.5, last_u.zone2_.line_circle_.p0_, last_u.zone2_.line_circle_.p1_
 			, last_u.zone2_.line_circle_.center_, last_u.zone2_.line_circle_.axis_, last_u.zone2_.line_circle_.theta_,
-			p50, dp50, d2p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), vb);
+			p50, dp50, d2p50, d3p50);
+		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_cl(Node::Unit& last_u, Node::Unit& this_u) ->void {
@@ -810,12 +810,12 @@ namespace aris::plan {
 		this_u.scurve_.pb_ = this_u.scurve_.pa_ + this_u.zone1_.length_ / 2.0 + this_u.zone2_.length_ / 2.0 + this_u.move_.length_;
 
 		// STEP 6. 考虑曲线的真实曲率（一部分加速度必须用来克服曲率），修正交融中点处的最大速度 //
-		double p50[4], dp50[4], d2p50[4];
+		double p50[4], dp50[4], d2p50[4], d3p50[4];
 		double vb;
 		s_bezier3_blend_line_circle(0.5, last_u.zone2_.circle_line_.p2_, last_u.zone2_.circle_line_.p1_
 			, last_u.zone2_.circle_line_.center_, last_u.zone2_.circle_line_.axis_, last_u.zone2_.circle_line_.theta_,
-			p50, dp50, d2p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), vb);
+			p50, dp50, d2p50, d3p50);
+		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_cc(Node::Unit& last_u, Node::Unit& this_u) ->void {
@@ -899,12 +899,12 @@ namespace aris::plan {
 		this_u.scurve_.pb_ = this_u.scurve_.pa_ + this_u.zone1_.length_ / 2.0 + this_u.zone2_.length_ / 2.0 + this_u.move_.length_;
 
 		// STEP 6. 考虑曲线的真实曲率（一部分加速度必须用来克服曲率），修正交融中点处的最大速度 //
-		double p50[4], dp50[4], d2p50[4];
+		double p50[4], dp50[4], d2p50[4], d3p50[4];
 		double vb;
 		s_bezier3_blend_circle_circle(0.5, circles.pcenter_, circles.c1_, circles.a1_, circles.theta1_
 			, circles.c2_, circles.a2_, circles.theta2_
-			, p50, dp50, d2p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), vb);
+			, p50, dp50, d2p50, d3p50);
+		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_qq(Node::Unit& last_u, Node::Unit& this_u)->void {
@@ -1477,9 +1477,6 @@ namespace aris::plan {
 		double max_ds_{ 1.0 }, max_dds_{ 10.0 }, max_ddds_{ 100.0 };
 		std::atomic<double> target_ds_{ 1.0 };
 
-
-		LargeNum arc_{0};
-
 		// 末端类型 //
 		std::vector<aris::dynamic::PosType> ee_pos_types_;
 		std::vector<aris::dynamic::VelType> ee_vel_types_;
@@ -1598,15 +1595,6 @@ namespace aris::plan {
 	}
 	auto TrajectoryGenerator::setDt(double dt)->void {
 		imp_->dt_ = dt;
-	}
-	auto TrajectoryGenerator::currentS()const->double {
-		return imp_->s_;
-	}
-	auto TrajectoryGenerator::setCurrentS(double s)->void {
-		imp_->s_ = s;
-	}
-	auto TrajectoryGenerator::currentArc()const->double {
-		return imp_->arc_;
 	}
 	auto TrajectoryGenerator::currentDs()const->double {
 		return imp_->ds_;
@@ -1889,8 +1877,6 @@ namespace aris::plan {
 			}
 		}
 
-		double sv, sa, sj;
-		s_scurve_at(current_node->ee_plans_[0].x_.scurve_, s_, &imp_->arc_, &sv, &sa, &sj);
 
 		get_node_data(posTypes().size(), imp_->internal_pos_type_, current_node, s_, imp_->ds_, imp_->dds_, imp_->ddds_, imp_->internal_pos_, imp_->internal_vel_, imp_->internal_acc_);
 		aris::dynamic::s_pos2pos(posTypes().size(), imp_->internal_pos_type_, imp_->internal_pos_, posTypes().data(), ee_pos);

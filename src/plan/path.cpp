@@ -93,9 +93,9 @@ namespace aris::plan{
 		double d3si = d3s3t * co + 2 * d2s3t * dco + ds3t * d2co;
 
 		// p //
-		p[0] = p0[0] - p1[0] + k*p1_minus_p0[0] + si * ry[0] + co * rx[0];
-		p[1] = p0[1] - p1[1] + k*p1_minus_p0[1] + si * ry[1] + co * rx[1];
-		p[2] = p0[2] - p1[2] + k*p1_minus_p0[2] + si * ry[2] + co * rx[2];
+		p[0] = p0[0] - p1[0] + center[0] + k*p1_minus_p0[0] + si * ry[0] + co * rx[0];
+		p[1] = p0[1] - p1[1] + center[1] + k*p1_minus_p0[1] + si * ry[1] + co * rx[1];
+		p[2] = p0[2] - p1[2] + center[2] + k*p1_minus_p0[2] + si * ry[2] + co * rx[2];
 
 		// dp //
 		dp[0] = dk * p1_minus_p0[0] + dsi * ry[0] + dco * rx[0];

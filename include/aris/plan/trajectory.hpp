@@ -38,9 +38,6 @@ namespace aris::plan{
 		auto setMaxReplanNum(int max_replan_num = 10) -> void;
 
 		// 规划器内的时间间隔 //
-		auto currentS()const->double;
-		auto setCurrentS(double s)->void;// 不要随便设置，会导致不连续
-		auto currentArc()const->double;
 		auto currentDs()const->double;
 		auto setCurrentDs(double ds)->void;// 不要随便设置，会导致不连续
 
