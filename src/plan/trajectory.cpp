@@ -972,15 +972,52 @@ namespace aris::plan {
 		this_u.scurve_.pb_ = this_u.scurve_.pa_ + this_u.zone1_.length_ / 2.0 + this_u.zone2_.length_ / 2.0 + this_u.move_.length_;
 
 		// STEP 6. 考虑曲线的真实曲率（一部分加速度必须用来克服曲率），修正交融中点处的最大速度 //
-		double p50[4], dp50[4], d2p50[4];
+		double p50[4], dp50[4], d2p50[4], d3p50[4];
 		double vb;
 		s_bezier3_blend_quaternion(0.5, last_u.zone2_.quaternions_.q0_, last_u.zone2_.quaternions_.q1_, last_u.zone2_.quaternions_.q2_,
-			p50, dp50, d2p50);
+			p50, dp50, d2p50, d3p50);
 
 		// 需要将四元数转化为角速度与角加速度
-		double xa50[3], wa50[3];
+		double xa50[3], wa50[3], ja50[3];
+		// 这里先用 s_xq2xa 得到中点处的角速度/角加速度（wa50/xa50）。
+		// 当前 ja50 仍通过下方数值差分从 xa(s) 近似获得，便于快速接通 jerk 约束。
+		// TODO: 后续改为对四元数链路做解析求导，直接得到角跃度，替代该数值差分实现。
 		aris::dynamic::s_xq2xa(p50, dp50, d2p50, xa50, wa50);
-		s_bezier3_max_v_at(3, wa50, xa50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), vb);
+		{
+			// 数值差分估计 ja50 = d(xa)/ds：
+			// 1) 用 p50/dp50/d2p50/d3p50 构造 s±h 处状态；
+			// 2) 通过 s_xq2xa 得到 xa(s±h)；
+			// 3) 中心差分 + Richardson 外推提升稳定性。
+			auto compute_ja = [&](double h, double *ja)->void {
+				double p_plus[4], dp_plus[4], d2p_plus[4], xa_plus[3], wa_plus[3];
+				double p_minus[4], dp_minus[4], d2p_minus[4], xa_minus[3], wa_minus[3];
+
+				for (int i = 0; i < 4; ++i) {
+					p_plus[i] = p50[i] + h * dp50[i] + 0.5 * h * h * d2p50[i] + h * h * h * d3p50[i] / 6.0;
+					dp_plus[i] = dp50[i] + h * d2p50[i] + 0.5 * h * h * d3p50[i];
+					d2p_plus[i] = d2p50[i] + h * d3p50[i];
+
+					p_minus[i] = p50[i] - h * dp50[i] + 0.5 * h * h * d2p50[i] - h * h * h * d3p50[i] / 6.0;
+					dp_minus[i] = dp50[i] - h * d2p50[i] + 0.5 * h * h * d3p50[i];
+					d2p_minus[i] = d2p50[i] - h * d3p50[i];
+				}
+
+				aris::dynamic::s_xq2xa(p_plus, dp_plus, d2p_plus, xa_plus, wa_plus);
+				aris::dynamic::s_xq2xa(p_minus, dp_minus, d2p_minus, xa_minus, wa_minus);
+				for (int i = 0; i < 3; ++i) {
+					ja[i] = (xa_plus[i] - xa_minus[i]) / (2.0 * h);
+				}
+			};
+
+			constexpr double h = 1e-7;
+			double ja_h[3], ja_h2[3];
+			compute_ja(h, ja_h);
+			compute_ja(h * 0.5, ja_h2);
+			for (int i = 0; i < 3; ++i) {
+				ja50[i] = (4.0 * ja_h2[i] - ja_h[i]) / 3.0;
+			}
+		}
+		s_bezier3_max_v_at(3, wa50, xa50, ja50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 

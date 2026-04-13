@@ -89,6 +89,81 @@ TEST(PathTest, BlendBezierKnownCases) {
 	}
 }
 
+TEST(PathTest, BlendBezierThirdDerivativeMatchesFiniteDifference) {
+	constexpr double h = 1e-6;
+	constexpr double kThirdTol = 1e-5;
+
+	{
+		double p0[3]{0.3, 0.8, -0.3};
+		double p1[3]{-0.5, 0.3, -0.3};
+		double p2[3]{0.3, -0.5, 0.2};
+		double p[3], dp[3], d2p[3], d3p[3];
+		double p_plus[3], dp_plus[3], d2p_plus[3];
+		double p_minus[3], dp_minus[3], d2p_minus[3];
+		aris::plan::s_bezier3_blend_line_line(0.56, p0, p1, p2, p, dp, d2p, d3p);
+		aris::plan::s_bezier3_blend_line_line(0.56 + h, p0, p1, p2, p_plus, dp_plus, d2p_plus);
+		aris::plan::s_bezier3_blend_line_line(0.56 - h, p0, p1, p2, p_minus, dp_minus, d2p_minus);
+		for (int i = 0; i < 3; ++i) {
+			auto fd = (d2p_plus[i] - d2p_minus[i]) / (2.0 * h);
+			EXPECT_NEAR(d3p[i], fd, kThirdTol) << "line-line d3p mismatch at index " << i;
+		}
+	}
+
+	{
+		double theta = aris::PI / 3;
+		double center[3]{-1.5, 0.8, 0.2};
+		double ax[3]{0.224859506698758, 0.374765844497931, 0.899438026795034};
+		double p0[3]{3.5, 0.7, -2.8};
+		double p1[3]{-1.5, 2, -0.3};
+		double p[3], dp[3], d2p[3], d3p[3];
+		double p_plus[3], dp_plus[3], d2p_plus[3];
+		double p_minus[3], dp_minus[3], d2p_minus[3];
+		aris::plan::s_bezier3_blend_line_circle(0.38, p0, p1, center, ax, theta, p, dp, d2p, d3p);
+		aris::plan::s_bezier3_blend_line_circle(0.38 + h, p0, p1, center, ax, theta, p_plus, dp_plus, d2p_plus);
+		aris::plan::s_bezier3_blend_line_circle(0.38 - h, p0, p1, center, ax, theta, p_minus, dp_minus, d2p_minus);
+		for (int i = 0; i < 3; ++i) {
+			auto fd = (d2p_plus[i] - d2p_minus[i]) / (2.0 * h);
+			EXPECT_NEAR(d3p[i], fd, kThirdTol) << "line-circle d3p mismatch at index " << i;
+		}
+	}
+
+	{
+		double p1[3]{0.8, 0.3, -1.5};
+		double c1[3]{-1.5, 0.8, 0.2};
+		double ax1[3]{-0.0385744143167205, 0.94331976829071, -0.329635904161066};
+		double theta1 = aris::PI / 6;
+		double c2[3]{1.2, 0.4, -0.3};
+		double ax2[3]{-0.948683298050514, 0, 0.316227766016838};
+		double theta2 = aris::PI * 2 / 3;
+		double p[3], dp[3], d2p[3], d3p[3];
+		double p_plus[3], dp_plus[3], d2p_plus[3];
+		double p_minus[3], dp_minus[3], d2p_minus[3];
+		aris::plan::s_bezier3_blend_circle_circle(0.68, p1, c1, ax1, theta1, c2, ax2, theta2, p, dp, d2p, d3p);
+		aris::plan::s_bezier3_blend_circle_circle(0.68 + h, p1, c1, ax1, theta1, c2, ax2, theta2, p_plus, dp_plus, d2p_plus);
+		aris::plan::s_bezier3_blend_circle_circle(0.68 - h, p1, c1, ax1, theta1, c2, ax2, theta2, p_minus, dp_minus, d2p_minus);
+		for (int i = 0; i < 3; ++i) {
+			auto fd = (d2p_plus[i] - d2p_minus[i]) / (2.0 * h);
+			EXPECT_NEAR(d3p[i], fd, kThirdTol) << "circle-circle d3p mismatch at index " << i;
+		}
+	}
+
+	{
+		double q0[4]{0.409512331537456, 0.283529229761645, 0.0437129979471227, 0.866025403784439};
+		double q1[4]{0.0534299365105471, 0.0637953790354169, 0.0259136063121744, 0.996194698091746};
+		double q2[4]{0.147477479964183, 0.082527864550064, 0.039915336441851, 0.984807753012208};
+		double q[4], dq[4], d2q[4], d3q[4];
+		double q_plus[4], dq_plus[4], d2q_plus[4];
+		double q_minus[4], dq_minus[4], d2q_minus[4];
+		aris::plan::s_bezier3_blend_quaternion(0.66, q0, q1, q2, q, dq, d2q, d3q);
+		aris::plan::s_bezier3_blend_quaternion(0.66 + h, q0, q1, q2, q_plus, dq_plus, d2q_plus);
+		aris::plan::s_bezier3_blend_quaternion(0.66 - h, q0, q1, q2, q_minus, dq_minus, d2q_minus);
+		for (int i = 0; i < 4; ++i) {
+			auto fd = (d2q_plus[i] - d2q_minus[i]) / (2.0 * h);
+			EXPECT_NEAR(d3q[i], fd, 5e-5) << "quaternion d3q mismatch at index " << i;
+		}
+	}
+}
+
 TEST(PathTest, ArcEstimateKnownTable) {
 	double theta[12]{
 		0, 0.285599332144527, 0.571198664289053, 0.85679799643358, 1.14239732857811,

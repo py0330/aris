@@ -147,9 +147,9 @@ namespace aris::plan{
 
 		// circle 1 & 2 
 		double s3t1 = (s - 1) * (s - 1) * (s - 1) * theta1;
-		double ds3t1 = -3 * (s - 1) * (s - 1) * theta1;
+		double ds3t1 = 3 * (s - 1) * (s - 1) * theta1;
 		double d2s3t1 = 6 * (s - 1) * theta1;
-		double d3s3t1 = -6 * theta1;
+		double d3s3t1 = 6 * theta1;
 
 		double co1 = std::cos(s3t1);
 		double si1 = std::sin(s3t1);
@@ -215,7 +215,8 @@ namespace aris::plan{
 	//
 	//  要使用本函数，需保证 q[3] > 0
 	auto inline s_rq_2_theta_v(const double* q, const double* dq, const double* ddq,
-		double& theta, double* v, double& dtheta, double* dv, double& d2theta, double* d2v)noexcept->void
+		double& theta, double* v, double& dtheta, double* dv, double& d2theta, double* d2v,
+		const double *dddq = nullptr, double *d3theta = nullptr, double *d3v = nullptr)noexcept->void
 	{
 		//
 		// q   = [ q1 ] = [ s * v ]
@@ -227,19 +228,25 @@ namespace aris::plan{
 		// d2q = [d2q1] = [ d2s * v + 2 * ds * dv + s * d2v ]
 		//       [d2q2] = [ d2c                             ]
 		//
+		// d3q = [d3q1] = [ d3s * v + 3 * d2s * dv + 3 * ds * d2v + s * d3v ]
+		//       [d3q2] = [ d3c                                             ]
+		//
 		// 其中：
 		// s   =  sin(theta)
 		// ds  =  cos(theta) * dtheta
 		// d2s = -sin(theta) * dtheta^2 + cos(theta) * d2theta
+		// d3s = -cos(theta) * dtheta^3 - 3 * ds * d2theta + sin(theta) * d3theta
+		//
 		// c   =  cos(theta)
 		// dc  = -sin(theta) * dtheta
 		// d2c = -cos(theta) * dtheta^2 - sin(theta) * d2theta
+		// d3c =  sin(theta) * dtheta^3 - 3 * dc * d2theta - cos(theta) * d3theta
 		//
 		// 且应该有：
 		//   v'*v  = 1 
 		//   v'*dv = 0  
 		// 
-		// 需求： theta dtheta d2theta v dv d2v
+		// 需求： theta dtheta d2theta d3theta v dv d2v d3v
 		//   
 		//////////////////////////////////////////////////////////////////////////////////////////////
 		//  
@@ -250,6 +257,8 @@ namespace aris::plan{
 		//   【  dv   】 = (dq1 - ds * v) / s 
 		//   【d2theta】 = -(d2q2 + c * dtheta^2)/s
 		//   【  d2v  】 = (d2q1 - d2s * v - 2 * ds * dv)/s
+		//   【d3theta】 = (s * dtheta^3 - 3 * c * dtheta * d2theta - d3q2)/s
+		//   【  d3v  】 = (d3q1 - d3s * v - 3 * d2s * dv - 3 * ds * d2v)/s
 		//
 		//////////////////////////////////////////////////////////////////////////////////////////////
 		// 
@@ -340,6 +349,13 @@ namespace aris::plan{
 		//   【  d2v  】 = [0;0;0]
 
 
+		if (d3theta) {
+			*d3theta = 0.0;
+		}
+		if (d3v) {
+			std::fill_n(d3v, 3, 0.0);
+		}
+
 		auto c = q[3];
 		auto s = aris::dynamic::s_norm(3, q);
 		theta = std::atan2(s, c);// s >= 0 保证了 theta >= 0
@@ -359,6 +375,14 @@ namespace aris::plan{
 			d2v[0] = (ddq[0] - d2s * v[0] - 2 * ds * dv[0]) / (s);
 			d2v[1] = (ddq[1] - d2s * v[1] - 2 * ds * dv[1]) / (s);
 			d2v[2] = (ddq[2] - d2s * v[2] - 2 * ds * dv[2]) / (s);
+
+			if (dddq && d3theta && d3v) {
+				*d3theta = (s * dtheta * dtheta * dtheta - 3.0 * c * dtheta * d2theta - dddq[3]) / s;
+				double d3s = -c * dtheta * dtheta * dtheta - 3.0 * s * dtheta * d2theta + c * (*d3theta);
+				d3v[0] = (dddq[0] - d3s * v[0] - 3.0 * d2s * dv[0] - 3.0 * ds * d2v[0]) / s;
+				d3v[1] = (dddq[1] - d3s * v[1] - 3.0 * d2s * dv[1] - 3.0 * ds * d2v[1]) / s;
+				d3v[2] = (dddq[2] - d3s * v[2] - 3.0 * d2s * dv[2] - 3.0 * ds * d2v[2]) / s;
+			}
 
 			return;
 		}
@@ -386,6 +410,24 @@ namespace aris::plan{
 			d2v[0] = 0.0;
 			d2v[1] = 0.0;
 			d2v[2] = 0.0;
+
+			if (dddq) {
+				double d3theta_local = -dddq[3] / c;
+				if (d3theta) {
+					*d3theta = d3theta_local;
+				}
+
+				double d3s = -c * dtheta * dtheta * dtheta + c * d3theta_local;
+				d2v[0] = (dddq[0] - d3s * v[0] - 3.0 * d2s * dv[0]) / (3.0 * ds);
+				d2v[1] = (dddq[1] - d3s * v[1] - 3.0 * d2s * dv[1]) / (3.0 * ds);
+				d2v[2] = (dddq[2] - d3s * v[2] - 3.0 * d2s * dv[2]) / (3.0 * ds);
+
+				if (d3v) {
+					d3v[0] = 0.0;
+					d3v[1] = 0.0;
+					d3v[2] = 0.0;
+				}
+			}
 			return;
 		}
 
@@ -403,12 +445,40 @@ namespace aris::plan{
 			d2v[0] = 0.0;
 			d2v[1] = 0.0;
 			d2v[2] = 0.0;
+
+			if (dddq) {
+				double d3theta_local = -dddq[3] / c;
+				if (d3theta) {
+					*d3theta = d3theta_local;
+				}
+				double d3s = c * d3theta_local;
+				dv[0] = (dddq[0] - d3s * v[0]) / (3.0 * d2s);
+				dv[1] = (dddq[1] - d3s * v[1]) / (3.0 * d2s);
+				dv[2] = (dddq[2] - d3s * v[2]) / (3.0 * d2s);
+
+				if (d3v) {
+					d3v[0] = 0.0;
+					d3v[1] = 0.0;
+					d3v[2] = 0.0;
+				}
+			}
 			return;
 		}
 
 		std::fill_n(v, 3, 0.0);
 		std::fill_n(dv, 3, 0.0);
 		std::fill_n(d2v, 3, 0.0);
+
+		if (dddq) {
+			if (d3theta) {
+				*d3theta = -dddq[3] / c;
+			}
+			if (d3v) {
+				d3v[0] = 0.0;
+				d3v[1] = 0.0;
+				d3v[2] = 0.0;
+			}
+		}
 	}
 
 
@@ -471,6 +541,18 @@ namespace aris::plan{
 			j2
 		};
 
+		double d3qa[4]{};
+		if (d3p) {
+			double a1 = theta0 * (2 * s - 2);
+			double a2 = 2 * theta0;
+			double a3v = -3.0 * a1 * a2 * st1_s2 - a1 * a1 * a1 * ct1_s2;
+			double a3w = -3.0 * a1 * a2 * ct1_s2 + a1 * a1 * a1 * st1_s2;
+			d3qa[0] = a3v * v0[0];
+			d3qa[1] = a3v * v0[1];
+			d3qa[2] = a3v * v0[2];
+			d3qa[3] = a3w;
+		}
+
 		// qb1 dqb1 d2qb1 //
 		double qb1[4]{
 			-qa[0],
@@ -492,6 +574,14 @@ namespace aris::plan{
 			-d2qa[2],
 			d2qa[3]
 		};
+
+		double d3qb1[4]{};
+		if (d3p) {
+			d3qb1[0] = -d3qa[0];
+			d3qb1[1] = -d3qa[1];
+			d3qb1[2] = -d3qa[2];
+			d3qb1[3] = d3qa[3];
+		}
 
 		// qb2 dqb2 d2qb2 //
 		double sts2 = std::sin(theta2 * s * s);
@@ -523,6 +613,18 @@ namespace aris::plan{
 			k2
 		};
 
+		double d3qb2[4]{};
+		if (d3p) {
+			double b1 = theta2 * 2 * s;
+			double b2 = theta2 * 2;
+			double b3v = -3.0 * b1 * b2 * sts2 - b1 * b1 * b1 * cts2;
+			double b3w = -3.0 * b1 * b2 * cts2 + b1 * b1 * b1 * sts2;
+			d3qb2[0] = b3v * v2[0];
+			d3qb2[1] = b3v * v2[1];
+			d3qb2[2] = b3v * v2[2];
+			d3qb2[3] = b3w;
+		}
+
 		// qb3 dqb3 d2qb3 // 
 		double qb3[4], dqb3[4], d2qb3[4];
 		aris::dynamic::s_rq_dot_rq(qb1, qb2, qb3);
@@ -538,11 +640,22 @@ namespace aris::plan{
 		aris::dynamic::s_rq_dot_rq(dqb1, dqb2, tem4);
 		aris::dynamic::s_va(4, 2.0, tem4, d2qb3);
 
+		double d3qb3[4]{};
+		if (d3p) {
+			aris::dynamic::s_rq_dot_rq(qb1, d3qb2, d3qb3);
+			aris::dynamic::s_rq_dot_rq(dqb1, d2qb2, tem4);
+			aris::dynamic::s_va(4, 3.0, tem4, d3qb3);
+			aris::dynamic::s_rq_dot_rq(d2qb1, dqb2, tem4);
+			aris::dynamic::s_va(4, 3.0, tem4, d3qb3);
+			aris::dynamic::s_rq_dot_rq(d3qb1, qb2, tem4);
+			aris::dynamic::s_va(4, tem4, d3qb3);
+		}
+
 		// theta_b3 & vb3 //
-		double theta_b3, vb3[3], dtheta_b3, dvb3[3], d2theta_b3, d2vb3[3];
+		double theta_b3, vb3[3], dtheta_b3, dvb3[3], d2theta_b3, d2vb3[3], d3theta_b3{0.0}, d3vb3[3]{};
 		
 		// 这里保证了 qb3[3] > 0, 因为 q1 为[0,0,0,1], 而 q0, q2 都是距离 q1 较近的四元数
-		s_rq_2_theta_v(qb3, dqb3, d2qb3, theta_b3, vb3, dtheta_b3, dvb3, d2theta_b3, d2vb3);
+		s_rq_2_theta_v(qb3, dqb3, d2qb3, theta_b3, vb3, dtheta_b3, dvb3, d2theta_b3, d2vb3, d3p ? d3qb3 : nullptr, d3p ? &d3theta_b3 : nullptr, d3p ? d3vb3 : nullptr);
 
 		// qb3 dqb3 d2qb3 //
 		double qb[4], dqb[4], d2qb[4];
@@ -570,6 +683,20 @@ namespace aris::plan{
 		d2qb[2] = m1 * vb3[2] + m2 * dvb3[2] + stb3s * d2vb3[2];
 		d2qb[3] = -l1 * (theta_b3 + s * dtheta_b3) - stb3s * (2.0 * dtheta_b3 + s * d2theta_b3);
 
+		double d3qb[4]{};
+		if (d3p) {
+			double a = theta_b3 + s * dtheta_b3;
+			double b = 2.0 * dtheta_b3 + s * d2theta_b3;
+			double c = 3.0 * d2theta_b3 + s * d3theta_b3;
+			double st3 = ctb3s * (c - a * a * a) - 3.0 * stb3s * a * b;
+			double ct3 = stb3s * (a * a * a - c) - 3.0 * ctb3s * a * b;
+
+			d3qb[0] = st3 * vb3[0] + 3.0 * m1 * dvb3[0] + 3.0 * l1 * d2vb3[0] + stb3s * d3vb3[0];
+			d3qb[1] = st3 * vb3[1] + 3.0 * m1 * dvb3[1] + 3.0 * l1 * d2vb3[1] + stb3s * d3vb3[1];
+			d3qb[2] = st3 * vb3[2] + 3.0 * m1 * dvb3[2] + 3.0 * l1 * d2vb3[2] + stb3s * d3vb3[2];
+			d3qb[3] = ct3;
+		}
+
 		// q dq d2q //
 		double q_[4], dq_[4], d2q_[4];
 
@@ -586,15 +713,32 @@ namespace aris::plan{
 		aris::dynamic::s_rq_dot_rq(dqa, dqb, tem4);
 		aris::dynamic::s_va(4, 2.0, tem4, d2q_);
 
+		double d3q_[4]{};
+		if (d3p) {
+			aris::dynamic::s_rq_dot_rq(qa, d3qb, d3q_);
+			aris::dynamic::s_rq_dot_rq(dqa, d2qb, tem4);
+			aris::dynamic::s_va(4, 3.0, tem4, d3q_);
+			aris::dynamic::s_rq_dot_rq(d2qa, dqb, tem4);
+			aris::dynamic::s_va(4, 3.0, tem4, d3q_);
+			aris::dynamic::s_rq_dot_rq(d3qa, qb, tem4);
+			aris::dynamic::s_va(4, tem4, d3q_);
+		}
+
 		// make real q1 //
 		aris::dynamic::s_rq_dot_rq(q1_input, q_, q);
 		aris::dynamic::s_rq_dot_rq(q1_input, dq_, dq);
 		aris::dynamic::s_rq_dot_rq(q1_input, d2q_, d2q);
+		if (d3p) {
+			aris::dynamic::s_rq_dot_rq(q1_input, d3q_, d3p);
+		}
 
 		if (q[3] < 0) {
 			aris::dynamic::s_iv(4, q);
 			aris::dynamic::s_iv(4, dq);
 			aris::dynamic::s_iv(4, d2q);
+			if (d3p) {
+				aris::dynamic::s_iv(4, d3p);
+			}
 		}
 
 
