@@ -200,15 +200,9 @@ int main(){
 
 	// 构造规划器 //
 	pd.setModel(*multi_model);
-	pd.setChanelSize(2);
+	pd.setChanelSize(2); // chanel 对应线程
 	pd.setDt(1e-3);
 	pd.init();
-
-	//spd.transferMatrix().push_back(aris::core::Matrix(4, 4));
-	//pd.transferMatrix().push_back(aris::core::Matrix(3, 3));
-	//pd.transferMatrix().push_back(aris::core::Matrix(2, 2));
-
-	//std::cout << aris::core::toXmlString(pd) << std::endl;
 
 	pd.setTargetSpeedRatio(0, 1);
 

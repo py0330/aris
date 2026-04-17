@@ -17,6 +17,10 @@ namespace aris::plan {
 			Rotate3,
 		};
 
+		struct OriginData{
+			aris::dynamic::PosType pos_type_{};
+			double ee_pos_[7], mid_pos_[7], v_[2], a_[2], j_[2], zone_[2];
+		};
 		struct Zone {
 			enum class ZoneType {
 				LL, // Line Line
@@ -73,6 +77,7 @@ namespace aris::plan {
 			};
 
 			double length_{ 0.0 };  // 对于 quaternion 来说，是指角度
+			double origin_length_{ 0.0 }; // 添加转弯区会缩短move的长度，因此需要保存原始长度，以便添加多段转弯区
 			union {
 				LineData line_{};
 				CircleData circle_;
@@ -88,6 +93,9 @@ namespace aris::plan {
 			SCurveParam scurve_;
 		};
 		struct EePlanData {
+			// Origin Data
+			OriginData data_;
+			
 			// Move Unit
 			Unit x_, a_;
 		};
@@ -448,6 +456,7 @@ namespace aris::plan {
 		std::fill_n(unit.move_.line_.dir_, 3, 0.0);
 		aris::dynamic::s_vc(3, p0, unit.move_.line_.p0_);
 		s_make_line3(p0, p1, unit.move_.line_.dir_, unit.move_.length_);
+		unit.move_.origin_length_ = unit.move_.length_;
 
 		// zones //
 		unit.zone1_.type_ = Node::Zone::ZoneType::LL;
@@ -485,6 +494,11 @@ namespace aris::plan {
 		init_unit_l3(p0_, p1_, vel, acc, jerk, zone, unit);
 		unit.type_ = Node::UnitType::Line2;
 	}
+	auto init_unit_l1(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
+		const double p0_[3]{ p0[0], 0.0, 0.0}, p1_[3]{ p1[0], 0.0, 0.0};
+		init_unit_l3(p0_, p1_, vel, acc, jerk, zone, unit);
+		unit.type_ = Node::UnitType::Line1;
+	}
 	auto init_unit_c3(const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
 		// move type //
 		unit.type_ = Node::UnitType::Circle3;
@@ -493,6 +507,7 @@ namespace aris::plan {
 		std::fill_n(unit.move_.circle_.p0_, 3, 0.0);
 		aris::dynamic::s_vc(3, p0, unit.move_.circle_.p0_);
 		s_make_circle3(p0, p1, p2, unit.move_.circle_.center_, unit.move_.circle_.axis_, unit.move_.circle_.radius_, unit.move_.length_);
+		unit.move_.origin_length_ = unit.move_.length_;
 
 		// 考虑退化 //
 		if (!std::isfinite(unit.move_.circle_.radius_)) {
@@ -551,7 +566,8 @@ namespace aris::plan {
 		aris::dynamic::s_vc(4, q0, unit.move_.quaternion_.q0_);
 		aris::dynamic::s_vc(4, q1_, unit.move_.quaternion_.q1_);
 		s_make_quaternion_data(unit.move_.quaternion_.q0_, unit.move_.quaternion_.q1_, unit.move_.length_);
-		
+		unit.move_.origin_length_ = unit.move_.length_;
+
 		// zones //
 		unit.zone1_.type_ = Node::Zone::ZoneType::QQ;
 		unit.zone1_.zone_value_ = 0.0;
@@ -576,11 +592,6 @@ namespace aris::plan {
 		unit.scurve_.a_ = acc;
 		unit.scurve_.j_ = jerk;
 		unit.scurve_.t0_ = 0.0;
-	}
-	auto init_unit_l1(const double* p0, const double* p1, double vel, double acc, double jerk, double zone, Node::Unit& unit) -> void {
-		const double p0_[3]{ p0[0], 0.0, 0.0}, p1_[3]{ p1[0], 0.0, 0.0};
-		init_unit_l3(p0_, p1_, vel, acc, jerk, zone, unit);
-		unit.type_ = Node::UnitType::Line1;
 	}
 
 	auto init_unit(Node::UnitType unit_type, const double* p0, const double* p1, const double* p2, double vel, double acc, double jerk, double zone, Node::Unit& unit)->void {
@@ -617,7 +628,7 @@ namespace aris::plan {
 	// connect unit to last unit //
 	auto make_zone_and_scurve_ll(Node::Unit& last_u, Node::Unit& this_u) ->void {
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_u.move_.length_, last_u.zone2_.zone_value_, this_u.move_.length_ * 0.5 });
+		double real_zone = std::min({ last_u.move_.origin_length_ * 0.5, last_u.zone2_.zone_value_, this_u.move_.origin_length_ * 0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double p1[3], p01[3], p12[3];
@@ -681,7 +692,7 @@ namespace aris::plan {
 		}
 		
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_u.move_.length_, last_u.zone2_.zone_value_, this_u.move_.length_ * 0.5 });
+		double real_zone = std::min({ last_u.move_.origin_length_ * 0.5, last_u.zone2_.zone_value_, this_u.move_.origin_length_ * 0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double p1[3], p01[3], p12[3];
@@ -761,7 +772,7 @@ namespace aris::plan {
 		}
 		
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_u.move_.length_, last_u.zone2_.zone_value_, this_u.move_.length_ * 0.5 });
+		double real_zone = std::min({ last_u.move_.origin_length_ * 0.5, last_u.zone2_.zone_value_, this_u.move_.origin_length_ * 0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点，只需要计算直线部分的接触点，因为圆的起点就是两者交点（p1）
 		double p1[3], p12[3];
@@ -834,7 +845,7 @@ namespace aris::plan {
 		}
 		
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_u.move_.length_, last_u.zone2_.zone_value_, this_u.move_.length_*0.5 });
+		double real_zone = std::min({ last_u.move_.origin_length_*0.5, last_u.zone2_.zone_value_, this_u.move_.origin_length_*0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double p1[3];
@@ -909,7 +920,7 @@ namespace aris::plan {
 	}
 	auto make_zone_and_scurve_qq(Node::Unit& last_u, Node::Unit& this_u)->void {
 		// STEP 1. 计算真实的交融半径
-		double real_zone = std::min({ last_u.move_.length_, last_u.zone2_.zone_value_, this_u.move_.length_*0.5 });
+		double real_zone = std::min({ last_u.move_.origin_length_ * 0.5, last_u.zone2_.zone_value_, this_u.move_.origin_length_*0.5 });
 
 		// STEP 2. 计算 last_p 和 this_p 的交融点
 		double q1[4], q01[4], q12[4];
@@ -1021,25 +1032,7 @@ namespace aris::plan {
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 
-	auto make_zone_and_scurve(Node::Unit& last_u, Node::Unit& this_u, bool if_need_connect) ->void {
-		// 不需要融合，此时仅更改 scurve 的位置初值
-		if (!if_need_connect) {
-			this_u.scurve_.pb_ = last_u.scurve_.pb_ + this_u.scurve_.pb_;
-			this_u.scurve_.pa_ = last_u.scurve_.pb_;
-			return;
-		}
-
-		auto last_u_reserve = last_u;
-		auto this_u_reserve = this_u;
-
-		bool if_need_binary = false;
-
-		double last_zone_value_upper = last_u.zone2_.zone_value_;
-		double last_zone_value_below = 0.0;
-
-		double diff = last_zone_value_upper - last_zone_value_below;
-		double last_diff = std::max(1.0, 2 * diff);
-
+	auto make_zone_and_scurve(Node::Unit& last_u, Node::Unit& this_u) ->void {
 		switch (last_u.type_) {
 		case Node::UnitType::Line3:
 			switch (this_u.type_) {
@@ -1269,49 +1262,72 @@ namespace aris::plan {
 	}
 
 	// make nodes //
-	auto make_node(bool if_need_connect, Node* this_node, Node* last_node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
-		Node::NodeType node_type, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone
-	)->void {
-		
-		this_node->type_ = node_type;
+	auto make_node(Node* node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
+		Node::NodeType node_type, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)
+	{
+		node->type_ = node_type;
 		
 		// 更新本段轨迹的 move //
 		for (Size i{ 0 }, pos_idx{ 0 }, vel_idx{ 0 }; i < ee_num; ++i) {
+			auto this_p = &node->ee_plans_[i];
+
+			auto pos_len = aris::dynamic::s_pos_type_size(ee_types[i]);
+			auto vel_len = aris::dynamic::s_pos_type_mag_size(ee_types[i]);
+
+			this_p->data_.pos_type_ = ee_types[i];
+			std::copy_n(ee_pos + pos_idx, pos_len, this_p->data_.ee_pos_);
+			std::copy_n(mid_pos + pos_idx, pos_len, this_p->data_.mid_pos_);
+			std::copy_n(vel + vel_idx, vel_len, this_p->data_.v_);
+			std::copy_n(acc + vel_idx, vel_len, this_p->data_.a_);
+			std::copy_n(jerk + vel_idx, vel_len, this_p->data_.j_);
+			std::copy_n(zone + vel_idx, vel_len, this_p->data_.zone_);
+
+			pos_idx += aris::dynamic::s_pos_type_size(ee_types[i]);
+			vel_idx += aris::dynamic::s_pos_type_mag_size(ee_types[i]);
+		}
+	}
+	auto init_node(Node* this_node, const Node* last_node)->void {
+		// 更新本段轨迹的 move //
+		for (Size i{ 0 }, pos_idx{ 0 }, vel_idx{ 0 }; i < this_node->ee_plans_.size(); ++i) {
 			auto this_p = &this_node->ee_plans_[i];
 
-			auto ee_xyz = ee_pos + pos_idx;
-			auto mid_xyz = mid_pos + pos_idx;
-			auto v_xyz = vel + vel_idx;
-			auto a_xyz = acc + vel_idx;
-			auto j_xyz = jerk + vel_idx;
-			auto z_xyz = zone + vel_idx;
+			auto ee_type = this_p->data_.pos_type_;
 
-			auto ee_abc = ee_pos + pos_idx + aris::dynamic::s_pos_type_mov_dim(ee_types[i]);
-			auto mid_abc = mid_pos + pos_idx + aris::dynamic::s_pos_type_mov_dim(ee_types[i]);
-			auto v_abc = vel + vel_idx + (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0 ? 1 : 0);
-			auto a_abc = acc + vel_idx + (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0 ? 1 : 0);
-			auto j_abc = jerk + vel_idx + (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0 ? 1 : 0);
-			auto z_abc = zone + vel_idx + (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0 ? 1 : 0);
+			auto ee_xyz = this_p->data_.ee_pos_;
+			auto mid_xyz = this_p->data_.mid_pos_;
+			auto v_xyz = this_p->data_.v_;
+			auto a_xyz = this_p->data_.a_;
+			auto j_xyz = this_p->data_.j_;
+			auto z_xyz = this_p->data_.zone_;
 
-			switch (node_type) {
+			auto ee_abc = this_p->data_.ee_pos_ + aris::dynamic::s_pos_type_mov_dim(ee_type);
+			auto mid_abc = this_p->data_.mid_pos_ + aris::dynamic::s_pos_type_mov_dim(ee_type);
+			auto v_abc = this_p->data_.v_ + (aris::dynamic::s_pos_type_mov_dim(ee_type) > 0 ? 1 : 0);
+			auto a_abc = this_p->data_.a_ + (aris::dynamic::s_pos_type_mov_dim(ee_type) > 0 ? 1 : 0);
+			auto j_abc = this_p->data_.j_ + (aris::dynamic::s_pos_type_mov_dim(ee_type) > 0 ? 1 : 0);
+			auto z_abc = this_p->data_.zone_ + (aris::dynamic::s_pos_type_mov_dim(ee_type) > 0 ? 1 : 0);
+
+			switch (this_node->type_) {
 			case aris::plan::Node::NodeType::ResetInitPos: {
 				// init //
-				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 3) {
 					init_unit(Node::UnitType::Line3, ee_xyz, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 2) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 2) {
 					init_unit(Node::UnitType::Line2, ee_xyz, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 1) {
 					init_unit(Node::UnitType::Line1, ee_xyz, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
 				}
 
-				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 3) {
 					init_unit(Node::UnitType::Rotate3, ee_abc, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
 				}
-				else if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 1) {
 					init_unit(Node::UnitType::Line1, ee_abc, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
 				}
+
+				
 				break;
 			}
 			case aris::plan::Node::NodeType::Line: {
@@ -1319,36 +1335,31 @@ namespace aris::plan {
 				double p_end[4];
 				
 				// line //
-				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 3) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line3, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 2) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 2) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line2, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 1) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 
-				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 3) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 1) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 
 				break;
@@ -1358,45 +1369,75 @@ namespace aris::plan {
 				double p_end[4];
 				
 				// circle //
-				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 3) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Circle3, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 2) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 2) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Circle2, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_mov_dim(ee_type) == 1) {
 					// xyz //
 					s_compute_data_at_end(last_p->x_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_xyz, ee_xyz, *v_xyz, *a_xyz, *j_xyz, *z_xyz, this_p->x_);
-					make_zone_and_scurve(last_p->x_, this_p->x_, if_need_connect);
 				}
 
-				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 3) {
+				if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 3) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Rotate3, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
-				else if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) == 1) {
+				else if (aris::dynamic::s_pos_type_rot_dim(ee_type) == 1) {
 					// abc //
 					s_compute_data_at_end(last_p->a_, p_end);
 					init_unit(Node::UnitType::Line1, p_end, mid_abc, ee_abc, *v_abc, *a_abc, *j_abc, *z_abc, this_p->a_);
-					make_zone_and_scurve(last_p->a_, this_p->a_, if_need_connect);
 				}
 
 				break;
 			}
 			}
 
-			pos_idx += aris::dynamic::s_pos_type_size(ee_types[i]);
-			vel_idx += aris::dynamic::s_pos_type_mag_size(ee_types[i]);
+			pos_idx += aris::dynamic::s_pos_type_size(ee_type);
+			vel_idx += aris::dynamic::s_pos_type_mag_size(ee_type);
 		}
+	}
+	auto connect_nodes(Node* this_node, Node* last_node, aris::Size ee_num, aris::dynamic::PosType* ee_types, bool if_make_zone)->void {
+		if(this_node->type_ == Node::NodeType::ResetInitPos || last_node->type_ == Node::NodeType::ResetInitPos) {
+			if_make_zone = false;
+		}
+		
+		// 更新本段轨迹的 move //
+		for (Size i{ 0 }; i < ee_num; ++i) {
+			auto this_p = &this_node->ee_plans_[i];
+			auto last_p = &last_node->ee_plans_[i];
+
+			if(if_make_zone){
+				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+					make_zone_and_scurve(last_p->x_, this_p->x_);
+				}
+				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+					make_zone_and_scurve(last_p->a_, this_p->a_);
+				}
+			}
+			else{
+				// 无需做转弯区，直接拿上次的 pb 做数据
+				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+					// 仅仅 init 之后，节点的 pa = 0
+					this_p->x_.scurve_.pa_ = last_p->x_.scurve_.pb_;
+					this_p->x_.scurve_.pb_ = this_p->x_.scurve_.pa_ + this_p->x_.move_.length_ + this_p->x_.zone1_.length_ / 2.0 + this_p->x_.zone2_.length_ / 2.0;
+				}
+				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+					// 仅仅 init 之后，节点的 pa = 0
+					this_p->a_.scurve_.pa_ = last_p->a_.scurve_.pb_;
+					this_p->a_.scurve_.pb_ = this_p->a_.scurve_.pa_ + this_p->a_.move_.length_ + this_p->a_.zone1_.length_ / 2.0 + this_p->a_.zone2_.length_ / 2.0;
+				}
+			}
+			
+		}
+
 	}
 	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::PosType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
 		// 构造 scurve list //
@@ -1534,30 +1575,47 @@ namespace aris::plan {
 		// 互斥区，保护访问
 		std::recursive_mutex mu_;
 
-		auto insert_node(Node::NodeType move_type, std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
-			std::lock_guard<std::recursive_mutex> lck(mu_);
+		auto update_insert()->void {
+			// init current_iter //
+			auto current_node = current_node_.load();
+			auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
+					return &node == current_node;
+				});
 
-			// 转化 pos 表达 //
-			std::vector<double> ee_pos_internal(internal_pos_size), mid_pos_internal(internal_pos_size);
-			
-			aris::dynamic::s_pos2pos(ee_pos_types_.size(), ee_pos_types_.data(), ee_pos, internal_pos_type_, ee_pos_internal.data());
-			aris::dynamic::s_pos2pos(ee_pos_types_.size(), ee_pos_types_.data(), mid_pos, internal_pos_type_, mid_pos_internal.data());
+			// find inserted node //
+			auto ins_iter = nodes_.end();
+			for (auto iter = std::next(current_iter); iter != nodes_.end(); ++iter) {
+				if (std::prev(iter)->next_node_.load() == &*std::prev(iter)) {
+					ins_iter = iter;
+					break;
+				}
+			}
+			if(ins_iter == nodes_.end()) // no ins node
+				return;
 
-			// 插入节点，循环确保成功 //
+			// 制作插入节点序列的转弯区域，后面只连接，不更新 //
+			init_node(&*ins_iter, &*std::prev(ins_iter));
+			for(auto iter = std::next(ins_iter); iter != nodes_.end(); ++iter) {
+				init_node(&*iter, &*std::prev(iter));
+				connect_nodes(&*iter, &*std::prev(iter), ee_size_, ee_pos_types_.data(), true);
+			}
+
+			Node ins_node_copy = *ins_iter;
+
+			// loop insert
 			bool insert_success = false;
 			do {
-				// 插入最新节点 //
-				auto& ins_node = nodes_.emplace_back(ee_pos_types_.size());
-
-				// 获得需要重新规划的起点
-				auto current_node = current_node_.load();
-				auto current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
+				// 获得需要重新规划的区间：从 current 的下一个节点到新插入节点 
+				current_node = current_node_.load();
+				current_iter = std::find_if(nodes_.begin(), nodes_.end(), [current_node](auto& node)->bool {
 					return &node == current_node;
-					});
+				});
+
+				// 找到需要重规划的节点，并插到新插入节点前，但数量过多时，限制重规划的起始节点以控制重规划的计算量 //
 				auto replan_iter_begin = std::next(current_iter);
-				auto replan_iter_end = std::next(current_iter);
+				auto replan_iter_end = replan_iter_begin;
 				aris::Size replan_num = 0;
-				for (; std::next(replan_iter_end) != nodes_.end(); replan_iter_end++) {
+				for (; replan_iter_end != ins_iter; ++replan_iter_end) {
 					if (replan_iter_end->type_ == Node::NodeType::ResetInitPos) {
 						replan_iter_begin = std::next(replan_iter_end);
 						replan_num = 0;
@@ -1567,37 +1625,54 @@ namespace aris::plan {
 					else
 						replan_num++;
 				}
-				replan_iter_end = nodes_.insert(std::prev(nodes_.end()), replan_iter_begin, replan_iter_end);
+				replan_iter_end = nodes_.insert(ins_iter, replan_iter_begin, replan_iter_end);
 
-				// 初始化最新的节点 //
-				ins_node.id_ = id;
-				make_node(replan_num > 0, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
+				// connect nodes, 配置转弯区 //
+				connect_nodes(&*ins_iter, &*std::prev(ins_iter), ee_size_, ee_pos_types_.data(), replan_num > 0);
+				for(auto iter = std::next(ins_iter); iter != nodes_.end(); ++iter) {
+					connect_nodes(&*iter, &*std::prev(iter), ee_size_, ee_pos_types_.data(), false);
+				}
 
 				// 重规划 scurve
-				auto scurve_size = aris::dynamic::s_pos_type_mag_size(ee_pos_types_.size(), ee_pos_types_.data());
-				auto replan_ret = replan_nodes((int)scurve_size, ee_pos_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
+				auto scurve_size = static_cast<int>(aris::dynamic::s_pos_type_mag_size(ee_pos_types_.size(), ee_pos_types_.data()));
+				auto replan_ret = replan_nodes(scurve_size, ee_pos_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
-				// 查看是否重规划成功，如果规划失败，说明当前的速度过大，融合转弯区后无法减速达到要求。但规划成功后还需确保可以成功插入，即当前节点没有被其他线程执行完
+				// 重规划失败时，回退到仅追加新节点的插入路径
 				if (replan_ret != 0) {
-					nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
-					make_node(false, &ins_node, &*std::prev(nodes_.end(), 2), ee_size_, internal_pos_type_, move_type, ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
-					replan_nodes((int)scurve_size, ee_pos_types_, std::prev(nodes_.end(), 2), std::prev(nodes_.end(), 1), nodes_.end());
-					std::prev(nodes_.end(), 2)->next_node_.exchange(&ins_node);
+					nodes_.erase(replan_iter_end, ins_iter);
+					*ins_iter = ins_node_copy;
+					replan_nodes(scurve_size, ee_pos_types_, std::prev(replan_iter_end), ins_iter, nodes_.end());
+					std::prev(replan_iter_end)->next_node_.exchange(&*ins_iter);
 					insert_success = true;
 				}
 				else {
-					// 并发设置
+					// 重规划成功时，尝试原子切换可见链路并清理旧节点
 					insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
-
-					// 如果成功，则删除需要重新规划的节点，否则删除新插入的节点
 					if (insert_success) {
 						nodes_.erase(replan_iter_begin, replan_iter_end);
 					}
 					else {
-						nodes_.erase(replan_iter_end, nodes_.end());
+						nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
+						*ins_iter = ins_node_copy;
 					}
 				}
 			} while (!insert_success);
+		}
+
+		auto insert_node(Node::NodeType move_type, std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void {
+			std::lock_guard<std::recursive_mutex> lck(mu_);
+
+			// insert_node 仅在队尾插入并初始化最新节点
+			std::vector<double> ee_pos_internal(internal_pos_size), mid_pos_internal(internal_pos_size);
+
+			aris::dynamic::s_pos2pos(ee_pos_types_.size(), ee_pos_types_.data(), ee_pos, internal_pos_type_, ee_pos_internal.data());
+			aris::dynamic::s_pos2pos(ee_pos_types_.size(), ee_pos_types_.data(), mid_pos, internal_pos_type_, mid_pos_internal.data());
+
+			auto& ins_node = nodes_.emplace_back(ee_pos_types_.size());
+			ins_node.id_ = id;
+
+			make_node(&ins_node, ee_size_, internal_pos_type_, move_type,
+				ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 		}
 	};
 	auto TrajectoryGenerator::posTypes()const-> const std::vector<aris::dynamic::PosType>& {
@@ -1952,17 +2027,20 @@ namespace aris::plan {
 		auto& nodes_ = imp_->nodes_;
 		auto& ins_node = nodes_.emplace_back(posTypes().size());
 		ins_node.id_ = id;
+		ins_node.next_node_.store(&ins_node);
 
 		// 初始化节点 //
 		auto scurve_size = aris::dynamic::s_pos_type_mag_size(posTypes().size(), posTypes().data());
 		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
-		make_node(false, &ins_node, current_node ? &*std::prev(nodes_.end(), 2) : nullptr, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
+		make_node(&ins_node, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
 			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 node 为 current_node_ 或 将此node设置为之前node的下一个值 //
-		if (nodes_.size() < 2)
+		if (nodes_.size() < 2){
 			// 只有当前node 或者 上次node已经运行结束
+			init_node(&ins_node, nullptr);
 			imp_->current_node_.store(&ins_node);
+		}
 		else
 			std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
 	}
@@ -1985,7 +2063,11 @@ namespace aris::plan {
 			insertInitPos(id, ee_pos);
 
 		imp_->insert_node(Node::NodeType::Circle, id, ee_pos, mid_pos, vel, acc, jerk, zone);
-	
+	}
+	auto TrajectoryGenerator::updateInsertPos()->void {
+		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
+		if (imp_->nodes_.size() < 2) return;
+		imp_->update_insert();
 	}
 	auto TrajectoryGenerator::clearUsedPos()->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);

@@ -957,6 +957,10 @@ namespace aris::plan {
 				}
 			}
 
+			// 批量插入后统一重规划提交
+			tg_.updateInsertPos();
+			fwd_tg_.updateInsertPos();
+
 			// 更新完后清除 nodes_ //
 			nodes_.clear();
 

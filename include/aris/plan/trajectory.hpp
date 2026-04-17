@@ -69,14 +69,17 @@ namespace aris::plan{
 
 		auto isCurrentNodeFinished()const->bool;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据（仅入队，不立即重规划） //
 		auto insertInitPos(std::int64_t id, const double* ee_pos)->void;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据（仅入队，不立即重规划） //
 		auto insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据（仅入队，不立即重规划） //
 		auto insertCirclePos(std::int64_t id, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void;
+
+		// 统一重规划并提交已插入队列 //
+		auto updateInsertPos()->void;
 
 		// 删除已经不用的数据 //
 		auto clearUsedPos()->void;

@@ -367,6 +367,8 @@ int main() {
     tg.insertLinePos(2, p1, vel, acc, jerk, zone);
     tg.insertCirclePos(3, p2, mid, vel, acc, jerk, zone);
 
+    tg.updateInsertPos();
+
     LimitMonitor monitor = make_limit_monitor(types);
     std::vector<double> speed_mags, acc_mags, jerk_mags;
 

@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
+#include <mutex>
+#include <thread>
 #include <vector>
 
 #include <aris/plan/plan.hpp>
@@ -487,6 +490,7 @@ TEST(TrajectoryTest, LineSequenceFinishesAndReachesLastTarget) {
 	double zone[2]{0.001, 0.001};
 
 	tg.insertLinePos(1, p0, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 	std::vector<double> out(6, 0.0);
 	std::vector<double> vel_out(default_output_vel_size(types), 0.0);
 	LimitMonitor monitor = make_limit_monitor(types);
@@ -495,6 +499,7 @@ TEST(TrajectoryTest, LineSequenceFinishesAndReachesLastTarget) {
 
 	tg.insertLinePos(2, p1, vel, acc, jerk, zone);
 	tg.insertLinePos(3, p2, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	bool seen_2 = false;
 	bool seen_3 = false;
@@ -533,6 +538,7 @@ TEST(TrajectoryTest, CircleMotionAndNodeManagementWorks) {
 
 	tg.insertInitPos(10, p0);
 	tg.insertCirclePos(11, p2, mid, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	EXPECT_GE(tg.unusedPosNum(), 1);
 	auto ids = tg.unusedNodeIds();
@@ -580,6 +586,7 @@ TEST(TrajectoryTest, InitPosAndQueueStateTransitionWorks) {
 	tg.insertInitPos(10, p0);
 	tg.insertLinePos(11, p1, vel, acc, jerk, zone);
 	tg.insertLinePos(12, p2, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	EXPECT_EQ(tg.currentNodeId(), 10);
 	EXPECT_FALSE(tg.isCurrentNodeFinished());
@@ -630,6 +637,7 @@ TEST(TrajectoryTest, LargeRotationSmallTranslationSequenceFinishes) {
 	double zone[2]{0.0002, 0.2};
 
 	tg.insertLinePos(101, p0, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 	std::vector<double> out(6, 0.0);
 	std::vector<double> vel_out(default_output_vel_size(types), 0.0);
 	LimitMonitor monitor = make_limit_monitor(types);
@@ -638,6 +646,7 @@ TEST(TrajectoryTest, LargeRotationSmallTranslationSequenceFinishes) {
 
 	tg.insertLinePos(102, p1, vel, acc, jerk, zone);
 	tg.insertLinePos(103, p2, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	bool seen_102 = false;
 	bool seen_103 = false;
@@ -704,11 +713,13 @@ TEST(TrajectoryTest, MixedPosTypesLineAndCircleSequenceFinishes) {
 	double zone[vel_size]{0.0, 0.001, 0.001, 0.001, 0.001};
 
 	tg.insertLinePos(1, p0, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 	std::vector<double> out(total_size, 0.0);
 	(void)tg.getEePosAndMoveDt(out.data());
 
 	tg.insertLinePos(2, p1, vel, acc, jerk, zone);
 	tg.insertCirclePos(3, p2, mid, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	LimitMonitor monitor = make_limit_monitor(types);
 	auto seen_ids = step_until_finished(tg, out, &types, vel, acc, jerk, 100000, &monitor);
@@ -741,11 +752,13 @@ TEST(TrajectoryTest, MixedScalarAndRTZSequenceFinishes) {
 	double zone[vel_size]{0.2, 0.2, 0.2, 0.2};
 
 	tg.insertLinePos(10, p0, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 	std::vector<double> out(pos_size, 0.0);
 	(void)tg.getEePosAndMoveDt(out.data());
 
 	tg.insertLinePos(11, p1, vel, acc, jerk, zone);
 	tg.insertInitPos(29, p2);
+	tg.updateInsertPos();
 	LimitMonitor monitor_first = make_limit_monitor(types);
 	auto seen_first = step_until_finished(tg, out, &types, vel, acc, jerk, 100000, &monitor_first);
 	EXPECT_NE(std::find(seen_first.begin(), seen_first.end(), 11), seen_first.end());
@@ -754,6 +767,7 @@ TEST(TrajectoryTest, MixedScalarAndRTZSequenceFinishes) {
 	tg.insertInitPos(30, p0);
 	tg.insertCirclePos(50, p2, mid, vel, acc, jerk, zone);
 	tg.insertLinePos(51, init_pos, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	LimitMonitor monitor_second = make_limit_monitor(types);
 	auto seen_second = step_until_finished(tg, out, &types, vel, acc, jerk, 100000, &monitor_second);
@@ -767,7 +781,7 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
 	tg.setPosTypes(types);
 	tg.setDt(0.001);
-	tg.setTargetDs(0.3);
+	tg.setTargetDs(0.05);
 
 	double init[6]{-0.029091, 0.017520, -0.015596, 83.478 * aris::PI / 180.0, 51.402 * aris::PI / 180.0, 3.401 * aris::PI / 180.0};
 	double p1[6]{-0.028557, 0.018248, -0.014542, 82.251 * aris::PI / 180.0, 48.042 * aris::PI / 180.0, 3.974 * aris::PI / 180.0};
@@ -782,6 +796,7 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 
 	tg.insertInitPos(10000, init);
 	tg.insertLinePos(1, p1, vel, acc, jerk, zone);
+	tg.updateInsertPos();
 
 	std::vector<double> out(6, 0.0);
 	std::vector<double> vel_out(default_output_vel_size(types), 0.0);
@@ -810,19 +825,23 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 
 		if (!inserted_2 && ret == 1 && cmd_count >= 20) {
 			tg.insertLinePos(2, p2, vel, acc, jerk, zone);
+			tg.updateInsertPos();
 			inserted_2 = true;
 			EXPECT_GE(tg.unusedPosNum(), 1);
 		}
 		if (!inserted_3 && ret == 1 && cmd_count >= 40) {
 			tg.insertLinePos(3, p3, vel, acc, jerk, zone);
+			tg.updateInsertPos();
 			inserted_3 = true;
 		}
 		if (!inserted_4 && ret == 2 && cmd_count >= 10) {
 			tg.insertLinePos(4, p4, vel, acc, jerk, zone);
+			tg.updateInsertPos();
 			inserted_4 = true;
 		}
 		if (!inserted_5 && ret == 3 && cmd_count >= 10) {
 			tg.insertLinePos(5, p5, vel, acc, jerk, zone);
+			tg.updateInsertPos();
 			inserted_5 = true;
 		}
 
@@ -843,4 +862,122 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 4), seen_ids.end());
 	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 5), seen_ids.end());
 	expect_pose_near(out.data(), p5, 1e-4);
+}
+
+TEST(TrajectoryTest, BatchInsertThenSingleUpdateFinishesAllInsertedNodes) {
+	aris::plan::TrajectoryGenerator tg;
+	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
+	tg.setPosTypes(types);
+	tg.setDt(0.001);
+
+	double init[6]{0.45, 0.00, 0.75, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double p1[6]{0.46, 0.02, 0.74, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double p2[6]{0.43, -0.03, 0.76, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double p3[6]{0.42, 0.01, 0.73, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double p4[6]{0.41, -0.02, 0.72, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double p5[6]{0.44, 0.01, 0.71, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+	double vel[2]{0.2, 0.8};
+	double acc[2]{1.0, 5.0};
+	double jerk[2]{10.0, 20.0};
+	double zone[2]{0.001, 0.001};
+
+	tg.insertInitPos(100, init);
+	tg.insertLinePos(101, p1, vel, acc, jerk, zone);
+	tg.updateInsertPos();
+
+	std::vector<double> out(6, 0.0);
+	std::vector<double> vel_out(default_output_vel_size(types), 0.0);
+	LimitMonitor monitor = make_limit_monitor(types);
+	(void)tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+	expect_motion_limits_respected(types, out.data(), vel_out.data(), vel, acc, jerk, tg.dt(), monitor);
+
+	// 多次插入，不立即 update。
+	tg.insertLinePos(102, p2, vel, acc, jerk, zone);
+	tg.insertLinePos(103, p3, vel, acc, jerk, zone);
+	tg.insertLinePos(104, p4, vel, acc, jerk, zone);
+	tg.insertLinePos(105, p5, vel, acc, jerk, zone);
+
+	// 一次同步。
+	tg.updateInsertPos();
+
+	auto seen_ids = step_until_finished(tg, out, &types, vel, acc, jerk, 160000, &monitor);
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 102), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 103), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 104), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 105), seen_ids.end());
+	expect_pose_near(out.data(), p5, 1e-4);
+}
+
+TEST(TrajectoryTest, ConcurrentGetAndSingleBatchUpdateEventuallyFinishes) {
+	aris::plan::TrajectoryGenerator tg;
+	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
+	tg.setPosTypes(types);
+	tg.setDt(0.001);
+	tg.setTargetDs(0.3);
+
+	double init[6]{-0.029091, 0.017520, -0.015596, 83.478 * aris::PI / 180.0, 51.402 * aris::PI / 180.0, 3.401 * aris::PI / 180.0};
+	double p1[6]{-0.028557, 0.018248, -0.014542, 82.251 * aris::PI / 180.0, 48.042 * aris::PI / 180.0, 3.974 * aris::PI / 180.0};
+	double p2[6]{-0.028818, 0.017541, -0.010604, 84.384 * aris::PI / 180.0, 35.789 * aris::PI / 180.0, 5.922 * aris::PI / 180.0};
+	double p3[6]{-0.029146, 0.014578, -0.004558, 86.495 * aris::PI / 180.0, 17.774 * aris::PI / 180.0, 9.034 * aris::PI / 180.0};
+	double p4[6]{-0.029184, 0.008114, 0.000144, 87.246 * aris::PI / 180.0, 5.021 * aris::PI / 180.0, 13.373 * aris::PI / 180.0};
+	double p5[6]{-0.028906, -0.002406, 0.004319, 87.215 * aris::PI / 180.0, 2.450 * aris::PI / 180.0, 14.832 * aris::PI / 180.0};
+	double p6[6]{-0.028700, -0.003200, 0.006200, 87.100 * aris::PI / 180.0, 2.200 * aris::PI / 180.0, 15.200 * aris::PI / 180.0};
+	double vel[2]{0.1, aris::PI};
+	double acc[2]{5.0, 5.0 * aris::PI};
+	double jerk[2]{50.0, 50.0 * aris::PI};
+	double zone[2]{0.02, 0.02};
+
+	tg.insertInitPos(200, init);
+	tg.insertLinePos(201, p1, vel, acc, jerk, zone);
+	tg.updateInsertPos();
+
+	std::atomic<bool> run_flag{ true };
+	std::atomic<int> sample_count{ 0 };
+	std::atomic<int> transition_count{ 0 };
+
+	std::thread rt_thread([&]() {
+		std::vector<double> out(6, 0.0);
+		std::vector<double> vel_out(default_output_vel_size(types), 0.0);
+		std::int64_t last_ret = -1;
+
+		for (int i = 0; i < 300000 && run_flag.load(); ++i) {
+			auto ret = tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+			sample_count.fetch_add(1);
+			if (ret != last_ret) {
+				if (last_ret >= 0) {
+					transition_count.fetch_add(1);
+				}
+				last_ret = ret;
+			}
+		}
+	});
+
+	// 等待执行线程进入稳定运行，增加 update 与 get 并发冲突概率。
+	for (int spin = 0; spin < 200000 && transition_count.load() < 1; ++spin) {
+		std::this_thread::yield();
+	}
+
+	// 多次插入后一次同步。
+	tg.insertLinePos(202, p2, vel, acc, jerk, zone);
+	tg.insertLinePos(203, p3, vel, acc, jerk, zone);
+	tg.insertLinePos(204, p4, vel, acc, jerk, zone);
+	tg.insertLinePos(205, p5, vel, acc, jerk, zone);
+	tg.insertLinePos(206, p6, vel, acc, jerk, zone);
+	tg.updateInsertPos();
+
+	run_flag.store(false);
+	rt_thread.join();
+
+	EXPECT_GT(sample_count.load(), 0);
+	EXPECT_GE(transition_count.load(), 0);
+
+	std::vector<double> out(6, 0.0);
+	LimitMonitor monitor = make_limit_monitor(types);
+	auto seen_ids = step_until_finished(tg, out, &types, vel, acc, jerk, 200000, &monitor);
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 202), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 203), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 204), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 205), seen_ids.end());
+	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 206), seen_ids.end());
+	expect_pose_near(out.data(), p6, 1e-4);
 }
