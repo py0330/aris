@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <array>
 #include <vector>
 
 namespace {
@@ -79,6 +80,25 @@ struct LimitMonitor {
     bool has_prev_speed{false};
     bool has_prev_acc{false};
 };
+
+#ifdef ARIS_BUILD_TESTS
+constexpr int kHookCaseInsertPublishExchangeConflictRetry = 1;
+constexpr int kHookCaseInsertPublishExchangeConflictRetryResult = 2;
+constexpr int kHookCaseInsertReplanFailedFallback = 3;
+int g_hook_publish_attempt = 0;
+int g_hook_publish_fail = 0;
+int g_hook_replan_fallback = 0;
+
+void demo_hook(int point, std::int64_t, std::int64_t, bool exchange_nonnull) {
+    if (point == kHookCaseInsertPublishExchangeConflictRetry || point == kHookCaseInsertPublishExchangeConflictRetryResult) {
+        ++g_hook_publish_attempt;
+        if (!exchange_nonnull) ++g_hook_publish_fail;
+    }
+    if (point == kHookCaseInsertReplanFailedFallback) {
+        ++g_hook_replan_fallback;
+    }
+}
+#endif
 
 auto make_limit_monitor(const std::vector<aris::dynamic::PosType> &types) -> LimitMonitor {
     LimitMonitor monitor;
@@ -181,6 +201,55 @@ auto extract_limit_vectors(
         auto vel_size = aris::dynamic::s_vel_type_size(default_vel_type(type));
 
         switch (type) {
+        case aris::dynamic::PosType::PE121:
+        case aris::dynamic::PosType::PE123:
+        case aris::dynamic::PosType::PE131:
+        case aris::dynamic::PosType::PE132:
+        case aris::dynamic::PosType::PE212:
+        case aris::dynamic::PosType::PE213:
+        case aris::dynamic::PosType::PE231:
+        case aris::dynamic::PosType::PE232:
+        case aris::dynamic::PosType::PE312:
+        case aris::dynamic::PosType::PE313:
+        case aris::dynamic::PosType::PE321:
+        case aris::dynamic::PosType::PE323: {
+            double linear_vs[3]{};
+            double angular_vs[3]{};
+
+            if (monitor.has_prev_pos) {
+                double dp[3]{
+                    pos[pos_offset + 0] - monitor.prev_pos[pos_offset + 0],
+                    pos[pos_offset + 1] - monitor.prev_pos[pos_offset + 1],
+                    pos[pos_offset + 2] - monitor.prev_pos[pos_offset + 2],
+                };
+                linear_vs[0] = dp[0] / dt;
+                linear_vs[1] = dp[1] / dt;
+                linear_vs[2] = dp[2] / dt;
+
+                double pq_curr[7]{};
+                double pq_prev[7]{};
+                aris::dynamic::s_pos2pos(type, pos + pos_offset, aris::dynamic::PosType::PQ, pq_curr);
+                aris::dynamic::s_pos2pos(type, monitor.prev_pos.data() + pos_offset, aris::dynamic::PosType::PQ, pq_prev);
+                double dot = 0.0;
+                for (int k = 3; k < 7; ++k) dot += pq_curr[k] * pq_prev[k];
+                if (dot < 0.0) {
+                    for (int k = 3; k < 7; ++k) pq_curr[k] = -pq_curr[k];
+                }
+                double wq[4]{
+                    (pq_curr[3] - pq_prev[3]) / dt,
+                    (pq_curr[4] - pq_prev[4]) / dt,
+                    (pq_curr[5] - pq_prev[5]) / dt,
+                    (pq_curr[6] - pq_prev[6]) / dt,
+                };
+                aris::dynamic::s_wq2wa(pq_curr + 3, wq, angular_vs);
+            }
+
+            speed_groups.insert(speed_groups.end(), linear_vs, linear_vs + 3);
+            speed_mags.push_back(aris::dynamic::s_norm(3, linear_vs));
+            speed_groups.insert(speed_groups.end(), angular_vs, angular_vs + 3);
+            speed_mags.push_back(aris::dynamic::s_norm(3, angular_vs));
+            break;
+        }
         case aris::dynamic::PosType::PM:
         case aris::dynamic::PosType::PQ:
         case aris::dynamic::PosType::RE121:
@@ -320,54 +389,26 @@ auto monitor_one_step(
 } // namespace
 
 int main() {
+#ifdef ARIS_BUILD_TESTS
+    aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(demo_hook);
+#endif
     aris::plan::TrajectoryGenerator tg;
-    const std::vector<aris::dynamic::PosType> types{
-        aris::dynamic::PosType::X,
-        aris::dynamic::PosType::XYZT,
-        aris::dynamic::PosType::PQ,
-    };
+    const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
     tg.setPosTypes(types);
     tg.setDt(0.001);
-
-    constexpr int total_size = 1 + 4 + 7;
-    constexpr int vel_size = 1 + 2 + 2;
-
-    double pq0[7]{};
-    double pq1[7]{};
-    double pq2[7]{};
-    double pq_mid[7]{};
-    double pe0[6]{0.45, 0.00, 0.75, aris::PI / 2.0, 0.0, aris::PI / 2.0};
-    double pe1[6]{0.46, 0.02, 0.73, aris::PI / 2.0, 0.1, aris::PI / 2.0};
-    double pe2[6]{0.44, -0.03, 0.74, aris::PI / 2.0, -0.1, aris::PI / 2.0};
-    double pe_mid[6]{0.45, -0.01, 0.735, aris::PI / 2.0, 0.0, aris::PI / 2.0};
-    aris::dynamic::s_pe2pq(pe0, pq0, "321");
-    aris::dynamic::s_pe2pq(pe1, pq1, "321");
-    aris::dynamic::s_pe2pq(pe2, pq2, "321");
-    aris::dynamic::s_pe2pq(pe_mid, pq_mid, "321");
-
-    double p0[total_size]{0.0, 0.10, 0.20, 0.30, 0.00};
-    double p1[total_size]{0.2, 0.15, 0.25, 0.35, 0.10};
-    double p2[total_size]{-0.1, 0.12, 0.18, 0.33, -0.15};
-    double mid[total_size]{0.05, 0.13, 0.21, 0.34, -0.02};
-    std::copy_n(pq0, 7, p0 + 5);
-    std::copy_n(pq1, 7, p1 + 5);
-    std::copy_n(pq2, 7, p2 + 5);
-    std::copy_n(pq_mid, 7, mid + 5);
-
-    double vel[vel_size]{0.2, 0.2, 0.6, 0.3, 0.8};
-    double acc[vel_size]{1.0, 2.0, 4.0, 2.0, 5.0};
-    double jerk[vel_size]{10.0, 10.0, 10.0, 10.0, 10.0};
-    double zone[vel_size]{0.0, 0.001, 0.001, 0.001, 0.001};
+    double p0[6]{0.45, 0.0, 0.75, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+    double p1[6]{0.46, 0.02, 0.74, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+    double p2[6]{0.43, -0.03, 0.76, aris::PI / 2.0, 0.0, aris::PI / 2.0};
+    double vel[2]{0.2, 0.8};
+    double acc[2]{1.0, 5.0};
+    double jerk[2]{10.0, 20.0};
+    double zone[2]{0.001, 0.001};
 
     tg.insertLinePos(1, p0, vel, acc, jerk, zone);
-    std::vector<double> out(total_size, 0.0);
-    std::vector<double> vel_out(default_output_vel_size(types), 0.0);
-    (void)tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
-
-    tg.insertLinePos(2, p1, vel, acc, jerk, zone);
-    tg.insertCirclePos(3, p2, mid, vel, acc, jerk, zone);
-
     tg.updateInsertPos();
+
+    std::vector<double> out(6, 0.0);
+    std::vector<double> vel_out(default_output_vel_size(types), 0.0);
 
     LimitMonitor monitor = make_limit_monitor(types);
     std::vector<double> speed_mags, acc_mags, jerk_mags;
@@ -381,42 +422,119 @@ int main() {
     double max_jerk_limit = 0.0;
     int max_jerk_group = -1;
 
-    const char *csv_file = "/Users/panyang/Documents/MATLAB/test/demo_tg_mixed_debug.csv";
+    double acc_limits_monitor[2]{1.1 * acc[0], 1.1 * acc[1]};
+    double jerk_limits_monitor[2]{4.0 * jerk[0], 4.0 * jerk[1]};
+
+    const char *csv_file = "/Users/panyang/Documents/MATLAB/test/demo_tg_line_sequence_debug.csv";
     std::ofstream ofs(csv_file);
     ofs << std::fixed << std::setprecision(12);
-    ofs << "step,time_s,ret,node_id";
-    for (int i = 0; i < total_size; ++i) ofs << ",p" << i;
+    ofs << "step,time_s,ret,node_id,is_current_finished,unused_num,unused_ids";
+    for (int i = 0; i < 6; ++i) ofs << ",p" << i;
+    ofs << ",q0,q1,q2,q3";
     for (aris::Size i = 0; i < vel_out.size(); ++i) ofs << ",v" << i;
     for (aris::Size i = 0; i < monitor.group_dims.size(); ++i) {
         ofs << ",g" << i << "_v,g" << i << "_a,g" << i << "_j";
     }
     ofs << "\n";
 
+    // Reproduce the gtest sequence exactly.
+    (void)tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+    monitor_one_step(types, out.data(), vel_out.data(), tg.dt(), monitor,
+        vel, acc_limits_monitor, jerk_limits_monitor,
+        speed_mags, acc_mags, jerk_mags,
+        max_acc_exceed, max_acc_actual, max_acc_limit, max_acc_group,
+        max_jerk_exceed, max_jerk_actual, max_jerk_limit, max_jerk_group);
+
+    tg.insertLinePos(2, p1, vel, acc, jerk, zone);
+    tg.insertLinePos(3, p2, vel, acc, jerk, zone);
+    tg.updateInsertPos();
+
     int step = 0;
-    for (; step < 200000; ++step) {
+    std::int64_t last_ret = -1;
+    std::array<double, 4> prev_q{0.0, 0.0, 0.0, 0.0};
+    bool has_prev_q = false;
+    bool seen_2 = false;
+    bool seen_3 = false;
+    bool finished = false;
+
+    for (; step < 100000; ++step) {
         auto ret = tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+
         monitor_one_step(types, out.data(), vel_out.data(), tg.dt(), monitor,
-            vel, acc, jerk,
+            vel, acc_limits_monitor, jerk_limits_monitor,
             speed_mags, acc_mags, jerk_mags,
             max_acc_exceed, max_acc_actual, max_acc_limit, max_acc_group,
             max_jerk_exceed, max_jerk_actual, max_jerk_limit, max_jerk_group);
 
+        if (ret == 2) seen_2 = true;
+        if (ret == 3) seen_3 = true;
+        if (ret == 0) {
+            finished = true;
+        }
+
+        double pq[7]{};
+        aris::dynamic::s_pos2pos(aris::dynamic::PosType::PE321, out.data(), aris::dynamic::PosType::PQ, pq);
+        if (has_prev_q) {
+            double dot = pq[3] * prev_q[0] + pq[4] * prev_q[1] + pq[5] * prev_q[2] + pq[6] * prev_q[3];
+            if (dot < 0.0) {
+                pq[3] = -pq[3];
+                pq[4] = -pq[4];
+                pq[5] = -pq[5];
+                pq[6] = -pq[6];
+            }
+        }
+        prev_q = {pq[3], pq[4], pq[5], pq[6]};
+        has_prev_q = true;
+
+        auto unused_ids = tg.unusedNodeIds();
         ofs << step << ',' << (step * tg.dt()) << ',' << ret << ',' << tg.currentNodeId();
+        ofs << ',' << (tg.isCurrentNodeFinished() ? 1 : 0) << ',' << tg.unusedPosNum() << ",'";
+        for (aris::Size i = 0; i < unused_ids.size(); ++i) {
+            if (i) ofs << '|';
+            ofs << unused_ids[i];
+        }
+        ofs << "'";
         for (double v : out) ofs << ',' << v;
+        ofs << ',' << pq[3] << ',' << pq[4] << ',' << pq[5] << ',' << pq[6];
         for (double v : vel_out) ofs << ',' << v;
-        for (aris::Size i = 0; i < monitor.group_dims.size(); ++i) {
+        auto group_count = std::min<aris::Size>(monitor.group_dims.size(), speed_mags.size());
+        for (aris::Size i = 0; i < group_count; ++i) {
             ofs << ',' << speed_mags[i] << ',' << acc_mags[i] << ',' << jerk_mags[i];
+        }
+        for (aris::Size i = group_count; i < monitor.group_dims.size(); ++i) {
+            ofs << ",0,0,0";
         }
         ofs << '\n';
 
-        if (ret == 0) break;
+        if (ret != last_ret) {
+            std::cout << "ret switch: step=" << step << " ret=" << ret
+                      << " currentNodeId=" << tg.currentNodeId()
+                      << " unusedPosNum=" << tg.unusedPosNum() << '\n';
+            last_ret = ret;
+        }
+
+        if (finished) break;
     }
 
-    std::cout << "mixed finished at step=" << step << "\n";
+    std::cout << "line_sequence finished at step=" << step << "\n";
+    std::cout << "seen_2=" << seen_2 << ", seen_3=" << seen_3
+              << ", finished=" << finished << "\n";
+    std::cout << "final out = ["
+              << out[0] << ", " << out[1] << ", " << out[2] << ", "
+              << out[3] << ", " << out[4] << ", " << out[5] << "]\n";
+    std::cout << "target p2 = ["
+              << p2[0] << ", " << p2[1] << ", " << p2[2] << ", "
+              << p2[3] << ", " << p2[4] << ", " << p2[5] << "]\n";
     std::cout << "max_acc_exceed=" << max_acc_exceed
               << " (actual=" << max_acc_actual << ", limit=" << max_acc_limit << ", group=" << max_acc_group << ")\n";
     std::cout << "max_jerk_exceed=" << max_jerk_exceed
               << " (actual=" << max_jerk_actual << ", limit=" << max_jerk_limit << ", group=" << max_jerk_group << ")\n";
+#ifdef ARIS_BUILD_TESTS
+    std::cout << "hook_publish_attempt=" << g_hook_publish_attempt
+              << ", hook_publish_fail=" << g_hook_publish_fail
+              << ", hook_replan_fallback=" << g_hook_replan_fallback << "\n";
+    aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(nullptr);
+#endif
     std::cout << "csv=" << csv_file << "\n";
 
     return 0;

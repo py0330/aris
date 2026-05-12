@@ -19,6 +19,7 @@
 /// 
 /// 
 namespace aris::plan{
+
 	class ARIS_API TrajectoryGenerator {
 	public:
 		// 配置末端类型 //
@@ -103,6 +104,16 @@ namespace aris::plan{
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
+
+#ifdef ARIS_BUILD_TESTS
+	using TrajectoryConcurrencyTestHook = void(*)(int point, std::int64_t current_id, std::int64_t next_id, bool exchange_nonnull);
+	
+	namespace __trajectory_test {
+		auto ARIS_API setTrajectoryConcurrencyTestHook(TrajectoryConcurrencyTestHook hook)->void;
+		auto ARIS_API setTrajectoryConcurrencyForceReplanFailCurrentId(std::int64_t current_id)->void;
+		auto ARIS_API setTrajectoryConcurrencyForcePublishConflictCurrentId(std::int64_t current_id, int conflict_times)->void;
+	} // namespace __trajectory_test
+#endif
 }
 
 #endif

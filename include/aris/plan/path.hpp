@@ -51,8 +51,8 @@ namespace aris::plan{
 	auto ARIS_API s_bezier3_max_v_at(Size dim, const double* dp_ds_input, const double* d2p_ds2_input,
 		double max_a, double& v)noexcept->void;
 
-	// 计算某个点最大的可能速度，从而让加速度不超最大加速度，同时考虑jerk的限制
-	auto ARIS_API s_bezier3_max_v_at(Size dim, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
+	// 计算某个点最大的可能速度，从而让加速度不超最大加速度，同时考虑jerk的限制, 其中arc为整个bezier曲线的弧长
+	auto ARIS_API s_bezier3_max_v_at(Size dim, double arc, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
 		double max_a, double max_j, double& v)noexcept->void;
 
 	struct EstimateBezierArcParam {

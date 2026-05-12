@@ -498,7 +498,6 @@ namespace aris::plan{
 		if (q2[3] < 0)
 			aris::dynamic::s_iv(4, q2);
 
-
 		////////////////////////  sin（theta0）= 0时, v0 的计算似乎有问题 /////////
 		double theta0 = std::atan2(std::sqrt(q0[0] * q0[0] + q0[1] * q0[1] + q0[2] * q0[2]), q0[3]);
 		double theta2 = std::atan2(std::sqrt(q2[0] * q2[0] + q2[1] * q2[1] + q2[2] * q2[2]), q2[3]);
@@ -767,7 +766,7 @@ namespace aris::plan{
 	}
 
 	// 	// 计算某个点最大的可能速度，从而让加速度不超最大加速度
-	auto ARIS_API s_bezier3_max_v_at(Size dim, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
+	auto ARIS_API s_bezier3_max_v_at(Size dim, double arc, const double* dp_ds_input, const double* d2p_ds2_input, const double* d3p_ds3_input,
 		double max_a, double max_j, double& v)noexcept->void
 	{
 		//
@@ -819,6 +818,12 @@ namespace aris::plan{
 		// v = min{ (max_a*max_a / k2)^(1/4)，(max_j*max_j/k3)^(1/6) }
 		// 
 		// 结束时，d3arc_dt3 = max_j，
+		//
+		//
+		// 【还应考虑】：
+		// 起始位置处的加速度，到中间位置的加速度，它们可能有比较大的变化，这整个变化不应超过 j
+		// 
+		//
 		
 
 		double darc_ds, d2arc_ds2, ds_darc, d2s_darc2, d3arc_ds3, d3s_darc3;
@@ -848,6 +853,21 @@ namespace aris::plan{
 
 		v = darc_ds < 1e-7 ? 0.0 : std::min(std::pow((max_a*max_a / k2), 0.25), std::pow(((max_j*max_j) / k3), 0.16666666666666666));
 
+		// 以上只计算了在中间点处 v，a，j不超限，还应考虑：
+		// 从起始的加速度到中间位置处的加速度，整个过程 j 不超限。
+		// 假设起始 -> 中间，时间为 T
+		// => T ～= arc/vb/2
+		// => j ~= diff(a) / T <= j_max
+		// diff(a) = norm(xa50 - 0) = norm(xa50)
+		// => norm(xa50) <= T*jmax = arc/vb*jmax
+		// vb <= arc*jmax/norm(xa50)/2
+
+
+		// dp_darc   = dp_ds * ds_darc;
+		// d2p_darc2 = d2p_ds2 * ds_darc^2 + dp_ds * d2s_darc2;
+		auto d2p_darc2_norm = aris::dynamic::s_norm(dim, d2p_darc2);
+		if(d2p_darc2_norm > 1e-10)
+			v = std::min(arc*max_j/d2p_darc2_norm/2, v);
 	}
 
 	auto s_bezier3_darc_ds(Size dim, const double* dp_ds_input, const double* d2p_ds2_input,
@@ -912,6 +932,7 @@ namespace aris::plan{
 		}
 	}
 
+	// old method, not precise
 	auto s_bezier3_estimate_arc_param(double darc0, double d2arc0, double darc1, double d2arc1, double darc50, EstimateBezierArcParam& param)noexcept->void{
 		//% 对于 theta 较大时，以下式子估算较为准确
 		//% 使用1元3次方程 a s^3 + b s^2 + c s + d  模拟在s=0和s=1处的dp
@@ -989,6 +1010,182 @@ namespace aris::plan{
 		param.Y = param.D + (ratio - 1.0) * ((h * i) / 2.0);
 		param.Z = c * ratio;
 	}
+
+	// new method, precise，not stable，le、nm may be 0
+	auto s_bezier3_estimate_arc_param2(double darc0, double d2arc0, double darc1, double d2arc1, double darc50, EstimateBezierArcParam& param)noexcept->void{
+		// % deduce new method
+		// % 用 atan2 函数拟合 arc 长度，需满足以下假设：
+		// % 1, 两侧弧长一致：darc0 == darc1, d2arc0 == d2arc1
+		// % 
+		// % 所拟合的函数最终满足一下条件：
+		// % 1, darc0，darc1，d2arc0，d2arc1 和真实值保持一致
+		// % 2, d3arc50，和真实值保持一致
+		// %
+		// % 倍赛尔曲线两侧直线的弧长为le，两侧夹角为 theta，可得：
+		// % darc0 = 3 * le;
+		// % d2arc0 = -6 * le;
+		// % darc1 = 3 * le;
+		// % d2arc1 = 6 * le;
+		// %
+		// % =>
+		// % le = (darc0+darc1)/6
+		// %
+		// % 记：
+		// % co = cos(theta)
+		// % nm = norm(p2-p0) = sqrt(2+2*co)
+		// % 
+		// % 根据倍赛尔曲线方程，有：
+		// % dp50  = 0.75*(p2-p0)
+		// % d2p50 = 3*(p2-p1) - 3*(p1-p0)
+		// % d3p50 = 6*(p2-p0)
+		// % =>
+		// % norm(dp50)  = 0.75*nm
+		// %
+		// % 弧长计算关系：
+		// % darc  = norm(dp) = sqrt(dp'*dp);
+		// % d2arc = dp'*ddp / darc;
+		// % d3arc = ((d2p'*d2p + dp'*d3p) * darc - (dp'*ddp) * d2arc)/ (darc * darc);
+		// % =>
+		// % darc50 = 0.75*nm*le
+		// % d2arc50 = 0
+		// % d3arc50 = (24*(1-co) + 6*nm^2)*le/nm;
+		// %
+		// % 综上，在已知 darc0，darc1，darc50的情况下，可求得：
+		// % le = (darc0+darc1) / 6;
+		// % nm = darc50 / 0.75/le;
+		// % co = (nm^2-2)/2;
+		// % d3arc50 = (24*(1-co) + 6*nm^2)*le/nm;
+		// % 
+		// % 用 atan2(x, h)*i 来模拟 d2arc 
+		// %
+		// % 其微分：
+		// % d3arc = i*h/(h^2+x^2)
+		// %
+		// % d3arc50 = i/h;
+		// %
+		// % 于是：
+		// % d2arc = atan2(x, h)*h*d3arc50
+		// % 
+		// % 在x = 0.5 和 -0.5时，有：
+		// % d2arc1 - d2arc0 == 2*atan2(0.5, h)*h*d3arc50
+		// % 即：
+		// % (d2arc1 - d2arc0)- 2*atan2(0.5, h)*h*d3arc50 == 0
+		// %
+		// % 可用newton_raphson 求解 h
+		// % 
+		// % 考虑到 d3arc50 可能为无穷大，此时应该应用以下公式计算 i
+		// % i = (abs(d2arc1) + abs(d2arc0)) / 2.0 / atan2(1.0, 2.0 * h)
+		// %
+		// % 【对d2arc】积分
+		// % 对其积分，可得：
+		// % darc = (x*atan2(x, h) - h/2*log(x*x + h*h))*i + j
+		// %      = i*x.*at - h*i/2*lx + j;
+		// % 【参考】https://zh.m.wikipedia.org/zh-hant/%E5%8F%8D%E4%B8%89%E8%A7%92%E5%87%BD%E6%95%B0%E7%A7%AF%E5%88%86%E8%A1%A8
+		// %
+		// % 进一步积分，可得：
+		// % arc = i*( (x*x+h*h)/2*atan2(x, h)-h*x/2 - (x*log(x*x + h*h)+2*h*atan2(x,h)-2*x)*h/2 ) + k
+		// %     = k - i*at*h^2/2 + i*x.*x.*at/2 - h*i/2*x.*lx + x*i*h/2+ x*j;
+		// % 【参考】https://www.symbolab.com/solver/step-by-step/%5Cint%20ln%5Cleft(x%5E%7B2%7D%2Bc%5E%7B2%7D%5Cright)%20dx?or=input
+		// % 
+		// % where at = atan2(x,h)
+		// %       lx = log(x*x + h*h)
+		// %
+		// % 【arc公式】
+		// % ddarcB = i*at;
+		// % darcB  = i*x.*at - h*i/2*lx + j;
+		// % arcB   = k - i*at*h^2/2 + i*x.*x.*at/2 - h*i/2*x.*lx + x*i*h/2+ x*j;
+		// % 
+		// % 【修正项】
+		// % 上述方程，无法保证s = 0.5时，darc的正确性，因此需修正
+		// % 使用 cos 函数，在不改变0，1处的darc的前提下，将s=0.5处的darc修正到正确值
+		// % 修正函数为 (1-cos(2 pi s))/2 * darc_error_at_0.5
+		// % 而 darc_error_at_0.5 = dp50 - 0.125.*a - 0.25.*b - 0.5.*c - darc0;
+		// %  
+		// % 将上述等式化简，可得修正之后的一次项d，以及cos函数的系数 e：
+		// % lh = max(log(h), -100);
+		// % 
+		// % darcB50 = -lh*h*i + j;
+		// % darcE50 = darc50 - darcB50;
+		// % 
+		// % 【修正后得arc公式】
+		// %
+		// % arc   = arcB   + s*darcE50/2 - sin(2*pi*s)/2*darcE50/2/pi;
+		// % darc  = darcB  + (1-cos(2*pi*s))/2 * darcE50;
+		// % ddarc = ddarcB + sin(2*pi*s)*pi*darcE50;
+		// %
+		// % 【简洁版】见后续代码，为上述推到的展开，便于程序加速
+
+		auto le = (darc0+darc1) / 6;
+		auto nm = le < 1e-10 ? 0.0 : darc50 / 0.75 / le;
+		auto co = (nm*nm-2)/2;
+		auto d3arc50 = le < 1e-10 ? 0.0 : (24*(1-co) + 6*nm*nm)*le/nm;
+
+		auto fu = [d2arc1,d2arc0,d3arc50](double h)->double{
+			return (d2arc1 - d2arc0) - d3arc50*2*atan2(1.0, 2*h)*h;
+		};
+		auto h = aris::dynamic::s_newton_raphson_binary_search(fu,1e-10,100);
+		auto i = d3arc50 * h;
+		auto j = -(0.5*atan2(0.5, h) - h/2*std::log(0.25 + h*h))*i + darc0; 
+		auto lh = std::max(std::log(h), -100.0);
+
+		param.D = (darc50 + j + h*i*(1+lh))/2;
+		param.E = -h*i/2;
+		param.F = h*i/4;
+		param.G = i/2;
+		param.H = -i*(h*h/2 - 0.125);
+		param.I = -(darc50 - (j - h*i*lh))/(4*aris::PI);
+		param.h = h;
+
+		param.X = -(param.F * std::log(0.25 + h * h) + param.H * std::atan2(-0.5, h)); //% 将 s = 0 带入，arc应该为0
+		param.Y = param.D - ((h*i)/2);
+
+		param.A = 0;
+		param.B = 0;
+		param.C = 0;
+		param.Z = 0;
+
+// D = (darc50 + j + h*i*(1+lh))/2;
+// E = -h*i/2;
+// F = h*i/4;
+// G = i/2;
+// H = -i*(h^2/2 - 1/8);
+// I = -(darc50 - (j - h*i*lh))/(4*pi);
+
+// X = -(F*log(0.25+h*h) + H * atan2(-0.5,h)); % 将 s = 0 带入，arc应该为0
+// Y = D - ((h*i)/2);
+
+// x = s - 0.5;
+// lx = log(x.*x + h*h);%可能为nan
+// at = atan2(x, h);
+
+// arc  = D*s + E*lx.*s + F*lx + G*at.*s.^2 - G*at.*s + H*at + I.*sin(2*pi*s) + X;
+// darc = 2*G*at.*s - G*at + E*lx + I*2*pi*cos(2*pi*s) + Y;
+// ddarc = 2*G*at + 4*I*sin(2*pi*s);
+
+		// D = (darc50 + j + h*i*(1+lh))/2;
+		// E = -h*i/2;
+		// F = h*i/4;
+		// G = i/2;
+		// H = -i*(h^2/2 - 1/8);
+		// I = -(darc50 - (j - h*i*lh))/(4*pi);
+
+		// X = -(F*log(0.25+h*h) + H * atan2(-0.5,h)); % 将 s = 0 带入，arc应该为0
+		// Y = D - ((h*i)/2);
+
+		// x = s - 0.5;
+		// lx = log(x.*x + h*h);%可能为nan
+		// at = atan2(x, h);
+
+		// arc  = D*s + E*lx.*s + F*lx + G*at.*s.^2 - G*at.*s + H*at + I.*sin(2*pi*s) + X;
+		// darc = 2*G*at.*s - G*at + E*lx + I*2*pi*cos(2*pi*s) + Y;
+		//ddarc = 2*G*at + 4*I*sin(2*pi*s);
+
+
+
+
+
+	}
+
 
 	auto s_bezier3_s2arc(double s, const EstimateBezierArcParam& param,	double& arc, double& darc, double &d2arc)noexcept->void{
 		double lx = std::max(std::log((s - 0.5) * (s - 0.5) + param.h * param.h), -100.0);

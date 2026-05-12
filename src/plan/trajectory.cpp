@@ -2,6 +2,46 @@
 #include"aris/plan/function.hpp"
 
 namespace aris::plan {
+#ifdef ARIS_BUILD_TESTS
+	namespace {
+		// Case 名字与触发点对应关系：
+		// 1) CaseInsertPublishExchangeConflictRetry:
+		//    在 publish 前触发，用于卡住 update 与运行线程切换窗口。
+		// 2) CaseInsertPublishExchangeConflictRetryResult:
+		//    在 publish 后触发，exchange_nonnull=false 表示本轮发布冲突，需要回滚并重试。
+		// 3) CaseInsertReplanFailedFallback:
+		//    replan_nodes 失败，进入仅追加新节点的回退路径（对应 update_insert 的失败分支）。
+		constexpr int kTrajectoryHookCaseInsertPublishExchangeConflictRetry = 1;
+		constexpr int kTrajectoryHookCaseInsertPublishExchangeConflictRetryResult = 2;
+		constexpr int kTrajectoryHookCaseInsertReplanFailedFallback = 3;
+
+		std::atomic<TrajectoryConcurrencyTestHook> g_trajectory_concurrency_test_hook{ nullptr };
+		std::atomic<std::int64_t> g_trajectory_force_replan_fail_current_id{ -1 };
+		std::atomic<std::int64_t> g_trajectory_force_publish_conflict_current_id{ -1 };
+		std::atomic<int> g_trajectory_force_publish_conflict_times{ 0 };
+
+		auto emit_trajectory_concurrency_test_hook(int point, std::int64_t current_id, std::int64_t next_id, bool exchange_nonnull)->void {
+			auto hook = g_trajectory_concurrency_test_hook.load(std::memory_order_relaxed);
+			if (hook) hook(point, current_id, next_id, exchange_nonnull);
+		}
+	}
+
+	namespace __trajectory_test {
+		auto setTrajectoryConcurrencyTestHook(TrajectoryConcurrencyTestHook hook)->void {
+			g_trajectory_concurrency_test_hook.store(hook, std::memory_order_relaxed);
+		}
+
+		auto setTrajectoryConcurrencyForceReplanFailCurrentId(std::int64_t current_id)->void {
+			g_trajectory_force_replan_fail_current_id.store(current_id, std::memory_order_relaxed);
+		}
+
+		auto setTrajectoryConcurrencyForcePublishConflictCurrentId(std::int64_t current_id, int conflict_times)->void {
+			g_trajectory_force_publish_conflict_current_id.store(current_id, std::memory_order_relaxed);
+			g_trajectory_force_publish_conflict_times.store(std::max(conflict_times, 0), std::memory_order_relaxed);
+		}
+	} // namespace __trajectory_test
+#endif
+
 	struct Node {
 		enum class NodeType {
 			ResetInitPos,
@@ -681,7 +721,7 @@ namespace aris::plan {
 		double vb;
 		s_bezier3_blend_line_line(0.5, last_u.zone2_.lines_.p0_, last_u.zone2_.lines_.p1_, last_u.zone2_.lines_.p2_,
 			p50, dp50, d2p50, d3p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
+		s_bezier3_max_v_at(3, arc, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_lc(Node::Unit& last_u, Node::Unit& this_u) ->void {
@@ -761,7 +801,7 @@ namespace aris::plan {
 		s_bezier3_blend_line_circle(0.5, last_u.zone2_.line_circle_.p0_, last_u.zone2_.line_circle_.p1_
 			, last_u.zone2_.line_circle_.center_, last_u.zone2_.line_circle_.axis_, last_u.zone2_.line_circle_.theta_,
 			p50, dp50, d2p50, d3p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
+		s_bezier3_max_v_at(3, arc, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_cl(Node::Unit& last_u, Node::Unit& this_u) ->void {
@@ -826,7 +866,7 @@ namespace aris::plan {
 		s_bezier3_blend_line_circle(0.5, last_u.zone2_.circle_line_.p2_, last_u.zone2_.circle_line_.p1_
 			, last_u.zone2_.circle_line_.center_, last_u.zone2_.circle_line_.axis_, last_u.zone2_.circle_line_.theta_,
 			p50, dp50, d2p50, d3p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
+		s_bezier3_max_v_at(3, arc, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_cc(Node::Unit& last_u, Node::Unit& this_u) ->void {
@@ -915,7 +955,7 @@ namespace aris::plan {
 		s_bezier3_blend_circle_circle(0.5, circles.pcenter_, circles.c1_, circles.a1_, circles.theta1_
 			, circles.c2_, circles.a2_, circles.theta2_
 			, p50, dp50, d2p50, d3p50);
-		s_bezier3_max_v_at(3, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
+		s_bezier3_max_v_at(3, arc, dp50, d2p50, d3p50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 	auto make_zone_and_scurve_qq(Node::Unit& last_u, Node::Unit& this_u)->void {
@@ -1028,7 +1068,11 @@ namespace aris::plan {
 				ja50[i] = (4.0 * ja_h2[i] - ja_h[i]) / 3.0;
 			}
 		}
-		s_bezier3_max_v_at(3, wa50, xa50, ja50, std::min(last_u.scurve_.a_, this_u.scurve_.a_), std::min(last_u.scurve_.j_, this_u.scurve_.j_), vb);
+
+		auto j_max = std::min(last_u.scurve_.j_, this_u.scurve_.j_);
+		auto a_max = std::min(last_u.scurve_.a_, this_u.scurve_.a_);
+
+		s_bezier3_max_v_at(3, arc, wa50, xa50, ja50, a_max, j_max, vb);
 		last_u.scurve_.vb_max_ = std::min({ vb, last_u.scurve_.vc_max_, this_u.scurve_.vc_max_ });
 	}
 
@@ -1590,7 +1634,8 @@ namespace aris::plan {
 					break;
 				}
 			}
-			if(ins_iter == nodes_.end()) // no ins node
+			// CaseInsertNoPendingNode: 没有待发布的新插入节点，直接返回。
+			if(ins_iter == nodes_.end())
 				return;
 
 			// 制作插入节点序列的转弯区域，后面只连接，不更新 //
@@ -1637,22 +1682,56 @@ namespace aris::plan {
 				auto scurve_size = static_cast<int>(aris::dynamic::s_pos_type_mag_size(ee_pos_types_.size(), ee_pos_types_.data()));
 				auto replan_ret = replan_nodes(scurve_size, ee_pos_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
-				// 重规划失败时，回退到仅追加新节点的插入路径
+#ifdef ARIS_BUILD_TESTS
+				auto forced_fail_current_id = g_trajectory_force_replan_fail_current_id.load(std::memory_order_relaxed);
+				auto current_iter_id = current_iter == nodes_.end() ? static_cast<std::int64_t>(-1) : current_iter->id_;
+				if (forced_fail_current_id >= 0 && forced_fail_current_id == current_iter_id) {
+					replan_ret = -1;
+				}
+#endif
+
+				// CaseInsertReplanFailedFallback:
+				// replan 失败，本轮不再尝试替换旧链路，回退为“仅追加新节点”的保守路径。
 				if (replan_ret != 0) {
+#ifdef ARIS_BUILD_TESTS
+					emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertReplanFailedFallback, current_iter->id_, ins_iter->id_, false);
+#endif
 					nodes_.erase(replan_iter_end, ins_iter);
+#ifdef ARIS_BUILD_TESTS
+					emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertPublishExchangeConflictRetry, current_iter->id_, ins_iter->id_, false);
+#endif
 					*ins_iter = ins_node_copy;
-					replan_nodes(scurve_size, ee_pos_types_, std::prev(replan_iter_end), ins_iter, nodes_.end());
-					std::prev(replan_iter_end)->next_node_.exchange(&*ins_iter);
+					replan_nodes(scurve_size, ee_pos_types_, std::prev(ins_iter), ins_iter, nodes_.end());
+					std::prev(ins_iter)->next_node_.exchange(&*ins_iter);
 					insert_success = true;
 				}
 				else {
-					// 重规划成功时，尝试原子切换可见链路并清理旧节点
-					insert_success = std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) != nullptr || replan_num == 0;
+					// 重规划成功后尝试 publish 新链路；若 exchange 失败则进入并发冲突回退分支。
+#ifdef ARIS_BUILD_TESTS
+					emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertPublishExchangeConflictRetry, current_iter->id_, ins_iter->id_, false);
+#endif
+					Node *exchanged_node{ std::prev(replan_iter_begin)->next_node_.exchange(&*replan_iter_end) };
+#ifdef ARIS_BUILD_TESTS
+					auto forced_conflict_current_id = g_trajectory_force_publish_conflict_current_id.load(std::memory_order_relaxed);
+					auto forced_conflict_times = g_trajectory_force_publish_conflict_times.load(std::memory_order_relaxed);
+					if (forced_conflict_times > 0 && forced_conflict_current_id == current_iter->id_) {
+						g_trajectory_force_publish_conflict_times.fetch_sub(1, std::memory_order_relaxed);
+						exchanged_node = nullptr;
+					}
+					emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertPublishExchangeConflictRetryResult, current_iter->id_, ins_iter->id_, exchanged_node != nullptr);
+#endif
+					insert_success = exchanged_node != nullptr || replan_num == 0;
 					if (insert_success) {
 						nodes_.erase(replan_iter_begin, replan_iter_end);
 					}
 					else {
-						nodes_.erase(replan_iter_end, std::prev(nodes_.end()));
+						// CaseInsertPublishExchangeConflictRetry:
+						// exchange 返回 nullptr，说明运行线程刚切换过，当前发布失效。
+						// 回滚临时重规划内容，下一轮基于最新 current_node 重试。
+						nodes_.erase(replan_iter_end, ins_iter);
+#ifdef ARIS_BUILD_TESTS
+						emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertPublishExchangeConflictRetry, current_iter->id_, ins_iter->id_, false);
+#endif
 						*ins_iter = ins_node_copy;
 					}
 				}

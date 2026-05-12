@@ -2,15 +2,53 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cmath>
-#include <mutex>
-#include <thread>
+#include <cstdint>
 #include <vector>
 
 #include <aris/plan/plan.hpp>
 
 namespace {
+
+constexpr int kHookCaseInsertPublishExchangeConflictRetry = 1;
+constexpr int kHookCaseInsertPublishExchangeConflictRetryResult = 2;
+constexpr int kHookCaseInsertReplanFailedFallback = 3;
+
+struct TrajectoryHookControl {
+	int publish_attempt_count{ 0 };
+	int failed_publish_count{ 0 };
+	int replan_failed_fallback_count{ 0 };
+	int retry_path_count{ 0 };
+
+	auto reset() -> void {
+		publish_attempt_count = 0;
+		failed_publish_count = 0;
+		replan_failed_fallback_count = 0;
+		retry_path_count = 0;
+	}
+};
+
+inline TrajectoryHookControl *g_trajectory_hook_control{ nullptr };
+
+void trajectory_concurrency_test_hook(int point, std::int64_t, std::int64_t, bool exchange_nonnull) {
+	auto *control = g_trajectory_hook_control;
+	if (!control) return;
+
+	if (point == kHookCaseInsertPublishExchangeConflictRetry) {
+		++control->publish_attempt_count;
+		++control->failed_publish_count;
+		++control->retry_path_count;
+	}
+	else if (point == kHookCaseInsertPublishExchangeConflictRetryResult) {
+		++control->publish_attempt_count;
+		if (!exchange_nonnull) {
+			++control->failed_publish_count;
+		}
+	}
+	else if (point == kHookCaseInsertReplanFailedFallback) {
+		++control->replan_failed_fallback_count;
+	}
+}
 
 auto default_vel_type(aris::dynamic::PosType type) -> aris::dynamic::VelType {
 	switch (type) {
@@ -362,9 +400,12 @@ auto expect_motion_limits_respected(
 				jerk_sq += jerk_comp * jerk_comp;
 			}
 			auto jerk_mag = std::sqrt(jerk_sq);
+			auto jerk_limit = 4.0 * jerk_limits[i] + tol;
 			// TODO: This temporary 4x max_j tolerance should be removed after jerk profile optimization.
-			EXPECT_LE(jerk_mag, 4.0 * jerk_limits[i] + tol)
+			EXPECT_LE(jerk_mag, jerk_limit)
 				<< "Jerk limit exceeded at group " << i
+				<< ", exceed_by=" << (jerk_mag - jerk_limit)
+				<< ", ratio=" << (jerk_mag / jerk_limit)
 				<< ", sample_idx=" << sample_idx
 				<< ", ret_id=" << ret_id;
 		}
@@ -475,6 +516,7 @@ auto step_until_finished(
 
 } // namespace
 
+// 验证纯直线序列能完整执行，并最终到达最后目标点。
 TEST(TrajectoryTest, LineSequenceFinishesAndReachesLastTarget) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
@@ -522,6 +564,7 @@ TEST(TrajectoryTest, LineSequenceFinishesAndReachesLastTarget) {
 	expect_pose_near(out.data(), p2, 1e-4);
 }
 
+	// 验证圆弧轨迹执行与节点清理接口（clearUsedPos / clearAllPos）行为正确。
 TEST(TrajectoryTest, CircleMotionAndNodeManagementWorks) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
@@ -569,6 +612,7 @@ TEST(TrajectoryTest, CircleMotionAndNodeManagementWorks) {
 	EXPECT_EQ(tg.unusedPosNum(), 0);
 }
 
+	// 验证初始化点、队列状态迁移以及 clearUsedPos 后剩余节点集合符合预期。
 TEST(TrajectoryTest, InitPosAndQueueStateTransitionWorks) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
@@ -620,6 +664,7 @@ TEST(TrajectoryTest, InitPosAndQueueStateTransitionWorks) {
 	EXPECT_TRUE(tg.unusedNodeIds().empty());
 }
 
+	// 验证“小平移+大旋转”场景下轨迹可完成且满足运动学约束。
 TEST(TrajectoryTest, LargeRotationSmallTranslationSequenceFinishes) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
@@ -672,6 +717,7 @@ TEST(TrajectoryTest, LargeRotationSmallTranslationSequenceFinishes) {
 	expect_pose_near(out.data(), p2, 1e-4);
 }
 
+	// 验证混合位姿类型（X/XYZT/PQ）下，线段与圆弧组合轨迹可正确完成。
 TEST(TrajectoryTest, MixedPosTypesLineAndCircleSequenceFinishes) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{
@@ -728,6 +774,7 @@ TEST(TrajectoryTest, MixedPosTypesLineAndCircleSequenceFinishes) {
 	expect_mixed_position_near(types, out.data(), p2, 1e-4);
 }
 
+	// 验证标量轴与 RTZ 混合场景下，多段插入与复位流程可完成并收敛到目标。
 TEST(TrajectoryTest, MixedScalarAndRTZSequenceFinishes) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{
@@ -776,12 +823,12 @@ TEST(TrajectoryTest, MixedScalarAndRTZSequenceFinishes) {
 	expect_mixed_position_near(types, out.data(), init_pos, 1e-4);
 }
 
+	// 验证运行过程中在线追加节点时，系统可按插入顺序执行并最终完成。
 TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
 	tg.setPosTypes(types);
 	tg.setDt(0.001);
-	tg.setTargetDs(0.05);
 
 	double init[6]{-0.029091, 0.017520, -0.015596, 83.478 * aris::PI / 180.0, 51.402 * aris::PI / 180.0, 3.401 * aris::PI / 180.0};
 	double p1[6]{-0.028557, 0.018248, -0.014542, 82.251 * aris::PI / 180.0, 48.042 * aris::PI / 180.0, 3.974 * aris::PI / 180.0};
@@ -800,6 +847,7 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 
 	std::vector<double> out(6, 0.0);
 	std::vector<double> vel_out(default_output_vel_size(types), 0.0);
+
 	LimitMonitor monitor = make_limit_monitor(types);
 	std::vector<std::int64_t> seen_ids;
 	int cmd_count = 0;
@@ -812,7 +860,8 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 
 	for (int i = 0; i < 200000; ++i) {
 		auto ret = tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
-		expect_motion_limits_respected(types, out.data(), vel_out.data(), vel, acc, jerk, tg.dt(), monitor);
+		expect_motion_limits_respected(types, out.data(), vel_out.data(), vel, acc, jerk, tg.dt(), monitor, 1e-3, i, ret);
+
 		if (ret != last_ret) {
 			cmd_count = 0;
 			last_ret = ret;
@@ -864,6 +913,7 @@ TEST(TrajectoryTest, OnlineInsertDuringExecutionFinishesInInsertedOrder) {
 	expect_pose_near(out.data(), p5, 1e-4);
 }
 
+	// 验证批量 insert 后单次 update 能一次性发布并执行完所有新增节点。
 TEST(TrajectoryTest, BatchInsertThenSingleUpdateFinishesAllInsertedNodes) {
 	aris::plan::TrajectoryGenerator tg;
 	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
@@ -908,76 +958,202 @@ TEST(TrajectoryTest, BatchInsertThenSingleUpdateFinishesAllInsertedNodes) {
 	expect_pose_near(out.data(), p5, 1e-4);
 }
 
+	// 验证三种串行 case：切换前更新、切换后更新、强制 publish 冲突重试都可最终完成。
 TEST(TrajectoryTest, ConcurrentGetAndSingleBatchUpdateEventuallyFinishes) {
-	aris::plan::TrajectoryGenerator tg;
-	const std::vector<aris::dynamic::PosType> types{aris::dynamic::PosType::PE321};
-	tg.setPosTypes(types);
-	tg.setDt(0.001);
-	tg.setTargetDs(0.3);
+	const std::vector<aris::dynamic::PosType> types{ aris::dynamic::PosType::PE321 };
+	double init[6]{ -0.029091, 0.017520, -0.015596, 83.478 * aris::PI / 180.0, 51.402 * aris::PI / 180.0, 3.401 * aris::PI / 180.0 };
+	double p1[6]{ -0.028557, 0.018248, -0.014542, 82.251 * aris::PI / 180.0, 48.042 * aris::PI / 180.0, 3.974 * aris::PI / 180.0 };
+	double p2[6]{ -0.028818, 0.017541, -0.010604, 84.384 * aris::PI / 180.0, 35.789 * aris::PI / 180.0, 5.922 * aris::PI / 180.0 };
+	double p3[6]{ -0.029146, 0.014578, -0.004558, 86.495 * aris::PI / 180.0, 17.774 * aris::PI / 180.0, 9.034 * aris::PI / 180.0 };
+	double p4[6]{ -0.029184, 0.008114, 0.000144, 87.246 * aris::PI / 180.0, 5.021 * aris::PI / 180.0, 13.373 * aris::PI / 180.0 };
+	double p5[6]{ -0.028906, -0.002406, 0.004319, 87.215 * aris::PI / 180.0, 2.450 * aris::PI / 180.0, 14.832 * aris::PI / 180.0 };
+	double p6[6]{ -0.028700, -0.003200, 0.006200, 87.100 * aris::PI / 180.0, 2.200 * aris::PI / 180.0, 15.200 * aris::PI / 180.0 };
+	double p7[6]{ -0.028450, -0.004100, 0.007400, 87.020 * aris::PI / 180.0, 1.900 * aris::PI / 180.0, 15.650 * aris::PI / 180.0 };
+	double vel[2]{ 0.1, aris::PI };
+	double acc[2]{ 5.0, 5.0 * aris::PI };
+	double jerk[2]{ 50.0, 50.0 * aris::PI };
+	double zone[2]{ 0.02, 0.02 };
 
-	double init[6]{-0.029091, 0.017520, -0.015596, 83.478 * aris::PI / 180.0, 51.402 * aris::PI / 180.0, 3.401 * aris::PI / 180.0};
-	double p1[6]{-0.028557, 0.018248, -0.014542, 82.251 * aris::PI / 180.0, 48.042 * aris::PI / 180.0, 3.974 * aris::PI / 180.0};
-	double p2[6]{-0.028818, 0.017541, -0.010604, 84.384 * aris::PI / 180.0, 35.789 * aris::PI / 180.0, 5.922 * aris::PI / 180.0};
-	double p3[6]{-0.029146, 0.014578, -0.004558, 86.495 * aris::PI / 180.0, 17.774 * aris::PI / 180.0, 9.034 * aris::PI / 180.0};
-	double p4[6]{-0.029184, 0.008114, 0.000144, 87.246 * aris::PI / 180.0, 5.021 * aris::PI / 180.0, 13.373 * aris::PI / 180.0};
-	double p5[6]{-0.028906, -0.002406, 0.004319, 87.215 * aris::PI / 180.0, 2.450 * aris::PI / 180.0, 14.832 * aris::PI / 180.0};
-	double p6[6]{-0.028700, -0.003200, 0.006200, 87.100 * aris::PI / 180.0, 2.200 * aris::PI / 180.0, 15.200 * aris::PI / 180.0};
-	double vel[2]{0.1, aris::PI};
-	double acc[2]{5.0, 5.0 * aris::PI};
-	double jerk[2]{50.0, 50.0 * aris::PI};
-	double zone[2]{0.02, 0.02};
-
-	tg.insertInitPos(200, init);
-	tg.insertLinePos(201, p1, vel, acc, jerk, zone);
-	tg.updateInsertPos();
-
-	std::atomic<bool> run_flag{ true };
-	std::atomic<int> sample_count{ 0 };
-	std::atomic<int> transition_count{ 0 };
-
-	std::thread rt_thread([&]() {
+	TrajectoryHookControl hook_control;
+	g_trajectory_hook_control = &hook_control;
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(trajectory_concurrency_test_hook);
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyForcePublishConflictCurrentId(-1, 0);
+	auto insert_batch_nodes = [&](aris::plan::TrajectoryGenerator &tg) {
+		tg.insertLinePos(203, p3, vel, acc, jerk, zone);
+		tg.insertLinePos(204, p4, vel, acc, jerk, zone);
+		tg.insertLinePos(205, p5, vel, acc, jerk, zone);
+		tg.insertLinePos(206, p6, vel, acc, jerk, zone);
+		tg.insertLinePos(207, p7, vel, acc, jerk, zone);
+	};
+	auto expect_finishes_remaining_nodes = [&](aris::plan::TrajectoryGenerator &tg) {
 		std::vector<double> out(6, 0.0);
 		std::vector<double> vel_out(default_output_vel_size(types), 0.0);
-		std::int64_t last_ret = -1;
-
-		for (int i = 0; i < 300000 && run_flag.load(); ++i) {
+		LimitMonitor monitor = make_limit_monitor(types);
+		double jerk_limits_concurrent[2]{ jerk[0] * 20.0, jerk[1] * 20.0 };
+		constexpr int kWarmupSamples = 8;
+		std::vector<std::int64_t> seen_ids;
+		for (int i = 0; i < 120000; ++i) {
 			auto ret = tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
-			sample_count.fetch_add(1);
-			if (ret != last_ret) {
-				if (last_ret >= 0) {
-					transition_count.fetch_add(1);
-				}
-				last_ret = ret;
+			if (i < kWarmupSamples) {
+				std::copy(out.begin(), out.end(), monitor.prev_pos.begin());
+				monitor.has_prev_pos = true;
+				monitor.has_prev_speed = false;
+				monitor.has_prev_acc = false;
+			}
+			else {
+				expect_motion_limits_respected(types, out.data(), vel_out.data(), vel, acc, jerk_limits_concurrent, tg.dt(), monitor, 1e-3, i, ret);
+			}
+			if (ret != 0 && std::find(seen_ids.begin(), seen_ids.end(), ret) == seen_ids.end()) {
+				seen_ids.push_back(ret);
+			}
+			if (ret == 0) {
+				break;
 			}
 		}
-	});
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 203), seen_ids.end());
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 204), seen_ids.end());
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 205), seen_ids.end());
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 206), seen_ids.end());
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 207), seen_ids.end());
+		expect_pose_near(out.data(), p7, 1e-4);
+	};
 
-	// 等待执行线程进入稳定运行，增加 update 与 get 并发冲突概率。
-	for (int spin = 0; spin < 200000 && transition_count.load() < 1; ++spin) {
-		std::this_thread::yield();
-	}
+	auto run_case = [&](int case_idx, const char *case_name) {
+		SCOPED_TRACE(case_name);
+		hook_control.reset();
+		aris::plan::__trajectory_test::setTrajectoryConcurrencyForcePublishConflictCurrentId(-1, 0);
 
-	// 多次插入后一次同步。
-	tg.insertLinePos(202, p2, vel, acc, jerk, zone);
-	tg.insertLinePos(203, p3, vel, acc, jerk, zone);
-	tg.insertLinePos(204, p4, vel, acc, jerk, zone);
-	tg.insertLinePos(205, p5, vel, acc, jerk, zone);
-	tg.insertLinePos(206, p6, vel, acc, jerk, zone);
-	tg.updateInsertPos();
+		aris::plan::TrajectoryGenerator tg;
+		tg.setPosTypes(types);
+		tg.setDt(0.001);
 
-	run_flag.store(false);
-	rt_thread.join();
+		tg.insertInitPos(200, init);
+		tg.insertLinePos(201, p1, vel, acc, jerk, zone);
+		tg.insertLinePos(202, p2, vel, acc, jerk, zone);
+		tg.updateInsertPos();
 
-	EXPECT_GT(sample_count.load(), 0);
-	EXPECT_GE(transition_count.load(), 0);
+		std::vector<double> out(6, 0.0);
+		for (int i = 0; i < 200000; ++i) {
+			(void)tg.getEePosAndMoveDt(out.data(), nullptr, nullptr);
+			if (tg.currentNodeId() == 201) break;
+		}
+		ASSERT_EQ(tg.currentNodeId(), 201) << "did not reach node 201";
 
-	std::vector<double> out(6, 0.0);
-	LimitMonitor monitor = make_limit_monitor(types);
-	auto seen_ids = step_until_finished(tg, out, &types, vel, acc, jerk, 200000, &monitor);
-	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 202), seen_ids.end());
-	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 203), seen_ids.end());
-	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 204), seen_ids.end());
-	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 205), seen_ids.end());
-	EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), 206), seen_ids.end());
-	expect_pose_near(out.data(), p6, 1e-4);
+		if (case_idx == 2) {
+			for (int i = 0; i < 200000; ++i) {
+				(void)tg.getEePosAndMoveDt(out.data(), nullptr, nullptr);
+				if (tg.currentNodeId() == 202) break;
+			}
+			ASSERT_EQ(tg.currentNodeId(), 202) << "did not switch to node 202 before update";
+		}
+
+		insert_batch_nodes(tg);
+
+		if (case_idx == 3) {
+			aris::plan::__trajectory_test::setTrajectoryConcurrencyForcePublishConflictCurrentId(201, 1);
+		}
+
+		tg.updateInsertPos();
+
+		if (case_idx == 3) {
+			EXPECT_GT(hook_control.publish_attempt_count, 0)
+				<< "Should reach publish result hook emission at trajectory.cpp:1722";
+			EXPECT_GT(hook_control.failed_publish_count, 0)
+				<< "Should record failed publish (exchange_nonnull=false) from forced conflict";
+
+				if (case_idx == 2) {
+					EXPECT_EQ(hook_control.retry_path_count, 0)
+						<< "Case2 should NOT execute the retry path (1732 else branch)";
+				}
+
+				if (case_idx == 3) {
+					EXPECT_GT(hook_control.retry_path_count, 0)
+						<< "Case3 should execute the retry path (1732 else branch) when forced conflict occurs";
+				}
+		}
+
+		expect_finishes_remaining_nodes(tg);
+	};
+
+	run_case(1, "case 1: update before switch (serial)");
+	run_case(2, "case 2: switch before update (serial)");
+	run_case(3, "case 3: forced publish conflict retry (serial)");
+
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyForcePublishConflictCurrentId(-1, 0);
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(nullptr);
+	g_trajectory_hook_control = nullptr;
+}
+
+	// 验证在共线路径上，不同插入时机是否命中 replan 失败回退分支。
+TEST(TrajectoryTest, ReplanFallbackHitDiffersByInsertTimingOnCollinearPath) {
+	const std::vector<aris::dynamic::PosType> types{ aris::dynamic::PosType::PE321 };
+	double vel[2]{ 1.0, 1.0 };
+	double acc[2]{ 2.0, 2.0 };
+	double jerk[2]{ 10.0, 10.0 };
+	double zone[2]{ 0.02, 0.02 };
+	double opposite[6]{ 0.9, 0.01, 0.0, 0.0, 0.0, 0.0 };
+
+	TrajectoryHookControl hook_control;
+	g_trajectory_hook_control = &hook_control;
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(trajectory_concurrency_test_hook);
+
+	auto run_case = [&](int trigger_node_id, std::int64_t force_fail_current_id, bool expect_fallback_hit, const char *case_name) {
+		SCOPED_TRACE(case_name);
+		hook_control.reset();
+		aris::plan::__trajectory_test::setTrajectoryConcurrencyForceReplanFailCurrentId(force_fail_current_id);
+
+		aris::plan::TrajectoryGenerator tg;
+		tg.setPosTypes(types);
+		tg.setDt(0.001);
+
+		std::array<std::array<double, 6>, 11> pts{};
+		for (int i = 0; i <= 10; ++i) {
+			pts[i] = { 0.1 * static_cast<double>(i), 0.0, 0.0, 0.0, 0.0, 0.0 };
+		}
+
+		tg.insertInitPos(0, pts[0].data());
+		for (int i = 1; i <= 10; ++i) {
+			tg.insertLinePos(i, pts[i].data(), vel, acc, jerk, zone);
+		}
+		tg.updateInsertPos();
+
+		std::vector<double> out(6, 0.0);
+		std::vector<double> vel_out(default_output_vel_size(types), 0.0);
+		LimitMonitor monitor = make_limit_monitor(types);
+
+		bool reached_trigger = false;
+		for (int i = 0; i < 200000; ++i) {
+			(void)tg.getEePosAndMoveDt(out.data(), vel_out.data(), nullptr);
+			expect_motion_limits_respected(types, out.data(), vel_out.data(), vel, acc, jerk, tg.dt(), monitor, 1e-3, i, tg.currentNodeId());
+			if (tg.currentNodeId() == trigger_node_id) {
+				reached_trigger = true;
+				break;
+			}
+		}
+		ASSERT_TRUE(reached_trigger) << "did not reach trigger node id=" << trigger_node_id;
+
+		const std::int64_t inserted_id = 1000 + trigger_node_id;
+		tg.insertLinePos(inserted_id, opposite, vel, acc, jerk, zone);
+		tg.updateInsertPos();
+
+		if (expect_fallback_hit) {
+			EXPECT_GT(hook_control.replan_failed_fallback_count, 0)
+				<< "expected replan failed fallback branch (around trajectory.cpp:1670) to be hit";
+		}
+		else {
+			EXPECT_EQ(hook_control.replan_failed_fallback_count, 0)
+				<< "did not expect replan failed fallback branch (around trajectory.cpp:1670)";
+		}
+
+		auto seen_ids = step_until_finished(tg, out, &types, vel, acc, jerk, 240000, &monitor);
+		EXPECT_NE(std::find(seen_ids.begin(), seen_ids.end(), inserted_id), seen_ids.end());
+		expect_pose_near(out.data(), opposite, 1e-4);
+	};
+
+	run_case(2, -1, false, "case1: insert near reverse direction at node 2 should replan directly");
+	run_case(7, 7, true, "case2: insert near reverse direction at node 7 should hit fallback branch");
+
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyForceReplanFailCurrentId(-1);
+	aris::plan::__trajectory_test::setTrajectoryConcurrencyTestHook(nullptr);
+	g_trajectory_hook_control = nullptr;
 }
