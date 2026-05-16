@@ -232,14 +232,23 @@ if(BUILD_GTESTS)
 	endif()
 	include(GoogleTest)
 
-	file(GLOB ARIS_PLAN_GTEST_SOURCES gtest/test_plan/*.cpp)
-	if(ARIS_PLAN_GTEST_SOURCES)
-		add_executable(gtest_plan ${ARIS_PLAN_GTEST_SOURCES})
-		target_compile_definitions(gtest_plan PRIVATE ARIS_BUILD_TESTS)
-		target_link_libraries(gtest_plan ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
-		target_include_directories(gtest_plan PRIVATE ${gtest_SOURCE_DIR}/include)
-		gtest_discover_tests(gtest_plan)
-	endif()
+	# Build gtest executables by module directory, e.g. gtest/test_plan -> gtest_plan.
+	# This keeps tests naturally grouped as more modules are added.
+	set(ARIS_GTEST_MODULES "plan;dynamic" CACHE STRING "Semicolon-separated gtest module names under gtest/test_<module>")
+	foreach(aris_gtest_module IN LISTS ARIS_GTEST_MODULES)
+		file(GLOB ARIS_GTEST_SOURCES "gtest/test_${aris_gtest_module}/*.cpp")
+		if(ARIS_GTEST_SOURCES)
+			set(ARIS_GTEST_TARGET "gtest_${aris_gtest_module}")
+			add_executable(${ARIS_GTEST_TARGET} ${ARIS_GTEST_SOURCES})
+			target_compile_definitions(${ARIS_GTEST_TARGET} PRIVATE ARIS_BUILD_TESTS)
+			target_link_libraries(${ARIS_GTEST_TARGET} ${ARIS_LINK_LIB} ${RELY_LINK_LIB} gtest_main)
+			target_include_directories(${ARIS_GTEST_TARGET} PRIVATE ${gtest_SOURCE_DIR}/include)
+			gtest_discover_tests(${ARIS_GTEST_TARGET}
+				TEST_PREFIX "${aris_gtest_module}."
+				PROPERTIES LABELS "${aris_gtest_module};gtest"
+			)
+		endif()
+	endforeach()
 
 endif(BUILD_GTESTS)
 ################################### build demos for aris ####################################

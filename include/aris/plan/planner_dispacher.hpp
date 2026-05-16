@@ -42,7 +42,8 @@ namespace aris::plan {
 		/// @return 通道数
 		auto chanelSize() -> int;
 
-		// tbd
+		/// @brief 返回子模型的转换矩阵，每个模型对应一个转换矩阵
+		/// @return 转换矩阵
 		auto transferMatrice() -> std::vector<aris::core::Matrix>&;
 
 		/// @brief 初始化规划器，必须在设置完模型、通道数和 dt 后调用
