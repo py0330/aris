@@ -64,8 +64,8 @@ namespace aris::plan {
 
 		/// @brief 插入直线数据，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
-		/// @param tools 工具坐标系字符串，格式为 "{tool1,tool2, ... ,tooln}"，如果某个工具坐标系为 nullptr 则用对应的 ee 的 makI 代替
-		/// @param wobjs 工件坐标系字符串，格式为 "{wobj1,wobj2, ... ,wobjn}"，如果某个工件坐标系为 nullptr 则用对应的 ee 的 makJ 代替
+		/// @param tools 工具坐标系字符串，格式为 "tool1;tool2; ... ;tooln"，如果某个工具坐标系为空字符串,则用对应的 ee 的 makI 代替
+		/// @param wobjs 工件坐标系字符串，格式为 "wobj1;wobj2; ... ;wobjn"，如果某个工件坐标系为空字符串,则用对应的 ee 的 makJ 代替
 		/// @param tw_pos tool 相对于 wobj 的位姿，其中 twi_pos 的格式由对应 ee 的 pos type 决定，例如 pos type 为 PE321 则格式为 {x,y,z,rz,ry,rx}
 		/// @param vel tool 相对于 wobj 的速度，大小取决于 pos type 的dim（维度），例如 PE321 的速度大小为 2，只有线速度和角速度
 		/// @param acc tool 相对于 wobj 的加速度，同上
@@ -76,8 +76,8 @@ namespace aris::plan {
 		
 		/// @brief 插入圆弧数据，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
-		/// @param tools 工具坐标系字符串，格式为 "{tool1,tool2, ... ,tooln}"，如果某个工具坐标系为 nullptr 则用对应的 ee 的 makI 代替
-		/// @param wobjs 工件坐标系字符串，格式为 "{wobj1,wobj2, ... ,wobjn}"，如果某个工件坐标系为 nullptr 则用对应的 ee 的 makJ 代替
+		/// @param tools 工具坐标系字符串，格式为 "tool1;tool2; ... ;tooln"，如果某个工具坐标系为空字符串,则用对应的 ee 的 makI 代替
+		/// @param wobjs 工件坐标系字符串，格式为 "wobj1;wobj2; ... ;wobjn"，如果某个工件坐标系为空字符串,则用对应的 ee 的 makJ 代替
 		/// @param tw_pos tool 相对于 wobj 的位姿，其中 twi_pos 的格式由对应 ee 的 pos type 决定，例如 pos type 为 PE321 则格式为 {x,y,z,rz,ry,rx}
 		/// @param tw_mid_pos 圆弧中间点的位姿
 		/// @param vel tool 相对于 wobj 的速度，大小取决于 pos type 的dim（维度），例如 PE321 的速度大小为 2，只有线速度和角速度
@@ -89,8 +89,8 @@ namespace aris::plan {
 
 		/// @brief 插入工具相对于工件的位姿，但用关节空间走过去，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
-		/// @param tools 工具坐标系字符串，格式为 "{tool1,tool2, ... ,tooln}"，如果某个工具坐标系为 nullptr 则用对应的 ee 的 makI 代替
-		/// @param wobjs 工件坐标系字符串，格式为 "{wobj1,wobj2, ... ,wobjn}"，如果某个工件坐标系为 nullptr 则用对应的 ee 的 makJ 代替
+		/// @param tools 工具坐标系字符串，格式为 "tool1;tool2; ... ;tooln"，如果某个工具坐标系为空字符串,则用对应的 ee 的 makI 代替
+		/// @param wobjs 工件坐标系字符串，格式为 "wobj1;wobj2; ... ;wobjn"，如果某个工件坐标系为空字符串,则用对应的 ee 的 makJ 代替
 		/// @param tw_pos tool 相对于 wobj 的位姿，其中 twi_pos 的格式由对应 ee 的 pos type 决定，例如 pos type 为 PE321 则格式为 {x,y,z,rz,ry,rx}
 		/// @param joint_v 关节速度
 		/// @param joint_a 关节加速度

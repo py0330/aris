@@ -1479,16 +1479,16 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer)->int {
-		kinPosSetActiveMotionPos(motion_pos);
-		if (auto ret = kinPosCompute())
+	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer)const->int {
+		const_cast<UniversalSolver*>(this)->kinPosSetActiveMotionPos(motion_pos);
+		if (auto ret = const_cast<UniversalSolver*>(this)->kinPosCompute())
 			return ret;
 		else {
-			kinPosGetUnactiveMotionPos(answer);
+			const_cast<UniversalSolver*>(this)->kinPosGetUnactiveMotionPos(answer);
 			return ret;
 		}
 	}
-	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)->std::int64_t {
+	auto UniversalSolver::whichRootOfAnswer(const double* motion_pos, const double* answer)const->std::int64_t {
 		std::int64_t solution_id = -1;
 		double error = std::numeric_limits<double>::infinity();
 
@@ -1515,7 +1515,7 @@ namespace aris::dynamic{
 			return solution_id;
 		}
 	}
-	auto UniversalSolver::answerSize()->aris::Size {
+	auto UniversalSolver::answerSize()const->aris::Size {
 		return imp_->pd_->deactive_mp_size_;
 	}
 	auto UniversalSolver::kinPosGetUnactiveMotionPos(double* mp)->void {

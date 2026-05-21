@@ -360,10 +360,10 @@ namespace aris::dynamic {
 			for (auto &m : model()->motionPool()) m.updP();
 			return 0;
 		}
-		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)->int override {
+		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)const->int override {
 			double root_mem[4]{};
 			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
-			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(const_cast<Model*>(model())->findVariable("dh"))->data().data();
 
 			if (current_input == nullptr) {
 				double current_input_pos[4];
@@ -444,10 +444,10 @@ namespace aris::dynamic {
 			for (auto &m : model()->generalMotionPool()) m.updP();
 			return 0;
 		}
-		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)->int override {
+		auto virtual kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input = nullptr)const->int override {
 			double root_mem[4]{};
 			const double input_period[4]{ aris::PI * 2, aris::PI * 2,aris::PI * 2,aris::PI * 2 };
-			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(model()->findVariable("dh"))->data().data();
+			auto dh = dynamic_cast<aris::dynamic::MatrixVariable*>(const_cast<Model*>(model())->findVariable("dh"))->data().data();
 
 			if (current_input == nullptr) {
 				double current_output_pos[4];

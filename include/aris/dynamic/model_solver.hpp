@@ -17,9 +17,9 @@ namespace aris::dynamic
 		auto virtual kinVel()->int = 0;
 		auto virtual dynAccAndFce()->int = 0;
 
-		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)->int { return -1; };
-		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)->std::int64_t = 0;
-		auto virtual answerSize()->aris::Size = 0;
+		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)const->int { return -1; };
+		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)const->std::int64_t = 0;
+		auto virtual answerSize()const->aris::Size = 0;
 
 		// 运动学的解个数 //
 		auto setRootNumber(std::int64_t root_of_solver)->void;
@@ -51,9 +51,9 @@ namespace aris::dynamic
 		auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 		
-		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)->int override;
-		auto virtual answerSize()->aris::Size override;
-		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)->std::int64_t override;
+		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)const->int override;
+		auto virtual answerSize()const->aris::Size override;
+		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)const->std::int64_t override;
 
 		auto kinPosCompute()->int;                               // 进行计算
 		auto kinPosSetActiveMotionPos(const double* mp)->void;   // 将用户的作为 mp

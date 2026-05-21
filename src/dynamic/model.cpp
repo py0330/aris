@@ -215,6 +215,12 @@ namespace aris::dynamic{
 		which_root[0] = solverPool()[1].whichRootOfAnswer(input, output);
 		return 0;
 	}
+	auto Model::setWhichInverseRoot(const std::int64_t *which_root)->void {
+		solverPool()[0].setWhichRoot(which_root ? *which_root : -1);
+	}
+	auto Model::setWhichForwardRoot(const std::int64_t *which_root)->void {
+		solverPool()[1].setWhichRoot(which_root ? *which_root : -1);
+	}
 	auto Model::inverseKinematics()noexcept->int { return solverPool()[0].kinPos(); }
 	auto Model::forwardKinematics()noexcept->int { return solverPool()[1].kinPos(); }
 	auto Model::inverseKinematicsVel()noexcept->int { return solverPool()[0].kinVel(); }
@@ -676,6 +682,20 @@ namespace aris::dynamic{
 		return 0;
     }
 
+	auto MultiModel::setWhichInverseRoot(const std::int64_t *which_root)->void{
+		int root_pos = 0;
+		for (auto& model : subModels()){
+			model.setWhichInverseRoot(which_root ? which_root + root_pos : nullptr);
+			root_pos += model.inverseRootSize();
+		}
+	}
+	auto MultiModel::setWhichForwardRoot(const std::int64_t *which_root)->void{
+		int root_pos = 0;
+		for (auto& model : subModels()){
+			model.setWhichForwardRoot(which_root ? which_root + root_pos : nullptr);
+			root_pos += model.forwardRootSize();
+		}
+	}
     auto MultiModel::inverseKinematics() noexcept -> int{
         for (auto& model : subModels())
 			if (auto ret = model.inverseKinematics())
@@ -1118,7 +1138,7 @@ namespace aris::dynamic{
 		}
 		return ret;
 	}
-	auto MultiModel::subGetWhichSubInverseRoot(Size sub_num, const Size* sub_id, const double* output, const double* input, std::int64_t *which_root)->int{
+	auto MultiModel::getSubWhichInverseRoot(Size sub_num, const Size* sub_id, const double* output, const double* input, std::int64_t *which_root)->int{
 		int out_pos = 0, in_pos = 0, root_pos = 0;
 		for (Size i = 0; i < sub_num; ++i) {
 			if(auto ret = subModels()[sub_id[i]].getWhichInverseRoot(output + out_pos, input + in_pos, which_root + root_pos))
@@ -1143,7 +1163,7 @@ namespace aris::dynamic{
 		}
 		return ret;
 	}
-	auto MultiModel::subGetWhichSubForwardRoot(Size sub_num, const Size* sub_id, const double* input, const double* output, std::int64_t *which_root)->int {
+	auto MultiModel::getSubWhichForwardRoot(Size sub_num, const Size* sub_id, const double* input, const double* output, std::int64_t *which_root)->int {
 		int out_put_pos = 0, input_pos = 0, root_pos = 0;
 		for (Size i = 0; i < sub_num; ++i) {
 			if (auto ret = subModels()[sub_id[i]].getWhichForwardRoot(input + input_pos, output + out_put_pos, which_root + root_pos))
@@ -1189,6 +1209,20 @@ namespace aris::dynamic{
 			root_pos += subModels()[sub_id[i]].forwardRootSize();
 		}
 		return 0;
+	}
+	auto MultiModel::setSubWhichInverseRoot(Size sub_num, const Size* sub_id, const std::int64_t *which_root)->void {
+		Size root_pos = 0;
+		for (Size i = 0; i < sub_num; ++i) {
+			subModels()[sub_id[i]].setWhichInverseRoot(which_root + root_pos);
+			root_pos += subModels()[sub_id[i]].inverseRootSize();
+		}
+	}
+	auto MultiModel::setSubWhichForwardRoot(Size sub_num, const Size* sub_id, const std::int64_t *which_root)->void {
+		Size root_pos = 0;
+		for (Size i = 0; i < sub_num; ++i) {
+			subModels()[sub_id[i]].setWhichForwardRoot(which_root + root_pos);
+			root_pos += subModels()[sub_id[i]].forwardRootSize();
+		}
 	}
 
 	auto MultiModel::subInverseKinematics(Size sub_id_num, const Size* sub_id)noexcept->int {

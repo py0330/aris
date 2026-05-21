@@ -226,6 +226,14 @@ namespace aris::dynamic{
 		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t* which_root = nullptr, const double* current_input = nullptr)const noexcept->int override;
 
 		// kinematics & dynamics, set state //
+		
+		/// @brief 设置模型内部求解时的逆解编号
+		/// @param which_root 逆解编号
+		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void override;
+
+		/// @brief 设置模型内部求解时的正解编号
+		/// @param which_root 正解编号
+		auto virtual setWhichForwardRoot(const std::int64_t *which_root)->void override;
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
@@ -404,6 +412,8 @@ namespace aris::dynamic{
 		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int override;
 
 		// kinematics & dynamics //
+		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void override;
+		auto virtual setWhichForwardRoot(const std::int64_t *which_root)->void override;
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
@@ -492,15 +502,17 @@ namespace aris::dynamic{
 		// sub kinematics, not set state //
 		auto subInverseRootSize(Size sub_num, const Size* sub_id)const->int;
 		auto subInverseRootNumber(Size sub_num, const Size* sub_id)const->std::int64_t;
-		auto subGetWhichSubInverseRoot(Size sub_num, const Size* sub_id, const double* output, const double* input, std::int64_t *which_root)->int;
+		auto getSubWhichInverseRoot(Size sub_num, const Size* sub_id, const double* output, const double* input, std::int64_t *which_root)->int;
 		auto subForwardRootSize(Size sub_num, const Size* sub_id)const->int;
 		auto subForwardRootNumber(Size sub_num, const Size* sub_id)const->std::int64_t;
-		auto subGetWhichSubForwardRoot(Size sub_num, const Size* sub_id, const double* input, const double* output, std::int64_t *which_root)->int;
+		auto getSubWhichForwardRoot(Size sub_num, const Size* sub_id, const double* input, const double* output, std::int64_t *which_root)->int;
 
 		auto subInverseKinematics(Size sub_num, const Size* sub_id, const double* output, double* input, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int;
 		auto subForwardKinematics(Size sub_num, const Size* sub_id, const double* input, double* output, const std::int64_t *which_root, const double* current_output = nullptr)const noexcept->int;
 
 		// sub kin & dyn //
+		auto setSubWhichInverseRoot(Size sub_num, const Size* sub_id, const std::int64_t *which_root)->void;
+		auto setSubWhichForwardRoot(Size sub_num, const Size* sub_id, const std::int64_t *which_root)->void;
 		auto subInverseKinematics(Size sub_num, const Size* sub_id)noexcept->int;
 		auto subForwardKinematics(Size sub_num, const Size* sub_id)noexcept->int ;
 		auto subInverseKinematicsVel(Size sub_num, const Size* sub_id)noexcept->int;

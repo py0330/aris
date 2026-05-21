@@ -412,7 +412,11 @@ namespace aris::plan {
 		MAPNode(std::int64_t id, MAPNodeType type, aris::Size ee_size, aris::Size output_psize, aris::Size output_vdim, aris::Size input_psize, aris::Size input_vdim)
 			:id_(id), type_(type), ee_size_(ee_size), output_psize_(output_psize), output_vdim_(output_vdim), input_psize_(input_psize), input_vdim_(input_vdim) 
 		{
-			mem_.resize((output_psize_*3 + output_vdim_*4 + input_psize_ + input_vdim_*4) * sizeof(double) + 2 * ee_size_ * sizeof(aris::dynamic::Marker*),  char(0));
+			mem_.resize(
+				(output_psize_*3 + output_vdim_*4 + input_psize_ + input_vdim_*4) * sizeof(double) // eepos, twpos, midpos, twvel, twacc, twjerk, zone, jointpos, jointvel, jointacc, jointjerk,jointzone
+				 + 2 * ee_size_ * sizeof(aris::dynamic::Marker*) // tools, wobjs
+				+ sizeof(std::int64_t) * ee_size_ // whichInverseRoots
+				,  char(0));
 		}
 		MAPNode():MAPNode(0, MAPNodeType::CartesianInitPos, 0, 0, 0, 0, 0) {}
 
@@ -451,6 +455,8 @@ namespace aris::plan {
 		auto jointAcc()->double* { return jointVel() + input_vdim_; }
 		auto jointJerk()->double* { return jointAcc() + input_vdim_; }
 		auto jointZone()->double* { return jointJerk() + input_vdim_; }
+
+		auto whichInverseRoots()->std::int64_t* { return reinterpret_cast<std::int64_t*>(jointZone() + input_vdim_); }
 	};
 
 	#define TW_POOL_SIZE 10000
@@ -560,6 +566,7 @@ namespace aris::plan {
 					tw_rt_.getEePos(ee_pos_);
 
 					model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
+					model_->setSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), node.whichInverseRoots());
 					ik_ret_ = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
 					model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
 
@@ -654,16 +661,11 @@ namespace aris::plan {
 				ag_.suspend();
 			}
 		}
-		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-			// 获取坐标系 //
-			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
-			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
-
-			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(),ee_size)); ++i) {
+		auto resolveToolsAndWobjs(TW& tool_wobjs, MarkerVec& tools, MarkerVec& wobjs) -> void {
+			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(), tools.size())); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 
-				// check tool and wobj default value //
 				if (tools[i] == nullptr) {
 					if (tool_wobjs[i].first == "") {
 						tools[i] = ees_[i]->makI();
@@ -680,29 +682,39 @@ namespace aris::plan {
 						THROW_FILE_LINE(tool_wobjs[i].second + " not found");
 					}
 				}
-
 			}
+		}
+		auto insertInitNode(MarkerVec& tools, MarkerVec& wobjs, MAPNodeType init_type) -> void {
+			ins_node_.init();
+			ins_node_.id_ = insert_id_;
+			ins_node_.type_ = init_type;
+			std::copy(tools.begin(), tools.end(), ins_node_.tools());
+			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.eePos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.jointPos());
+			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots());
 
-			// 如果坐标系有变化，重新插入 INIT //
+			if (tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
+				THROW_FILE_LINE("invalid last tool and wobj");
+			tw_.setTwPos(last_node_.twPos());
+			if (tw_.selectTw(tools.data(), wobjs.data()))
+				THROW_FILE_LINE("invalid tool and wobj");
+			tw_.getTwPos(ins_node_.twPos());
+
+			nodes_.push_back(ins_node_);
+			std::swap(last_node_, ins_node_);
+		}
+		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+			// 获取坐标系 //
+			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
+			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
+
+			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
 			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
-				|| !last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) 
+				|| !last_node_.isSameTools(tools.data())
+				|| !last_node_.isSameWobjs(wobjs.data())) 
 			{
-				ins_node_.init();
-				ins_node_.id_ = insert_id_;
-				ins_node_.type_ = MAPNodeType::CartesianInitPos;
-				std::copy(tools.begin(), tools.end(), ins_node_.tools());
-				std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-				std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.eePos());
-				std::copy(last_node_.jointPos(), last_node_.jointPos() + output_psize_, ins_node_.jointPos());
-
-				if(tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
-					THROW_FILE_LINE("invalid last tool and wobj");
-				tw_.setTwPos(last_node_.twPos());
-				if (tw_.selectTw(tools.data(), wobjs.data()))
-					THROW_FILE_LINE("invalid tool and wobj");
-				tw_.getTwPos(ins_node_.twPos());
-
-				nodes_.push_back(ins_node_);
+				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos);
 			}
 
 			// 更新 last_tw_pos_ 等 //
@@ -716,6 +728,7 @@ namespace aris::plan {
 			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
 			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
 			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+			std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
 
 			{
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -724,7 +737,7 @@ namespace aris::plan {
 
 				model_->subInverseKinematics(
 					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.eePos(), ins_node_.jointPos(), nullptr, last_node_.jointPos());
+					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), last_node_.jointPos());
 			}
 			
 
@@ -741,50 +754,13 @@ namespace aris::plan {
 			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 
-			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(),ee_size)); ++i) {
-				tools[i] = model_->findTool(tool_wobjs[i].first);
-				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
-
-				// check tool and wobj default value //
-				if (tools[i] == nullptr) {
-					if (tool_wobjs[i].first == "") {
-						tools[i] = ees_[i]->makI();
-					}
-					else {
-						THROW_FILE_LINE(tool_wobjs[i].first + " not found");
-					}
-				}
-				if (wobjs[i] == nullptr) {
-					if (tool_wobjs[i].second == "") {
-						wobjs[i] = ees_[i]->makJ();
-					}
-					else {
-						THROW_FILE_LINE(tool_wobjs[i].second + " not found");
-					}
-				}
-
-			}
-
-			// 如果坐标系有变化，重新插入 INIT //
+			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
 			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
-				|| !last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) 
+				|| !last_node_.isSameTools(tools.data())
+				|| !last_node_.isSameWobjs(wobjs.data())) 
 			{
-				ins_node_.init();
-				ins_node_.id_ = insert_id_;
-				ins_node_.type_ = MAPNodeType::CartesianInitPos;
-				std::copy(tools.begin(), tools.end(), ins_node_.tools());
-				std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-				std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.eePos());
-				std::copy(last_node_.jointPos(), last_node_.jointPos() + output_psize_, ins_node_.jointPos());
+				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos);
 
-				if(tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
-					THROW_FILE_LINE("invalid last tool and wobj");
-				tw_.setTwPos(last_node_.twPos());
-				if (tw_.selectTw(tools.data(), wobjs.data()))
-					THROW_FILE_LINE("invalid tool and wobj");
-				tw_.getTwPos(ins_node_.twPos());
-
-				nodes_.push_back(ins_node_);
 			}
 
 			// 更新 last_tw_pos_ 等 //
@@ -799,6 +775,7 @@ namespace aris::plan {
 			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
 			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
 			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+			std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
 
 			{
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -807,7 +784,7 @@ namespace aris::plan {
 
 				model_->subInverseKinematics(
 					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.eePos(), ins_node_.jointPos(), nullptr, last_node_.jointPos());
+					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), last_node_.jointPos());
 			}
 			
 
@@ -822,50 +799,12 @@ namespace aris::plan {
 			// 获取坐标系 //
 			Imp::MarkerVec tools(ee_size_, nullptr), wobjs(ee_size_, nullptr);
 
-			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(),ee_size_)); ++i) {
-				tools[i] = model_->findTool(tool_wobjs[i].first);
-				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
-
-				// check tool and wobj default value //
-				if (tools[i] == nullptr) {
-					if (tool_wobjs[i].first == "") {
-						tools[i] = ees_[i]->makI();
-					}
-					else {
-						THROW_FILE_LINE(tool_wobjs[i].first + " not found");
-					}
-				}
-				if (wobjs[i] == nullptr) {
-					if (tool_wobjs[i].second == "") {
-						wobjs[i] = ees_[i]->makJ();
-					}
-					else {
-						THROW_FILE_LINE(tool_wobjs[i].second + " not found");
-					}
-				}
-
-			}
-
-			// 如果坐标系有变化，重新插入 INIT //
+			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
 			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)
-				|| !last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) 
+				|| !last_node_.isSameTools(tools.data())
+				|| !last_node_.isSameWobjs(wobjs.data())) 
 			{
-				ins_node_.init();
-				ins_node_.id_ = insert_id_;
-				ins_node_.type_ = MAPNodeType::JointInitPos;
-				std::copy(tools.begin(), tools.end(), ins_node_.tools());
-				std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-				std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.eePos());
-				std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.jointPos());
-
-				if(tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
-					THROW_FILE_LINE("invalid last tool and wobj");
-				tw_.setTwPos(last_node_.twPos());
-				if (tw_.selectTw(tools.data(), wobjs.data()))
-					THROW_FILE_LINE("invalid tool and wobj");
-				tw_.getTwPos(ins_node_.twPos());
-
-				nodes_.push_back(ins_node_);
+				insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
 			}
 
 			// 更新 last_tw_pos_ 等 //
@@ -879,6 +818,14 @@ namespace aris::plan {
 			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
 			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
 			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
+
+			if(which_root != nullptr){
+				std::copy(which_root, which_root + sub_id_list_.size(), ins_node_.whichInverseRoots());
+			}
+			else{
+				std::fill(ins_node_.whichInverseRoots(), ins_node_.whichInverseRoots() + sub_id_list_.size(), -1);
+			}
+
 			{
 				tw_.selectTw(tools.data(), wobjs.data());
 				tw_.setTwPos(ins_node_.twPos());

@@ -14,7 +14,6 @@ namespace aris::dynamic{
 		/// @return 单模型： 1，多模型：子模型个数（含子模型的子模型）
 		auto virtual inverseRootSize()const->int { return 1; }
 
-
 		/// @brief 逆解个数，多模型为所有子模型的逆解个数之积
 		/// @return 逆解个数，多模型返回：子模型的逆解个数之积
 		auto virtual inverseRootNumber()const->std::int64_t { return 1; }
@@ -40,19 +39,62 @@ namespace aris::dynamic{
 		/// @param which_root 正解的编号，编号在 [0, forwardRootNumber()) 区间内
 		/// @return 0 成功，-1 失败
 		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int { return 0; }
-
-		// kinematics & dynamics, not set state //
+		
+		/// @brief 求反解，不改变模型内部状态
+		/// @param output 输出位置
+		/// @param input 输入位置
+		/// @param which_root 反解的编号，编号在 [0, inverseRootNumber()) 区间内
+		/// @param current_input 输入位置的初值，某些情况可能会需要初值来进行计算，例如奇异时，或求解器基于迭代法时
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t *which_root = nullptr, const double *current_input = nullptr)const noexcept->int { return -1; }
+		
+		/// @brief 求正解，不改变模型内部状态
+		/// @param input 输入位置
+		/// @param output 输出位置
+		/// @param which_root 正解的编号，编号在 [0, forwardRootNumber()) 区间内
+		/// @param current_input 输入位置的初值，某些情况可能会需要初值来进行计算，例如奇异时，或求解器基于迭代法时
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t *which_root = nullptr, const double* current_input = nullptr)const noexcept->int { return -1; }
 
-		// kinematics & dynamics, set state //
+		/// @brief 设置模型内部求解时的逆解编号
+		/// @param which_root 逆解编号
+		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void { }
+
+		/// @brief 设置模型内部求解时的正解编号
+		/// @param which_root 正解编号
+		auto virtual setWhichForwardRoot(const std::int64_t *which_root)->void { }
+
+
+		/// @brief 基于当前模型状态求反解，解出的输入会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual inverseKinematics()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求正解，解出的输出会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardKinematics()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求反解速度，解出的速度会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual inverseKinematicsVel()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求正解速度，解出的速度会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardKinematicsVel()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求反解加速度，解出的加速度会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual inverseKinematicsAcc()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求正解加速度，解出的加速度会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardKinematicsAcc()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求逆动力学，解出的力会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual inverseDynamics()noexcept->int { return -1; }
+
+		/// @brief 基于当前模型状态求正动力学，解出的力会被设置到模型内部状态中
+		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardDynamics()noexcept->int { return -1; }
 
 		// singular check //

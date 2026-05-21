@@ -324,7 +324,7 @@ namespace aris::dynamic{
 
 		return 0;
 	}
-	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
+	auto ScaraInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)const->int {
 		double root_mem[4]{};
 		const double input_period[4]{ aris::PI * 2, aris::PI * 2,std::numeric_limits<double>::infinity(),aris::PI * 2 };
 

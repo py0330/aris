@@ -269,6 +269,35 @@ if(BUILD_DEMOS)
 		endif()
 	endforeach(aris_demo)
 endif(BUILD_DEMOS)
+
+################################### build benchmarks for aris ####################################
+option(BUILD_BENCHMARKS "build aris benchmarks" OFF)
+if(BUILD_BENCHMARKS)
+	file(GLOB_RECURSE ARIS_BENCHMARK_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/bench/*.cpp)
+	if(ARIS_BENCHMARK_SOURCES)
+		set(ARIS_BENCHMARK_TARGETS)
+		foreach(aris_benchmark_source ${ARIS_BENCHMARK_SOURCES})
+			file(RELATIVE_PATH aris_benchmark_rel ${PROJECT_SOURCE_DIR}/bench ${aris_benchmark_source})
+			get_filename_component(aris_benchmark_name ${aris_benchmark_source} NAME_WE)
+			set(aris_benchmark_target bench_${aris_benchmark_name})
+
+			if(TARGET ${aris_benchmark_target})
+				message(FATAL_ERROR "Duplicate benchmark target '${aris_benchmark_target}' from source '${aris_benchmark_rel}'")
+			endif()
+
+			add_executable(${aris_benchmark_target} ${aris_benchmark_source})
+			target_include_directories(${aris_benchmark_target} PRIVATE ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR})
+			target_link_libraries(${aris_benchmark_target} aris_lib ${RELY_LINK_LIB})
+			list(APPEND ARIS_BENCHMARK_TARGETS ${aris_benchmark_target})
+		endforeach(aris_benchmark_source)
+
+		list(SORT ARIS_BENCHMARK_TARGETS)
+		message(STATUS "ARIS benchmarks: ${ARIS_BENCHMARK_TARGETS}")
+	else()
+		message(STATUS "No benchmark sources found under ${PROJECT_SOURCE_DIR}/bench")
+	endif()
+endif(BUILD_BENCHMARKS)
+
 ################################### build tools for aris ####################################
 option(BUILD_TOOLS "build aris tools" OFF)
 if(BUILD_TOOLS)

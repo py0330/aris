@@ -472,7 +472,7 @@ namespace aris::dynamic{
 
 		return 0;
 	};
-	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)->int {
+	auto UrInverseKinematicSolver::kinPosPure(const double* output, double* input, std::int64_t which_root, const double* current_input)const->int {
 		double ee_pos[16]{}, root_mem[6]{};
 		
 		s_pos2pm(imp_->EE->posType(), output, ee_pos);
