@@ -235,7 +235,7 @@ auto run_svd_case(int m, int n, const double *a, AType a_t, const std::string &t
 	}
 }
 
-TEST(DynamicMatrixTest, BasicOperation) {
+TEST(Matrix, BasicOperation) {
 	const double x[3]{1.0, 2.0, 3.0};
 	const double y[3]{4.0, 5.0, 6.0};
 	constexpr int x_t = 2;
@@ -279,7 +279,7 @@ TEST(DynamicMatrixTest, BasicOperation) {
 	expect_guard_unchanged(y_buf, y_mask, "basic-y-guard");
 }
 
-TEST(DynamicMatrixTest, SpecificMatrix) {
+TEST(Matrix, SpecificMatrix) {
 	const double a[6]{1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0};
 	std::vector<double> col_major(4 * 3, kGuard);
@@ -309,7 +309,7 @@ TEST(DynamicMatrixTest, SpecificMatrix) {
 	expect_matrix_near(right_dense.data(), a, 2, 3);
 }
 
-TEST(DynamicMatrixTest, Multiply) {
+TEST(Matrix, Multiply) {
 	const double a[6]{1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0};
 	const double b[6]{7.0, 8.0,
@@ -338,7 +338,7 @@ TEST(DynamicMatrixTest, Multiply) {
 	expect_matrix_near(c_dense.data(), expected, 2, 2);
 }
 
-TEST(DynamicMatrixTest, LegacyMultiplyOperationScenarios) {
+TEST(Matrix, LegacyMultiplyOperationScenarios) {
 	const double a[6]{0.498364051982143,0.959743958516081,0.340385726666133,
 		0.585267750979777,0.223811939491137,0.751267059305653};
 	const double b[12]{0.814723686393179,0.913375856139019,0.278498218867048,0.964888535199277,
@@ -388,7 +388,7 @@ TEST(DynamicMatrixTest, LegacyMultiplyOperationScenarios) {
 	expect_matrix_near(p_work.data(), p_src.data(), 1, 10, 1e-10);
 }
 
-TEST(DynamicMatrixTest, Llt) {
+TEST(Matrix, Llt) {
 	const double a[36]{
 		1.82553083943141,1.42060601118548,1.36736238745112,1.50658906468564,1.86464891726001,1.04079482779702,
 		1.42060601118548,2.10941693872417,1.92463386848915,1.23889223270807,2.23186828169132,1.22211204078486,
@@ -431,7 +431,7 @@ TEST(DynamicMatrixTest, Llt) {
 	expect_matrix_near(check_b, b, 6, 2, 1e-8);
 }
 
-TEST(DynamicMatrixTest, Householder) {
+TEST(Matrix, Householder) {
 	const double a[12]{
 		1.0, 2.0, 3.0,
 		0.0, 1.0, 4.0,
@@ -464,7 +464,7 @@ TEST(DynamicMatrixTest, Householder) {
 	expect_matrix_near(x_solved, x_true, 1, 3, 1e-8);
 }
 
-TEST(DynamicMatrixTest, Hess) {
+TEST(Matrix, Hess) {
 	const auto pool = make_legacy_pool();
 	const std::array<int, 10> dims{0, 1, 2, 3, 5, 10, 15, 16, 23, 24};
 
@@ -476,7 +476,7 @@ TEST(DynamicMatrixTest, Hess) {
 	}
 }
 
-TEST(DynamicMatrixTest, Schur) {
+TEST(Matrix, Schur) {
 	const auto pool = make_legacy_pool();
 	const std::array<int, 9> dims{1, 2, 3, 5, 10, 15, 16, 23, 24};
 
@@ -485,7 +485,7 @@ TEST(DynamicMatrixTest, Schur) {
 	}
 }
 
-TEST(DynamicMatrixTest, Eigen) {
+TEST(Matrix, Eigen) {
 	const auto pool = make_legacy_pool();
 	const std::array<int, 9> dims{1, 2, 3, 5, 10, 15, 16, 23, 24};
 
@@ -494,7 +494,7 @@ TEST(DynamicMatrixTest, Eigen) {
 	}
 }
 
-TEST(DynamicMatrixTest, Svd) {
+TEST(Matrix, Svd) {
 	const auto pool = make_legacy_pool();
 	std::vector<double> neg_pool = pool;
 	aris::dynamic::s_nm(25, 24, -1.0, neg_pool.data(), 24);
@@ -536,7 +536,7 @@ TEST(DynamicMatrixTest, Svd) {
 	run_svd_case(4, 3, eye24.data(), 24, "eye24_base_small");
 }
 
-TEST(DynamicMatrixTest, MatrixTypeWithMismatchedLeadingDimension) {
+TEST(Matrix, MatrixTypeWithMismatchedLeadingDimension) {
 	const auto pool = make_legacy_pool();
 	constexpr double guard = -7.65432123456789e210;
 
@@ -861,7 +861,7 @@ TEST(DynamicMatrixTest, MatrixTypeWithMismatchedLeadingDimension) {
 	run_householder_type_case(hh_stride_pad, hh_stride, aris::dynamic::Stride{2, 13}, 2, "householder-stride-padded");
 }
 
-TEST(DynamicMatrixTest, LltLegacyBandMatrices) {
+TEST(Matrix, LltLegacyBandMatrices) {
 	const double b_mtx[36]{
 		0.854463601335834,0.915158806735392,0.81779406393944,0,0,0,
 		0.915158806735392,1.51973084603713,1.08911106493401,0,0,0,
@@ -892,7 +892,7 @@ TEST(DynamicMatrixTest, LltLegacyBandMatrices) {
 	check(c_mtx, "llt-legacy-C");
 }
 
-TEST(DynamicMatrixTest, Qp) {
+TEST(Matrix, Qp) {
 	constexpr aris::Size nG = 2;
 	constexpr aris::Size nCE = 0;
 	constexpr aris::Size nCI = 0;
@@ -915,7 +915,7 @@ TEST(DynamicMatrixTest, Qp) {
 	EXPECT_NEAR(x[1], 2.0, 1e-8);
 }
 
-TEST(DynamicMatrixTest, InterpPlane) {
+TEST(Matrix, InterpPlane) {
 	const std::array<double, 9> x{0.0, 1.0, 2.0, 0.5, 1.5, 2.5, -1.0, -0.5, 3.0};
 	const std::array<double, 9> y{0.0, 1.0, 0.5, -1.0, 2.0, -0.5, 1.5, -1.5, 0.2};
 	std::array<double, 9> z{};

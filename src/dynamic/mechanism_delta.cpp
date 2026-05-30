@@ -403,15 +403,15 @@ namespace aris::dynamic {
 
 			// link1 //
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[0];
+			pe[5] = model()->motionPool()[0].mp2mpInternal(input[0]);
 			model()->jointPool()[0].makI()->setPe(*model()->jointPool()[0].makJ(), pe, "123");
 
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[1];
+			pe[5] = model()->motionPool()[1].mp2mpInternal(input[1]);
 			model()->jointPool()[5].makI()->setPe(*model()->jointPool()[5].makJ(), pe, "123");
 
 			s_fill(1, 6, 0.0, pe);
-			pe[5] = input[2];
+			pe[5] = model()->motionPool()[2].mp2mpInternal(input[2]);
 			model()->jointPool()[10].makI()->setPe(*model()->jointPool()[10].makJ(), pe, "123");
 
 			// link2&3 //

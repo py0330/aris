@@ -14,7 +14,7 @@ constexpr double error = 1e-10;
 
 
 
-TEST(DynamicScrewTest, Cross3) {
+TEST(Screw, Cross3) {
 	double result[36];
 	
 	const double cm3[9] = { 0,  -0.6, 0.25, 0.6, 0,  -0.12, -0.25, 0.12, 0 };
@@ -214,7 +214,7 @@ TEST(DynamicScrewTest, Cross3) {
 	s_c3s_n(2, a24, 5, b24, 4, c24, 3);
 	EXPECT_TRUE(s_is_equal(9, c24, r24, error)) << "\"s_c3s_n with ld\" failed";
 }
-TEST(DynamicScrewTest, CrossF) {
+TEST(Screw, CrossF) {
 	double result[36];
 
 	const double cmf[]{ 0,-0.63,0.52,0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0,0,0,0,0,-0.3,0.2,0,-0.63,0.52,0.3,0,-0.1,0.63,0,-0.41,-0.2,0.1,0,-0.52,0.41,0 };
@@ -415,7 +415,7 @@ TEST(DynamicScrewTest, CrossF) {
 	s_cfs_n(2, vs24, 5, f24, 4, cf24, 3);
 	EXPECT_TRUE(s_is_equal(9, cf24, rf24, error)) << "\"s_cfs_n with ld\" failed";
 }
-TEST(DynamicScrewTest, CrossV) {
+TEST(Screw, CrossV) {
 	double result[36];
 
 	const double cmv[]{ 0,-0.63,0.52,0,-0.3,0.2,0.63,0,-0.41,0.3,0,-0.1,-0.52,0.41,0,-0.2,0.1,0,0,0,0,0,-0.63,0.52,	0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0 };

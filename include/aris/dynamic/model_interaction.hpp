@@ -60,8 +60,18 @@ namespace aris::dynamic{
 			s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, dm, 6);
 		}
 		auto virtual cptGlbCmFromPm(double *cmI, double *cmJ, const double *makI_pm, const double *makJ_pm)const noexcept->void	{
-			s_tf_n(dim(), makI_pm, locCmI(), cmI);
+			cptGlbCmFromPm(cmI, makI_pm, makJ_pm);
 			s_mi(6, dim(), cmI, cmJ);
+		}
+		auto virtual cptGlbCmFromPm(double *cmI, const double *makI_pm, const double *makJ_pm)const noexcept->void	{
+			s_tf_n(dim(), makI_pm, locCmI(), cmI);
+		}
+		auto virtual cptLocCmFromPm(double *cmI, double *cmJ, const double *makI_pm, const double *makJ_pm)const noexcept->void	{
+			cptLocCmFromPm(cmI, makI_pm, makJ_pm);
+			s_mi(6, dim(), cmI, cmJ);
+		}
+		auto virtual cptLocCmFromPm(double *cmI, const double *makI_pm, const double *makJ_pm)const noexcept->void	{
+			s_vc(6*dim(), locCmI(), cmI);
 		}
 		template<typename CMI_TYPE, typename CMJ_TYPE>
 		auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void{

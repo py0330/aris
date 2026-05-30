@@ -204,14 +204,14 @@ namespace aris::dynamic{
 	auto Model::inverseRootNumber()const->std::int64_t { 
 		return solverPool()[0].rootNumber();
 	}
-	auto Model::getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int { 
+	auto Model::getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)const->int { 
 		which_root[0] = solverPool()[0].whichRootOfAnswer(output, input);
 		return 0;
 	}
 	auto Model::forwardRootNumber()const->std::int64_t { 
 		return solverPool()[1].rootNumber();
 	}
-	auto Model::getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int { 
+	auto Model::getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)const->int { 
 		which_root[0] = solverPool()[1].whichRootOfAnswer(input, output);
 		return 0;
 	}
@@ -233,16 +233,82 @@ namespace aris::dynamic{
 	auto Model::inverseKinematics(const double* output, double* input, const std::int64_t *which_root, const double *current_input)const noexcept->int {
 		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
 			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
-			return inv->kinPosPure(output, input, which_root ? *which_root : -1);
+			return inv->kinPosPure(output, input, which_root ? *which_root : -1, current_input);
 		}
 		return -1;
 	}
 	auto Model::forwardKinematics(const double* input, double* output, const std::int64_t *which_root, const double* current_input)const noexcept->int {
 		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
 			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
-			return fwd->kinPosPure(input, output, which_root ? *which_root : -1);
+			return fwd->kinPosPure(input, output, which_root ? *which_root : -1, current_input);
 		}
 		return -1;
+	}
+	auto Model::inverseKinematicsVel(const double* output, double* input)const noexcept->int {
+		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
+			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
+			return inv->kinVelPure(output, input);
+		}
+		return -1;
+	}
+	auto Model::forwardKinematicsVel(const double* input, double* output)const noexcept->int {
+		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
+			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
+			return fwd->kinVelPure(input, output);
+		}
+		return -1;
+	}
+	auto Model::inverseKinematicsAcc(const double* output, double* input)const noexcept->int {
+		std::vector<double> input_acc(inputAccSize()), output_acc(outputAccSize());
+		getInputAcc(input_acc.data());
+		getOutputAcc(output_acc.data());
+
+		const_cast<Model*>(this)->setOutputAcc(output);
+		auto ret = const_cast<Model*>(this)->inverseKinematicsAcc();
+		if (ret == 0) getInputAcc(input);
+
+		const_cast<Model*>(this)->setInputAcc(input_acc.data());
+		const_cast<Model*>(this)->setOutputAcc(output_acc.data());
+		return ret;
+	}
+	auto Model::forwardKinematicsAcc(const double* input, double* output)const noexcept->int {
+		std::vector<double> input_acc(inputAccSize()), output_acc(outputAccSize());
+		getInputAcc(input_acc.data());
+		getOutputAcc(output_acc.data());
+
+		const_cast<Model*>(this)->setInputAcc(input);
+		auto ret = const_cast<Model*>(this)->forwardKinematicsAcc();
+		if (ret == 0) getOutputAcc(output);
+
+		const_cast<Model*>(this)->setInputAcc(input_acc.data());
+		const_cast<Model*>(this)->setOutputAcc(output_acc.data());
+		return ret;
+	}
+	auto Model::inverseDynamics(const double* input_a, double* input_f)const noexcept->int {
+		std::vector<double> input_acc(inputAccSize()), input_fce(inputFceSize());
+		getInputAcc(input_acc.data());
+		getInputFce(input_fce.data());
+
+		const_cast<Model*>(this)->setInputAcc(input_a);
+		auto ret = const_cast<Model*>(this)->inverseDynamics();
+		if (ret == 0) getInputFce(input_f);
+
+		const_cast<Model*>(this)->setInputAcc(input_acc.data());
+		const_cast<Model*>(this)->setInputFce(input_fce.data());
+		return ret;
+	}
+	auto Model::forwardDynamics(const double* input_f, double* input_a)const noexcept->int {
+		std::vector<double> input_acc(inputAccSize()), input_fce(inputFceSize());
+		getInputAcc(input_acc.data());
+		getInputFce(input_fce.data());
+
+		const_cast<Model*>(this)->setInputFce(input_f);
+		auto ret = const_cast<Model*>(this)->forwardDynamics();
+		if (ret == 0) getInputAcc(input_a);
+
+		const_cast<Model*>(this)->setInputAcc(input_acc.data());
+		const_cast<Model*>(this)->setInputFce(input_fce.data());
+		return ret;
 	}
 
 	auto Model::isSingular(double zero_check)noexcept->bool {
@@ -608,7 +674,7 @@ namespace aris::dynamic{
 			ret *= model.inverseRootNumber();
 		return ret;
 	}
-	auto MultiModel::getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int {
+	auto MultiModel::getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)const->int {
 		int out_put_pos = 0, input_pos = 0, root_pos = 0;
 		for (auto& model : subModels()) {
 			if (auto ret = model.getWhichInverseRoot(output + out_put_pos, input + input_pos, which_root + root_pos)) {
@@ -632,7 +698,7 @@ namespace aris::dynamic{
 			ret *= model.forwardRootNumber();
 		return ret;
 	}
-	auto MultiModel::getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int {
+	auto MultiModel::getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)const->int {
 		int out_put_pos = 0, input_pos = 0, root_pos = 0;
 		for (auto& model : subModels()) {
 			if (auto ret = model.getWhichForwardRoot(input + input_pos, output + out_put_pos, which_root + root_pos)) {
@@ -681,6 +747,66 @@ namespace aris::dynamic{
 		}
 		return 0;
     }
+	auto MultiModel::inverseKinematicsVel(const double* output, double* input)const noexcept->int {
+		int output_pos = 0, input_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.inverseKinematicsVel(output + output_pos, input + input_pos))
+				return ret;
+			output_pos += model.outputVelSize();
+			input_pos += model.inputVelSize();
+		}
+		return 0;
+	}
+	auto MultiModel::forwardKinematicsVel(const double* input, double* output)const noexcept->int {
+		int output_pos = 0, input_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.forwardKinematicsVel(input + input_pos, output + output_pos))
+				return ret;
+			output_pos += model.outputVelSize();
+			input_pos += model.inputVelSize();
+		}
+		return 0;
+	}
+	auto MultiModel::inverseKinematicsAcc(const double* output, double* input)const noexcept->int {
+		int output_pos = 0, input_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.inverseKinematicsAcc(output + output_pos, input + input_pos))
+				return ret;
+			output_pos += model.outputAccSize();
+			input_pos += model.inputAccSize();
+		}
+		return 0;
+	}
+	auto MultiModel::forwardKinematicsAcc(const double* input, double* output)const noexcept->int {
+		int output_pos = 0, input_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.forwardKinematicsAcc(input + input_pos, output + output_pos))
+				return ret;
+			output_pos += model.outputAccSize();
+			input_pos += model.inputAccSize();
+		}
+		return 0;
+	}
+	auto MultiModel::inverseDynamics(const double* input_a, double* input_f)const noexcept->int {
+		int input_acc_pos = 0, input_fce_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.inverseDynamics(input_a + input_acc_pos, input_f + input_fce_pos))
+				return ret;
+			input_acc_pos += model.inputAccSize();
+			input_fce_pos += model.inputFceSize();
+		}
+		return 0;
+	}
+	auto MultiModel::forwardDynamics(const double* input_f, double* input_a)const noexcept->int {
+		int input_fce_pos = 0, input_acc_pos = 0;
+		for (auto& model : subModels()) {
+			if (auto ret = model.forwardDynamics(input_f + input_fce_pos, input_a + input_acc_pos))
+				return ret;
+			input_fce_pos += model.inputFceSize();
+			input_acc_pos += model.inputAccSize();
+		}
+		return 0;
+	}
 
 	auto MultiModel::setWhichInverseRoot(const std::int64_t *which_root)->void{
 		int root_pos = 0;

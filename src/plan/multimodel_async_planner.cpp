@@ -591,13 +591,6 @@ namespace aris::plan {
 			});
 
 			ag_.setInputGenerator([this](double* p)->std::int64_t {
-				//static int count_{ 0 };
-				//auto ret = is_.getNextInput(p);
-				//if (count_++ % 1 == 0) {
-				//	std::cout << "ag called: " << count_ <<"  ret:" << ret << std::endl;
-				//}
-				//return ret;
-
 				return is_.getNextInput(p);
 				});
 

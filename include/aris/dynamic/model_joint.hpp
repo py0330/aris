@@ -12,8 +12,10 @@ namespace aris::dynamic {
 
 	class ARIS_API Joint :public Constraint{
 	public:
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm)const noexcept->void;
 		auto virtual cptCp(double* cp)const noexcept->void override { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ)const noexcept->void;
+		auto virtual cptCvFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void{}; // 实际全置零
+		auto virtual cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void{}; // 需依赖
 
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}

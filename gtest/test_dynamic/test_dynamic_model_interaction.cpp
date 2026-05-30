@@ -1,12 +1,12 @@
-﻿#include "test_dynamic_model_interaction.h"
-#include <iostream>
+﻿#include <gtest/gtest.h>
 #include <aris/dynamic/dynamic.hpp>
+#include <limits>
 
 #include<type_traits>
 
 using namespace aris::dynamic;
 
-void test_constraint(){
+static void test_constraint(){
 
 	const double error = 1e-10;
 
@@ -91,16 +91,16 @@ void test_constraint(){
 		double result1[42], result2[48];
 
 		r1.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, r1.dim(), result1, 5, glb_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, glb_cmJ, r1.dim(), error))std::cout << "\"RevoluteJoint:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, r1.dim(), result1, 5, glb_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, glb_cmJ, r1.dim(), error)) << "\"RevoluteJoint:cptGlbCm\" failed";
 
 		r1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, r1.dim(), result1, 6, prt_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, prt_cmJ, r1.dim(), error))std::cout << "\"RevoluteJoint:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, r1.dim(), result1, 6, prt_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, prt_cmJ, r1.dim(), error)) << "\"RevoluteJoint:cptPrtCm\" failed";
 
 		r1.cptCa(result1);
-		if (!s_is_equal(r1.dim(), result1, ca, error))std::cout << "\"RevoluteJoint:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(r1.dim(), result1, ca, error)) << "\"RevoluteJoint:cptCa\" failed";
 
 		r1.cptCp(result1);
-		if (!s_is_equal(r1.dim(), result1, cp, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(r1.dim(), result1, cp, error)) << "\"RevoluteJoint:cptCp\" failed";
 	}
 
 	// test prismatic joints //
@@ -150,16 +150,16 @@ void test_constraint(){
 		double result1[42], result2[48];
 
 		p1.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, p1.dim(), result1, 5, glb_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, glb_cmJ, p1.dim(), error))std::cout << "\"PrismaticJoint:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, p1.dim(), result1, 5, glb_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, glb_cmJ, p1.dim(), error)) << "\"PrismaticJoint:cptGlbCm\" failed";
 
 		p1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, p1.dim(), result1, 6, prt_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, prt_cmJ, p1.dim(), error))std::cout << "\"PrismaticJoint:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, p1.dim(), result1, 6, prt_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, prt_cmJ, p1.dim(), error)) << "\"PrismaticJoint:cptPrtCm\" failed";
 
 		p1.cptCa(result1);
-		if (!s_is_equal(p1.dim(), result1, ca, error))std::cout << "\"PrismaticJoint:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(p1.dim(), result1, ca, error)) << "\"PrismaticJoint:cptCa\" failed";
 
 		p1.cptCp(result1);
-		if (!s_is_equal(p1.dim(), result1, cp, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(p1.dim(), result1, cp, error)) << "\"PrismaticJoint:cptCp\" failed";
 	}
 
 	// test spherical joints //
@@ -209,16 +209,16 @@ void test_constraint(){
 		double result1[42], result2[48];
 
 		s1.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, s1.dim(), result1, 5, glb_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, glb_cmJ, s1.dim(), error))std::cout << "\"SphericalJoint:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, s1.dim(), result1, 5, glb_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, glb_cmJ, s1.dim(), error)) << "\"SphericalJoint:cptGlbCm\" failed";
 
 		s1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, s1.dim(), result1, 6, prt_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, prt_cmJ, s1.dim(), error))std::cout << "\"SphericalJoint:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, s1.dim(), result1, 6, prt_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, prt_cmJ, s1.dim(), error)) << "\"SphericalJoint:cptPrtCm\" failed";
 
 		s1.cptCa(result1);
-		if (!s_is_equal(s1.dim(), result1, ca, error))std::cout << "\"SphericalJoint:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(s1.dim(), result1, ca, error)) << "\"SphericalJoint:cptCa\" failed";
 
 		s1.cptCp(result1);
-		if (!s_is_equal(s1.dim(), result1, cp, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(s1.dim(), result1, cp, error)) << "\"SphericalJoint:cptCp\" failed";
 	}
 
 	// test universal joints //
@@ -268,16 +268,16 @@ void test_constraint(){
 		double result1[42], result2[48];
 
 		u1.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, u1.dim(), result1, 5, glb_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, glb_cmJ, u1.dim(), error))std::cout << "\"UniversalJoint:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, u1.dim(), result1, 5, glb_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, glb_cmJ, u1.dim(), error)) << "\"UniversalJoint:cptGlbCm\" failed";
 
 		u1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, u1.dim(), result1, 6, prt_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, prt_cmJ, u1.dim(), error))std::cout << "\"UniversalJoint:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, u1.dim(), result1, 6, prt_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, prt_cmJ, u1.dim(), error)) << "\"UniversalJoint:cptPrtCm\" failed";
 
 		u1.cptCa(result1);
-		if (!s_is_equal(u1.dim(), result1, ca, error))std::cout << "\"UniversalJoint:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(u1.dim(), result1, ca, error)) << "\"UniversalJoint:cptCa\" failed";
 
 		u1.cptCp(result1);
-		if (!s_is_equal(u1.dim(), result1, cp, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(u1.dim(), result1, cp, error)) << "\"UniversalJoint:cptCp\" failed";
 	}
 
 	// test prismatic motion //
@@ -331,25 +331,25 @@ void test_constraint(){
 
 
 		m1.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, m1.dim(), result1, 5, glb_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, glb_cmJ, m1.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m1.dim(), result1, 5, glb_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, glb_cmJ, m1.dim(), error)) << "\"Motion:cptGlbCm\" failed";
 
 		m1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, m1.dim(), result1, 6, prt_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, prt_cmJ, m1.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m1.dim(), result1, 6, prt_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, prt_cmJ, m1.dim(), error)) << "\"Motion:cptPrtCm\" failed";
 
 		m1.cptCa(result1);
-		if (!s_is_equal(m1.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m1.dim(), result1, ca, error)) << "\"Motion:cptCa\" failed";
 
 		m1.cptCp(result1);
-		if (!s_is_equal(m1.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m1.dim(), result1, cp, error)) << "\"Motion:cptCp\" failed";
 
 		m1.updP();
-		if (!s_is_equal(m1.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m1.mp(), 0.521, error)) << "\"Motion:updMp\" failed";
 
 		m1.updV();
-		if (!s_is_equal(m1.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m1.mv(), 0.689, error)) << "\"Motion:updMv\" failed";
 
 		m1.updA();
-		if (!s_is_equal(m1.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m1.ma(), 0.123, error)) << "\"Motion:updMa\" failed";
 	}
 
 	// test rotational motion //
@@ -409,25 +409,25 @@ void test_constraint(){
 
 
 		m2.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, m2.dim(), result1, 5, glb_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, glb_cmJ, m2.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m2.dim(), result1, 5, glb_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, glb_cmJ, m2.dim(), error)) << "\"Motion:cptGlbCm\" failed";
 
 		m2.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, m2.dim(), result1, 6, prt_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, prt_cmJ, m2.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m2.dim(), result1, 6, prt_cmI, m2.dim(), error) || !s_is_equal(6, m2.dim(), result2, 7, prt_cmJ, m2.dim(), error)) << "\"Motion:cptPrtCm\" failed";
 
 		m2.cptCa(result1);
-		if (!s_is_equal(m2.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.dim(), result1, ca, error)) << "\"Motion:cptCa\" failed";
 
 		m2.cptCp(result1);
-		if (!s_is_equal(m2.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.dim(), result1, cp, error)) << "\"Motion:cptCp\" failed";
 
 		m2.updP();
-		if (!s_is_equal(m2.mp(), 360+0.521*180/aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.mp(), 360+0.521*180/aris::PI, error)) << "\"Motion:updMp\" failed";
 		
 		m2.updV();
-		if (!s_is_equal(m2.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.mv(), 0.689*180/aris::PI, error)) << "\"Motion:updMv\" failed";
 
 		m2.updA();
-		if (!s_is_equal(m2.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.ma(), 0.123*180/aris::PI, error)) << "\"Motion:updMa\" failed";
 
 		// check infinite range
 		m2.setRotateRange(std::numeric_limits<double>::infinity());
@@ -435,7 +435,7 @@ void test_constraint(){
 		double rotate_pe[6]{ 0,0,0,0,0,100.9 };
 		mak_i.setPe(mak_j, rotate_pe, "123");
 		m2.updP();
-		if (!s_is_equal(m2.mp(), 100.9 * 180 / aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.mp(), 100.9 * 180 / aris::PI, error)) << "\"Motion:updMp\" failed";
 		
 		// check finite range
 		m2.setRotateRange(5.2);
@@ -443,13 +443,13 @@ void test_constraint(){
 		rotate_pe[5] = 5.69 * 2 * aris::PI;
 		mak_i.setPe(mak_j, rotate_pe, "123");
 		m2.updP();
-		if (!s_is_equal(m2.mp(), 5.69 * 360, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.mp(), 5.69 * 360, error)) << "\"Motion:updMp\" failed";
 
 		m2.setMp(5.71 * aris::PI * 180);
 		rotate_pe[5] = 5.71 * 2 * aris::PI;
 		mak_i.setPe(mak_j, rotate_pe, "123");
 		m2.updP();
-		if (!s_is_equal(m2.mp(), 4.71 * 360, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m2.mp(), 4.71 * 360, error)) << "\"Motion:updMp\" failed";
 	}
 
 	// test screw motion //
@@ -512,27 +512,25 @@ void test_constraint(){
 
 
 		m3.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, m3.dim(), result1, 5, glb_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, glb_cmJ, m3.dim(), error))
-			std::cout << __FILE__ << __LINE__ << "\"Motion:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m3.dim(), result1, 5, glb_cmI, m3.dim(), error) && s_is_equal(6, m3.dim(), result2, 7, glb_cmJ, m3.dim(), error)) << __FILE__ << __LINE__ << "\"Motion:cptGlbCm\" failed";
 
 		m3.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, m3.dim(), result1, 6, prt_cmI, m3.dim(), error) || !s_is_equal(6, m3.dim(), result2, 7, prt_cmJ, m3.dim(), error))
-			std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, m3.dim(), result1, 6, prt_cmI, m3.dim(), error) && s_is_equal(6, m3.dim(), result2, 7, prt_cmJ, m3.dim(), error)) << "\"Motion:cptPrtCm\" failed";
 
 		m3.cptCa(result1);
-		if (!s_is_equal(m3.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m3.dim(), result1, ca, error)) << "\"Motion:cptCa\" failed";
 
 		m3.cptCp(result1);
-		if (!s_is_equal(m3.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m3.dim(), result1, cp, error)) << "\"Motion:cptCp\" failed";
 
 		m3.updP();
-		if (!s_is_equal(m3.mp(), 0.521 * 180 / aris::PI, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m3.mp(), 0.521 * 180 / aris::PI, error)) << "\"Motion:updMp\" failed";
 
 		m3.updV();
-		if (!s_is_equal(m3.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m3.mv(), 0.689 * 180 / aris::PI, error)) << "\"Motion:updMv\" failed";
 
 		m3.updA();
-		if (!s_is_equal(m3.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(m3.ma(), 0.123 * 180 / aris::PI, error)) << "\"Motion:updMa\" failed";
 	}
 
 	// test general motion //
@@ -586,150 +584,150 @@ void test_constraint(){
 		double result[36];
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm_default, error)) << "\"GeneralMotion:setMpm\" failed";
 
 		g1.setMpe(mpe313, "313");
-		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm, error)) << "\"GeneralMotion:setMpe 313\" failed";
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm_default, error)) << "\"GeneralMotion:setMpm\" failed";
 
 		g1.setMpe(mpe321, "321");
-		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm, error)) << "\"GeneralMotion:setMpe 321\" failed";
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm_default, error)) << "\"GeneralMotion:setMpm\" failed";
 
 		g1.setMpq(mpq);
-		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm, error)) << "\"GeneralMotion:setMpq\" failed";
 
 		g1.setMpm(mpm_default);
-		if (!s_is_equal(16, g1.p(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm_default, error)) << "\"GeneralMotion:setMpm\" failed";
 
 		g1.setMpm(mpm);
-		if (!s_is_equal(16, g1.p(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, g1.p(), mpm, error)) << "\"GeneralMotion:setMpm\" failed";
 
 		g1.getMpe(result, "313");
-		if (!s_is_equal(6, result, mpe313, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mpe313, error)) << "\"GeneralMotion:getMpe\" failed";
 
 		g1.getMpe(result, "321");
-		if (!s_is_equal(6, result, mpe321, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mpe321, error)) << "\"GeneralMotion:getMpe\" failed";
 
 		g1.getMpq(result);
-		if (!s_is_equal(7, result, mpq, error))std::cout << "\"GeneralMotion:getMpq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(7, result, mpq, error)) << "\"GeneralMotion:getMpq\" failed";
 
 		g1.getMpm(result);
-		if (!s_is_equal(16, result, mpm, error))std::cout << "\"GeneralMotion:getMpm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, result, mpm, error)) << "\"GeneralMotion:getMpm\" failed";
 
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMve(mve313, "313");
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMve 313\" failed";
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMve(mve321, "321");
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMve 321\" failed";
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMvq(mvq);
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMvq\" failed";
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMvm(mvm);
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMvm\" failed";
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMva(mva);
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMva\" failed";
 
 		g1.setMvs(mvs_default);
-		if (!s_is_equal(6, g1.v(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs_default, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.setMvs(mvs);
-		if (!s_is_equal(6, g1.v(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.v(), mvs, error)) << "\"GeneralMotion:setMvs\" failed";
 
 		g1.getMve(result, "313");
-		if (!s_is_equal(6, result, mve313, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mve313, error)) << "\"GeneralMotion:getMve\" failed";
 
 		g1.getMve(result, "321");
-		if (!s_is_equal(6, result, mve321, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mve321, error)) << "\"GeneralMotion:getMve\" failed";
 
 		g1.getMvq(result);
-		if (!s_is_equal(7, result, mvq, error))std::cout << "\"GeneralMotion:getMvq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(7, result, mvq, error)) << "\"GeneralMotion:getMvq\" failed";
 
 		g1.getMvm(result);
-		if (!s_is_equal(16, result, mvm, error))std::cout << "\"GeneralMotion:getMvm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, result, mvm, error)) << "\"GeneralMotion:getMvm\" failed";
 
 		g1.getMva(result);
-		if (!s_is_equal(6, result, mva, error))std::cout << "\"GeneralMotion:getMva\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mva, error)) << "\"GeneralMotion:getMva\" failed";
 
 		g1.getMvs(result);
-		if (!s_is_equal(6, result, mvs, error))std::cout << "\"GeneralMotion:getMvs\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mvs, error)) << "\"GeneralMotion:getMvs\" failed";
 
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMae(mae313, "313");
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMae 313\" failed";
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMae(mae321, "321");
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMae 321\" failed";
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMaq(maq);
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMaq\" failed";
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMam(mam);
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMam\" failed";
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMaa(maa);
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMaa\" failed";
 
 		g1.setMas(mas_default);
-		if (!s_is_equal(6, g1.a(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas_default, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.setMas(mas);
-		if (!s_is_equal(6, g1.a(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.a(), mas, error)) << "\"GeneralMotion:setMas\" failed";
 
 		g1.getMae(result, "313");
-		if (!s_is_equal(6, result, mae313, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mae313, error)) << "\"GeneralMotion:getMae\" failed";
 
 		g1.getMae(result, "321");
-		if (!s_is_equal(6, result, mae321, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mae321, error)) << "\"GeneralMotion:getMae\" failed";
 
 		g1.getMaq(result);
-		if (!s_is_equal(7, result, maq, error))std::cout << "\"GeneralMotion:getMaq\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(7, result, maq, error)) << "\"GeneralMotion:getMaq\" failed";
 
 		g1.getMam(result);
-		if (!s_is_equal(16, result, mam, error))std::cout << "\"GeneralMotion:getMam\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(16, result, mam, error)) << "\"GeneralMotion:getMam\" failed";
 
 		g1.getMaa(result);
-		if (!s_is_equal(6, result, maa, error))std::cout << "\"GeneralMotion:getMaa\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, maa, error)) << "\"GeneralMotion:getMaa\" failed";
 
 		g1.getMas(result);
-		if (!s_is_equal(6, result, mas, error))std::cout << "\"GeneralMotion:getMas\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, result, mas, error)) << "\"GeneralMotion:getMas\" failed";
 
 		const double glb_cmI[]{ 0.413710949602281, -0.464491586871515,   0.783001159580726,   0,   0,   0,
 			-0.0419709404545899,   0.849409663646283,   0.526062414036267, 0, 0, 0,
@@ -765,24 +763,24 @@ void test_constraint(){
 
 
 		g1.cptGlbCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, g1.dim(), result1, 6, glb_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, glb_cmJ, g1.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.dim(), result1, 6, glb_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, glb_cmJ, g1.dim(), error)) << "\"GeneralMotion:cptGlbCm\" failed";
 
 		g1.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, g1.dim(), result1, 6, prt_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, prt_cmJ, g1.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(6, g1.dim(), result1, 6, prt_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, prt_cmJ, g1.dim(), error)) << "\"GeneralMotion:cptPrtCm\" failed";
 
 		g1.cptCp(result1);
-		if (!s_is_equal(g1.dim(), result1, ce, error))std::cout << "\"GeneralMotion:cptCp\" failed" << std::endl;
+		EXPECT_TRUE(s_is_equal(g1.dim(), result1, ce, error)) << "\"GeneralMotion:cptCp\" failed";
 
 		//mot.cptCa(result1);
-		//if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+		//if (!s_is_equal(mot.dim(), result1, ca, error))ADD_FAILURE() << "\"Motion:cptCa\" failed";
 
 
 
 		//mot.updP();
-		//if (std::abs(mot.mp() - 0.521)>error)std::cout << "\"Motion:updMp\" failed" << std::endl;
+		//if (std::abs(mot.mp() - 0.521)>error)ADD_FAILURE() << "\"Motion:updMp\" failed";
 
 		//mot.updV();
-		//if (std::abs(mot.mv() - 0.689)>error)std::cout << "\"Motion:updMv\" failed" << std::endl;
+		//if (std::abs(mot.mv() - 0.689)>error)ADD_FAILURE() << "\"Motion:updMv\" failed";
 
 		//mot.updGlbCm();
 		//mot.updPrtCm();
@@ -794,9 +792,6 @@ void test_constraint(){
 	}
 }
 
-void test_model_interaction()
-{
-	std::cout << std::endl << "-----------------test model interaction---------------------" << std::endl;
+TEST(ModelInteraction, ConstraintCoverage) {
 	test_constraint();
-	std::cout << "-----------------test model interaction finished------------" << std::endl << std::endl;
 }

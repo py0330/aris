@@ -14,7 +14,7 @@ constexpr double error = 1e-10;
 
 
 
-TEST(DynamicPoseTest, PoseOperation) {
+TEST(Pose, PoseOperation) {
 	const double pe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double pe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double pq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4 * 0.4 - 0.5 * 0.5 - 0.6 * 0.6) };
@@ -190,7 +190,7 @@ TEST(DynamicPoseTest, PoseOperation) {
 		EXPECT_TRUE(s_is_equal(3, result, from_v1, error)) << "\"s_pose_dot_v3 ipe313\" failed";
 	}
 }
-TEST(DynamicPoseTest, RotationMatrix) {
+TEST(Pose, RotationMatrix) {
 	const double rm[9]{ -0.22, -0.975499782797526,   0.000416847668728071,
 		0.175499782797526, -0.04, -0.983666521865018, 
 		0.959583152331272, -0.216333478134982,   0.18 };
@@ -249,7 +249,7 @@ TEST(DynamicPoseTest, RotationMatrix) {
 	//s_inv_rm_dot_v3(inv_rm, from_v1_ld, 2, result, 3);
 	//if (!s_is_equal(3, result, to_v1_ld, error))std::cout << "\"s_rm_dot_v3 with ld\" failed" << std::endl;
 }
-TEST(DynamicPoseTest, PoseMatrix) {
+TEST(Pose, PoseMatrix) {
 	const double pm[16] { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -315,7 +315,7 @@ TEST(DynamicPoseTest, PoseMatrix) {
 	s_inv_pm_dot_v3(inv_pm, from_v1_ld, 2, result, 3);
 	EXPECT_TRUE(s_is_equal(3, result, to_v1_ld, error)) << "\"s_inv_pm_dot_v3 with ld\" failed";
 }
-TEST(DynamicPoseTest, RotationQuaternion) {
+TEST(Pose, RotationQuaternion) {
 	const double rm[9]{ -0.22, -0.975499782797526,   0.000416847668728071,
 		0.175499782797526, -0.04, -0.983666521865018,
 		0.959583152331272, -0.216333478134982,   0.18 };
@@ -386,7 +386,7 @@ TEST(DynamicPoseTest, RotationQuaternion) {
 	//s_inv_rq_dot_v3(inv_rq, from_v1_ld, 2, result, 3);
 	//if (!s_is_equal(3, result, to_v1_ld, error))std::cout << "\"s_rq_dot_v3 with ld\" failed" << std::endl;
 }
-TEST(DynamicPoseTest, PoseQuaternion) {
+TEST(Pose, PoseQuaternion) {
 	const double pm[16]{ -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -463,7 +463,7 @@ TEST(DynamicPoseTest, PoseQuaternion) {
 	//s_inv_pq_dot_v3(inv_pq, from_v1_ld, 2, result, 3);
 	//if (!s_is_equal(3, result, to_v1_ld, error))std::cout << "\"s_pq_dot_v3 with ld\" failed" << std::endl;
 }
-TEST(DynamicPoseTest, Transform) {
+TEST(Pose, Transform) {
 	double result[36];
 
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
@@ -859,7 +859,7 @@ TEST(DynamicPoseTest, Transform) {
 
 
 }
-TEST(DynamicPoseTest, VariableChange) {
+TEST(Pose, VariableChange) {
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
@@ -1219,7 +1219,7 @@ TEST(DynamicPoseTest, VariableChange) {
 	EXPECT_TRUE(s_is_equal(10, result, iv, error)) << "\"s_im2iv\" failed";
 
 }
-TEST(DynamicPoseTest, CoordinateTransform) {
+TEST(Pose, CoordinateTransform) {
 	const double relative_vs[16] = { 0.12, -0.35, 0.26, 0.58, 0.36, -0.135 };
 	const double relative_as[16] = { 0.14, 1.35, -0.35, -0.56, -0.34, 0.14 };
 	const double relative_pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071,   0.1,
@@ -1531,7 +1531,7 @@ TEST(DynamicPoseTest, CoordinateTransform) {
 	EXPECT_TRUE(s_is_equal(6, from_as, result, error) && s_is_equal(6, from_vs, result2, error)) << "\"s_inv_as2as\" failed";
 
 }
-TEST(DynamicPoseTest, Solve) {
+TEST(Pose, Solve) {
 	double result[36], result2[36], result3[36];
 	
 	const double pm[16]{ -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
@@ -1660,7 +1660,7 @@ TEST(DynamicPoseTest, Solve) {
 	s_calib_tool_two_pnts(calib_tool_two_pnts, result);
 	EXPECT_TRUE(s_is_equal(2, calib_tool_two_pnts_result, result, error)) << "\"s_sov_axis_distance\" failed";
 }
-TEST(DynamicPoseTest, Collision) {
+TEST(Pose, Collision) {
 	
 	{
 		double reference_pe[6]{ 0.1,0.2,0.3,-aris::PI/2,0,0 };

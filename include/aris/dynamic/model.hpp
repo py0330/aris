@@ -218,22 +218,24 @@ namespace aris::dynamic{
 
 		// kinematics, not set state //
 		auto virtual inverseRootNumber()const->std::int64_t override;	
-		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int override;
+		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)const->int override;
 		auto virtual forwardRootNumber()const->std::int64_t override;
-		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int override;
+		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)const->int override;
+		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void override;
+		auto virtual setWhichForwardRoot(const std::int64_t *which_root)->void override;
 
 		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t* which_root = nullptr, const double* current_input = nullptr)const noexcept->int override;
 		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t* which_root = nullptr, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual inverseKinematicsVel(const double* output, double* input)const noexcept->int override;
+		auto virtual forwardKinematicsVel(const double* input, double* output)const noexcept->int override;
+		auto virtual inverseKinematicsAcc(const double* output, double* input)const noexcept->int override;
+		auto virtual forwardKinematicsAcc(const double* input, double* output)const noexcept->int override;
+		auto virtual inverseDynamics(const double* input_a, double* input_f)const noexcept->int override;
+		auto virtual forwardDynamics(const double* input_f, double* input_a)const noexcept->int override;
 
 		// kinematics & dynamics, set state //
 		
-		/// @brief 设置模型内部求解时的逆解编号
-		/// @param which_root 逆解编号
-		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void override;
 
-		/// @brief 设置模型内部求解时的正解编号
-		/// @param which_root 正解编号
-		auto virtual setWhichForwardRoot(const std::int64_t *which_root)->void override;
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
@@ -403,13 +405,19 @@ namespace aris::dynamic{
 		// kinematics, not set state //
 		auto virtual inverseRootSize()const->int override;
 		auto virtual inverseRootNumber()const->std::int64_t override;
-		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)->int override;
+		auto virtual getWhichInverseRoot(const double* output, const double* input, std::int64_t *which_root)const->int override;
 		auto virtual forwardRootSize()const->int override;
 		auto virtual forwardRootNumber()const->std::int64_t override;
-		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)->int override;
+		auto virtual getWhichForwardRoot(const double* input, const double* output, std::int64_t *which_root)const->int override;
 
 		auto virtual inverseKinematics(const double* output, double* input, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int override;
 		auto virtual forwardKinematics(const double* input, double* output, const std::int64_t *which_root, const double* current_input = nullptr)const noexcept->int override;
+		auto virtual inverseKinematicsVel(const double* output, double* input)const noexcept->int override;
+		auto virtual forwardKinematicsVel(const double* input, double* output)const noexcept->int override;
+		auto virtual inverseKinematicsAcc(const double* output, double* input)const noexcept->int override;
+		auto virtual forwardKinematicsAcc(const double* input, double* output)const noexcept->int override;
+		auto virtual inverseDynamics(const double* input_a, double* input_f)const noexcept->int override;
+		auto virtual forwardDynamics(const double* input_f, double* input_a)const noexcept->int override;
 
 		// kinematics & dynamics //
 		auto virtual setWhichInverseRoot(const std::int64_t *which_root)->void override;

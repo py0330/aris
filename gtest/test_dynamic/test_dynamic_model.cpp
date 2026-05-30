@@ -3,7 +3,7 @@
 #include <aris/dynamic/dynamic.hpp>
 
 
-TEST(DynamicModelTest, MultiModel) {
+TEST(Model, MultiModel) {
 	
 	aris::dynamic::MultiModel multi;
 
@@ -393,7 +393,7 @@ TEST(DynamicModelTest, MultiModel) {
 
 }
 
-TEST(DynamicModelTest, MultiModel2) {
+TEST(Model, MultiModel2) {
 
 	aris::dynamic::MultiModel multi;
 	

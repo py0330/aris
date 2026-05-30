@@ -1206,7 +1206,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 	}
 }
 
-TEST(DynamicModelSolverTest, SingleBody)
+TEST(ModelSolver, SingleBody)
 {
 	std::cout << "test single body:" << std::endl;
 	// 单刚体自由落体
@@ -1266,7 +1266,7 @@ TEST(DynamicModelSolverTest, SingleBody)
 	}
 }
 
-TEST(DynamicModelSolverTest, Float5Bar)
+TEST(ModelSolver, Float5Bar)
 {
 	std::cout << "test float 5 bar:" << std::endl;
 
@@ -1324,7 +1324,7 @@ TEST(DynamicModelSolverTest, Float5Bar)
 	if (!s_is_equal(6, p5.as(), std::array<double, 6>{0.05329075431848, - 9.84070972093511, - 0.00018296503713,   0.00166526381296,   0.00049171676773,   0.04782586871571}.data(), 1e-10)) ADD_FAILURE() << __FILE__ << __LINE__ << ":failed" ;
 }
 
-TEST(DynamicModelSolverTest, ServoPress)
+TEST(ModelSolver, ServoPress)
 {
 	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
@@ -1371,7 +1371,7 @@ TEST(DynamicModelSolverTest, ServoPress)
 	universal_solver.kinPos();
 }
 
-TEST(DynamicModelSolverTest, ThreeR) {
+TEST(ModelSolver, ThreeR) {
 	// over constraint system
 	// 本示例展示3轴SCARA机器人的建模过程，aris可以求解任何机构（串联、并联、混联、过约束、欠约束等）的正逆运动学、正逆动力学等问题
 	// 定义3个杆件的位置与321欧拉角，以及10维的惯量向量
@@ -1463,7 +1463,7 @@ TEST(DynamicModelSolverTest, ThreeR) {
 		output_pm, output_vs, output_as, output_mfs, error);
 }
 
-TEST(DynamicModelSolverTest, SpatialThreeR) {
+TEST(ModelSolver, SpatialThreeR) {
 	// over constraint system
 	// 本示例展示3轴SCARA机器人的建模过程，aris可以求解任何机构（串联、并联、混联、过约束、欠约束等）的正逆运动学、正逆动力学等问题
 	// 定义3个杆件的位置与321欧拉角，以及10维的惯量向量
@@ -1545,7 +1545,7 @@ TEST(DynamicModelSolverTest, SpatialThreeR) {
 		output_mp, output_mv, output_ma, output_mf, error);
 }
 
-TEST(DynamicModelSolverTest, Ur5)
+TEST(ModelSolver, Ur5)
 {
 	try
 	{
@@ -1594,7 +1594,7 @@ TEST(DynamicModelSolverTest, Ur5)
 	}
 }
 
-TEST(DynamicModelSolverTest, Stewart)
+TEST(ModelSolver, Stewart)
 {
 	try
 	{	
@@ -1641,7 +1641,7 @@ TEST(DynamicModelSolverTest, Stewart)
 	}
 }
 
-TEST(DynamicModelSolverTest, Ur5OnStewart)
+TEST(ModelSolver, Ur5OnStewart)
 {
 	try
 	{
@@ -1704,7 +1704,7 @@ TEST(DynamicModelSolverTest, Ur5OnStewart)
 	}
 }
 
-TEST(DynamicModelSolverTest, MultiSystems)
+TEST(ModelSolver, MultiSystems)
 {
 	try
 	{
@@ -1781,7 +1781,7 @@ TEST(DynamicModelSolverTest, MultiSystems)
 	}
 }
 
-TEST(DynamicModelSolverTest, Ur5Calibration)
+TEST(ModelSolver, Ur5Calibration)
 {
 	const double PI = 3.14159265358979;
 	
@@ -1921,7 +1921,7 @@ TEST(DynamicModelSolverTest, Ur5Calibration)
 
 }
 
-TEST(DynamicModelSolverTest, CalibrationPlaceholder)
+TEST(ModelSolver, CalibrationPlaceholder)
 {
 	/*
 	std::cout << "-------------------------------------------------" << std::endl;

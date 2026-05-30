@@ -215,6 +215,7 @@ endif(BUILD_TESTS)
 option(BUILD_GTESTS "build gtest-based aris tests" OFF)
 
 if(BUILD_GTESTS)
+	include(CTest)	
 	enable_testing()
 	target_compile_definitions(aris_plan PRIVATE ARIS_BUILD_TESTS)
 	set(ARIS_GTEST_DIR ${PROJECT_SOURCE_DIR}/gtest)
@@ -236,7 +237,7 @@ if(BUILD_GTESTS)
 	# This keeps tests naturally grouped as more modules are added.
 	set(ARIS_GTEST_MODULES "plan;dynamic" CACHE STRING "Semicolon-separated gtest module names under gtest/test_<module>")
 	foreach(aris_gtest_module IN LISTS ARIS_GTEST_MODULES)
-		file(GLOB ARIS_GTEST_SOURCES "gtest/test_${aris_gtest_module}/*.cpp")
+		file(GLOB ARIS_GTEST_SOURCES CONFIGURE_DEPENDS "gtest/test_${aris_gtest_module}/*.cpp")
 		if(ARIS_GTEST_SOURCES)
 			set(ARIS_GTEST_TARGET "gtest_${aris_gtest_module}")
 			add_executable(${ARIS_GTEST_TARGET} ${ARIS_GTEST_SOURCES})
@@ -245,6 +246,7 @@ if(BUILD_GTESTS)
 			target_include_directories(${ARIS_GTEST_TARGET} PRIVATE ${gtest_SOURCE_DIR}/include)
 			gtest_discover_tests(${ARIS_GTEST_TARGET}
 				TEST_PREFIX "${aris_gtest_module}."
+				DISCOVERY_TIMEOUT 60
 				PROPERTIES LABELS "${aris_gtest_module};gtest"
 			)
 		endif()
