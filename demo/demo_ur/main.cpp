@@ -1,221 +1,97 @@
-﻿#include <iostream>
-#include <array>
-#include <vector>
-#include <cstdlib>
+﻿#include <aris.hpp>
+#include <cmath>
 #include <iomanip>
-#include <aris.hpp>
+#include <iostream>
+#include <vector>
 
-using namespace aris::dynamic;
-using namespace aris::robot;
-
-const double PI = 3.14159265358979;
-
-Model rbt;
-
-namespace {
-auto create_debug_ur_model() -> std::unique_ptr<aris::dynamic::Model> {
-	aris::dynamic::UrParam param;
-	param.H1 = 0.089159;
-	param.W1 = 0.13585 - 0.1197 + 0.093;
-	param.L1 = 0.425;
-	param.L2 = 0.39225;
-	param.H2 = -0.09465;
-	param.W2 = 0.0823;
-	param.install_method = 0;
-	return aris::dynamic::createModelUr(param);
+void print_arr(const char *name, const double *v, int n) {
+    std::cout << name << " = [";
+    for (int i = 0; i < n; ++i)
+        std::cout << (i ? ", " : "") << std::setprecision(16) << v[i];
+    std::cout << "]\n";
 }
 
-void print_vec(const std::string &name, const std::vector<double> &v) {
-	std::cout << name << " = [";
-	for (aris::Size i = 0; i < v.size(); ++i) {
-		if (i) std::cout << ", ";
-		std::cout << std::setprecision(17) << v[i];
-	}
-	std::cout << "]" << std::endl;
-}
+int main() {
+    // 1. create UR model
+    aris::dynamic::UrParam param;
+    param.H1 = 0.089159;
+    param.W1 = 0.13585 - 0.1197 + 0.093;
+    param.L1 = 0.425;   param.L2 = 0.39225;
+    param.H2 = -0.09465; param.W2 = 0.0823;
+    param.install_method = 0;
+    auto m = aris::dynamic::createModelUr(param);
 
-void print_diff(const std::string &name, const std::vector<double> &lhs, const std::vector<double> &rhs) {
-	std::cout << name << " = [";
-	for (aris::Size i = 0; i < lhs.size(); ++i) {
-		if (i) std::cout << ", ";
-		std::cout << std::setprecision(17) << (lhs[i] - rhs[i]);
-	}
-	std::cout << "]" << std::endl;
-}
+    // 2. data: positions, velocities, accelerations (factor=1)
+    // const double cmd_q[6]{-0.14, 0.11, -0.09, 0.16, -0.12, 0.07};
+    // const double cmd_v[6]{0.025, -0.018, 0.021, -0.015, 0.013, -0.011};
+    // const double cmd_a[6]{-0.032, 0.027, -0.022, 0.019, -0.016, 0.014};
+    // const double tau[6]{-0.228362181000519, 1.647532593224324, 3.349343785322493, 3.478416887326793, -0.1442579360727938, 0.03858765658378447};
 
-auto run_debug_pollute_replay() -> int {
-	auto m = create_debug_ur_model();
-	m->init();
+	// const double cmd_q[6]{0,0,0,0,0,0};
+    // const double cmd_v[6]{0,0,0,0,0,0};
+    // const double cmd_a[6]{0,0,0,0,0,0.1};
+    // const double tau[6]{0, 0.1, 0.1, 0.1, 0, 0.1};
 
-	auto &inv = dynamic_cast<aris::dynamic::InverseKinematicSolver&>(m->solverPool().at(0));
-	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
+	// const double cmd_q[6]{0,0,0,0,0,0};
+    // const double cmd_v[6]{0,0,0,0,0,0};
+    // const double cmd_a[6]{0.01, -0.05, -0.15, 0.3, 0.2, 0.1};
+    // const double tau[6]{0.4844174372750001, 0.08216360686594992, 0.30460511073, 0.7373381148611999, 0.4121035361150001, 0.2};
 
-	const double cmd_q[6]{0.17, -0.09, 0.14, -0.22, 0.19, -0.11};
-	const double cmd_v_ref[6]{0.12, -0.10, 0.08, -0.06, 0.04, -0.02};
-	const double zero_vs[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-	const double tail_vs[6]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+	const double cmd_q[6]{0, 0, 0, 0, 0.3, 0.0};
+    const double cmd_v[6]{0, 0, 0, 0, 0, 0};
+    const double cmd_a[6]{0.0, 0.0, 0.0, 0.3, 0.0, 0.0};
+    const double tau[6]{0.00665747741422852, 0.8506998463719249, 1.093902016371925, 1.318363313271925, -0.02612219954077147, 0.2866009467376818};
 
-	m->setInputPos(cmd_q);
-	if (m->forwardKinematics()) {
-		std::cout << "forwardKinematics failed" << std::endl;
-		return 1;
-	}
+	// const double cmd_q[6]{0, 0, 0, 0, 0.3, 0.0};
+    // const double cmd_v[6]{0, 0, 0, 0, 0, 0};
+    // const double cmd_a[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // const double tau[6]{0, -0.07776023197879819, -0.07776023197879819, -0.07776023197879819, 0, 4.213623736612206e-17};
 
-	std::vector<double> out_pos(m->outputPosSize(), 0.0);
-	m->getOutputPos(out_pos.data());
 
-	m->setInputVel(cmd_v_ref);
-	if (m->forwardKinematicsVel()) {
-		std::cout << "forwardKinematicsVel failed when building target output vel" << std::endl;
-		return 1;
-	}
-
-	std::vector<double> out_vel_target(m->outputVelSize(), 0.0);
-	m->getOutputVel(out_vel_target.data());
-
-	std::vector<double> cmd_v_ref_vec(cmd_v_ref, cmd_v_ref + 6);
-	std::cout << "\n=== Pollute Replay Debug ===" << std::endl;
-	print_vec("cmd_v_ref", cmd_v_ref_vec);
-	print_vec("out_vel_target", out_vel_target);
-
-	std::int64_t which_root{0};
-	if (m->getWhichInverseRoot(out_pos.data(), cmd_q, &which_root)) {
-		std::cout << "getWhichInverseRoot failed" << std::endl;
-		return 1;
-	}
-
-	auto run_stateless_velocity_consistency_case = [&]() {
-		std::vector<double> out_vel_dirty_2(m->outputVelSize(), 0.0);
-		for (aris::Size i = 0; i < out_vel_dirty_2.size(); ++i) {
-			out_vel_dirty_2[i] = (i % 2 == 0) ? (0.31 - 0.04 * static_cast<double>(i)) : (-0.27 + 0.03 * static_cast<double>(i));
-		}
-
-		std::vector<double> cmd_v_stateful_ref_a(m->inputVelSize(), 0.0), cmd_v_stateful_ref_b(m->inputVelSize(), 0.0);
-		std::vector<double> cmd_v_stateless_ref_a(m->inputVelSize(), 0.0), cmd_v_stateless_ref_b(m->inputVelSize(), 0.0);
-
-		// Match gtest: first polluted state = clean velocity state.
-		for (auto &prt : m->partPool()) prt.setVs(zero_vs);
-		m->setOutputVel(out_vel_target.data());
-		if (m->inverseKinematicsVel()) {
-			std::cout << "inverseKinematicsVel failed in stateful_ref_a" << std::endl;
-			return;
-		}
-		m->getInputVel(cmd_v_stateful_ref_a.data());
-
-		if (inv.kinVelPure(out_vel_target.data(), cmd_v_stateless_ref_a.data())) {
-			std::cout << "inv.kinVelPure failed in stateless_ref_a" << std::endl;
-			return;
-		}
-
-		// Dirty the model with the second polluted velocity state, then switch back to the same target.
-		m->setOutputVel(out_vel_dirty_2.data());
-		if (m->inverseKinematicsVel()) {
-			std::cout << "inverseKinematicsVel failed while dirtying with dirty_2" << std::endl;
-			return;
-		}
-
-		m->setOutputVel(out_vel_target.data());
-		if (m->inverseKinematicsVel()) {
-			std::cout << "inverseKinematicsVel failed in stateful_ref_b" << std::endl;
-			return;
-		}
-		m->getInputVel(cmd_v_stateful_ref_b.data());
-
-		if (inv.kinVelPure(out_vel_target.data(), cmd_v_stateless_ref_b.data())) {
-			std::cout << "inv.kinVelPure failed in stateless_ref_b" << std::endl;
-			return;
-		}
-
-		std::cout << "\n--- stateless_velocity_consistency_replay ---" << std::endl;
-		print_vec("dirty_state_2_output_vel", out_vel_dirty_2);
-		print_vec("stateful_ref_a", cmd_v_stateful_ref_a);
-		print_vec("stateful_ref_b", cmd_v_stateful_ref_b);
-		print_diff("stateful_ref_b_minus_a", cmd_v_stateful_ref_b, cmd_v_stateful_ref_a);
-		print_diff("stateful_ref_a_minus_ref", cmd_v_stateful_ref_a, cmd_v_ref_vec);
-		print_diff("stateful_ref_b_minus_ref", cmd_v_stateful_ref_b, cmd_v_ref_vec);
-
-		print_vec("stateless_ref_a", cmd_v_stateless_ref_a);
-		print_vec("stateless_ref_b", cmd_v_stateless_ref_b);
-		print_diff("stateless_ref_b_minus_a", cmd_v_stateless_ref_b, cmd_v_stateless_ref_a);
-		print_diff("stateless_ref_a_minus_ref", cmd_v_stateless_ref_a, cmd_v_ref_vec);
-		print_diff("stateless_ref_b_minus_ref", cmd_v_stateless_ref_b, cmd_v_ref_vec);
-	};
-
-	auto run_case = [&](const char *label, bool pollute_tail) {
-		for (auto &prt : m->partPool()) prt.setVs(zero_vs);
-		if (pollute_tail) m->partPool().back().setVs(tail_vs);
-
-		std::vector<double> out_vel_stateful(m->outputVelSize(), 0.0);
-		std::vector<double> out_vel_stateless(m->outputVelSize(), 0.0);
-		std::vector<double> mv_stateful(m->inputVelSize(), 0.0);
-		std::vector<double> mv_stateless(m->inputVelSize(), 0.0);
-
-		m->setInputVel(cmd_v_ref);
-		if (m->forwardKinematicsVel()) {
-			std::cout << "forwardKinematicsVel failed in case " << label << std::endl;
-			return;
-		}
-		m->getOutputVel(out_vel_stateful.data());
-
-		if (fwd.kinVelPure(cmd_v_ref, out_vel_stateless.data())) {
-			std::cout << "fwd.kinVelPure failed in case " << label << std::endl;
-			return;
-		}
-
-		m->setWhichInverseRoot(&which_root);
-		m->setInputPos(cmd_q);
-		m->setOutputPos(out_pos.data());
-		if (m->inverseKinematics()) {
-			std::cout << "inverseKinematics failed in case " << label << std::endl;
-			return;
-		}
-
-		m->setOutputVel(out_vel_target.data());
-		if (m->inverseKinematicsVel()) {
-			std::cout << "inverseKinematicsVel failed in case " << label << std::endl;
-			return;
-		}
-		m->getInputVel(mv_stateful.data());
-
-		if (inv.kinVelPure(out_vel_target.data(), mv_stateless.data())) {
-			std::cout << "inv.kinVelPure failed in case " << label << std::endl;
-			return;
-		}
-
-		std::cout << "\n--- " << label << " ---" << std::endl;
-		print_vec("fwd_stateful_out_vel", out_vel_stateful);
-		print_vec("fwd_stateless_out_vel", out_vel_stateless);
-		print_diff("fwd_stateless_minus_stateful", out_vel_stateless, out_vel_stateful);
-		print_diff("fwd_stateful_minus_target", out_vel_stateful, out_vel_target);
-		print_diff("fwd_stateless_minus_target", out_vel_stateless, out_vel_target);
-
-		print_vec("inv_stateful_mv", mv_stateful);
-		print_vec("inv_stateless_mv", mv_stateless);
-		print_diff("inv_stateful_minus_ref", mv_stateful, cmd_v_ref_vec);
-		print_diff("inv_stateless_minus_ref", mv_stateless, cmd_v_ref_vec);
-		print_diff("inv_stateless_minus_stateful", mv_stateless, mv_stateful);
-	};
-
-	run_case("no_pollute", false);
-	run_case("tail_pollute_last_part_vs_123456", true);
-	run_stateless_velocity_consistency_case();
-
-	return 0;
-}
-}
-
-void build_model() 
-{
+    // 5. forward dynamics — the failing step
+    m->setInputPos(cmd_q);  
+	m->setInputVel(cmd_v);
+	m->forwardKinematics(); 
+	m->forwardKinematicsVel();
 	
-}
+    
 
-int main()
-{
-	std::cout <<"begin" << std::endl;
+    double cmd_a_fd[6];
+	m->setInputFce(tau); 
+	m->forwardDynamics();
+	m->getInputAcc(cmd_a_fd);
+	print_arr("cmd_a_fd:\n", cmd_a_fd, 6);
+    print_arr("cmd_a (expected):\n", cmd_a, 6);
+
+
+	double cmd_tau_fd[6];
+	m->setInputAcc(cmd_a);
+	m->inverseDynamics();
+	m->getInputFce(cmd_tau_fd);
+	print_arr("cmd_tau_fd:\n", cmd_tau_fd, 6);
+	print_arr("cmd_tau (expected):\n", tau, 6);
+
+	// cmd_a_fd = [-0.0810145887252834, -0.0329731988943424, -0.04159520652372094, -0.003793694012478449, -0.3433349067821795, -3.536170261369297e-18]
+    // cmd_a (expected) = [-0.032, 0.027, -0.022, 0.019, -0.016, 0.014]
 	
-	//const char *debug_pollute = std::getenv("ARIS_DEMO_UR_DEBUG_POLLUTE");
-	//if (debug_pollute && debug_pollute[0] != '0') {
-	return run_debug_pollute_replay();
-	//}
 
+	
+
+    bool ok = true;
+    for (int i = 0; i < 6; ++i)
+        if (std::abs(cmd_a_fd[i] - cmd_a[i]) > 1e-10)
+            { 
+				ok = false; 
+			}
+    std::cout << (ok ? "  PASS\n" : "  FAIL\n");
+	
+	ok = true;
+	for (int i = 0; i < 6; ++i)
+        if (std::abs(cmd_tau_fd[i] - tau[i]) > 1e-10)
+            { 
+				ok = false; 
+			}
+    std::cout << (ok ? "  PASS\n" : "  FAIL\n");
+
+    return ok ? 0 : 1;
 }

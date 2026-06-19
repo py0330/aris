@@ -63,28 +63,32 @@ namespace aris::dynamic{
 		s_acc2as(posType(), p(), VelType::VS, vs, accType(), a, as_i2j); 
 	}
 
-	auto MotionBase::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+	auto MotionBase::cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void {
 		double pm_j2i[16], ps_j2i[6];
-		s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
+		s_inv_pm_dot_pm(pmI, pmJ, pm_j2i);
 		s_pm2ps(pm_j2i, ps_j2i);
 		s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 	}
-	auto MotionBase::cptCvFromV(double *cv, const double* v)const noexcept->void{
-
-
+	auto MotionBase::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void{
+		std::fill_n(cv, dim(), 0.0);
 	}
-	auto MotionBase::cptCvDiffFromV(double* cv, const double* v)const noexcept->void { 
-		cptCvFromV(cv, v);
+	
+	auto MotionBase::cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double *mv)const noexcept->void{
+		cptCvFromV(cv, pmI, pmJ, vsI, vsJ, mv);
 
 		double dv[6], dv_in_I[6];
-		s_vc(6, makJ()->vs(), dv);
-		s_vs(6, makI()->vs(), dv);
-		s_inv_tv(*makI()->pm(), dv, dv_in_I);
+		s_vc(6, vsJ, dv);
+		s_vs(6, vsI, dv);
+		s_inv_tv(pmI, dv, dv_in_I);
 		s_mma(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
+
 	}
-	auto MotionBase::cptCaFromA(double *ca, const double* a)const noexcept->void{
 
-
+	auto MotionBase::cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void{
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
+		s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
 	}
 	auto MotionBase::cptPError(const double* p1, const double* p2)->double {
 		double ret_value{ 0.0 };
@@ -135,10 +139,6 @@ namespace aris::dynamic{
 		double vs[6];
 		s_inv_vs2vs(*makJ()->pm(), makJ()->vs(), makI()->vs(), vs);
 		cptVFromVs(vs, const_cast<double*>(this->v()));
-
-		// double v[16];
-		// s_vs2vel(posType(), p(), vs, velType(), v);
-		// setV(v);
 	}
 	auto MotionBase::updA() noexcept->void {
 		double vs[6], as[6];
@@ -178,7 +178,7 @@ namespace aris::dynamic{
 		double loc_cm_I[6]{ 0,0,0,0,0,1 };
 	};
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
-	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double *mp)const noexcept->void {
+	auto Motion::cptCpFromPm(double *cp, const double *pmI, const double *pmJ, const double *mp)const noexcept->void {
 		// 先计算 mak_i 相对于 mak_j 所应该处的位姿 pm_i2j_should_be
 		// 再计算 mak_i 相对于 mak_j 真实的位姿     pm_i2j
 		// 两者的差值就是应该的补偿量
@@ -186,7 +186,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -204,12 +204,15 @@ namespace aris::dynamic{
 			cp[0] = ps_i2j_diff[axis()];
 		}
 	}
-	auto Motion::cptCvFromV(double *cv, const double* v)const noexcept->void { cv[0] = (*v) * mpFactor() * (1 + pitch() * pitch()); }
-	auto Motion::cptCaFromA(double *ca, const double* a)const noexcept->void { 
-		Constraint::cptCa(ca);
-		ca[0] += (*a) * mpFactor() * (1 + pitch() * pitch()); 
-	}
+	auto Motion::cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void { 
+		// 调用基类的 updCa 并优化乘法，乘法和后续一并做了计算 //
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
 
+		ca[0] = (*ma * mpFactor() - tem[axis()]) * (1 + pitch() * pitch()); 
+	}
+	auto Motion::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void { cv[0] = (*mv) * mpFactor() * (1 + pitch() * pitch()); }
 
 	auto Motion::cptPFromPm(const double* pm_i2j, double* p)const noexcept->void {
 		double pm_j[16]{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
@@ -372,7 +375,7 @@ namespace aris::dynamic{
 		static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 		return loc_cm_I;
 	}
-	auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void{
+	auto GeneralMotion::cptCpFromPm(double *cp, const double *pmI, const double *pmJ, const double* mp)const noexcept->void{
 		// 先计算 mak_i 相对于 mak_j 所应该处的位姿 pm_i2j_should_be
 		// 再计算 mak_i 相对于 mak_j 真实的位姿     pm_i2j
 		// 两者的差值就是应该的补偿量
@@ -380,7 +383,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -389,12 +392,12 @@ namespace aris::dynamic{
 		s_pm2ps(pm_i2j_diff, ps_i2j_diff);
 		s_vc(6, ps_i2j_diff, cp);
 	}
-	auto GeneralMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto GeneralMotion::cptGlbDmFromPm(double *dm, const double *pmI, const double *pmJ)const noexcept->void {
 		double pm[16];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm);
 	}
-	auto GeneralMotion::cptCvFromV(double *cv, const double* v)const noexcept->void { 
+	auto GeneralMotion::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void { 
 		double vs[6];
 		s_vel2vs(posType(), p(), velType(), v, vs);
 
@@ -402,16 +405,24 @@ namespace aris::dynamic{
 		getMpm(mpm);
 		s_inv_tv(mpm, vs, cv);
 	}
-	auto GeneralMotion::cptCaFromA(double *ca, const double* a)const noexcept->void { 
-		Constraint::cptCa(ca);
+	auto GeneralMotion::cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void { 
+		// 调用基类的 updCa 并优化乘法 //
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
+		//s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
+		s_vi(6, tem, ca);
 
-		double as[6];
-		s_acc2as(posType(), p(), velType(), v(), accType(), a, as);
 
-		double mpm[16];
-		getMpm(mpm);
+		// mpm_i_in_j, mvs_i_in_j, mas_i_in_j
+		double mpm[16], mvs[6];
+		s_inv_pm_dot_pm(pmJ, pmI, mpm);
+		s_inv_vs2vs(pmJ, vsJ, vsI, mvs);
 
-		s_inv_tva(mpm, as, ca);
+		double mas[6];
+		s_acc2as(PosType::PM, mpm, VelType::VS, mvs, accType(), a, mas);
+
+		s_inv_tva(mpm, mas, ca);
 	}
 	auto GeneralMotion::cptPError(const double* p1, const double* p2)->double {
 		double pm1[16], pm2[16], pq1[7], pq2[7];
@@ -567,7 +578,7 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto PointMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double *mp)const noexcept->void {
+	auto PointMotion::cptCpFromPm(double *cp, const double *pmI, const double *pmJ, const double *mp)const noexcept->void {
 		// 先计算 mak_i 相对于 mak_j 所应该处的位姿 pm_i2j_should_be
 		// 再计算 mak_i 相对于 mak_j 真实的位姿     pm_i2j
 		// 两者的差值就是应该的补偿量
@@ -575,7 +586,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16];
@@ -584,35 +595,47 @@ namespace aris::dynamic{
 		// 【注意】：这里不应考虑角度所造成的移动距离，不同于上文
 		s_vc(3, pm_i2j_diff + 3, 4, cp, 1);
 	}
-	auto PointMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto PointMotion::cptGlbDmFromPm(double *dm, const double *pmI, const double *pmJ)const noexcept->void {
 		double pm[16];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm);
 	}
-	auto PointMotion::cptCvFromV(double *cv, const double* v)const noexcept->void { 
+	auto PointMotion::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void { 
 		double vp_in_makI[3], vp_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), v, vp_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+		s_pm_dot_v3(pmJ, v, vp_in_ground);
+		s_inv_pm_dot_v3(pmI, vp_in_ground, vp_in_makI);
 
 		s_vc(3, vp_in_makI, cv);
 	}
-	auto PointMotion::cptCaFromA(double *ca, const double* a)const noexcept->void {
-		Constraint::cptCa(ca);
+	auto PointMotion::cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void {
+		// 调用基类的 updCa 并优化乘法 //
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
+		//s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
+		s_vi(3, tem, ca);
+
+		// 效仿updV计算 vp_i2j_in_j，它是 v() //
+		double vs_i2j_in_g[6], vp_i2j_in_g[3], pp_i_in_g[3]{pmI[3], pmI[7], pmI[11]};
+		double vs_i_in_j[6], vp_i2j_in_j[3];
+		s_inv_vs2vs(pmJ, vsJ, vsI, vs_i_in_j);
+		double pp_i_in_j[3];
+		s_pp2pp(pmJ, pp_i_in_g, pp_i_in_j);
+		s_vs2vp(vs_i_in_j, pp_i_in_j, vp_i2j_in_j);
 
 		// w x R * dr //
 		double vp_in_makI[3], vp_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), v(), vp_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), vp_in_ground, vp_in_makI);
+		s_pm_dot_v3(pmJ, vp_i2j_in_j, vp_in_ground);
+		s_inv_pm_dot_v3(pmI, vp_in_ground, vp_in_makI);
 
 		double vs_J_in_I[6];
-		makJ()->getVs(*makI(), vs_J_in_I);
-
+		s_inv_vs2vs(pmI, vsI, vsJ, vs_J_in_I);
 		s_c3a(vs_J_in_I + 3, vp_in_makI, ca);
 
 		// R * ddr //
 		double ap_in_makI[3], ap_in_ground[3];
-		s_pm_dot_v3(*makJ()->pm(), a, ap_in_ground);
-		s_inv_pm_dot_v3(*makI()->pm(), ap_in_ground, ap_in_makI);
+		s_pm_dot_v3(pmJ, a, ap_in_ground);
+		s_inv_pm_dot_v3(pmI, ap_in_ground, ap_in_makI);
 
 		s_va(3, ap_in_makI, ca);
 	}
@@ -637,7 +660,7 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto SphericalMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+	auto SphericalMotion::cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void {
 		// 先计算 mak_i 相对于 mak_j 所应该处的位姿 pm_i2j_should_be
 		// 再计算 mak_i 相对于 mak_j 真实的位姿     pm_i2j
 		// 两者的差值就是应该的补偿量
@@ -645,7 +668,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -654,18 +677,15 @@ namespace aris::dynamic{
 		s_pm2ps(pm_i2j_diff, ps_i2j_diff);
 		s_vc(3, ps_i2j_diff + 3, cp);
 	}
-	auto SphericalMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+	auto SphericalMotion::cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void {
 		double pm[16], dm1[36];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm1);
 
 		s_vc(18, dm1, dm + 18);
 		s_vc(18, dm1 + 18, dm);
 	}
-	auto SphericalMotion::cptCvFromV(double* cv, const double* v)const noexcept->void {
-		// tbd
-	}
-	auto SphericalMotion::cptCaFromA(double* ca, const double* a)const noexcept->void {
+	auto SphericalMotion::cptCaFromA(double* ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void {
 		// tbd
 	}
 	auto SphericalMotion::cptPError(const double* p1, const double* p2)->double {
@@ -706,6 +726,9 @@ namespace aris::dynamic{
 		}
 		return max_error;
 	}
+	auto SphericalMotion::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void{
+
+	}
 
 	SphericalMotion::~SphericalMotion() = default;
 	SphericalMotion::SphericalMotion(const std::string & name, Marker * makI, Marker * makJ, bool active) : MotionBase(name, makI, makJ, active) {
@@ -727,7 +750,7 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto XyztMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void {
+	auto XyztMotion::cptCpFromPm(double *cp, const double *pmI, const double *pmJ, const double* mp)const noexcept->void {
 		//// 类似general motion，但仅取其中4维
 		//// 先生成mpm
 		//double mpm[16];
@@ -738,10 +761,10 @@ namespace aris::dynamic{
 
 		//// 类似general motion 进行计算
 		//double pm_it[16];
-		//s_pm_dot_pm(makJ_pm, mpm, pm_it);
+		//s_pm_dot_pm(pmJ, mpm, pm_it);
 
 		//double pm_c[16], ps_c[6];
-		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		//s_inv_pm_dot_pm(pmI, pm_it, pm_c);
 		//s_pm2ps(pm_c, ps_c);
 
 		//// locCmI为单位矩阵，此时无需相乘
@@ -755,7 +778,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -766,12 +789,12 @@ namespace aris::dynamic{
 		s_vc(3, ps_i2j_diff, cp);
 		cp[3] = ps_i2j_diff[5];
 	}
-	auto XyztMotion::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void {
+	auto XyztMotion::cptGlbDmFromPm(double *dm, const double *pmI, const double *pmJ)const noexcept->void {
 		double pm[16];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm);
 	}
-	auto XyztMotion::cptCvFromV(double *cv, const double* v)const noexcept->void {
+	auto XyztMotion::cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void {
 		//// 这里不能用 point motion 的计算方法，因为point motion 的转动不对移动产生作用（是被动转动）
 		//double mpe[6]{ imp_->mp_[0],imp_->mp_[1],imp_->mp_[2], imp_->mp_[3],0,0 };
 		//double mpm[16];
@@ -803,7 +826,7 @@ namespace aris::dynamic{
 		// 转动所添加的 cv //
 		cv[3] = v[3];
 	}
-	auto XyztMotion::cptCaFromA(double *ca, const double* a)const noexcept->void {
+	auto XyztMotion::cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void {
 		
 		///////  以下可能不对 ///////////
 		///////  tbd /////
@@ -860,7 +883,7 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto PlanarMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+	auto PlanarMotion::cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void {
 		//// 类似general motion，但仅取其中3维
 		//// 先生成mpm
 		//double mpm[16];
@@ -872,10 +895,10 @@ namespace aris::dynamic{
 
 		//// 类似general motion 进行计算
 		//double pm_it[16];
-		//s_pm_dot_pm(makJ_pm, mpm, pm_it);
+		//s_pm_dot_pm(pmJ, mpm, pm_it);
 
 		//double pm_c[16], ps_c[6];
-		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		//s_inv_pm_dot_pm(pmI, pm_it, pm_c);
 		//s_pm2ps(pm_c, ps_c);
 
 		//// locCmI为单位矩阵，此时无需相乘
@@ -889,7 +912,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -900,12 +923,12 @@ namespace aris::dynamic{
 		s_vc(2, ps_i2j_diff, cp);
 		cp[2] = ps_i2j_diff[5];
 	}
-	auto PlanarMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+	auto PlanarMotion::cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void {
 		double pm[16];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm);
 	}
-	auto PlanarMotion::cptCvFromV(double* cv, const double* v)const noexcept->void {
+	auto PlanarMotion::cptCvFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void {
 		// 点运动所添加的 cv //
 		double vp_in_makI[3], vp_in_ground[3];
 		s_pm_dot_v3(*makJ()->pm(), v, vp_in_ground);
@@ -916,12 +939,15 @@ namespace aris::dynamic{
 		// 转动所添加的 cv //
 		cv[2] = v[2];
 	}
-	auto PlanarMotion::cptCaFromA(double* ca, const double* a)const noexcept->void {
+	auto PlanarMotion::cptCaFromA(double* ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void {
 
 		///////  以下可能不对 ///////////
 		///////  tbd /////
 
-		Constraint::cptCa(ca);
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
+		s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
 
 		// w x R * dr //
 		double vp_in_makI[3], vp_in_ground[3];
@@ -973,7 +999,7 @@ namespace aris::dynamic{
 		};
 		return loc_cm_I;
 	}
-	auto XyMotion::cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void {
+	auto XyMotion::cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void {
 		//// 类似general motion，但仅取其中3维
 		//// 先生成mpm
 		//double mpm[16]{
@@ -985,10 +1011,10 @@ namespace aris::dynamic{
 
 		//// 类似general motion 进行计算
 		//double pm_it[16];
-		//s_pm_dot_pm(makJ_pm, mpm, pm_it);
+		//s_pm_dot_pm(pmJ, mpm, pm_it);
 
 		//double pm_c[16];
-		//s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+		//s_inv_pm_dot_pm(pmI, pm_it, pm_c);
 
 		//cp[0] = pm_c[3];
 		//cp[1] = pm_c[7];
@@ -1000,7 +1026,7 @@ namespace aris::dynamic{
 		cptPmFromP(mp, pm_i2j_should_be);
 
 		double pm_i2j[16];
-		s_inv_pm_dot_pm(makJ_pm, makI_pm, pm_i2j);
+		s_inv_pm_dot_pm(pmJ, pmI, pm_i2j);
 
 		// in real i frame
 		double pm_i2j_diff[16], ps_i2j_diff[6];
@@ -1010,12 +1036,12 @@ namespace aris::dynamic{
 		// 【注意】：这里不应考虑角度所造成的移动距离，不同于上文
 		s_vc(2, ps_i2j_diff, cp);
 	}
-	auto XyMotion::cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void {
+	auto XyMotion::cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void {
 		double pm[16];
-		s_inv_pm(makI_pm, pm);
+		s_inv_pm(pmI, pm);
 		s_tmf(pm, dm);
 	}
-	auto XyMotion::cptCvFromV(double* cv, const double* v)const noexcept->void {
+	auto XyMotion::cptCvFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void {
 		// 点运动所添加的 cv //
 		double vp_in_makI[3], vp_in_ground[3];
 		s_pm_dot_v3(*makJ()->pm(), v, vp_in_ground);
@@ -1023,12 +1049,15 @@ namespace aris::dynamic{
 
 		s_vc(2, vp_in_makI, cv);
 	}
-	auto XyMotion::cptCaFromA(double* ca, const double* a)const noexcept->void {
+	auto XyMotion::cptCaFromA(double* ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void {
 
 		///////  以下可能不对 ///////////
 		///////  tbd /////
 
-		Constraint::cptCa(ca);
+		double vi_cross_vj[6], tem[6];
+		s_cv(vsI, vsJ, vi_cross_vj);
+		s_inv_tv(pmI, vi_cross_vj, tem);
+		s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
 
 		// w x R * dr //
 		double vp_in_makI[3], vp_in_ground[3];
@@ -1060,15 +1089,18 @@ namespace aris::dynamic{
 	ARIS_REGISTRATION{
 		auto setMp = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
 		auto getMp = [](MotionBase* c)->aris::core::Matrix {	
-			return c->p() ? aris::core::Matrix(1, c->pSize(), c->p()) : aris::core::Matrix(1, c->pSize(), 0.0);
+			auto pSize = c->pSize() > 0 ? c->pSize() : 0;
+			return c->p() ? aris::core::Matrix(1, pSize, c->p()) : aris::core::Matrix(1, pSize, 0.0);
 		};
 		auto setMv = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
 		auto getMv = [](MotionBase* c)->aris::core::Matrix {
-			return c->v() ? aris::core::Matrix(1, c->vSize(), c->v()) : aris::core::Matrix(1, c->vSize(), 0.0);
+			auto vSize = c->vSize() > 0 ? c->vSize() : 0;
+			return c->v() ? aris::core::Matrix(1, vSize, c->v()) : aris::core::Matrix(1, vSize, 0.0);
 		};
 		auto setMa = [](MotionBase* c, aris::core::Matrix mat)->void {c->setP(mat.data()); };
 		auto getMa = [](MotionBase* c)->aris::core::Matrix {
-			return c->a() ? aris::core::Matrix(1, c->aSize(), c->a()) : aris::core::Matrix(1, c->aSize(), 0.0);
+			auto aSize = c->aSize() > 0 ? c->aSize() : 0;
+			return c->a() ? aris::core::Matrix(1, aSize, c->a()) : aris::core::Matrix(1, aSize, 0.0);
 		};
 		aris::core::class_<MotionBase>("MotionBase")
 			.inherit<aris::dynamic::Constraint>()

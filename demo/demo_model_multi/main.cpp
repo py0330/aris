@@ -198,6 +198,8 @@ auto createMultiModel() -> std::unique_ptr<aris::dynamic::MultiModel> {
 int main(){
 	auto multi_model = createMultiModel();
 
+	std::cout << aris::core::toXmlString(*multi_model) << std::endl;
+
 	// 构造规划器 //
 	pd.setModel(*multi_model);
 	pd.setChanelSize(2); // chanel 对应线程

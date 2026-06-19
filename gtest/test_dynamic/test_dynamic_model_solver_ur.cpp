@@ -96,103 +96,103 @@ TEST(ModelSolverUr, InverseKinematicsCombinedFlow) {
             std::vector<double> out_pos(out_pos_size);
             EXPECT_TRUE(m->forwardKinematics(cmd_q, out_pos.data(), nullptr, cmd_q) == 0);
 
-        std::int64_t root_of_cmd_q{-1};
-        EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), cmd_q, &root_of_cmd_q) == 0);
+            std::int64_t root_of_cmd_q{-1};
+            EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), cmd_q, &root_of_cmd_q) == 0);
 
-        std::vector<std::pair<std::int64_t, std::array<double, 6>>> candidates;
-        candidates.reserve(static_cast<size_t>(root_num));
+            std::vector<std::pair<std::int64_t, std::array<double, 6>>> candidates;
+            candidates.reserve(static_cast<size_t>(root_num));
 
-        // 1) Stateless API: inverseKinematics(output, input, which_root, current_input)
-        for (std::int64_t root = 0; root < root_num; ++root) {
-            double cmd_q_back_direct[6]{0, 0, 0, 0, 0, 0};
-            std::vector<double> out_pos_recheck(out_pos_size);
-            auto this_root = root;
+            // 1) Stateless API: inverseKinematics(output, input, which_root, current_input)
+            for (std::int64_t root = 0; root < root_num; ++root) {
+                double cmd_q_back_direct[6]{0, 0, 0, 0, 0, 0};
+                std::vector<double> out_pos_recheck(out_pos_size);
+                auto this_root = root;
 
-            if (m->inverseKinematics(out_pos.data(), cmd_q_back_direct, &this_root, cmd_q) != 0) {
-                continue;
+                if (m->inverseKinematics(out_pos.data(), cmd_q_back_direct, &this_root, cmd_q) != 0) {
+                    continue;
+                }
+
+                root_covered_stateless[static_cast<size_t>(root)] = 1;
+                EXPECT_TRUE(m->forwardKinematics(cmd_q_back_direct, out_pos_recheck.data(), nullptr, cmd_q_back_direct) == 0);
+                EXPECT_TRUE(aris::dynamic::s_is_equal(out_pos_size, 1, out_pos.data(), out_pos_recheck.data(), 1e-8));
+
+                std::array<double, 6> c{};
+                for (int i = 0; i < 6; ++i) c[static_cast<size_t>(i)] = cmd_q_back_direct[i];
+                candidates.emplace_back(root, c);
+
+                if (root == root_of_cmd_q) {
+                    EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, cmd_q, cmd_q_back_direct, 1e-9));
+                }
             }
 
-            root_covered_stateless[static_cast<size_t>(root)] = 1;
-            EXPECT_TRUE(m->forwardKinematics(cmd_q_back_direct, out_pos_recheck.data(), nullptr, cmd_q_back_direct) == 0);
-            EXPECT_TRUE(aris::dynamic::s_is_equal(out_pos_size, 1, out_pos.data(), out_pos_recheck.data(), 1e-8));
+            ASSERT_GT(candidates.size(), 0U);
 
-            std::array<double, 6> c{};
-            for (int i = 0; i < 6; ++i) c[static_cast<size_t>(i)] = cmd_q_back_direct[i];
-            candidates.emplace_back(root, c);
+            // Stateless auto-root should follow current_input.
+            if (candidates.size() >= 2U) {
+                for (size_t ti = 0; ti < candidates.size(); ++ti) {
+                    const auto &target = candidates[ti];
+                    const auto &distractor = candidates[(ti + 1U) % candidates.size()];
 
-            if (root == root_of_cmd_q) {
-                EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, cmd_q, cmd_q_back_direct, 1e-9));
+                    m->setInputPos(distractor.second.data());
+
+                    double result_direct[6]{0, 0, 0, 0, 0, 0};
+                    EXPECT_TRUE(m->inverseKinematics(out_pos.data(), result_direct, nullptr, target.second.data()) == 0);
+
+                    std::int64_t chosen_root_direct{-1};
+                    EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), result_direct, &chosen_root_direct) == 0);
+                    EXPECT_EQ(chosen_root_direct, target.first);
+                }
             }
+
+            // 2) Stateful API: inverseKinematics()
+            for (std::int64_t root = 0; root < root_num; ++root) {
+                double cmd_q_back_state[6]{0, 0, 0, 0, 0, 0};
+                std::vector<double> out_pos_recheck(out_pos_size);
+                auto this_root = root;
+
+                m->setWhichInverseRoot(&this_root);
+                m->setInputPos(cmd_q);
+                m->setOutputPos(out_pos.data());
+                if (m->inverseKinematics() != 0) {
+                    continue;
+                }
+                m->getInputPos(cmd_q_back_state);
+
+                root_covered_stateful[static_cast<size_t>(root)] = 1;
+                EXPECT_TRUE(m->forwardKinematics(cmd_q_back_state, out_pos_recheck.data(), nullptr, cmd_q_back_state) == 0);
+                EXPECT_TRUE(aris::dynamic::s_is_equal(out_pos_size, 1, out_pos.data(), out_pos_recheck.data(), 1e-8));
+
+                if (root == root_of_cmd_q) {
+                    EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, cmd_q, cmd_q_back_state, 1e-9));
+                }
+            }
+
+            // Stateful auto-root should choose the nearest initial guess.
+            for (const auto &cand : candidates) {
+                double initial[6], result[6];
+                std::int64_t auto_root{-1};
+                for (int i = 0; i < 6; ++i) {
+                    initial[i] = cand.second[static_cast<size_t>(i)] + (i % 2 == 0 ? 1e-4 : -1e-4);
+                }
+
+                m->setWhichInverseRoot(&auto_root);
+                m->setInputPos(initial);
+                m->setOutputPos(out_pos.data());
+                EXPECT_TRUE(m->inverseKinematics() == 0);
+                m->getInputPos(result);
+
+                std::int64_t chosen_root{-1};
+                EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), result, &chosen_root) == 0);
+                EXPECT_EQ(chosen_root, cand.first);
+            }
+
+            int covered_stateless = 0;
+            int covered_stateful = 0;
+            for (auto c : root_covered_stateless) covered_stateless += c;
+            for (auto c : root_covered_stateful) covered_stateful += c;
+            EXPECT_EQ(covered_stateless, static_cast<int>(root_num));
+            EXPECT_EQ(covered_stateful, static_cast<int>(root_num));
         }
-
-        ASSERT_GT(candidates.size(), 0U);
-
-        // Stateless auto-root should follow current_input.
-        if (candidates.size() >= 2U) {
-            for (size_t ti = 0; ti < candidates.size(); ++ti) {
-                const auto &target = candidates[ti];
-                const auto &distractor = candidates[(ti + 1U) % candidates.size()];
-
-                m->setInputPos(distractor.second.data());
-
-                double result_direct[6]{0, 0, 0, 0, 0, 0};
-                EXPECT_TRUE(m->inverseKinematics(out_pos.data(), result_direct, nullptr, target.second.data()) == 0);
-
-                std::int64_t chosen_root_direct{-1};
-                EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), result_direct, &chosen_root_direct) == 0);
-                EXPECT_EQ(chosen_root_direct, target.first);
-            }
-        }
-
-        // 2) Stateful API: inverseKinematics()
-        for (std::int64_t root = 0; root < root_num; ++root) {
-            double cmd_q_back_state[6]{0, 0, 0, 0, 0, 0};
-            std::vector<double> out_pos_recheck(out_pos_size);
-            auto this_root = root;
-
-            m->setWhichInverseRoot(&this_root);
-            m->setInputPos(cmd_q);
-            m->setOutputPos(out_pos.data());
-            if (m->inverseKinematics() != 0) {
-                continue;
-            }
-            m->getInputPos(cmd_q_back_state);
-
-            root_covered_stateful[static_cast<size_t>(root)] = 1;
-            EXPECT_TRUE(m->forwardKinematics(cmd_q_back_state, out_pos_recheck.data(), nullptr, cmd_q_back_state) == 0);
-            EXPECT_TRUE(aris::dynamic::s_is_equal(out_pos_size, 1, out_pos.data(), out_pos_recheck.data(), 1e-8));
-
-            if (root == root_of_cmd_q) {
-                EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, cmd_q, cmd_q_back_state, 1e-9));
-            }
-        }
-
-        // Stateful auto-root should choose the nearest initial guess.
-        for (const auto &cand : candidates) {
-            double initial[6], result[6];
-            std::int64_t auto_root{-1};
-            for (int i = 0; i < 6; ++i) {
-                initial[i] = cand.second[static_cast<size_t>(i)] + (i % 2 == 0 ? 1e-4 : -1e-4);
-            }
-
-            m->setWhichInverseRoot(&auto_root);
-            m->setInputPos(initial);
-            m->setOutputPos(out_pos.data());
-            EXPECT_TRUE(m->inverseKinematics() == 0);
-            m->getInputPos(result);
-
-            std::int64_t chosen_root{-1};
-            EXPECT_TRUE(m->getWhichInverseRoot(out_pos.data(), result, &chosen_root) == 0);
-            EXPECT_EQ(chosen_root, cand.first);
-        }
-        }
-
-        int covered_stateless = 0;
-        int covered_stateful = 0;
-        for (auto c : root_covered_stateless) covered_stateless += c;
-        for (auto c : root_covered_stateful) covered_stateful += c;
-        EXPECT_EQ(covered_stateless, static_cast<int>(root_num));
-        EXPECT_EQ(covered_stateful, static_cast<int>(root_num));
     }
 }
 
@@ -259,6 +259,10 @@ TEST(ModelSolverUr, VelAccForceRoundTrip) {
         EXPECT_TRUE(m->inverseKinematicsAcc() == 0);
         m->getInputVel(cmd_v_back);
         m->getInputAcc(cmd_a_back);
+
+        std::vector<double> cmd_a_stateless(static_cast<size_t>(m->inputAccSize()), 123456.0);
+        EXPECT_TRUE(m->inverseKinematicsAcc(out_acc.data(), cmd_a_stateless.data()) == 0);
+        EXPECT_TRUE(aris::dynamic::s_is_equal(static_cast<int>(cmd_a_stateless.size()), 1, cmd_a_back, cmd_a_stateless.data(), 1e-10));
 
         m->setInputPos(cmd_q);
         m->setInputVel(cmd_v_back);
@@ -471,6 +475,217 @@ TEST(ModelSolverUr, StatelessVelocityConsistencyPolluted) {
         ASSERT_EQ(m->forwardKinematicsVel(cmd_v_stateless_polluted.data(), out_from_stateless_polluted.data()), 0);
         EXPECT_TRUE(aris::dynamic::s_is_equal(m_out, 1, out_vel_target.data(), out_from_stateful_polluted.data(), 1e-6));
         EXPECT_TRUE(aris::dynamic::s_is_equal(m_out, 1, out_vel_target.data(), out_from_stateless_polluted.data(), 1e-6));
+    }
+}
+
+TEST(ModelSolverUr, StatelessAccelerationConsistencyPolluted) {
+    for (const auto &p : motor_scale_cases()) {
+        SCOPED_TRACE(::testing::Message() << "factor=" << p.factor << " offset=" << p.offset);
+
+        auto m = createUrModel();
+        applyMotorFactorOffset(*m, p.factor, p.offset);
+
+        const double phy_q[6]{0.17, -0.09, 0.14, -0.22, 0.19, -0.11};
+        double cmd_q[6];
+        physicalToMotorCmd(phy_q, cmd_q, 6, p.factor, p.offset);
+
+        m->setInputPos(cmd_q);
+        ASSERT_EQ(m->forwardKinematics(), 0);
+
+        std::vector<double> out_pos(m->outputPosSize());
+        m->getOutputPos(out_pos.data());
+
+        const int n_in = static_cast<int>(m->inputAccSize());
+        const double acc_tol = 1e-8;
+
+        const double cmd_v_ref_arr[6]{0.12, -0.10, 0.08, -0.06, 0.04, -0.02};
+        const double cmd_a_ref_arr[6]{-0.07, 0.05, -0.04, 0.03, -0.02, 0.01};
+
+        m->setInputVel(cmd_v_ref_arr);
+        ASSERT_EQ(m->forwardKinematicsVel(), 0);
+        std::vector<double> out_vel_target(m->outputVelSize(), 0.0);
+        m->getOutputVel(out_vel_target.data());
+
+        m->setInputAcc(cmd_a_ref_arr);
+        ASSERT_EQ(m->forwardKinematicsAcc(), 0);
+        std::vector<double> out_acc_target(m->outputAccSize(), 0.0);
+        m->getOutputAcc(out_acc_target.data());
+
+        std::int64_t which_root{0};
+        ASSERT_EQ(m->getWhichInverseRoot(out_pos.data(), cmd_q, &which_root), 0);
+
+        // Align stateful kinematic branch (pos->vel) before stateless accel query.
+        m->setWhichInverseRoot(&which_root);
+        m->setInputPos(cmd_q);
+        m->setOutputPos(out_pos.data());
+        ASSERT_EQ(m->inverseKinematics(), 0);
+        m->setOutputVel(out_vel_target.data());
+        ASSERT_EQ(m->inverseKinematicsVel(), 0);
+
+        // Baseline stateful result.
+        m->setOutputAcc(out_acc_target.data());
+        ASSERT_EQ(m->inverseKinematicsAcc(), 0);
+        std::vector<double> cmd_a_stateful(n_in, 0.0);
+        m->getInputAcc(cmd_a_stateful.data());
+
+        // Pollute internal accel-related states by solving with unrelated output acceleration once.
+        std::vector<double> out_acc_dirty(m->outputAccSize(), 0.0);
+        for (int i = 0; i < static_cast<int>(out_acc_dirty.size()); ++i) {
+            out_acc_dirty[static_cast<size_t>(i)] = (i % 2 == 0) ? (-0.19 + 0.02 * i) : (0.17 - 0.015 * i);
+        }
+        m->setOutputAcc(out_acc_dirty.data());
+        ASSERT_EQ(m->inverseKinematicsAcc(), 0);
+
+        // Stateless API should still recover the target input acceleration.
+        std::vector<double> cmd_a_stateless_polluted(n_in, 123456.0);
+        ASSERT_EQ(m->inverseKinematicsAcc(out_acc_target.data(), cmd_a_stateless_polluted.data()), 0);
+
+        EXPECT_TRUE(aris::dynamic::s_is_equal(n_in, 1, cmd_a_stateful.data(), cmd_a_stateless_polluted.data(), acc_tol));
+    }
+}
+
+TEST(ModelSolverUr, StatelessForwardAccelerationConsistencyPolluted) {
+    for (const auto &p : motor_scale_cases()) {
+        SCOPED_TRACE(::testing::Message() << "factor=" << p.factor << " offset=" << p.offset);
+
+        auto m = createUrModel();
+        applyMotorFactorOffset(*m, p.factor, p.offset);
+
+        const double phy_q[6]{0.17, -0.09, 0.14, -0.22, 0.19, -0.11};
+        double cmd_q[6];
+        physicalToMotorCmd(phy_q, cmd_q, 6, p.factor, p.offset);
+
+        m->setInputPos(cmd_q);
+        ASSERT_EQ(m->forwardKinematics(), 0);
+
+        const double cmd_v_ref_arr[6]{0.12, -0.10, 0.08, -0.06, 0.04, -0.02};
+        const double cmd_a_ref_arr[6]{-0.07, 0.05, -0.04, 0.03, -0.02, 0.01};
+
+        m->setInputVel(cmd_v_ref_arr);
+        ASSERT_EQ(m->forwardKinematicsVel(), 0);
+
+        const int out_acc_size = static_cast<int>(m->outputAccSize());
+        const int n_in = static_cast<int>(m->inputAccSize());
+
+        // Baseline stateful result.
+        m->setInputAcc(cmd_a_ref_arr);
+        ASSERT_EQ(m->forwardKinematicsAcc(), 0);
+        std::vector<double> out_acc_stateful(out_acc_size, 0.0);
+        m->getOutputAcc(out_acc_stateful.data());
+
+        // Stateless result under clean state.
+        std::vector<double> out_acc_stateless_clean(out_acc_size, 123456.0);
+        ASSERT_EQ(m->forwardKinematicsAcc(cmd_a_ref_arr, out_acc_stateless_clean.data()), 0);
+        EXPECT_TRUE(aris::dynamic::s_is_equal(out_acc_size, 1, out_acc_stateful.data(), out_acc_stateless_clean.data(), 1e-6));
+
+        // Pollute the current state by solving with a different input acceleration.
+        std::vector<double> cmd_a_dirty(n_in, 0.0);
+        for (int i = 0; i < n_in; ++i) {
+            cmd_a_dirty[static_cast<size_t>(i)] = (i % 2 == 0) ? (0.21 - 0.03 * i) : (-0.18 + 0.025 * i);
+        }
+        m->setInputAcc(cmd_a_dirty.data());
+        ASSERT_EQ(m->forwardKinematicsAcc(), 0);
+
+        std::vector<double> out_acc_stateless_polluted(out_acc_size, 123456.0);
+        ASSERT_EQ(m->forwardKinematicsAcc(cmd_a_ref_arr, out_acc_stateless_polluted.data()), 0);
+        EXPECT_TRUE(aris::dynamic::s_is_equal(out_acc_size, 1, out_acc_stateless_clean.data(), out_acc_stateless_polluted.data(), 1e-6));
+    }
+}
+
+TEST(ModelSolverUr, StatelessInverseDynamicsConsistencyPolluted) {
+    for (const auto &p : motor_scale_cases()) {
+        SCOPED_TRACE(::testing::Message() << "factor=" << p.factor << " offset=" << p.offset);
+
+        auto m = createUrModel();
+        applyMotorFactorOffset(*m, p.factor, p.offset);
+
+        const double phy_q[6]{-0.14, 0.11, -0.09, 0.16, -0.12, 0.07};
+        const double phy_v[6]{0.025, -0.018, 0.021, -0.015, 0.013, -0.011};
+        const double phy_a[6]{-0.032, 0.027, -0.022, 0.019, -0.016, 0.014};
+
+        double cmd_q[6], cmd_v[6], cmd_a[6];
+        physicalToMotorCmd(phy_q, cmd_q, 6, p.factor, p.offset);
+        for (int i = 0; i < 6; ++i) {
+            cmd_v[i] = phy_v[i] / p.factor;
+            cmd_a[i] = phy_a[i] / p.factor;
+        }
+
+        m->setInputPos(cmd_q);
+        m->setInputVel(cmd_v);
+        m->setInputAcc(cmd_a);
+        ASSERT_EQ(m->forwardKinematics(), 0);
+        ASSERT_EQ(m->forwardKinematicsVel(), 0);
+        ASSERT_EQ(m->forwardKinematicsAcc(), 0);
+
+        // Baseline stateful result.
+        ASSERT_EQ(m->inverseDynamics(), 0);
+        std::vector<double> tau_stateful(m->inputFceSize(), 0.0);
+        m->getInputFce(tau_stateful.data());
+
+        // Pollute the model state with unrelated forces before calling the stateless API.
+        std::vector<double> dirty_tau(m->inputFceSize(), 0.0);
+        for (int i = 0; i < static_cast<int>(dirty_tau.size()); ++i) {
+            dirty_tau[static_cast<size_t>(i)] = (i % 2 == 0) ? (0.41 - 0.05 * i) : (-0.33 + 0.04 * i);
+        }
+        m->setInputFce(dirty_tau.data());
+
+        std::vector<double> tau_stateless(m->inputFceSize(), 123456.0);
+        ASSERT_EQ(m->inverseDynamics(cmd_a, tau_stateless.data()), 0);
+        EXPECT_TRUE(aris::dynamic::s_is_equal(static_cast<int>(tau_stateful.size()), 1, tau_stateful.data(), tau_stateless.data(), 1e-10));
+    }
+}
+
+TEST(ModelSolverUr, StatelessForwardDynamicsConsistencyPolluted) {
+    for (const auto &p : motor_scale_cases()) {
+        SCOPED_TRACE(::testing::Message() << "factor=" << p.factor << " offset=" << p.offset);
+
+        auto m = createUrModel();
+        applyMotorFactorOffset(*m, p.factor, p.offset);
+
+        const double phy_q[6]{-0.14, 0.11, -0.09, 0.16, -0.12, 0.07};
+        const double phy_v[6]{0.025, -0.018, 0.021, -0.015, 0.013, -0.011};
+        const double phy_a[6]{-0.032, 0.027, -0.022, 0.019, -0.016, 0.014};
+
+        double cmd_q[6], cmd_v[6], cmd_a[6];
+        physicalToMotorCmd(phy_q, cmd_q, 6, p.factor, p.offset);
+        for (int i = 0; i < 6; ++i) {
+            cmd_v[i] = phy_v[i] / p.factor;
+            cmd_a[i] = phy_a[i] / p.factor;
+        }
+
+        m->setInputPos(cmd_q);
+        m->setInputVel(cmd_v);
+        m->setInputAcc(cmd_a);
+        ASSERT_EQ(m->forwardKinematics(), 0);
+        ASSERT_EQ(m->forwardKinematicsVel(), 0);
+        ASSERT_EQ(m->forwardKinematicsAcc(), 0);
+
+        // Build a dynamically consistent force input from inverse dynamics.
+        ASSERT_EQ(m->inverseDynamics(), 0);
+        std::vector<double> tau_ref(m->inputFceSize(), 0.0);
+        m->getInputFce(tau_ref.data());
+
+        // Baseline stateful forward dynamics result.
+        m->setInputFce(tau_ref.data());
+        ASSERT_EQ(m->forwardDynamics(), 0);
+        std::vector<double> acc_stateful(m->inputAccSize(), 0.0);
+        m->getInputAcc(acc_stateful.data());
+
+        // Pollute the model state with unrelated force/acc before stateless call.
+        std::vector<double> dirty_tau(m->inputFceSize(), 0.0), dirty_acc(m->inputAccSize(), 0.0);
+        for (int i = 0; i < static_cast<int>(dirty_tau.size()); ++i) {
+            dirty_tau[static_cast<size_t>(i)] = (i % 2 == 0) ? (-0.29 + 0.03 * i) : (0.22 - 0.02 * i);
+        }
+        for (int i = 0; i < static_cast<int>(dirty_acc.size()); ++i) {
+            dirty_acc[static_cast<size_t>(i)] = (i % 2 == 0) ? (0.37 - 0.04 * i) : (-0.31 + 0.035 * i);
+        }
+        m->setInputFce(dirty_tau.data());
+        m->setInputAcc(dirty_acc.data());
+
+        std::vector<double> acc_stateless(m->inputAccSize(), 123456.0);
+        ASSERT_EQ(m->forwardDynamics(tau_ref.data(), acc_stateless.data()), 0);
+
+        EXPECT_TRUE(aris::dynamic::s_is_equal(static_cast<int>(acc_stateful.size()), 1, phy_a, acc_stateless.data(), 1e-10));
     }
 }
 

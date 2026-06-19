@@ -52,6 +52,7 @@ namespace aris::dynamic{
 
 		// input limits //
 		double *min_input_pos_, *max_input_pos_, *min_input_vel_, *max_input_vel_, *min_input_acc_, *max_input_acc_;
+		double *input_output_mem_; // 缓存，用来存放动力学输入输出结果
 	};
 	auto Model::init()->void { 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void{
@@ -164,6 +165,7 @@ namespace aris::dynamic{
 		core::allocMem(mem_size, imp_->max_input_vel_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->min_input_acc_, imp_->mot_size_);
 		core::allocMem(mem_size, imp_->max_input_acc_, imp_->mot_size_);
+		core::allocMem(mem_size, imp_->input_output_mem_, imp_->mot_size_*2 + imp_->ee_size_*6); // 2 for input and output
 
 		imp_->mem_.resize(mem_size, char(0));
 
@@ -181,7 +183,8 @@ namespace aris::dynamic{
 		imp_->max_input_vel_ = core::getMem(imp_->mem_.data(), imp_->max_input_vel_);
 		imp_->min_input_acc_ = core::getMem(imp_->mem_.data(), imp_->min_input_acc_);
 		imp_->max_input_acc_ = core::getMem(imp_->mem_.data(), imp_->max_input_acc_);
-
+		imp_->input_output_mem_ = core::getMem(imp_->mem_.data(), imp_->input_output_mem_);
+		
 		for (auto i = 0; i < generalMotionPool().size(); ++i) {
 			imp_->ee_pos_types_[i] = generalMotionPool()[i].posType();
 			imp_->ee_vel_types_[i] = generalMotionPool()[i].velType();
@@ -258,57 +261,42 @@ namespace aris::dynamic{
 		}
 		return -1;
 	}
+	
 	auto Model::inverseKinematicsAcc(const double* output, double* input)const noexcept->int {
-		std::vector<double> input_acc(inputAccSize()), output_acc(outputAccSize());
-		getInputAcc(input_acc.data());
-		getOutputAcc(output_acc.data());
-
-		const_cast<Model*>(this)->setOutputAcc(output);
-		auto ret = const_cast<Model*>(this)->inverseKinematicsAcc();
-		if (ret == 0) getInputAcc(input);
-
-		const_cast<Model*>(this)->setInputAcc(input_acc.data());
-		const_cast<Model*>(this)->setOutputAcc(output_acc.data());
-		return ret;
+		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
+			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
+			int ret = inv->dynAccAndFcePure(output, imp_->input_output_mem_);
+			aris::dynamic::s_vc(inputAccSize(), imp_->input_output_mem_ + outputFceSize(), input);
+			return ret;
+		}
+		return -1;
 	}
 	auto Model::forwardKinematicsAcc(const double* input, double* output)const noexcept->int {
-		std::vector<double> input_acc(inputAccSize()), output_acc(outputAccSize());
-		getInputAcc(input_acc.data());
-		getOutputAcc(output_acc.data());
-
-		const_cast<Model*>(this)->setInputAcc(input);
-		auto ret = const_cast<Model*>(this)->forwardKinematicsAcc();
-		if (ret == 0) getOutputAcc(output);
-
-		const_cast<Model*>(this)->setInputAcc(input_acc.data());
-		const_cast<Model*>(this)->setOutputAcc(output_acc.data());
-		return ret;
+		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
+			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
+			int ret = fwd->dynAccAndFcePure(input, imp_->input_output_mem_);
+			aris::dynamic::s_vc(outputAccSize(), imp_->input_output_mem_ + inputFceSize(), output);
+			return ret;
+		}
+		return -1;
 	}
 	auto Model::inverseDynamics(const double* input_a, double* input_f)const noexcept->int {
-		std::vector<double> input_acc(inputAccSize()), input_fce(inputFceSize());
-		getInputAcc(input_acc.data());
-		getInputFce(input_fce.data());
-
-		const_cast<Model*>(this)->setInputAcc(input_a);
-		auto ret = const_cast<Model*>(this)->inverseDynamics();
-		if (ret == 0) getInputFce(input_f);
-
-		const_cast<Model*>(this)->setInputAcc(input_acc.data());
-		const_cast<Model*>(this)->setInputFce(input_fce.data());
-		return ret;
+		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseDynamicSolver*>(&solverPool()[2])) {
+			auto inv = const_cast<aris::dynamic::InverseDynamicSolver*>(c_inv);
+			int ret = inv->dynAccAndFcePure(input_a, imp_->input_output_mem_);
+			aris::dynamic::s_vc(inputFceSize(), imp_->input_output_mem_, input_f);
+			return ret;
+		}
+		return -1;
 	}
 	auto Model::forwardDynamics(const double* input_f, double* input_a)const noexcept->int {
-		std::vector<double> input_acc(inputAccSize()), input_fce(inputFceSize());
-		getInputAcc(input_acc.data());
-		getInputFce(input_fce.data());
-
-		const_cast<Model*>(this)->setInputFce(input_f);
-		auto ret = const_cast<Model*>(this)->forwardDynamics();
-		if (ret == 0) getInputAcc(input_a);
-
-		const_cast<Model*>(this)->setInputAcc(input_acc.data());
-		const_cast<Model*>(this)->setInputFce(input_fce.data());
-		return ret;
+		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardDynamicSolver*>(&solverPool()[3])) {
+			auto fwd = const_cast<aris::dynamic::ForwardDynamicSolver*>(c_fwd);
+			int ret = fwd->dynAccAndFcePure(input_f, imp_->input_output_mem_);
+			aris::dynamic::s_vc(inputAccSize(), imp_->input_output_mem_, input_a);
+			return ret;
+		}
+		return -1;
 	}
 
 	auto Model::isSingular(double zero_check)noexcept->bool {
@@ -399,6 +387,9 @@ namespace aris::dynamic{
 	}
 	auto Model::setInputFceAt(Size idx, double mf)noexcept->void {
 		this->motionPool()[idx].setF(&mf);
+		double mf_dyn = this->motionPool()[idx].mfDyn();
+		if(idx < forcePool().size())
+			this->forcePool()[idx].setFce(&mf_dyn);
 	}
 
 	auto Model::outputPosAt(Size idx)const noexcept->const double* {

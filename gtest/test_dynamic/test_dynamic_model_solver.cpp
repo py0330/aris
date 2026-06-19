@@ -979,7 +979,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i){
 			m.motionPool().at(i).activate(false);
 			m.forcePool().at(i).activate(true);
-			dynamic_cast<SingleComponentForce&>(m.forcePool().at(i)).setFce(ift[i]);
+			dynamic_cast<SingleComponentForce&>(m.forcePool().at(i)).setFce(ift + i);
 		}
 		std::vector<double> before_jnt_cf, after_jnt_cf;
 		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)before_jnt_cf.push_back(j.cf()[i]);

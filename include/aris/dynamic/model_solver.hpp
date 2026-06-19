@@ -19,6 +19,7 @@ namespace aris::dynamic
 
 		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)const->int { return -1; };
 		auto virtual kinVelPure(const double* motion_vel, double* answer)const->int { return -1; };
+		auto virtual dynAccAndFcePure(const double* input, double* output)const->int { return -1; };
 
 		auto virtual whichRootOfAnswer(const double * motion_pos, const double* answer)const->std::int64_t = 0;
 		auto virtual answerSize()const->aris::Size = 0;
@@ -54,7 +55,8 @@ namespace aris::dynamic
 		
 		auto virtual kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer = nullptr)const->int override;
 		auto virtual kinVelPure(const double* motion_vel, double* answer)const->int override;
-		
+		auto virtual dynAccAndFcePure(const double* input, double* output)const->int override;
+
 		auto virtual answerSize()const->aris::Size override;
 		auto virtual whichRootOfAnswer(const double* motion_pos, const double* answer)const->std::int64_t override;
 
@@ -72,6 +74,12 @@ namespace aris::dynamic
 		auto kinVelGetUnactiveMotionVel(double* mv)->void;       // 获取未激活的motion 的 mv
 		auto kinVelSetMotionVelFromModel()->void;                // 将Model的状态作为 mv
 		auto kinVelUpdateModel()->void;                          // 计算之后，设置 model 的状态
+
+		auto dynAccAndFceCompute()->int;
+		auto dynAccAndFceSetInput(const double* input)->void;    // input 包含所有激活驱动(mot & gm)的加速度，所有激活力的fce（非fs，维度为dim）
+		auto dynAccAndFceGetOutput(double* output)const->void;   // output 包含所有激活驱动(mot & gm)的驱动力，所有非激活驱动的加速度
+		auto dynAccAndFceUpdateModel()->void;					 // 计算之后，设置 model 的状态
+		auto dynAccAndFceSetInputFromModel()->void;              // 将Model的状态作为 dyn 输入
 
 		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
 		auto mJg()const noexcept->Size;// = part_number x 6
@@ -96,8 +104,6 @@ namespace aris::dynamic
 	class ARIS_API ForwardKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		//auto virtual kinPos()->int override;
-		//auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 
 		auto cptJacobi()noexcept->void;
@@ -117,8 +123,6 @@ namespace aris::dynamic
 	class ARIS_API InverseKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		//auto virtual kinPos()->int override;
-		//auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 
 		auto cptJacobi()noexcept->void;
@@ -138,8 +142,6 @@ namespace aris::dynamic
 	class ARIS_API ForwardDynamicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		//auto virtual kinPos()->int override;
-		//auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 
 		virtual ~ForwardDynamicSolver();
@@ -149,8 +151,6 @@ namespace aris::dynamic
 	class ARIS_API InverseDynamicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;
-		//auto virtual kinPos()->int override;
-		//auto virtual kinVel()->int override;
 		auto virtual dynAccAndFce()->int override;
 
 		virtual ~InverseDynamicSolver();

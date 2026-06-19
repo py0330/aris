@@ -13,8 +13,8 @@ namespace aris::dynamic {
 	class ARIS_API MotionBase :public Constraint {
 	public:
 		auto virtual cptCp(double* cp)const noexcept->void override { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm(), p()); }
-		auto virtual cptCv(double* cv)const noexcept->void override { cptCvFromV(cv, v()); }
-		auto virtual cptCa(double* ca)const noexcept->void override { cptCaFromA(ca, a()); }
+		auto virtual cptCv(double* cv)const noexcept->void override { cptCvFromV(cv, *makI()->pm(), *makJ()->pm(), makI()->vs(), makJ()->vs(), v()); }
+		auto virtual cptCa(double* ca)const noexcept->void override { cptCaFromA(ca, *makI()->pm(), *makJ()->pm(), makI()->vs(), makJ()->vs(), a()); }
 
 		auto virtual setPosType(PosType type) -> void;
 		auto virtual posType()const->PosType;
@@ -48,10 +48,10 @@ namespace aris::dynamic {
 
 		// 在做位置计算的时候，pm 需要迭代，因此可能每次都会变化，因此makI_pm等也得作为输入参数，
 		// 在速度和加速度计算时，part的 vs 和 as 不影响计算，因此不需要作为输入参数
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void;
-		auto virtual cptCvDiffFromV(double* cv, const double* v)const noexcept->void;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void;
+		auto virtual cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double *mv)const noexcept->void;
 
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void;
@@ -81,9 +81,9 @@ namespace aris::dynamic {
 		static auto Dim()->Size { return 1; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
 
 		auto virtual cptPFromPm(const double* pm_i2j, double* p)const noexcept->void override;
 		auto virtual cptPmFromP(const double* p, double* pm_i2j)const noexcept->void override;
@@ -184,10 +184,10 @@ namespace aris::dynamic {
 		static auto Dim()->Size { return 6; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *pmI, const double *pmJ)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
 
 		auto setMpe(const double* pe, const char *type = "313") noexcept->void;
@@ -230,10 +230,10 @@ namespace aris::dynamic {
 		auto virtual posType()const->PosType override { return PosType::XYZ; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void override;
 
 		virtual ~PointMotion();
 		explicit PointMotion(const std::string& name = "point_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);
@@ -246,10 +246,10 @@ namespace aris::dynamic {
 		auto virtual posType()const->PosType override { return PosType::RE123; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
 
 		virtual ~SphericalMotion();
@@ -263,10 +263,10 @@ namespace aris::dynamic {
 		auto virtual posType()const->PosType override { return PosType::XYZT; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double *cp, const double *pmI, const double *pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double *dm, const double *pmI, const double *pmJ)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
 
 		virtual ~XyztMotion();
@@ -280,10 +280,10 @@ namespace aris::dynamic {
 		auto virtual posType()const->PosType override { return PosType::XYT; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* v)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* a)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void override;
 		auto virtual cptPError(const double* p1, const double* p2)->double override;
 
 		virtual ~PlanarMotion();
@@ -297,10 +297,10 @@ namespace aris::dynamic {
 		auto virtual posType()const->PosType override { return PosType::XY; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
-		auto virtual cptCpFromPm(double* cp, const double* makI_pm, const double* makJ_pm, const double* mp)const noexcept->void override;
-		auto virtual cptCvFromV(double *cv, const double* v)const noexcept->void override;
-		auto virtual cptCaFromA(double *ca, const double* a)const noexcept->void override;
-		auto virtual cptGlbDmFromPm(double* dm, const double* makI_pm, const double* makJ_pm)const noexcept->void override;
+		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ, const double* mp)const noexcept->void override;
+		auto virtual cptCvFromV(double *cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* mv)const noexcept->void override;
+		auto virtual cptCaFromA(double *ca, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ, const double* ma)const noexcept->void override;
+		auto virtual cptGlbDmFromPm(double* dm, const double* pmI, const double* pmJ)const noexcept->void override;
 
 		virtual ~XyMotion();
 		explicit XyMotion(const std::string& name = "xy_motion", Marker* makI = nullptr, Marker* makJ = nullptr, bool active = true);

@@ -540,7 +540,7 @@ namespace aris::dynamic{
 		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
 
 		////////////////////////////  PARTS  /////////////////////////////
-		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
+		const double default_iv[10]{ 1,0,0,0,1,1,1,0,0,0 };
 		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 6 ? param.iv_vec[0].data() : default_iv);
 		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 6 ? param.iv_vec[1].data() : default_iv);
 		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
@@ -593,6 +593,16 @@ namespace aris::dynamic{
 		m4.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[3].data() : default_mot_frc);
 		m5.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[4].data() : default_mot_frc);
 		m6.setFrcCoe(param.mot_frc_vec.size() == 6 ? param.mot_frc_vec[5].data() : default_mot_frc);
+
+		////////////////////////////  FORCES  /////////////////////////////
+		// Keep a one-to-one mapping with motions so forward dynamics can read
+		// commanded generalized forces from forcePool through active_fce channels.
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F1", m1.makI(), m1.makJ(), 5);
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F2", m2.makI(), m2.makJ(), 5);
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F3", m3.makI(), m3.makJ(), 5);
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F4", m4.makI(), m4.makJ(), 5);
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F5", m5.makI(), m5.makJ(), 5);
+		model->forcePool().add<aris::dynamic::SingleComponentForce>("F6", m6.makI(), m6.makJ(), 5);
 
 		////////////////////////////  EES  /////////////////////////////
 		auto &makI = p6.addMarker("tool0");

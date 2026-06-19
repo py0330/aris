@@ -13,9 +13,13 @@ namespace aris::dynamic {
 	class ARIS_API Joint :public Constraint{
 	public:
 		auto virtual cptCp(double* cp)const noexcept->void override { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
+		auto virtual cptCv(double* cv)const noexcept->void override { cptCvFromV(cv, *makI()->pm(), *makJ()->pm(), makI()->vs(), makJ()->vs()); } // 实际全置零
+		auto virtual cptCa(double* ca)const noexcept->void override { cptCaFromA(ca, *makI()->pm(), *makJ()->pm(), makI()->vs(), makJ()->vs()); }
+
 		auto virtual cptCpFromPm(double* cp, const double* pmI, const double* pmJ)const noexcept->void;
-		auto virtual cptCvFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void{}; // 实际全置零
-		auto virtual cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void{}; // 需依赖
+		auto virtual cptCvFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void; // 实际全置零
+		auto virtual cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void; // 需依赖输入参数
+		auto virtual cptCaFromA(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void; 
 
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
@@ -51,10 +55,11 @@ namespace aris::dynamic {
 		static auto Dim()->Size { return 4; }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
+		auto virtual cptCvDiffFromV(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void override; // local cm 可能变化
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
 		auto virtual cptGlbCmFromPm(double *cmI, double *cmJ, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
-		auto virtual cptCa(double *ca)const noexcept->void override;
+		auto virtual cptCaFromA(double* cv, const double *pmI, const double *pmJ, const double* vsI, const double* vsJ)const noexcept->void override;
 
 		virtual ~UniversalJoint();
 		explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
