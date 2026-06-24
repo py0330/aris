@@ -293,16 +293,6 @@ namespace aris::dynamic{
 		}
 	}
 	auto SubSystem::updDmCmCa()noexcept->void{
-		// 刷新每个diag下marker的全局位姿缓存（pm），供block中的pmI_/pmJ_指针直接引用
-		ARIS_LOOP_D {
-			for (Size i = 0; i < d->marker_blk_size_; ++i) {
-				s_pm_dot_pm(d->pm_, d->marker_blk_data_[i].prt_pm, d->marker_blk_data_[i].pm);
-			}
-		}
-		for (Size i = 0; i < pd_->marker_blk_size_; ++i) {
-			s_vc(16, pd_->marker_blk_data_[i].prt_pm, pd_->marker_blk_data_[i].pm);
-		}
-
 		// upd dm and rel dim
 		fm_ = 0;
 		ARIS_LOOP_D_2_TO_END{
@@ -776,10 +766,10 @@ namespace aris::dynamic{
 		//        [ ypam ]     [ bcm-1 ]
 		//        yp中的另外一部分需要用上文中的 F 来求，下文中的k是对应约束的维数：
 		//        
-		//        F * [ ypf2 ]  =  [  bcm  ]   -   [ -Cm'  * D1(1:k,1:6)' * bc1 + ... + Cm'  * Dm-1(1:k,1:6)' * bcm-1 ]
-		//            | ypf3 |     | bcm+1 |       |  Cm+1'* D1(1:k,1:6)' * bc1 + ... + Cm+1'* Dm-1(1:k,1:6)' * bcm-1 |
-		//            |  ... |     |  ...  |       |                              ...                                 |
-		//            [ ypfm ]     [  bcn  ]       [ -Cn'  * D1(1:k,1:6)' * bc1 + ... + Cn'  * Dm-1(1:k,1:6)' * bcm-1 ]
+		//        F' * [ ypf2 ]  =  [  bcm  ]   -   [ -Cm'  * D1(1:k,1:6)' * bc1 + ... + Cm'  * Dm-1(1:k,1:6)' * bcm-1 ]
+		//             | ypf3 |     | bcm+1 |       |  Cm+1'* D1(1:k,1:6)' * bc1 + ... + Cm+1'* Dm-1(1:k,1:6)' * bcm-1 |
+		//             |  ... |     |  ...  |       |                              ...                                 |
+		//             [ ypfm ]     [  bcn  ]       [ -Cn'  * D1(1:k,1:6)' * bc1 + ... + Cn'  * Dm-1(1:k,1:6)' * bcm-1 ]
 		// 
 		//        yp的最后一部分是yp1，它如下：
 		//        有地面：  yp1 = [0,0,0,0,0,0]'
@@ -866,11 +856,11 @@ namespace aris::dynamic{
 		//        [ C I*K ] * [  xc  ] = bp - I * xpt
 		//                    [ beta ]
 		//        
-		//        这个两边乘以 P*D ，可得：
-		//        [ PDC PDIK ] * [  xcf ] = PD(bp - I * xpt)
+		//        这个两边乘以 D*P ，可得：
+		//        [ DPC DPIK ] * [  xcf ] = DP(bp - I * xpt)
 		//                       [ beta ]
 		//        
-		//        PDC和PDIK在 cm ... cn : end 列，r2 ... rm 行，组成[F G]
+		//        DPC 和 DPIK 在 cm ... cn : end 列，r2 ... rm 行，组成[F G]
 		//        有地面时，F和G的行数相同，G的列数为fm - fr:
 		//        [ F  G ] * [  xcf ] = bpf
 		//                   [ beta ]
@@ -1773,15 +1763,21 @@ namespace aris::dynamic{
 	}
 
 	auto UniversalSolver::dynAccAndFceCompute()->int {
+		// 刷新每个diag下marker的全局位姿缓存（pm），供block中的pmI_/pmJ_指针直接引用 //
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D {
 			d->part_->getPm(d->pm_);
 			d->part_->getVs(d->vs_);
 			std::fill(d->bp_, d->bp_ + 6, 0.0);
+
+			for (Size i = 0; i < d->marker_blk_size_; ++i) {
+				s_pm_dot_pm(d->pm_, d->marker_blk_data_[i].prt_pm, d->marker_blk_data_[i].pm);
+			}
 		}
 		for (Size i = 0; i < imp_->pd_->marker_blk_size_; ++i) {
 			s_pm_dot_pm(*model()->ground().pm(), imp_->pd_->marker_blk_data_[i].prt_pm, imp_->pd_->marker_blk_data_[i].pm);
 		}
 
+		// 计算外力 //
 		for (Size i = 0; i < imp_->pd_->fce_blk_size_; ++i) {
 			auto &blk = imp_->pd_->fce_blk_data_[i];
 			double fsI[6], fsJ[6];

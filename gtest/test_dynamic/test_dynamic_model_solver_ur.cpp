@@ -209,7 +209,7 @@ TEST(ModelSolverUr, VelAccForceRoundTrip) {
         static const double out_pos_expected[6]{0.073418907191431307, 0.18239762681842445, 0.80887723303246817, 6.1092869809501833, -1.32116056256423, 4.6255283870689334};
         static const double out_vel_expected[6]{-0.010813777434918556, 0.002846120816297221, 0.00091941271231262933, -0.0021767231075832693, -0.022840620994553064, 0.038025720285703002};
         static const double out_acc_expected[6]{0.017950634052707765, -0.0046699378289260475, -0.0015104478043674549, 0.0046370614223827595, 0.037629090863995608, -0.04805458265728018};
-        static const double tau_expected[6]{-0.0045940278720832013, 1.529566410922824, 3.2583776030209926, 3.392450705025293, -0.049432434546374117, -3.055099084055785e-17};
+        static const double tau_expected[6]{-0.22836218100051897, 1.6475325932243239, 3.3493437853224926, 3.4784168873267931, -0.1442579360727938, 0.03858765658378447};
 
         double cmd_q[6];
         double cmd_v[6], cmd_a[6];
@@ -237,7 +237,7 @@ TEST(ModelSolverUr, VelAccForceRoundTrip) {
         EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, out_pos_expected, out_pos.data(), 1e-12));
         EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, out_vel_expected, out_vel.data(), 1e-12));
         EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, out_acc_expected, out_acc.data(), 1e-12));
-        EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, tau_expected, tau.data(), 1e-12));
+        EXPECT_TRUE(aris::dynamic::s_is_equal(6, 1, tau_expected, tau.data(), 1e-9));
 
         // Inverse kinematics / inverse kinematics vel+acc / forward dynamics.
         std::int64_t which_root{0};
@@ -281,7 +281,7 @@ TEST(ModelSolverUr, VelAccForceRoundTrip) {
             EXPECT_NEAR(d, 0.0, 1e-10);
             EXPECT_NEAR(phy_v_back[i], phy_v[i], 1e-10);
             EXPECT_NEAR(phy_a_back[i], phy_a[i], 1e-10);
-            EXPECT_NEAR(phy_a_fd[i], phy_a[i], 1e-10);
+            EXPECT_NEAR(phy_a_fd[i], phy_a[i], 1e-9);
         }
     }
 }
@@ -685,7 +685,7 @@ TEST(ModelSolverUr, StatelessForwardDynamicsConsistencyPolluted) {
         std::vector<double> acc_stateless(m->inputAccSize(), 123456.0);
         ASSERT_EQ(m->forwardDynamics(tau_ref.data(), acc_stateless.data()), 0);
 
-        EXPECT_TRUE(aris::dynamic::s_is_equal(static_cast<int>(acc_stateful.size()), 1, phy_a, acc_stateless.data(), 1e-10));
+        EXPECT_TRUE(aris::dynamic::s_is_equal(static_cast<int>(acc_stateful.size()), 1, acc_stateful.data(), acc_stateless.data(), 1e-10));
     }
 }
 

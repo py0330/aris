@@ -5,9 +5,11 @@ link_directories(${RELY_LINK_DIR})
 
 set_and_check(aris_INCLUDE_DIRS "@aris_INCLUDE_DIRS@")
 set(aris_LIBRARIES "@aris_LIBRARIES@")
-if(UNIX)
+include(CheckLinkerFlag)
+check_linker_flag(CXX "-Wl,--start-group" ARIS_LINKER_HAS_START_GROUP)
+if(ARIS_LINKER_HAS_START_GROUP)
 	set(aris_LIBRARIES -Wl,--start-group ${aris_LIBRARIES} -Wl,--end-group)
-endif(UNIX)
+endif()
 
 
 include("${CMAKE_CURRENT_LIST_DIR}/aris-targets-release.cmake")
