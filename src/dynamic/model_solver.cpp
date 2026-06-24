@@ -248,21 +248,23 @@ namespace aris::dynamic{
 			s_vc(16, pd_->marker_blk_data_[i].prt_pm, pd_->marker_blk_data_[i].pm);
 		}
 
-		auto cpt_cv_by_diff = [](const Constraint *c, const double *pmI, const double *pmJ, const double *vsI, const double *vsJ, const double *mv, double *cv)noexcept->void{
+		using CptCvFunc = void (*)(const Constraint*, const double*, const double*, const double*, const double*, const double*, double*);
+
+		CptCvFunc cpt_cv_by_diff = [](const Constraint *c, const double *pmI, const double *pmJ, const double *vsI, const double *vsJ, const double *mv, double *cv)noexcept->void{
 			if(auto j = dynamic_cast<const aris::dynamic::Joint*>(c))
 				j->cptCvDiffFromV(cv, pmI, pmJ, vsI, vsJ);
 			else
 				dynamic_cast<const aris::dynamic::MotionBase*>(c)->cptCvDiffFromV(cv, pmI, pmJ, vsI, vsJ, mv);
 		};
 
-		auto cpt_cv_by_func = [](const Constraint *c, const double *pmI, const double *pmJ, const double *vsI, const double *vsJ, const double *mv, double *cv)noexcept->void{
+		CptCvFunc cpt_cv_by_func = [](const Constraint *c, const double *pmI, const double *pmJ, const double *vsI, const double *vsJ, const double *mv, double *cv)noexcept->void{
 			if(auto m = dynamic_cast<const aris::dynamic::MotionBase*>(c))
 				m->cptCvFromV(cv, pmI, pmJ, vsI, vsJ, mv);
 			else
 				std::fill_n(cv, c->dim(), 0.0);
 		};
 
-		auto cpt = pd_->if_compute_vel_by_diff_ ? cpt_cv_by_diff : cpt_cv_by_func;
+		CptCvFunc cpt = pd_->if_compute_vel_by_diff_ ? cpt_cv_by_diff : cpt_cv_by_func;
 
 		// upd dm and rel dim
 		fm_ = 0;
