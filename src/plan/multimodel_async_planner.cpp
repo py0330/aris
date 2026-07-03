@@ -1096,11 +1096,13 @@ namespace aris::plan {
 	// 删除已经不用的数据 //
 	auto MultimodelPlanner::clearUsedPos() -> void {
 		imp_->tg_.clearUsedPos();
+		imp_->fwd_tg_.clearUsedPos();
 	}
 
 	// 删除全部数据 //
 	auto MultimodelPlanner::clearAllPos() -> void {
 		imp_->tg_.clearAllPos();
+		imp_->fwd_tg_.clearAllPos();
 	}
 
 	// 当前还剩余的指令数 //

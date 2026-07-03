@@ -4,279 +4,198 @@
 #include <iostream>
 #include <vector>
 
-void print_arr(const char *name, const double *v, int n) {
-    std::cout << name << " = [";
-    for (int i = 0; i < n; ++i)
-        std::cout << (i ? ", " : "") << std::setprecision(16) << v[i];
-    std::cout << "]\n";
-}
+class Test
+{
+public:
 
-// ── helper: validate inverse-dynamics consistency ──────────────────────
-// Returns the maximum |I_ground*a - Σconstraint_force| across all parts.
-auto check_dynamics(aris::dynamic::Model &m) -> double {
-	// to do:
-	// 请在这里帮我计算相邻两个杆件的加速度差，并计算出来相应的电机加速度
-	std::cout << "\n===== Motor accelerations from part as =====\n";
-	for (auto &mot : m.motionPool()) {
-		auto &part_i = mot.makI()->fatherPart();
-		auto &part_j = mot.makJ()->fatherPart();
+	auto test_trajectory_aj(aris::server::ControlServer& cs)->void;
+	auto test_trajectory_l(aris::server::ControlServer& cs)->void;
+	auto pd()->aris::plan::PlannerDispacher*;
+	auto init() ->void;
+	auto writeFile(std::string path)->void;
+	Test();
+	~Test();
 
-		double as[6], vs[6];  // relative spatial accel & vel (in marker frame)
-		aris::dynamic::s_inv_as2as(*mot.makJ()->pm(), part_j.vs(), part_j.as(),
-		            part_i.vs(), part_i.as(), as, vs);
-		double motor_acc;
-		mot.cptAFromAs(as, &motor_acc);
+private:
+	struct Imp;
+	std::unique_ptr<Imp> imp_;
+};
 
-		std::cout << "  " << mot.name() << ": ma = "
-		          << std::setprecision(16) << motor_acc
-		          << "  (mot.ma() = " << mot.ma() << ")\n";
-	}
+double z0[2] =   { 0,    0 };
+double z10[2] =  { 0.01, 10 * aris::PI / 180.0 };
+double z20[2] =  { 0.02, 20 * aris::PI / 180.0 };
+double z50[2] =  { 0.05, 30 * aris::PI / 180.0 };
+double z80[2] =  { 0.08, 40 * aris::PI / 180.0 };
+double z100[2] = { 0.10, 50 * aris::PI / 180.0 };
+double z[2]    = { 0.10, 50 * aris::PI / 180.0 };
 
-	// to do:
-	//
-	// 这里帮我计算每个joint 的 cmI *(vsI-vsJ) 以及 cmI *(asI-asJ)，并确认它们的结果是否全为0，如果不是，也不要debug，仅告诉我结果既可。
+double v0[3] =     { 0,   0,    0 };
+double v10[3] =    { 3,   0.01, aris::PI };
+double v50[3] =    { 7,   0.05, aris::PI };
+double v100[3] =   { 10,  0.1,  aris::PI };
+double v500[3] =   { 50,  0.5,  aris::PI };
+double v1000[3] =  { 100, 1,    aris::PI };
+double v2000[3] =  { 100, 2,    aris::PI };
+double v10000[3] = { 100, 10,   aris::PI };
+double v[3] =      { 50, 0.05,  aris::PI };
 
-	std::cout << "\n===== Joint constraint velocity / acceleration check =====\n";
-	for (auto &jnt : m.jointPool()) {
-		double cmI[36], cmJ[36];
-		jnt.cptGlbCmFromPm(cmI, cmJ, *jnt.makI()->pm(), *jnt.makJ()->pm());
-		int dim = (int)jnt.dim();
+struct Test::Imp
+{
 
-		auto &part_i = jnt.makI()->fatherPart();
-		auto &part_j = jnt.makJ()->fatherPart();
+	std::unique_ptr<aris::plan::PlannerDispacher> pd{new aris::plan::PlannerDispacher};
 
-		// ── velocity: cmI^T * (vs_marker_I - vs_marker_J) ──
-		double vs_mI[6], vs_mJ[6];
-		aris::dynamic::s_tv(*jnt.makI()->prtPm(), part_i.vs(), vs_mI);
-		aris::dynamic::s_tv(*jnt.makJ()->prtPm(), part_j.vs(), vs_mJ);
-		double vs_diff[6];
-		for (int k = 0; k < 6; ++k) vs_diff[k] = vs_mI[k] - vs_mJ[k];
+	std::vector<int> prepare_id, cur_exe_id, cur_exe_count, cmd_type;
+	int insert_pe_id = 0;
 
-		double cv[6] = {0};
-		for (int r = 0; r < dim; ++r)
-			for (int c = 0; c < 6; ++c)
-				cv[r] += cmI[c * 6 + r] * vs_diff[c];
+	std::vector<std::vector<double>> pes;// 笛卡尔位姿
+	std::vector<std::vector<double>> ajs;// 轴关节角度
+	std::vector <double> vel, acc, jerk, zone;
+	double max_line_vel = 6;
+	double max_angle_vel = 720 * aris::PI / 180.0;
+	std::vector<double> rokae_max_vel = { 400,400,410,440,330,700};
+	std::vector<double> rokae_max_acc = { 2000,2000,2050,2200,1650,3500 };
 
-		bool vel_nonzero = false;
-		for (int k = 0; k < dim; ++k)
-			if (std::abs(cv[k]) > 1e-9) vel_nonzero = true;
+	std::vector<double> scara_max_vel = { 9.42477788067463251 ,5.88175952923583534 ,1.68700000000000006,26.17993855742953357 };
+	std::vector<double> scara_max_acc = { 188.49555761349265026,117.6351905847167103,33.74000000000000199,523.5987711485906857 };
+	std::vector<double> puma_max_vel{ 5.8904862254808625,4.8432886742842651, 5.0963614158234423 , 6.8067840827778845 ,7.8539816339744828 ,12.5663706143591725 };
+	std::vector<double> puma_max_acc{ 11.780972 ,  9.686577 ,  10.192723 ,  13.613568 ,  15.707963  , 25.132741 };
 
-		// ── acceleration: cmI^T * (as_marker_I - as_marker_J) ──
-		double as_mI[6], as_mJ[6];
-		aris::dynamic::s_vc(6, part_i.as(), as_mI);
-		aris::dynamic::s_vc(6, part_j.as(), as_mJ);
-		double as_diff[6];
-		for (int k = 0; k < 6; ++k) as_diff[k] = as_mI[k] - as_mJ[k];
-
-		double ca[6] = {0};
-		aris::dynamic::s_mm(5,1,6,cmI,aris::dynamic::T(5),as_diff,1,ca,1);
-
-		bool acc_nonzero = false;
-		for (int k = 0; k < dim; ++k)
-			if (std::abs(ca[k]) > 1e-9) acc_nonzero = true;
-
-		std::cout << "  " << jnt.name() << " (dim=" << dim
-		          << "): cmI*(vsI-vsJ)";
-		if (vel_nonzero) {
-			std::cout << " = [";
-			for (int k = 0; k < dim; ++k)
-				std::cout << (k ? "," : "") << std::setprecision(8) << cv[k];
-			std::cout << "]  ← 非零!";
-		} else {
-			std::cout << " = 0";
-		}
-		std::cout << "  |  cmI*(asI-asJ)";
-		if (acc_nonzero) {
-			std::cout << " = [";
-			for (int k = 0; k < dim; ++k)
-				std::cout << (k ? "," : "") << std::setprecision(8) << ca[k];
-			std::cout << "]  ← 非零!";
-		} else {
-			std::cout << " = 0";
-		}
-		std::cout << "\n";
-	}
-
-
-
-	// to do:
 	// 
-	// 请在这里帮我遍历所有的 joint 和 motion，计算它们对每个 part 的约束力（用 cmI/cmJ 乘 cf） 
-	std::cout << "\n===== Constraint forces per constraint (Newton-III check) =====\n";
-	std::vector<double> part_force(m.partPool().size() * 6, 0.0);
+	std::vector<double> vec;
+	int line_num = 0;
 
-	auto process_constraint = [&](const aris::dynamic::Constraint &cst) {
-		double cmI[36], cmJ[36];
-		cst.cptGlbCmFromPm(cmI, cmJ, *cst.makI()->pm(), *cst.makJ()->pm());
-		int dim = (int)cst.dim();
-		const double *cf = cst.cf();
-		int pi = cst.makI()->fatherPart().id();
-		int pj = cst.makJ()->fatherPart().id();
+};
 
-		double fI[6] = {0}, fJ[6] = {0};
-		aris::dynamic::s_mm(6, 1, dim, cmI, dim, cf, 1, fI, 1);
-		aris::dynamic::s_mm(6, 1, dim, cmJ, dim, cf, 1, fJ, 1);
+Test::Test() : imp_(new Imp)
+{
 
-		for (int k = 0; k < 6; ++k) {
-			part_force[pi * 6 + k] += fI[k];
-			part_force[pj * 6 + k] += fJ[k];
-		}
+	aris::dynamic::s_nv(6, aris::PI / 180.0, imp_->rokae_max_vel.data());
+	aris::dynamic::s_nv(6, aris::PI / 180.0, imp_->rokae_max_acc.data());
+
+}
+Test::~Test() { }
+auto Test::init() ->void
+{
+	imp_->line_num = 0;
+	imp_->vec.clear();
+}
+auto Test::writeFile(std::string path)->void
+{
+	aris::dynamic::dlmwrite(imp_->vec.size() / 6, 6,imp_->vec.data(), path.data());
+	init();
+}
+auto Test::pd()->aris::plan::PlannerDispacher* {return imp_->pd.get();}
+auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
+
+	std::cout << "-----------------test aj trajectory start---------------" << std::endl;
+	
+
+	double end_pos[6] {0,-0.53,1.98,0.23,-1.85,0};
+	double vels[6] {0.26179912599976163,0.26179912599976163,0.26179912599976163,0.31415895119971399,0.31415895119971399,0.31415895119971399};
+	double accs[6] {5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515};
+	double jerks[6] {174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772};
+	double zones[6] {0,0,0,0,0,0};
+	
+	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
+	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones);
+
+	imp_->pd->updateInsertPos(0);
+
+
+	auto move_aj_and_copy_data = [&]()->int
+	{
+		// m++;
+		imp_->line_num++;
+		imp_->vec.resize(imp_->line_num * 6, 0.0);
+		auto ret = imp_->pd->getNextInput(0,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		std::cout << "ret:" << ret << std::endl;
+		return ret;
 	};
 
-	for (auto &jnt : m.jointPool())   process_constraint(jnt);
-	for (auto &mot : m.motionPool())  process_constraint(mot);
-	// general motion is deactive for inverse dynamics, skip it
-
-	// ── total force across all parts ──
-	double total[6] = {0};
-	for (int i = 0; i < (int)m.partPool().size(); ++i)
-		for (int k = 0; k < 6; ++k)
-			total[k] += part_force[i * 6 + k];
-
-	std::cout << "\n  Sum of all constraint forces on all parts:\n";
-	std::cout << "  total = [";
-	for (int k = 0; k < 6; ++k)
-		std::cout << (k ? ", " : "") << std::setprecision(8) << total[k];
-	std::cout << "]\n";
-
-	double total_norm = 0;
-	for (int k = 0; k < 6; ++k) total_norm += total[k] * total[k];
-	total_norm = std::sqrt(total_norm);
-	std::cout << "  |total| = " << total_norm;
-	if (total_norm > 1e-9)
-		std::cout << "  ← 合力不为零!";
-	std::cout << "\n";
+	while (move_aj_and_copy_data()) {};
 
 
-	// to do：
-	// 请用 s_iv2iv + part.pm() + partIv() 将每个杆件的惯量变换到
-	// 地面坐标系，再与地面坐标系下的加速度相乘，然后与约束力比较
+	imp_->pd->releaseChanel(0);
 
-	std::cout << "\n===== Inertial force (I_ground * a_ground) per part =====\n";
-	for (int i = 0; i < (int)m.partPool().size(); ++i) {
-		auto &part = m.partPool()[i];
-		double iv_global[10];  // spatial inertia in ground frame
-		aris::dynamic::s_iv2iv(*part.pm(), part.prtIv(), iv_global);
+	
 
-		double as_global[6], I_dot_a[6];
-		part.getAs(as_global);  // global spatial acceleration
-		aris::dynamic::s_iv_dot_as(iv_global, as_global, I_dot_a);
+	std::cout << "-----------------test aj trajectory finished------------" << std::endl;
+}
+auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 
-		std::cout << "  part[" << i << "] (" << part.name()
-		          << ") I*a = [";
-		for (int k = 0; k < 6; ++k)
-			std::cout << (k ? ", " : "") << std::setprecision(8) << I_dot_a[k];
-		std::cout << "]\n";
-	}
+	std::cout << "-----------------test l trajectory start---------------" << std::endl;
 
-	std::cout << "\n===== Check: I_ground*a vs constraint force sum per part =====\n";
-	double max_err = 0.0;
-	for (int i = 1; i < (int)m.partPool().size(); ++i) {
-		auto &part = m.partPool()[i];
-		double iv_global[10];
-		aris::dynamic::s_iv2iv(*part.pm(), part.prtIv(), iv_global);
 
-		double as_global[6], I_dot_a[6];
-		part.getAs(as_global);
-		aris::dynamic::s_iv_dot_as(iv_global, as_global, I_dot_a);
+	double end_pos[6] {0.81,0.104,0.712,6.28,0.106,2.85};
+	double vels[2] {0.1,3.14};
+	double accs[2] {1.93,15.7};
+	double jerks[2] {150,314.7};
+	double zones[2] {0.01,0.17};
+	std::string tool = "UrModel.L6.tool0";
+	std::string wobj = "UrModel.ground.wobj0";
+	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
+	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones);
 
-		double diff[6], diff_norm = 0;
-		for (int k = 0; k < 6; ++k) {
-			diff[k] = I_dot_a[k] - part_force[i * 6 + k];
-			diff_norm += diff[k] * diff[k];
-		}
-		diff_norm = std::sqrt(diff_norm);
-		if (diff_norm > max_err) max_err = diff_norm;
-		std::cout << "  part[" << i << "] |I*a - Σconstraint| = " << diff_norm;
-		if (diff_norm > 1e-9)
-			std::cout << "  ← 不匹配!";
-		std::cout << "\n";
-	}
-	return max_err;
+	imp_->pd->updateInsertPos(0);
+
+
+	auto move_aj_and_copy_data = [&]()->int
+	{
+		imp_->line_num++;
+
+		imp_->vec.resize(imp_->line_num * 6, 0.0);
+		auto ret = imp_->pd->getNextInput(0,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		std::cout << "ret:" << ret << std::endl;
+		return ret;
+	};
+
+	while (move_aj_and_copy_data()) {};
+
+
+	std::cout << "-----------------test l trajectory finished------------" << std::endl;
 }
 
+
+
 int main() {
-    // 1. create UR model
-    aris::dynamic::UrParam param;
-    param.H1 = 0.089159;
-    param.W1 = 0.13585 - 0.1197 + 0.093;
-    param.L1 = 0.425;   param.L2 = 0.39225;
-    param.H2 = -0.09465; param.W2 = 0.0823;
-    param.install_method = 0;
-    auto m = aris::dynamic::createModelUr(param);
+	auto& cs = aris::server::ControlServer::instance();
+	//aris::core::fromXmlFile(cs, "..\\puma-ext.xml");
+	//aris::core::fromXmlFile(cs, "..\\7-900.xml");
+	//aris::core::fromXmlFile(cs, "..\\astun.xml");
+	//aris::core::fromXmlFile(cs, "..\\lansi_puma.xml");
+	//aris::core::fromXmlFile(cs, "..\\scara-800.xml");
+	
+	aris::core::fromXmlFile(cs, "/Users/panyang/Desktop/test_aris_plan/ur.xml");
+	// aris::core::fromXmlFile(cs, "..\\rokae.xml");
+	//aris::core::fromXmlFile(cs, "..\\astun-er35b.xml");
 
-	double gravity[6]{0,0,0,0,0,0};
-	m->environment().setGravity(gravity);
-	m->init();
-
-    // 2. data: positions, velocities, accelerations (factor=1)
-    // const double cmd_q[6]{-0.14, 0.11, -0.09, 0.16, -0.12, 0.07};
-    // const double cmd_v[6]{0.025, -0.018, 0.021, -0.015, 0.013, -0.011};
-    // const double cmd_a[6]{-0.032, 0.027, -0.022, 0.019, -0.016, 0.014};
-    // const double tau[6]{-0.228362181000519, 1.647532593224324, 3.349343785322493, 3.478416887326793, -0.1442579360727938, 0.03858765658378447};
-
-	// const double cmd_q[6]{0,0,0,0,0,0};
-    // const double cmd_v[6]{0,0,0,0,0,0};
-    // const double cmd_a[6]{0,0,0,0,0,0.1};
-    // const double tau[6]{0, 0.1, 0.1, 0.1, 0, 0.1};
-
-	// const double cmd_q[6]{0,0,0,0,0,0};
-    // const double cmd_v[6]{0,0,0,0,0,0};
-    // const double cmd_a[6]{0.01, -0.05, -0.15, 0.3, 0.2, 0.1};
-    // const double tau[6]{0.4844174372750001, 0.08216360686594992, 0.30460511073, 0.7373381148611999, 0.4121035361150001, 0.2};
-
-	const double cmd_q[6]{0, 0, 0, 0, 0.3, 0.0};
-    const double cmd_v[6]{0, 0, 0, 0, 0, 0};
-    const double cmd_a[6]{0.0, 0.0, 0.0, 0.3, 0.0, 0.0};
-    const double tau[6]{0.00665747741422852, 0.928460078350723, 1.171662248350723, 1.396123545250723, -0.02612219954077147, 0.2866009467376818};
-
-	// const double cmd_q[6]{0, 0, 0, 0, 0.3, 0.0};
-    // const double cmd_v[6]{0, 0, 0, 0, 0, 0};
-    // const double cmd_a[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    // const double tau[6]{0, -0.07776023197879819, -0.07776023197879819, -0.07776023197879819, 0, 4.213623736612206e-17};
-
-
-    // 5. forward dynamics — the failing step
-    m->setInputPos(cmd_q);  
-	m->setInputVel(cmd_v);
-	m->forwardKinematics(); 
-	m->forwardKinematicsVel();
+	cs.init();
+	cs.start();
+	
+	Test t;
+	t.init();
+	auto& mm = dynamic_cast<aris::dynamic::MultiModel&>(cs.model());
 	
 
-    // double cmd_tau_fd[6];
-	// m->setInputAcc(cmd_a);
-	// m->inverseDynamics();
-	// m->getInputFce(cmd_tau_fd);
-	// print_arr("cmd_tau_fd:\n", cmd_tau_fd, 6);
-	// print_arr("cmd_tau (expected):\n", tau, 6);
+	t.pd()->setModel(mm);
+	t.pd()->setChanelSize(2); 
+	t.pd()->setDt(2*1e-3);
+	t.pd()->init();
+	t.pd()->setTargetSpeedRatio(0, 1);
 
-	// double max_err = check_dynamics(*m);
-	// std::cout << "\nMax |I*a - Σconstraint| = " << max_err << "\n";
+	t.test_trajectory_aj(cs);
+	t.pd()->setTargetSpeedRatio(0, 1);
+	t.test_trajectory_l(cs);
 
-	// bool ok = true;
-	// for (int i = 0; i < 6; ++i)
-    //     if (std::abs(cmd_tau_fd[i] - tau[i]) > 1e-10)
-    //         { 
-	// 			ok = false; 
-	// 		}
-    // std::cout << (ok ? "  PASS\n" : "  FAIL\n");
-
-    double cmd_a_fd[6];
-	m->setInputFce(tau); 
-	m->forwardDynamics();
-	m->getInputAcc(cmd_a_fd);
-	print_arr("cmd_a_fd:\n", cmd_a_fd, 6);
-    print_arr("cmd_a (expected):\n", cmd_a, 6);
-
-    bool ok = true;
-    for (int i = 0; i < 6; ++i)
-        if (std::abs(cmd_a_fd[i] - cmd_a[i]) > 1e-10)
-            { 
-				ok = false; 
-			}
-    std::cout << (ok ? "  PASS\n" : "  FAIL\n");
+	// 再次调用aj
+	t.test_trajectory_aj(cs);
 	
+	// 数据写入文档
+	t.writeFile(std::string("./pos.txt"));
 
 
-    return ok ? 0 : 1;
+
+    return 0;
 }

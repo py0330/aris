@@ -98,19 +98,19 @@ namespace aris::plan{
 		auto init() -> void;
 		auto stop() -> void;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据 //
 		auto insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 		auto insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据 //
 		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 		auto insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据 //
 		auto insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr) -> std::int64_t;
 		auto insertMoveJ(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr) -> std::int64_t;
 
-		// 插入新的数据，并重规划 //
+		// 插入新的数据 //
 		auto insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone) -> std::int64_t;
 
 
