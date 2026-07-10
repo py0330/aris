@@ -1485,7 +1485,7 @@ namespace aris::plan {
 	}
 	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::PosType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
 		// 构造 scurve list //
-		std::list<SCurveNode> ins_scurve_list/*, ins_scurve_origin_list*/;
+		std::list<SCurveNode> ins_scurve_list;//ins_scurve_origin_list
 		LargeNum t0;
 		for (auto iter = begin; iter != end; ++iter) {
 			ins_scurve_list.push_back(SCurveNode{});
@@ -2095,33 +2095,38 @@ namespace aris::plan {
     }
 	auto TrajectoryGenerator::insertInitPos(std::int64_t id, const double* ee_pos)->void {
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);
+		
+		// auto current_node = imp_->current_node_.load();
 
-		auto current_node = imp_->current_node_.load();
+		// // 转化 pos 表达 //
+		// std::vector<double> ee_pos_internal(imp_->internal_pos_size), mid_pos_internal(imp_->internal_pos_size);
+		// aris::dynamic::s_pos2pos(posTypes().size(), posTypes().data(), ee_pos, imp_->internal_pos_type_, ee_pos_internal.data());
 
-		// 转化 pos 表达 //
-		std::vector<double> ee_pos_internal(imp_->internal_pos_size), mid_pos_internal(imp_->internal_pos_size);
-		aris::dynamic::s_pos2pos(posTypes().size(), posTypes().data(), ee_pos, imp_->internal_pos_type_, ee_pos_internal.data());
+		// // 插入初始化指令 //
+		// auto& nodes_ = imp_->nodes_;
+		// auto& ins_node = nodes_.emplace_back(posTypes().size());
+		// ins_node.id_ = id;
+		// ins_node.next_node_.store(&ins_node);
 
-		// 插入初始化指令 //
-		auto& nodes_ = imp_->nodes_;
-		auto& ins_node = nodes_.emplace_back(posTypes().size());
-		ins_node.id_ = id;
-		ins_node.next_node_.store(&ins_node);
+		// // 初始化节点 //
+		// auto scurve_size = aris::dynamic::s_pos_type_mag_size(posTypes().size(), posTypes().data());
+		// std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
+		// make_node(&ins_node, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
+		// 	, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
-		// 初始化节点 //
 		auto scurve_size = aris::dynamic::s_pos_type_mag_size(posTypes().size(), posTypes().data());
-		std::vector<double> vel_vec(scurve_size, 1.0), acc_vec(scurve_size, 1.0), jerk_vec(scurve_size, 1.0), zone_vec(scurve_size, 0.0);
-		make_node(&ins_node, imp_->ee_size_, imp_->internal_pos_type_, Node::NodeType::ResetInitPos, ee_pos_internal.data(), mid_pos_internal.data()
-			, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
+		std::vector<double> vel_vec(scurve_size, 0.0), acc_vec(scurve_size, 0.0), jerk_vec(scurve_size, 0.0), zone_vec(scurve_size, 0.0);
+
+		imp_->insert_node(Node::NodeType::ResetInitPos, id, ee_pos, ee_pos, vel_vec.data(), acc_vec.data(), jerk_vec.data(), zone_vec.data());
 
 		// 设置当前 node 为 current_node_ 或 将此node设置为之前node的下一个值 //
-		if (nodes_.size() < 2){
+		if (imp_->nodes_.size() < 2){
 			// 只有当前node 或者 上次node已经运行结束
-			init_node(&ins_node, nullptr);
-			imp_->current_node_.store(&ins_node);
+			init_node(&imp_->nodes_.back(), nullptr);
+			imp_->current_node_.store(&imp_->nodes_.back());
 		}
-		else
-			std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
+		// else
+		// 	std::prev(nodes_.end(), 2)->next_node_.store(&ins_node);
 	}
 	auto TrajectoryGenerator::insertLinePos(std::int64_t id, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone)->void{
 		std::lock_guard<std::recursive_mutex> lck(imp_->mu_);

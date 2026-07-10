@@ -101,21 +101,24 @@ namespace aris::plan {
 		}
 
 		auto init(double init_target_ds) -> void {
-			u0_ = 1.0;
-			u1_ = 1.0 + init_target_ds;
+			u0_ = 2.0 - init_target_ds;
+			u1_ = 2.0;
 			target_du_.store(init_target_ds);
 			is_first_count_ = true;
 		}
 		auto get_next_input(double* p) -> std::int64_t {
 			auto target_du = target_du_.load();
-			
-			// STEP 0 check 是否结束 //
-			if (ret1_ == 0) {
-				init(target_du);
+
+			// STEP 0 check 是否之前是否已正常结束 //
+			if ((u1_ == 2.0 && ret2_ == 0) || ret1_ == 0) {
+				is_first_count_ = true;
 			}
 
 			// STEP 0.1 补充足够的数据 //
 			if (is_first_count_) {
+				u0_ = 2.0 - target_du;
+				u1_ = 2.0;
+
 				ret2_ = input_generator_(p2_);
 				if (ret2_ > 0) {
 					ret3_ = input_generator_(p3_);
@@ -127,9 +130,9 @@ namespace aris::plan {
 				get_input_by_u(u1_, pu1_);
 
 				is_first_count_ = false;
+				aris::dynamic::s_vc(input_size_, pu1_, p);
+				return ret2_;
 			}
-
-
 
 			// STEP 1 计算 u2 的范围 //
 			double ur{ u1_ + (u1_ - u0_) + max_d2u_ }, ul{ u1_ + (u1_ - u0_) + min_d2u_ }; // du1 = u1 - u0

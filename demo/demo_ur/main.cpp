@@ -108,15 +108,22 @@ auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
 		imp_->line_num++;
 		imp_->vec.resize(imp_->line_num * 6, 0.0);
 		auto ret = imp_->pd->getNextInput(0,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		std::cout << "ret:" << ret << std::endl;
+		//aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		
+		if (ret == 0) {
+			std::cout << "aj trajectory finished" << std::endl;
+		}
+
+		static int cnt = 0;
+		if (cnt++ % 100 == 0)
+			std::cout << "ret:" << ret << std::endl;
 		return ret;
 	};
 
 	while (move_aj_and_copy_data()) {};
 
 
-	imp_->pd->releaseChanel(0);
+	//imp_->pd->releaseChanel(0);
 
 	
 
@@ -146,8 +153,10 @@ auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 
 		imp_->vec.resize(imp_->line_num * 6, 0.0);
 		auto ret = imp_->pd->getNextInput(0,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		std::cout << "ret:" << ret << std::endl;
+		//aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
+		static int cnt = 0;
+		if (cnt++ % 100 == 0)
+			std::cout << "ret:" << ret << std::endl;
 		return ret;
 	};
 
@@ -186,10 +195,7 @@ int main() {
 	t.pd()->setTargetSpeedRatio(0, 1);
 
 	t.test_trajectory_aj(cs);
-	t.pd()->setTargetSpeedRatio(0, 1);
 	t.test_trajectory_l(cs);
-
-	// 再次调用aj
 	t.test_trajectory_aj(cs);
 	
 	// 数据写入文档
