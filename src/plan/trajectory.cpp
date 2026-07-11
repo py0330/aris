@@ -1497,22 +1497,21 @@ namespace aris::plan {
 				if(begin->type_ == Node::NodeType::ResetInitPos){
 					begin->ee_plans_[i].x_.scurve_.t0_ = 0;
 					begin->ee_plans_[i].a_.scurve_.t0_ = 0;
+					begin->ee_plans_[i].x_.scurve_.T_ = 0;
+					begin->ee_plans_[i].a_.scurve_.T_ = 0;
 				}
 				else{
-					// x //
-					if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
-						begin->ee_plans_[i].x_.scurve_.t0_ = last->ee_plans_[i].x_.scurve_.t0_ + last->ee_plans_[i].x_.scurve_.T_;
-					}
-					// a //
-					if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
-						begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
-					}
+					begin->ee_plans_[i].x_.scurve_.t0_ = last->ee_plans_[i].x_.scurve_.t0_ + last->ee_plans_[i].x_.scurve_.T_;
+					begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
 				}
 			}
 			
 			// 构造 scurve list //
 			std::list<SCurveNode> ins_scurve_list;//ins_scurve_origin_list
 			for (auto iter = begin; iter != end; ++iter) {
+				if(iter->type_ == Node::NodeType::ResetInitPos)
+					continue;
+
 				auto scurve_size = static_cast<int>(aris::dynamic::s_pos_type_mag_size(ee_types.size(), ee_types.data()));
 				ins_scurve_list.push_back(SCurveNode{});
 				auto& scurve_node = ins_scurve_list.back();
@@ -1538,6 +1537,9 @@ namespace aris::plan {
 
 			// 将规划好的 scurve 返回到 nodes 中的优化后的位置 //
 			for (auto iter = begin; iter != end; ++iter) {
+				if(iter->type_ == Node::NodeType::ResetInitPos)
+					continue;
+
 				auto& scurve_node = ins_scurve_list.front();
 				iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
 				for (int i = 0, s_idx = 0; i < iter->ee_plans_.size(); ++i) {

@@ -859,6 +859,14 @@ namespace aris::plan {
 			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
 			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
 
+			{
+				model_->subForwardKinematics(
+					sub_id_list_.size(), sub_id_list_.data(),
+					ins_node_.jointPos(), ins_node_.eePos(), nullptr, last_node_.jointPos());
+
+				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots());
+			}
+
 			// 正常插入指令 //
 			nodes_.push_back(ins_node_);
 			std::swap(last_node_, ins_node_);
