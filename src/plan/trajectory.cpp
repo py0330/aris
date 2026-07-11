@@ -1555,13 +1555,17 @@ namespace aris::plan {
 					}
 				}
 				ins_scurve_list.pop_front();
-				iter->next_node_.store(std::next(iter) == end ? &*iter : &*std::next(iter));
 			}
 
 
 			return 0;
 		};
 		
+		// 设置所有节点的 next_node_ 指针 //
+		for (auto iter = begin; iter != end; ++iter) {
+			iter->next_node_.store(std::next(iter) == end ? &*iter : &*std::next(iter));
+		}
+
 		// 根据 ResetInitPos 分段 //
 		for(auto local_beg = begin, local_last = last; local_beg != end;) {
 			auto local_end = std::find_if(std::next(local_beg), end, [](auto& node)->bool {
