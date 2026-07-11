@@ -1306,7 +1306,8 @@ namespace aris::plan {
 	}
 
 	// make nodes //
-	auto make_node(Node* node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
+	// 创建节点
+	auto create_node(Node* node, aris::Size ee_num, aris::dynamic::PosType* ee_types,
 		Node::NodeType node_type, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone)
 	{
 		node->type_ = node_type;
@@ -1330,6 +1331,7 @@ namespace aris::plan {
 			vel_idx += aris::dynamic::s_pos_type_mag_size(ee_types[i]);
 		}
 	}
+	// 根据前一个节点的数据，初始化当前节点起始位置 //
 	auto init_node(Node* this_node, const Node* last_node)->void {
 		// 更新本段轨迹的 move //
 		for (Size i{ 0 }, pos_idx{ 0 }, vel_idx{ 0 }; i < this_node->ee_plans_.size(); ++i) {
@@ -1448,6 +1450,7 @@ namespace aris::plan {
 			vel_idx += aris::dynamic::s_pos_type_mag_size(ee_type);
 		}
 	}
+	// 连接节点，创造转弯区等 //
 	auto connect_nodes(Node* this_node, Node* last_node, aris::Size ee_num, aris::dynamic::PosType* ee_types, bool if_make_zone)->void {
 		if(this_node->type_ == Node::NodeType::ResetInitPos || last_node->type_ == Node::NodeType::ResetInitPos) {
 			if_make_zone = false;
@@ -1483,61 +1486,99 @@ namespace aris::plan {
 		}
 
 	}
-	auto replan_nodes(int scurve_size, const std::vector<aris::dynamic::PosType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
-		// 构造 scurve list //
-		std::list<SCurveNode> ins_scurve_list;//ins_scurve_origin_list
-		LargeNum t0;
-		for (auto iter = begin; iter != end; ++iter) {
-			ins_scurve_list.push_back(SCurveNode{});
-			auto& scurve_node = ins_scurve_list.back();
-			scurve_node.params_.reserve(scurve_size);
+	// 重规划节点 //
+	auto replan_nodes(const std::vector<aris::dynamic::PosType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
+		
+		// 对区间的节点进行规划，规划的结果会直接更新到节点中 //
+		auto replan_local = [](const std::vector<aris::dynamic::PosType> &ee_types, std::list<Node>::iterator last, std::list<Node>::iterator begin, std::list<Node>::iterator end)->int {
 
+			// 更新起始节点的时间 //
 			for (int i = 0; i < ee_types.size();++i) {
-				auto& ee_p = iter->ee_plans_[i];
-				
-				// x //
-				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
-					begin->ee_plans_[i].x_.scurve_.t0_ = last->ee_plans_[i].x_.scurve_.t0_ + last->ee_plans_[i].x_.scurve_.T_;
-					scurve_node.params_.push_back(ee_p.x_.scurve_);
+				if(begin->type_ == Node::NodeType::ResetInitPos){
+					begin->ee_plans_[i].x_.scurve_.t0_ = 0;
+					begin->ee_plans_[i].a_.scurve_.t0_ = 0;
 				}
-				// a //
-				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
-					begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
-					scurve_node.params_.push_back(ee_p.a_.scurve_);
-				}
-			}
-		}
-
-		// 进行规划 //
-		if (s_scurve_make_nodes(ins_scurve_list.begin(), ins_scurve_list.end()) != 0) {
-			//std::cout << "[debug failed] : make scurve error" << std::endl;
-			return -1;
-		}
-
-		// 将规划好的 scurve 返回到 nodes 中的优化后的位置 //
-		for (auto iter = begin; iter != end; ++iter) {
-			auto& scurve_node = ins_scurve_list.front();
-			iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
-			for (int i = 0, s_idx = 0; i < iter->ee_plans_.size(); ++i) {
-				auto& ee_p = iter->ee_plans_[i];
-				
-				// x //
-				if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
-					ee_p.x_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
-				}
-				// a //
-				if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
-					ee_p.a_.scurve_ = scurve_node.params_[s_idx];
-					s_idx++;
+				else{
+					// x //
+					if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+						begin->ee_plans_[i].x_.scurve_.t0_ = last->ee_plans_[i].x_.scurve_.t0_ + last->ee_plans_[i].x_.scurve_.T_;
+					}
+					// a //
+					if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+						begin->ee_plans_[i].a_.scurve_.t0_ = last->ee_plans_[i].a_.scurve_.t0_ + last->ee_plans_[i].a_.scurve_.T_;
+					}
 				}
 			}
-			ins_scurve_list.pop_front();
-			iter->next_node_.store(std::next(iter) == end ? &*iter : &*std::next(iter));
+			
+			// 构造 scurve list //
+			std::list<SCurveNode> ins_scurve_list;//ins_scurve_origin_list
+			for (auto iter = begin; iter != end; ++iter) {
+				auto scurve_size = static_cast<int>(aris::dynamic::s_pos_type_mag_size(ee_types.size(), ee_types.data()));
+				ins_scurve_list.push_back(SCurveNode{});
+				auto& scurve_node = ins_scurve_list.back();
+				scurve_node.params_.reserve(scurve_size);
+
+				for (int i = 0; i < ee_types.size();++i) {
+					// x //
+					if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+						scurve_node.params_.push_back(iter->ee_plans_[i].x_.scurve_);
+					}
+					// a //
+					if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+						scurve_node.params_.push_back(iter->ee_plans_[i].a_.scurve_);
+					}
+				}
+			}
+
+			// 对 scurve 进行规划 //
+			if (s_scurve_make_nodes(ins_scurve_list.begin(), ins_scurve_list.end()) != 0) {
+				//std::cout << "[debug failed] : make scurve error" << std::endl;
+				return -1;
+			}
+
+			// 将规划好的 scurve 返回到 nodes 中的优化后的位置 //
+			for (auto iter = begin; iter != end; ++iter) {
+				auto& scurve_node = ins_scurve_list.front();
+				iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
+				for (int i = 0, s_idx = 0; i < iter->ee_plans_.size(); ++i) {
+					auto& ee_p = iter->ee_plans_[i];
+					
+					// x //
+					if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+						ee_p.x_.scurve_ = scurve_node.params_[s_idx];
+						s_idx++;
+					}
+					// a //
+					if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+						ee_p.a_.scurve_ = scurve_node.params_[s_idx];
+						s_idx++;
+					}
+				}
+				ins_scurve_list.pop_front();
+				iter->next_node_.store(std::next(iter) == end ? &*iter : &*std::next(iter));
+			}
+
+
+			return 0;
+		};
+		
+		// 根据 ResetInitPos 分段 //
+		for(auto local_beg = begin, local_last = last; local_beg != end;) {
+			auto local_end = std::find_if(std::next(local_beg), end, [](auto& node)->bool {
+				return node.type_ == Node::NodeType::ResetInitPos;
+			});
+
+			auto ret = replan_local(ee_types, local_last, local_beg, local_end);
+			if(ret != 0)
+				return ret;
+
+			local_beg = local_end;
+			local_last = std::prev(local_end);
 		}
 
 		return 0;
 	}
+	// 获取节点数据 //
 	auto get_node_data(aris::Size ee_num, const aris::dynamic::PosType* ee_types, const Node* current_node, LargeNum s, double ds, double dds, double ddds,
 		double* internal_pos, double* internal_vel, double* internal_acc) -> void
 	{
@@ -1679,8 +1720,7 @@ namespace aris::plan {
 				}
 
 				// 重规划 scurve
-				auto scurve_size = static_cast<int>(aris::dynamic::s_pos_type_mag_size(ee_pos_types_.size(), ee_pos_types_.data()));
-				auto replan_ret = replan_nodes(scurve_size, ee_pos_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
+				auto replan_ret = replan_nodes(ee_pos_types_, std::prev(replan_iter_begin), replan_iter_end, nodes_.end());
 
 #ifdef ARIS_BUILD_TESTS
 				auto forced_fail_current_id = g_trajectory_force_replan_fail_current_id.load(std::memory_order_relaxed);
@@ -1701,7 +1741,7 @@ namespace aris::plan {
 					emit_trajectory_concurrency_test_hook(kTrajectoryHookCaseInsertPublishExchangeConflictRetry, current_iter->id_, ins_iter->id_, false);
 #endif
 					*ins_iter = ins_node_copy;
-					replan_nodes(scurve_size, ee_pos_types_, std::prev(ins_iter), ins_iter, nodes_.end());
+					replan_nodes(ee_pos_types_, std::prev(ins_iter), ins_iter, nodes_.end());
 					std::prev(ins_iter)->next_node_.exchange(&*ins_iter);
 					insert_success = true;
 				}
@@ -1750,7 +1790,7 @@ namespace aris::plan {
 			auto& ins_node = nodes_.emplace_back(ee_pos_types_.size());
 			ins_node.id_ = id;
 
-			make_node(&ins_node, ee_size_, internal_pos_type_, move_type,
+			create_node(&ins_node, ee_size_, internal_pos_type_, move_type,
 				ee_pos_internal.data(), mid_pos_internal.data(), vel, acc, jerk, zone);
 		}
 	};
