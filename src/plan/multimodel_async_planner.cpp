@@ -943,6 +943,7 @@ namespace aris::plan {
 
 	auto MultimodelPlanner::setDt(double dt) -> void {
 		imp_->tg_.setDt(dt);
+		imp_->fwd_tg_.setDt(dt);
 		imp_->is_.setDt(dt);
 		imp_->sr_.setDt(dt);
 		imp_->ag_.setDt(dt);
