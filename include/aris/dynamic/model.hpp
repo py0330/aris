@@ -234,8 +234,6 @@ namespace aris::dynamic{
 		auto virtual forwardDynamics(const double* input_f, double* input_a)const noexcept->int override;
 
 		// kinematics & dynamics, set state //
-		
-
 		auto virtual inverseKinematics()noexcept->int override;
 		auto virtual forwardKinematics()noexcept->int override;
 		auto virtual inverseKinematicsVel()noexcept->int override;
@@ -531,6 +529,7 @@ namespace aris::dynamic{
 		// additional sub input & output api
 		auto getSubOutputMotions(Size submodel_num, const Size* submodel_ids, MotionBase** ees_out) -> void;
 		auto getSubInputMotions(Size submodel_num, const Size* submodel_ids, Motion** mots_out) -> void;
+		auto getSubInputMotionIds(Size submodel_num, const Size* submodel_ids, Size *motion_id) -> void;
 
 		// sub input limits //
 		auto getSubMinInputPos(Size submodel_num, const Size* submodel_ids, double* min_pos) -> void;

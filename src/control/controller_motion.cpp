@@ -116,6 +116,16 @@ namespace aris::control{
 		std::unique_ptr<aris::core::PointerArray<FtSensor>> ft_sensor_pool_{ new aris::core::PointerArray<FtSensor> };
 		std::unique_ptr<aris::core::PointerArray<CustomSlave>> custom_slave_pool_{ new aris::core::PointerArray<CustomSlave> };
 	};
+	auto Controller::getMotorTargetPosById(Size motor_num, const Size* motor_id, double* mp)const noexcept->void{
+		for(int i = 0; i < motor_num; ++i){
+			mp[i] = motorPool()[motor_id[i]].targetPos();
+		}
+	}
+	auto Controller::setMotorTargetPosById(Size motor_num, const Size* motor_id, const double* mp)noexcept->void{
+		for(int i = 0; i < motor_num; ++i){
+			motorPool()[motor_id[i]].setTargetPos(mp[i]);
+		}
+	}
 	auto Controller::resetMotorPool(aris::core::PointerArray<Motor> *pool) { imp_->motor_pool_.reset(pool); }
 	auto Controller::motorPool()->aris::core::PointerArray<Motor>& { return *imp_->motor_pool_; }
 	auto Controller::resetDigitalIoPool(aris::core::PointerArray<DigitalIo> *pool) { imp_->digital_io_pool_.reset(pool); }

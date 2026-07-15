@@ -1502,6 +1502,21 @@ namespace aris::dynamic{
 			}
 		}
 	}
+	auto MultiModel::getSubInputMotionIds(Size submodel_num, const Size* submodel_ids, Size *motion_id) -> void{
+		Size id = 0;
+		for (Size i = 0; i < submodel_num; ++i) {
+
+			Size begin_id = 0;
+			for(Size j = 0; j < submodel_ids[i]; ++j){
+				begin_id += subModels()[j].inputSize();
+			}
+
+			for (Size j = 0; j < subModels()[submodel_ids[i]].inputSize(); ++j) {
+				motion_id[id] = begin_id + j;
+				id++;
+			}
+		}
+	}
 
 	auto MultiModel::subInputPosSize(Size sub_id_num, const Size* sub_id)const noexcept->Size {
 		Size ret = 0;

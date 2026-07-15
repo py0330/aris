@@ -344,15 +344,10 @@ TEST(Model, MultiModel) {
 			13,14,
 		};
 
-		/*
-		mots = multi.getMotionIds();
-		EXPECT_FALSE(mots != result0) << "\"MultiModel::getMotionIds\" failed";
-
-		mots.clear();
+		aris::Size all_sub[5]{ 0,1,2,3,4 };
 		mots.resize(15, -1);
-		multi.getMotionIds(mots.data());
-		EXPECT_FALSE(mots != result0) << "\"MultiModel::getMotionIds\" failed";
-			*/
+		multi.getSubInputMotionIds(5, all_sub, mots.data());
+		EXPECT_FALSE(mots != result0) << "\"MultiModel::getSubInputMotionIds\" failed";
 
 		std::vector<aris::Size> result1{
 			7,8,9,10,11,12,
@@ -362,30 +357,22 @@ TEST(Model, MultiModel) {
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
 
-		/*
-		mots = multi.getMotionIds({ 3,4,0,2,1 });
-		EXPECT_FALSE(mots != result1) << "\"MultiModel::getMotionIds\" failed";
-
 		mots.clear();
 		mots.resize(15, -1);
-		multi.getMotionIds(5, sub1, mots.data());
-		EXPECT_FALSE(mots != result1) << "\"MultiModel::getMotionIds\" failed";
-		*/
+		multi.getSubInputMotionIds(5, sub1, mots.data());
+		EXPECT_FALSE(mots != result1) << "\"MultiModel::getSubInputMotionIds\" failed";
+
 		std::vector<aris::Size> result2{
 			13,14,
 			7,8,9,10,11,12,
 			7,8,9,10,11,12,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
-		/*
-		mots = multi.getMotionIds({ 4,2,3,3 });
-		EXPECT_FALSE(mots != result2) << "\"MultiModel::getMotionIds\" failed";
 
 		mots.clear();
 		mots.resize(14, -1);
-		multi.getMotionIds(4, sub2, mots.data());
-		EXPECT_FALSE(mots != result2) << "\"MultiModel::getMotionIds\" failed";
-			*/
+		multi.getSubInputMotionIds(4, sub2, mots.data());
+		EXPECT_FALSE(mots != result2) << "\"MultiModel::getSubInputMotionIds\" failed";
 	}
 
 	
@@ -1061,15 +1048,11 @@ TEST(Model, MultiModel2) {
 			7,8,9,10,11,12,
 			13,14,
 		};
-		/*
-		mots = multi.getMotionIds();
-		EXPECT_FALSE(mots != result0) << "\"MultiModel::getMotionIds\" failed";
 
-		mots.clear();
+		aris::Size all_sub[5]{ 0,1,2,3,4 };
 		mots.resize(15, -1);
-		multi.getMotionIds(mots.data());
-		EXPECT_FALSE(mots != result0) << "\"MultiModel::getMotionIds\" failed";
-			*/
+		multi.getSubInputMotionIds(5, all_sub, mots.data());
+		EXPECT_FALSE(mots != result0) << "\"MultiModel::getSubInputMotionIds\" failed";
 
 		std::vector<aris::Size> result1{
 			7,8,9,10,11,12,
@@ -1078,30 +1061,23 @@ TEST(Model, MultiModel2) {
 			3,4,5,6,
 		};
 		aris::Size sub1[5]{ 3,4,0,2,1 };
-		/*
-		mots = multi.getMotionIds({ 3,4,0,2,1 });
-		EXPECT_FALSE(mots != result1) << "\"MultiModel::getMotionIds\" failed";
 
 		mots.clear();
 		mots.resize(15, -1);
-		multi.getMotionIds(5, sub1, mots.data());
-		EXPECT_FALSE(mots != result1) << "\"MultiModel::getMotionIds\" failed";
-			*/
+		multi.getSubInputMotionIds(5, sub1, mots.data());
+		EXPECT_FALSE(mots != result1) << "\"MultiModel::getSubInputMotionIds\" failed";
+
 		std::vector<aris::Size> result2{
 			13,14,
 			7,8,9,10,11,12,
 			7,8,9,10,11,12,
 		};
 		aris::Size sub2[4]{ 4,2,3,3 };
-		/*
-		mots = multi.getMotionIds({ 4,2,3,3 });
-		EXPECT_FALSE(mots != result2) << "\"MultiModel::getMotionIds\" failed";
 
 		mots.clear();
 		mots.resize(14, -1);
-		multi.getMotionIds(4, sub2, mots.data());
-		EXPECT_FALSE(mots != result2) << "\"MultiModel::getMotionIds\" failed";
-			*/
+		multi.getSubInputMotionIds(4, sub2, mots.data());
+		EXPECT_FALSE(mots != result2) << "\"MultiModel::getSubInputMotionIds\" failed";
 	}
 
 

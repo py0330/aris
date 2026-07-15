@@ -20,9 +20,13 @@ public:
 
 private:
 	std::int64_t id_{ 0 };
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
 };
 
 auto MoveL::prepareNrt()->void{
+	sub_model_ = {1};
+	
 	// p,v,a,j,z //
 	auto pos_mtx = matrixParam("pos");
 	auto vel_mtx = matrixParam("vel");
@@ -44,13 +48,20 @@ auto MoveL::prepareNrt()->void{
 	}
 		
 	// insert line //
-	pd.tryLockChanel(0, { 1 });
+	pd.tryLockChanel(0, sub_model_);
 	id_ = pd.insertLinePos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
 	pd.updateInsertPos(0);
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
 }
 auto MoveL::executeRT()->int{
 	double p[100];
 	auto ret = pd.getNextInput(0, input_pos);
+
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), input_pos);
+
 	return ret <= id_ ? ret : 0;
 }
 auto MoveL::collectNrt()->void{
@@ -88,9 +99,13 @@ public:
 
 private:
 	std::int64_t id_{ 0 };
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
 };
 
 auto MoveJ::prepareNrt()->void{
+	sub_model_ = {1};
+	
 	// p,v,a,j,z //
 	auto pos_mtx = matrixParam("pos");
 	auto vel_mtx = matrixParam("vel");
@@ -112,13 +127,18 @@ auto MoveJ::prepareNrt()->void{
 	}
 		
 	// insert line //
-	pd.tryLockChanel(0, { 1 });
+	pd.tryLockChanel(0, sub_model_);
 	id_ = pd.insertMoveJPos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
 	pd.updateInsertPos(0);
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
 }
 auto MoveJ::executeRT()->int{
 	double p[100];
 	auto ret = pd.getNextInput(0, input_pos);
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), input_pos);
 	return ret <= id_ ? ret : 0;
 }
 auto MoveJ::collectNrt()->void{
@@ -197,6 +217,8 @@ auto createMultiModel() -> std::unique_ptr<aris::dynamic::MultiModel> {
 
 int main(){
 	auto multi_model = createMultiModel();
+	auto master = aris::control::createDefaultEthercatMaster(multi_model->inputSize(), 0, 0);
+	auto controller = aris::control::createDefaultEthercatController(multi_model->inputSize(), 0, 0, *master);
 
 	std::cout << aris::core::toXmlString(*multi_model) << std::endl;
 
@@ -212,10 +234,12 @@ int main(){
 		// 构造mvl ，调试一下
 		MoveL mvl;
 		mvl.setModelBase(multi_model.get());
+		mvl.setController(controller.get());
 		mvl.command().init();
 
 		MoveJ mvj;
 		mvj.setModelBase(multi_model.get());
+		mvj.setController(controller.get());
 		mvj.command().init();
 		
 		aris::plan::Plan *plan_ptr = nullptr;

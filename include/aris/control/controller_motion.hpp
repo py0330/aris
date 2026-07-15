@@ -165,6 +165,9 @@ namespace aris::control{
 	public:
 		auto virtual init()->void;
 
+		auto getMotorTargetPosById(Size motor_num, const Size* motor_id, double* mp)const noexcept->void;
+		auto setMotorTargetPosById(Size motor_num, const Size* motor_id, const double* mp)noexcept->void;
+
 		auto resetMotorPool(aris::core::PointerArray<Motor> *pool);
 		auto motorPool()->aris::core::PointerArray<Motor>&;
 		auto motorPool()const->const aris::core::PointerArray<Motor>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motorPool(); }
