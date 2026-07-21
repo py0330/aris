@@ -142,6 +142,7 @@ namespace aris::plan {
 
 		NodeType                type_;
 		std::int64_t            id_;
+		LargeNum                s_beg_;
 		LargeNum                s_end_;
 		std::vector<EePlanData> ee_plans_;
 		std::atomic<Node*>      next_node_;
@@ -151,6 +152,7 @@ namespace aris::plan {
 		Node(aris::Size ee_size) {
 			type_ = NodeType::Line;
 			id_ = 1;
+			s_beg_ = 0;
 			s_end_ = 0;
 			ee_plans_.resize(ee_size);
 			next_node_.store(this);
@@ -158,12 +160,14 @@ namespace aris::plan {
 		Node(const Node& other) {
 			type_ = other.type_;
 			id_ = other.id_;
+			s_beg_ = other.s_beg_;
 			s_end_ = other.s_end_;
 			ee_plans_ = other.ee_plans_;
 			next_node_.store(other.next_node_.load());
 		}
 		Node& operator=(const Node& other) {
 			id_ = other.id_;
+			s_beg_ = other.s_beg_;
 			s_end_ = other.s_end_;
 			ee_plans_ = other.ee_plans_;
 			next_node_.store(other.next_node_.load());
@@ -1541,6 +1545,7 @@ namespace aris::plan {
 					continue;
 
 				auto& scurve_node = ins_scurve_list.front();
+				iter->s_beg_ = scurve_node.params_[0].t0_;
 				iter->s_end_ = scurve_node.params_[0].t0_ + scurve_node.params_[0].T_;
 				for (int i = 0, s_idx = 0; i < iter->ee_plans_.size(); ++i) {
 					auto& ee_p = iter->ee_plans_[i];
@@ -1866,6 +1871,85 @@ namespace aris::plan {
 	auto TrajectoryGenerator::leftNodeS()const->double {
 		auto current_node = imp_->current_node_.load();
 		return current_node->s_end_ - imp_->s_;
+	}
+	auto TrajectoryGenerator::currentNodeDuration()const->double {
+		auto current_node = imp_->current_node_.load();
+		return current_node->s_end_ - current_node->s_beg_;
+	}
+	auto TrajectoryGenerator::isCurrentNodeMove()const->bool {
+		auto current_node = imp_->current_node_.load();
+		return current_node->type_ != Node::NodeType::ResetInitPos;
+	}
+	auto TrajectoryGenerator::nextMoveNodeDuration()const->double {
+		auto cur = imp_->current_node_.load();
+		auto node = cur->next_node_.load();
+		while (node && node != cur) {
+			if (node->type_ != Node::NodeType::ResetInitPos)
+				return node->s_end_ - node->s_beg_;
+			cur = node;
+			node = cur->next_node_.load();
+		}
+		return 0.0;
+	}
+
+	auto nodeMaxTa(const Node* node, const std::vector<aris::dynamic::PosType>& ee_types)->double {
+		double max_ta = 0.0;
+		for (aris::Size i = 0; i < node->ee_plans_.size(); ++i) {
+			double v;
+			if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+				v = node->ee_plans_[i].x_.scurve_.Ta_;
+				if (v > 0.0) max_ta = std::max(max_ta, v);
+			}
+			if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+				v = node->ee_plans_[i].a_.scurve_.Ta_;
+				if (v > 0.0) max_ta = std::max(max_ta, v);
+			}
+		}
+		return max_ta;
+	}
+	auto nodeMaxTb(const Node* node, const std::vector<aris::dynamic::PosType>& ee_types)->double {
+		double max_tb = 0.0;
+		for (aris::Size i = 0; i < node->ee_plans_.size(); ++i) {
+			double v;
+			if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
+				v = node->ee_plans_[i].x_.scurve_.Tb_;
+				if (v > 0.0) max_tb = std::max(max_tb, v);
+			}
+			if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
+				v = node->ee_plans_[i].a_.scurve_.Tb_;
+				if (v > 0.0) max_tb = std::max(max_tb, v);
+			}
+		}
+		return max_tb;
+	}
+
+	auto TrajectoryGenerator::currentNodeMaxTa()const->double {
+		return nodeMaxTa(imp_->current_node_.load(), imp_->ee_pos_types_);
+	}
+	auto TrajectoryGenerator::currentNodeMaxTb()const->double {
+		return nodeMaxTb(imp_->current_node_.load(), imp_->ee_pos_types_);
+	}
+	auto TrajectoryGenerator::nextMoveNodeMaxTa()const->double {
+		auto cur = imp_->current_node_.load();
+		auto node = cur->next_node_.load();
+		while (node && node != cur) {
+			if (node->type_ != Node::NodeType::ResetInitPos)
+				return nodeMaxTa(node, imp_->ee_pos_types_);
+			cur = node;
+			node = cur->next_node_.load();
+		}
+		return 0.0;
+	}
+	auto TrajectoryGenerator::nextMoveNodeMaxTb()const->double {
+		auto cur = imp_->current_node_.load();
+		auto node = cur->next_node_.load();
+		while (node && node != cur) {
+			if (node->type_ != Node::NodeType::ResetInitPos)
+				return nodeMaxTb(node, imp_->ee_pos_types_);
+			cur = node;
+			node = cur->next_node_.load();
+		}
+		return 0.0;
 	}
 	auto TrajectoryGenerator::leftTotalS()const->double {
 		return imp_->nodes_.back().s_end_ - imp_->s_;

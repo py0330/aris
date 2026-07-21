@@ -141,17 +141,17 @@ namespace aris::plan {
 		return -2; // channel was not locked, return -2 to indicate release failed
 	}
 
-	auto PlannerDispacher::insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertLinePos(tools, wobjs, ee_pos, vel, acc, jerk, zone);
+	auto PlannerDispacher::insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+		return imp_->chanel_data_vec_[chanel]->planner.insertLinePos(tools, wobjs, ee_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto PlannerDispacher::insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertCirclePos(tools, wobjs, ee_pos, mid_pos, vel, acc, jerk, zone);
+	auto PlannerDispacher::insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+		return imp_->chanel_data_vec_[chanel]->planner.insertCirclePos(tools, wobjs, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto PlannerDispacher::insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, const std::int64_t *which_root) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertMoveJ(tools, wobjs, tw_pos, vel, acc, jerk, zone, which_root);
+	auto PlannerDispacher::insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, const std::int64_t *which_root, double time_zone) -> std::int64_t {
+		return imp_->chanel_data_vec_[chanel]->planner.insertMoveJ(tools, wobjs, tw_pos, vel, acc, jerk, zone, which_root, time_zone);
 	}
-    auto PlannerDispacher::insertMoveAbsJPos(int chanel, const double *joint_p, const double *joint_v, const double *joint_a, const double *joint_j, const double *joint_z) -> std::int64_t {
-        return imp_->chanel_data_vec_[chanel]->planner.insertMoveAbsJ(joint_p, joint_v, joint_a, joint_j, joint_z);
+    auto PlannerDispacher::insertMoveAbsJPos(int chanel, const double *joint_p, const double *joint_v, const double *joint_a, const double *joint_j, const double *joint_z, double time_zone) -> std::int64_t {
+        return imp_->chanel_data_vec_[chanel]->planner.insertMoveAbsJ(joint_p, joint_v, joint_a, joint_j, joint_z, time_zone);
     }
 	auto PlannerDispacher::updateInsertPos(int chanel) -> void {
 		imp_->chanel_data_vec_[chanel]->planner.updateInsertPos();
@@ -187,6 +187,10 @@ namespace aris::plan {
 
 	auto PlannerDispacher::ikRet(int chanel) -> std::int64_t {
 		return imp_->chanel_data_vec_[chanel]->planner.ikRet();
+	}
+
+	auto PlannerDispacher::leftNodeS(int chanel) -> double {
+		return imp_->chanel_data_vec_[chanel]->planner.leftNodeS();
 	}
 
 	auto PlannerDispacher::setTargetSpeedRatio(int chanel, double ds) -> void {

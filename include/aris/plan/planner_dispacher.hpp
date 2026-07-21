@@ -72,7 +72,7 @@ namespace aris::plan {
 		/// @param jerk tool 相对于 wobj 的跃度，同上
 		/// @param zone tool 相对于 wobj 的转弯区，同上
 		/// @return 返回规划器内当前节点的 id，如果 tool 和 wobj 对应不上，会抛异常
-		auto insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 		
 		/// @brief 插入圆弧数据，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
@@ -85,7 +85,7 @@ namespace aris::plan {
 		/// @param jerk tool 相对于 wobj 的跃度，同上
 		/// @param zone tool 相对于 wobj 的转弯区，同上
 		/// @return 返回规划器内当前节点的 id，如果 tool 和 wobj 对应不上，会抛异常
-		auto insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t;
+		auto insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
 		/// @brief 插入工具相对于工件的位姿，但用关节空间走过去，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
@@ -98,7 +98,7 @@ namespace aris::plan {
 		/// @param joint_z 关节转弯区
 		/// @param which_root 指定运动学的反解（例如6轴为 0-7，在此范围外采用默认解），nullptr时全部选默认解，默认用距离上个节点最近的解
 		/// @return 返回规划器内当前节点的 id，如果 tool 和 wobj 对应不上，会抛异常
-		auto insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z, const std::int64_t *which_root) -> std::int64_t;
+		auto insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z, const std::int64_t *which_root, double time_zone = 0.0) -> std::int64_t;
 		
 		/// @brief 插入轴空间位置，插入数据时并不直接生效，而是等到调用 updateInsertPos 后才会统一规划
 		/// @param chanel 通道 id
@@ -108,7 +108,7 @@ namespace aris::plan {
 		/// @param joint_j 关节跃度
 		/// @param joint_z 关节转弯区
 		/// @return 返回规划器内当前节点的 id
-		auto insertMoveAbsJPos(int chanel, const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z) -> std::int64_t;
+		auto insertMoveAbsJPos(int chanel, const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* joint_z, double time_zone = 0.0) -> std::int64_t;
 		
 		
 		/// @brief 统一计算已插入的数据，并重规划
@@ -132,6 +132,11 @@ namespace aris::plan {
 		/// @param chanel 通道 id
 		/// @return 逆运动学返回值，一般来说 ret < 0 为报错
 		auto ikRet(int chanel) -> std::int64_t;
+
+		/// @brief 获取当前节点剩余时间
+		/// @param chanel 通道 id
+		/// @return 剩余时间
+		auto leftNodeS(int chanel) -> double;
 
 		/// @brief 设置目标速度系数，应取 [0, 1] 之间的值，0 表示停止，1 表示全速
 		/// @param chanel 通道 id

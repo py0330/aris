@@ -13,6 +13,7 @@ public:
 	auto pd()->aris::plan::PlannerDispacher*;
 	auto init() ->void;
 	auto writeFile(std::string path)->void;
+	auto run()->int;
 	Test();
 	~Test();
 
@@ -85,23 +86,7 @@ auto Test::writeFile(std::string path)->void
 	init();
 }
 auto Test::pd()->aris::plan::PlannerDispacher* {return imp_->pd.get();}
-auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
-
-	std::cout << "-----------------test aj trajectory start---------------" << std::endl;
-	
-
-	double end_pos[6] {0,-0.53,1.98,0.23,-1.85,0};
-	double vels[6] {0.26179912599976163,0.26179912599976163,0.26179912599976163,0.31415895119971399,0.31415895119971399,0.31415895119971399};
-	double accs[6] {5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515};
-	double jerks[6] {174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772};
-	double zones[6] {0,0,0,0,0,0};
-	
-	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones);
-
-	imp_->pd->updateInsertPos(0);
-
-
+auto Test::run()->int {
 	auto move_aj_and_copy_data = [&]()->int
 	{
 		// m++;
@@ -121,6 +106,26 @@ auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
 	};
 
 	while (move_aj_and_copy_data()) {};
+	return 0;
+}
+auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
+
+	std::cout << "-----------------test aj trajectory start---------------" << std::endl;
+	
+
+	double end_pos[6] {0,-0.53,1.98,0.23,-1.85,0};
+	double vels[6] {0.26179912599976163,0.26179912599976163,0.26179912599976163,0.31415895119971399,0.31415895119971399,0.31415895119971399};
+	double accs[6] {5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515,5.5192101840043515};
+	double jerks[6] {174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772,174.53275066650772};
+	double zones[6] {0,0,0,0,0,0};
+	
+	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
+	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones,0.1);
+
+	imp_->pd->updateInsertPos(0);
+
+
+
 
 
 	//imp_->pd->releaseChanel(0);
@@ -142,25 +147,10 @@ auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 	std::string tool = "UrModel.L6.tool0";
 	std::string wobj = "UrModel.ground.wobj0";
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones);
+	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones,0.1);
 
 	imp_->pd->updateInsertPos(0);
 
-
-	auto move_aj_and_copy_data = [&]()->int
-	{
-		imp_->line_num++;
-
-		imp_->vec.resize(imp_->line_num * 6, 0.0);
-		auto ret = imp_->pd->getNextInput(0,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		//aris::dynamic::dsp(1,6,imp_->vec.data() + 6 * (imp_->line_num - 1));
-		static int cnt = 0;
-		if (cnt++ % 100 == 0)
-			std::cout << "ret:" << ret << std::endl;
-		return ret;
-	};
-
-	while (move_aj_and_copy_data()) {};
 
 
 	std::cout << "-----------------test l trajectory finished------------" << std::endl;
@@ -198,6 +188,8 @@ int main() {
 	t.test_trajectory_l(cs);
 	t.test_trajectory_aj(cs);
 	
+	t.run();
+
 	// 数据写入文档
 	t.writeFile(std::string("./pos.txt"));
 

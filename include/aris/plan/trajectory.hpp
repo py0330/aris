@@ -70,6 +70,17 @@ namespace aris::plan{
 
 		auto isCurrentNodeFinished()const->bool;
 
+		auto currentNodeDuration()const->double;
+
+		auto isCurrentNodeMove()const->bool;
+
+		auto nextMoveNodeDuration()const->double;
+
+		auto currentNodeMaxTa()const->double;
+		auto currentNodeMaxTb()const->double;
+		auto nextMoveNodeMaxTa()const->double;
+		auto nextMoveNodeMaxTb()const->double;
+
 		// 插入新的数据（仅入队，不立即重规划） //
 		auto insertInitPos(std::int64_t id, const double* ee_pos)->void;
 

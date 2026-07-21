@@ -405,6 +405,8 @@ namespace aris::plan {
 	struct MAPNode {
 		std::int64_t id_{ 0 };
 		MAPNodeType type_{ MAPNodeType::CartesianInitPos };
+		int cartesian_planner_idx_{ 0 }; // 0: inv_tg1_, 1: inv_tg2_
+		double time_zone_{ 0.0 };
 
 		aris::Size ee_size_{ 0 }, input_psize_{ 0 }, input_vdim_{ 0 }, output_psize_{ 0 }, output_vdim_{ 0 };
 		std::vector<char> mem_;
@@ -417,6 +419,7 @@ namespace aris::plan {
 				 + 2 * ee_size_ * sizeof(aris::dynamic::Marker*) // tools, wobjs
 				+ sizeof(std::int64_t) * ee_size_ // whichInverseRoots
 				+ sizeof(std::int64_t) * input_psize_ // whichForwardRoots
+				+ (output_psize_ + input_psize_) * sizeof(double) // initOutputPos, initInputPos
 				,  char(0));
 		}
 		MAPNode():MAPNode(0, MAPNodeType::CartesianInitPos, 0, 0, 0, 0, 0) {}
@@ -425,6 +428,8 @@ namespace aris::plan {
 			 std::fill(mem_.begin(), mem_.end(), char(0));
 			 id_ = 0;
 			 type_ = MAPNodeType::CartesianInitPos;
+			 cartesian_planner_idx_ = 0;
+			 time_zone_ = 0.0;
 		}
 		auto isSameTools(aris::dynamic::Marker** tools) -> bool {
 			for (aris::Size i = 0; i < ee_size_; ++i) {
@@ -459,6 +464,8 @@ namespace aris::plan {
 
 		auto whichInverseRoots()->std::int64_t* { return reinterpret_cast<std::int64_t*>(jointZone() + input_vdim_); }
 		auto whichForwardRoots()->std::int64_t* { return reinterpret_cast<std::int64_t*>(whichInverseRoots() + ee_size_); }
+		auto initOutputPos()->double* { return reinterpret_cast<double*>(whichForwardRoots() + input_psize_); }
+		auto initInputPos()->double* { return initOutputPos() + output_psize_; }
 	};
 
 	#define TW_POOL_SIZE 10000
@@ -476,7 +483,7 @@ namespace aris::plan {
 
 		// internal data //
 		aris::dynamic::MotionBase** ees_;
-		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr }, * input_pos_{ nullptr };
+		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr }, * input_pos_{ nullptr }, * trans_prev_p_{ nullptr };
 
 		std::int64_t get_id_{ 1 }, insert_id_{ 1 };
 		std::int64_t ik_ret_{ 0 }, tg_ret_{ 0 };
@@ -486,7 +493,7 @@ namespace aris::plan {
 		MAPNode last_node_, ins_node_;
 		ToolWobjSelector tw_, tw_rt_;
 
-		TrajectoryGenerator inv_tg_, fwd_tg_;
+		TrajectoryGenerator inv_tg1_, inv_tg2_, fwd_tg_;
 		InputSmoother is_;
 		AsyncGenerator ag_;
 		SpeedRegulator sr_;
@@ -494,7 +501,11 @@ namespace aris::plan {
 		std::vector<char> mem_;
 
 		auto get_next_input(double* p) -> std::int64_t {
-			return sr_.getNextInput(p);
+			auto ret = sr_.getNextInput(p);
+			// 调用正解更新模型的当前位置 //
+			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
+			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
+			return ret;
 		};
 		auto allocateMemory() -> void {
 			// allocate datas //
@@ -510,6 +521,7 @@ namespace aris::plan {
 			core::allocMem(mem_size, tw_pos_, output_psize_);
 			core::allocMem(mem_size, ee_pos_, output_psize_);
 			core::allocMem(mem_size, input_pos_, input_psize_);
+			core::allocMem(mem_size, trans_prev_p_, input_psize_);
 
 			mem_.resize(mem_size, char(0));
 
@@ -517,6 +529,7 @@ namespace aris::plan {
 			tw_pos_ = core::getMem(mem_.data(), tw_pos_);
 			ee_pos_ = core::getMem(mem_.data(), ee_pos_);
 			input_pos_ = core::getMem(mem_.data(), input_pos_);
+			trans_prev_p_ = core::getMem(mem_.data(), trans_prev_p_);
 			
 			// nodes //
 			for (int i = 0; i < TW_POOL_SIZE; ++i) {
@@ -533,8 +546,10 @@ namespace aris::plan {
 			// init tg //
 			std::vector<aris::dynamic::PosType> ee_pos_types(model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data()));
 			model_->getSubOutputPosTypes(sub_id_list_.size(), sub_id_list_.data(), ee_pos_types.data());
-			inv_tg_.setPosTypes(ee_pos_types);
-			inv_tg_.allocateMemory();
+			inv_tg1_.setPosTypes(ee_pos_types);
+			inv_tg1_.allocateMemory();
+			inv_tg2_.setPosTypes(ee_pos_types);
+			inv_tg2_.allocateMemory();
 
 			std::vector<aris::dynamic::PosType> input_pos_types(model_->subInputSize(sub_id_list_.size(), sub_id_list_.data()));
 			model_->getSubInputPosTypes(sub_id_list_.size(), sub_id_list_.data(), input_pos_types.data());
@@ -554,42 +569,95 @@ namespace aris::plan {
 
 				// no data //
 				if(get_id_ >= insert_id_) {
-					std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, p);
+					std::copy(input_pos_, input_pos_ + input_psize_, p);
 					return 0;
 				}
 
 				auto& node = map_nodes_[get_id_ % TW_POOL_SIZE];
-				// Cartesian space move //
-				if(node.type_ == MAPNodeType::Line || node.type_ == MAPNodeType::Circle) {
-					tg_ret_ = inv_tg_.getEePosAndMoveDt(tw_pos_);
 
-					tw_rt_.selectTw(node.tools(), node.wobjs());
-					tw_rt_.setTwPos(tw_pos_);
-					tw_rt_.getEePos(ee_pos_);
+				auto get_tg = [this](MAPNode& node)->TrajectoryGenerator* {
+					if (node.type_ == MAPNodeType::Line || node.type_ == MAPNodeType::Circle || node.type_ == MAPNodeType::CartesianInitPos) {
+						return (node.cartesian_planner_idx_ == 0) ? &inv_tg1_ : &inv_tg2_;
+					}
+					else {
+						return &fwd_tg_;
+					}
+				};
 
-					model_->setSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), ee_pos_);
-					model_->setSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), node.whichInverseRoots());
-					ik_ret_ = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data());
-					model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
+				// default_p 用来表示如果反解失败时所用的值，其就是 input_pos //
+				auto getNodePos = [this](MAPNode &node, double* p, double* default_p)->void {
+					// Cartesian space move //
+					if(node.type_ == MAPNodeType::Line || node.type_ == MAPNodeType::Circle) {
+						auto& cart_tg = (node.cartesian_planner_idx_ == 0) ? inv_tg1_ : inv_tg2_;
+						tg_ret_ = cart_tg.getEePosAndMoveDt(tw_pos_);
 
-					auto current_tg_id = inv_tg_.currentNodeId();
-					get_id_ = inv_tg_.isCurrentNodeFinished() ? current_tg_id + 1 : current_tg_id;
-					return current_tg_id;
+						tw_rt_.selectTw(node.tools(), node.wobjs());
+						tw_rt_.setTwPos(tw_pos_);
+						tw_rt_.getEePos(ee_pos_);
+
+						// 无状态反解：用 initInputPos 作为初值 //
+						ik_ret_ = model_->subInverseKinematics(
+							sub_id_list_.size(), sub_id_list_.data(),
+							ee_pos_, p, node.whichInverseRoots(), node.initInputPos());
+
+						// 缓存成功结果，失败则返回缓存值 //
+						if(ik_ret_ >= 0) {
+							std::copy(p, p + input_psize_, default_p);
+						} else {
+							std::copy(default_p, default_p + input_psize_, p);
+						}
+					}
+
+					// Joint space move //
+					else {
+						// 更新 input_pos_（TG 输出总是有效的）//
+						tg_ret_ = fwd_tg_.getEePosAndMoveDt(p);
+						std::copy(p, p + input_psize_, default_p);
+					}
+				};
+
+				getNodePos(node, p, input_pos_);
+
+				// 判断是否切换节点 //
+				auto tg = get_tg(node);
+				auto current_tg_id = tg->currentNodeId();
+				auto is_switch_node = tg->isCurrentNodeFinished();
+
+				// time_zone 混合：下一节点使用不同规划器且进入 real_zone 时，同时运行两个规划器并 smoothstep 混合 //
+				if (node.time_zone_ > 0.0 && get_id_ + 1 < insert_id_) {
+					auto& next_node = map_nodes_[(get_id_ + 1) % TW_POOL_SIZE];
+					auto next_tg = get_tg(next_node);
+					auto curr_tg = get_tg(node);
+
+					auto cur_duration = curr_tg->currentNodeDuration();
+					auto next_duration = (next_tg->isCurrentNodeMove() && (!next_tg->isCurrentNodeFinished())) 
+						? next_tg->currentNodeDuration() 
+						: next_tg->nextMoveNodeDuration();
+
+					auto next_max_ta = (next_tg->isCurrentNodeMove() && (!next_tg->isCurrentNodeFinished()))
+						? next_tg->currentNodeMaxTa()
+						: next_tg->nextMoveNodeMaxTa();
+
+					double real_tz = std::min({ node.time_zone_, next_node.time_zone_, cur_duration * 0.5, next_duration * 0.5,
+						curr_tg->currentNodeMaxTb(), next_max_ta });
+					double left_s = curr_tg->leftNodeS();
+
+					if (next_tg != curr_tg && left_s <= real_tz && real_tz > 0.0) {
+						double zone_t = 1.0 - left_s / real_tz;
+						getNodePos(next_node, trans_prev_p_, trans_prev_p_);
+						double f = zone_t < 0.5 ? 4*zone_t*zone_t*zone_t : 1.0 - 4.0*std::pow(1.0 - zone_t, 3);
+						for (aris::Size i = 0; i < input_psize_; ++i)
+							p[i] = p[i] * (1.0 - f) + trans_prev_p_[i] * f;
+					}
+
+					if(is_switch_node) {
+						std::copy(trans_prev_p_, trans_prev_p_ + input_psize_, input_pos_);
+					}
 				}
 
-				// Joint space move //
-				if(node.type_ == MAPNodeType::MoveJ || node.type_ == MAPNodeType::MoveAbsJ) {
-					tg_ret_ = fwd_tg_.getEePosAndMoveDt(p);
-
-					model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-					ik_ret_ = model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-					auto current_tg_id = fwd_tg_.currentNodeId();
-					get_id_ = fwd_tg_.isCurrentNodeFinished() ? current_tg_id + 1 : current_tg_id;
-					return current_tg_id;
-				}
-
-				return 0;
+				// switch node and return //
+				get_id_ = tg->isCurrentNodeFinished() ? current_tg_id + 1 : current_tg_id;
+				return current_tg_id;
 			});
 
 			ag_.setInputGenerator([this](double* p)->std::int64_t {
@@ -642,9 +710,16 @@ namespace aris::plan {
 			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), last_node_.eePos(), last_node_.jointPos(), last_node_.whichInverseRoots());
 			model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), last_node_.jointPos(), last_node_.eePos(), last_node_.whichForwardRoots());
 
+			// 初始化缓存 //
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, input_pos_);
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ee_pos_);
+
 			// 初始化 tg 等
-			inv_tg_.clearAllPos();
-			inv_tg_.insertInitPos(0, last_node_.eePos());
+			inv_tg1_.clearAllPos();
+			inv_tg1_.insertInitPos(0, last_node_.eePos());
+
+			inv_tg2_.clearAllPos();
+			inv_tg2_.insertInitPos(0, last_node_.eePos());
 
 			fwd_tg_.clearAllPos();
 			fwd_tg_.insertInitPos(0, last_node_.jointPos());
@@ -681,7 +756,7 @@ namespace aris::plan {
 				}
 			}
 		}
-		auto insertInitNode(MarkerVec& tools, MarkerVec& wobjs, MAPNodeType init_type) -> void {
+		auto insertInitNode(MarkerVec& tools, MarkerVec& wobjs, MAPNodeType init_type, int cartesian_planner_idx = 0) -> void {
 			// 初始化为上一个节点的数据 //
 			ins_node_.init();
 			std::copy(last_node_.mem_.begin(), last_node_.mem_.end(), ins_node_.mem_.begin());
@@ -689,6 +764,7 @@ namespace aris::plan {
 			// 填入本节点信息 //
 			ins_node_.id_ = insert_id_;
 			ins_node_.type_ = init_type;
+			ins_node_.cartesian_planner_idx_ = cartesian_planner_idx;
 			std::copy(tools.begin(), tools.end(), ins_node_.tools());
 			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
 
@@ -714,7 +790,7 @@ namespace aris::plan {
 			nodes_.push_back(ins_node_);
 			std::swap(last_node_, ins_node_);
 		}
-		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
 			
 			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
 			
@@ -722,18 +798,34 @@ namespace aris::plan {
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
 
+			// 计算 cartesian_planner_idx //
+			int cartesian_idx = 0;
+			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
+				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
+				if (!last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) {
+					cartesian_idx = 1 - last_node_.cartesian_planner_idx_; // 切换规划器
+				} else {
+					cartesian_idx = last_node_.cartesian_planner_idx_; // 保持
+				}
+			} else {
+				// 从关节空间来，默认使用 inv_tg1_ (0)
+				cartesian_idx = 0;
+			}
+
 			// 查看是否插入 INIT //
 			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
 				|| !last_node_.isSameTools(tools.data())
 				|| !last_node_.isSameWobjs(wobjs.data())) 
 			{
-				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos);
+				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos, cartesian_idx);
 			}
 
 			// 更新 last_tw_pos_ 等 //
 			ins_node_.init();
 			ins_node_.id_ = insert_id_;
 			ins_node_.type_ = MAPNodeType::Line;
+			ins_node_.cartesian_planner_idx_ = cartesian_idx;
+			ins_node_.time_zone_ = time_zone;
 			std::copy(tools.begin(), tools.end(), ins_node_.tools());
 			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
 			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
@@ -741,6 +833,10 @@ namespace aris::plan {
 			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
 			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
 			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.initOutputPos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.initInputPos());
 
 			// 做反解计算 //
 			{
@@ -767,26 +863,42 @@ namespace aris::plan {
 			insert_id_++;
 			return insert_id_ - 1;
 		}
-		auto insCircle(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+		auto insCircle(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
 			
 			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
 
 			// 获取坐标系 //
 			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
 			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
+
+			// 计算 cartesian_planner_idx //
+			int cartesian_idx = 0;
+			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
+				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
+				if (!last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) {
+					cartesian_idx = 1 - last_node_.cartesian_planner_idx_; // 切换规划器
+				} else {
+					cartesian_idx = last_node_.cartesian_planner_idx_; // 保持
+				}
+			} else {
+				// 从关节空间来，默认使用 inv_tg1_ (0)
+				cartesian_idx = 0;
+			}
 			
 			// 查看是否插入 INIT //
 			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
 				|| !last_node_.isSameTools(tools.data())
 				|| !last_node_.isSameWobjs(wobjs.data())) 
 			{
-				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos);
+				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos, cartesian_idx);
 			}
 
 			// 更新 last_tw_pos_ 等 //
 			ins_node_.init();
 			ins_node_.id_ = insert_id_;
 			ins_node_.type_ = MAPNodeType::Circle;
+			ins_node_.cartesian_planner_idx_ = cartesian_idx;
+			ins_node_.time_zone_ = time_zone;
 			std::copy(tools.begin(), tools.end(), ins_node_.tools());
 			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
 			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
@@ -795,6 +907,10 @@ namespace aris::plan {
 			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
 			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
 			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.initOutputPos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.initInputPos());
 
 			{
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -820,17 +936,14 @@ namespace aris::plan {
 			insert_id_++;
 			return insert_id_ - 1;
 		}
-		auto insMoveJ(TW& tool_wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root) -> std::int64_t {
+		auto insMoveJ(TW& tool_wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root, double time_zone = 0.0) -> std::int64_t {
 			
 			// 获取坐标系 //
 			Imp::MarkerVec tools(ee_size_, nullptr), wobjs(ee_size_, nullptr);
 			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
 
 			// 查看是否插入 INIT //
-			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)
-				|| !last_node_.isSameTools(tools.data())
-				|| !last_node_.isSameWobjs(wobjs.data())) 
-			{
+			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) {
 				insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
 			}
 
@@ -838,6 +951,7 @@ namespace aris::plan {
 			ins_node_.init();
 			ins_node_.id_ = insert_id_;
 			ins_node_.type_ = MAPNodeType::MoveJ;
+			ins_node_.time_zone_ = time_zone;
 			std::copy(tools.begin(), tools.end(), ins_node_.tools());
 			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
 			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
@@ -845,6 +959,10 @@ namespace aris::plan {
 			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
 			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
 			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.initOutputPos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.initInputPos());
 
 			{
 				tw_.selectTw(tools.data(), wobjs.data());
@@ -874,7 +992,7 @@ namespace aris::plan {
 			insert_id_++;
 			return insert_id_ - 1;
 		}
-		auto insMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone) -> std::int64_t {
+		auto insMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone = 0.0) -> std::int64_t {
 
 			// 如果运动方式有变化，重新插入 INIT //
 			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) 
@@ -888,11 +1006,16 @@ namespace aris::plan {
 			ins_node_.init();
 			ins_node_.id_ = insert_id_;
 			ins_node_.type_ = MAPNodeType::MoveAbsJ;
+			ins_node_.time_zone_ = time_zone;
 			std::copy(joint_p, joint_p + input_psize_, ins_node_.jointPos());
 			std::copy(joint_v, joint_v + input_vdim_, ins_node_.jointVel());
 			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
 			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
 			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.initOutputPos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.initInputPos());
 
 			{
 				std::copy(last_node_.whichForwardRoots(), last_node_.whichForwardRoots() + sub_id_list_.size(), ins_node_.whichForwardRoots());
@@ -920,15 +1043,15 @@ namespace aris::plan {
 			for (auto& node : nodes_) {
 				switch (node.type_) {
 				case MAPNodeType::CartesianInitPos:
-					inv_tg_.insertInitPos(node.id_, node.eePos());
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertInitPos(node.id_, node.eePos());
 					break;
 				case MAPNodeType::Line:
 					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					inv_tg_.insertLinePos(node.id_, node.twPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertLinePos(node.id_, node.twPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
 					break;
 				case MAPNodeType::Circle:
 					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					inv_tg_.insertCirclePos(node.id_, node.twPos(), node.midPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertCirclePos(node.id_, node.twPos(), node.midPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
 					break;
 				case MAPNodeType::JointInitPos:
 					fwd_tg_.insertInitPos(node.id_, node.jointPos());
@@ -945,7 +1068,8 @@ namespace aris::plan {
 			}
 
 			// 批量插入后统一重规划提交
-			inv_tg_.updateInsertPos();
+			inv_tg1_.updateInsertPos();
+			inv_tg2_.updateInsertPos();
 			fwd_tg_.updateInsertPos();
 
 			// 更新完后清除 nodes_ //
@@ -981,14 +1105,15 @@ namespace aris::plan {
 
 
 	auto MultimodelPlanner::setDt(double dt) -> void {
-		imp_->inv_tg_.setDt(dt);
+		imp_->inv_tg1_.setDt(dt);
+		imp_->inv_tg2_.setDt(dt);
 		imp_->fwd_tg_.setDt(dt);
 		imp_->is_.setDt(dt);
 		imp_->sr_.setDt(dt);
 		imp_->ag_.setDt(dt);
 	}
 	auto MultimodelPlanner::dt() -> double {
-		return imp_->inv_tg_.dt();
+		return imp_->inv_tg1_.dt();
 	}
 
 	auto MultimodelPlanner::setMaxPos(aris::core::Matrix pos) -> void {
@@ -1036,10 +1161,11 @@ namespace aris::plan {
 
 	// 笛卡尔空间中重规划个数 //
 	auto MultimodelPlanner::maxReplanNum()const -> int {
-		return imp_->inv_tg_.maxReplanNum();
+		return imp_->inv_tg1_.maxReplanNum();
 	}
 	auto MultimodelPlanner::setMaxReplanNum(int max_replan_num) -> void {
-		imp_->inv_tg_.setMaxReplanNum(max_replan_num);
+		imp_->inv_tg1_.setMaxReplanNum(max_replan_num);
+		imp_->inv_tg2_.setMaxReplanNum(max_replan_num);
 		imp_->fwd_tg_.setMaxReplanNum(max_replan_num);
 	}
 
@@ -1080,10 +1206,10 @@ namespace aris::plan {
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-		return imp_->insLine(tw, ee_pos, vel, acc, jerk, zone);
+	auto MultimodelPlanner::insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+		return imp_->insLine(tw, ee_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto MultimodelPlanner::insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+	auto MultimodelPlanner::insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -1094,14 +1220,14 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return insertLinePos(tw, ee_pos, vel, acc, jerk, zone);
+		return insertLinePos(tw, ee_pos, vel, acc, jerk, zone, time_zone);
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
-		return imp_->insCircle(tw, ee_pos, mid_pos, vel, acc, jerk, zone);
+	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+		return imp_->insCircle(tw, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto MultimodelPlanner::insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone) -> std::int64_t {
+	auto MultimodelPlanner::insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -1112,14 +1238,14 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return insertCirclePos(tw, ee_pos, mid_pos, vel, acc, jerk, zone);
+		return insertCirclePos(tw, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root) -> std::int64_t{
-		return imp_->insMoveJ(tw, ee_pos, joint_v, joint_a, joint_j, zone, which_root);
+	auto MultimodelPlanner::insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root, double time_zone) -> std::int64_t{
+		return imp_->insMoveJ(tw, ee_pos, joint_v, joint_a, joint_j, zone, which_root, time_zone);
 	}
-	auto MultimodelPlanner::insertMoveJ(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root) -> std::int64_t{
+	auto MultimodelPlanner::insertMoveJ(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root, double time_zone) -> std::int64_t{
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -1130,12 +1256,12 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return insertMoveJ(tw, ee_pos, joint_v, joint_a, joint_j, zone, which_root);
+		return insertMoveJ(tw, ee_pos, joint_v, joint_a, joint_j, zone, which_root, time_zone);
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone) -> std::int64_t{
-		return imp_->insMoveAbsJ(joint_p, joint_v, joint_a, joint_j, zone);
+	auto MultimodelPlanner::insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone) -> std::int64_t{
+		return imp_->insMoveAbsJ(joint_p, joint_v, joint_a, joint_j, zone, time_zone);
 	}
 
 	auto MultimodelPlanner::updateInsertPos() -> void {
@@ -1144,25 +1270,29 @@ namespace aris::plan {
 
 	// 删除已经不用的数据 //
 	auto MultimodelPlanner::clearUsedPos() -> void {
-		imp_->inv_tg_.clearUsedPos();
+		imp_->inv_tg1_.clearUsedPos();
+		imp_->inv_tg2_.clearUsedPos();
 		imp_->fwd_tg_.clearUsedPos();
 	}
 
 	// 删除全部数据 //
 	auto MultimodelPlanner::clearAllPos() -> void {
-		imp_->inv_tg_.clearAllPos();
+		imp_->inv_tg1_.clearAllPos();
+		imp_->inv_tg2_.clearAllPos();
 		imp_->fwd_tg_.clearAllPos();
 	}
 
 	// 当前还剩余的指令数 //
 	auto MultimodelPlanner::unusedPosNum() -> int {
-		return imp_->inv_tg_.unusedPosNum() + imp_->fwd_tg_.unusedPosNum();
+		return imp_->inv_tg1_.unusedPosNum() + imp_->inv_tg2_.unusedPosNum() + imp_->fwd_tg_.unusedPosNum();
 	}
 
 	// 返回当前所有的节点 id //
 	auto MultimodelPlanner::unusedNodeIds()const -> std::vector<std::int64_t> {
-		auto ids = imp_->inv_tg_.unusedNodeIds();
+		auto ids = imp_->inv_tg1_.unusedNodeIds();
+		auto ids2 = imp_->inv_tg2_.unusedNodeIds();
 		auto fwd_ids = imp_->fwd_tg_.unusedNodeIds();
+		ids.insert(ids.end(), ids2.begin(), ids2.end());
 		ids.insert(ids.end(), fwd_ids.begin(), fwd_ids.end());
 		std::sort(ids.begin(), ids.end());
 		return ids;
@@ -1190,6 +1320,15 @@ namespace aris::plan {
 
     auto MultimodelPlanner::ikRet() -> std::int64_t{
         return imp_->ik_ret_;
+    }
+
+    auto MultimodelPlanner::leftNodeS() -> double {
+        auto& node = imp_->map_nodes_[imp_->get_id_ % TW_POOL_SIZE];
+        if (node.type_ == MAPNodeType::Line || node.type_ == MAPNodeType::Circle || node.type_ == MAPNodeType::CartesianInitPos) {
+            auto& tg = (node.cartesian_planner_idx_ == 0) ? imp_->inv_tg1_ : imp_->inv_tg2_;
+            return tg.leftNodeS();
+        }
+        return imp_->fwd_tg_.leftNodeS();
     }
 
     MultimodelPlanner::~MultimodelPlanner(){
