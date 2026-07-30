@@ -153,6 +153,11 @@ namespace aris::plan {
 		/// @return 实际速度系数
 		auto actualSpeedRatio(int chanel) -> double;
 
+		/// @brief 返回当前所有的节点 id
+		/// @param chanel 通道 id
+		/// @return 节点 id 列表
+		auto unusedNodeIds(int chanel)const -> std::vector<std::int64_t>;
+
 		~PlannerDispacher();
 		PlannerDispacher();
 		ARIS_DELETE_BIG_FOUR(PlannerDispacher);

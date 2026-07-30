@@ -203,6 +203,10 @@ namespace aris::plan {
 		return imp_->chanel_data_vec_[chanel]->planner.actualSpeedRatio();
 	}
 
+	auto PlannerDispacher::unusedNodeIds(int chanel) const -> std::vector<std::int64_t> {
+		return imp_->chanel_data_vec_[chanel]->planner.unusedNodeIds();
+	}
+
 	PlannerDispacher::PlannerDispacher() : imp_(new Imp) {}
 	PlannerDispacher::~PlannerDispacher() = default;
 
