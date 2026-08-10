@@ -108,6 +108,13 @@ namespace aris::plan{
 		double va_below_{ 0.0 }; // va 下限
 		double vb_upper_{ 0.0 }; // vb 上限
 		double vb_below_{ 0.0 }; // vb 下限
+
+		double smooth_Ta_{ 0.0 };       // 平滑后的 Ta
+		double smooth_Tb_{ 0.0 };       // 平滑后的 Tb
+		double smooth_vc_{ 0.0 };       // 平滑后的 vc
+		double smooth_a_{ 0.0 };        // 平滑后的 a
+		double smooth_j1_{ 0.0 };       // 平滑后的 j1
+		double smooth_j2_{ 0.0 };       // 平滑后的 j2
 	};
 
 	struct ARIS_API SCurveNode {

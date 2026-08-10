@@ -1892,32 +1892,43 @@ namespace aris::plan {
 		return 0.0;
 	}
 
+	auto getScurveMaxTa(const aris::plan::SCurveParam& param)->double {
+		if(param.mode_ != 1 && param.vc_ - param.va_ > 1e-10 && param.vc_ - param.vb_ > 1e-10) {
+			return param.smooth_Ta_;
+		}
+		else {
+			return param.T_/2;
+		}
+	}
+	auto getScurveMaxTb(const aris::plan::SCurveParam& param)->double {
+		if(param.mode_ != 1 && param.vc_ - param.va_ > 1e-10 && param.vc_ - param.vb_ > 1e-10) {
+			return param.smooth_Tb_;
+		}
+		else {
+			return param.T_/2;
+		}
+	}
+
 	auto nodeMaxTa(const Node* node, const std::vector<aris::dynamic::PosType>& ee_types)->double {
-		double max_ta = 0.0;
+		double max_ta = 0;
 		for (aris::Size i = 0; i < node->ee_plans_.size(); ++i) {
-			double v;
 			if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
-				v = node->ee_plans_[i].x_.scurve_.Ta_;
-				if (v > 0.0) max_ta = std::max(max_ta, v);
+				max_ta = std::max(max_ta, getScurveMaxTa(node->ee_plans_[i].x_.scurve_));
 			}
 			if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
-				v = node->ee_plans_[i].a_.scurve_.Ta_;
-				if (v > 0.0) max_ta = std::max(max_ta, v);
+				max_ta = std::max(max_ta, getScurveMaxTa(node->ee_plans_[i].a_.scurve_));
 			}
 		}
 		return max_ta;
 	}
 	auto nodeMaxTb(const Node* node, const std::vector<aris::dynamic::PosType>& ee_types)->double {
-		double max_tb = 0.0;
+		double max_tb = 0;
 		for (aris::Size i = 0; i < node->ee_plans_.size(); ++i) {
-			double v;
 			if (aris::dynamic::s_pos_type_mov_dim(ee_types[i]) > 0) {
-				v = node->ee_plans_[i].x_.scurve_.Tb_;
-				if (v > 0.0) max_tb = std::max(max_tb, v);
+				max_tb = std::max(max_tb, getScurveMaxTb(node->ee_plans_[i].x_.scurve_));
 			}
 			if (aris::dynamic::s_pos_type_rot_dim(ee_types[i]) > 0) {
-				v = node->ee_plans_[i].a_.scurve_.Tb_;
-				if (v > 0.0) max_tb = std::max(max_tb, v);
+				max_tb = std::max(max_tb, getScurveMaxTb(node->ee_plans_[i].a_.scurve_));
 			}
 		}
 		return max_tb;

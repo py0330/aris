@@ -40,6 +40,8 @@ double v2000[3] =  { 100, 2,    aris::PI };
 double v10000[3] = { 100, 10,   aris::PI };
 double v[3] =      { 50, 0.05,  aris::PI };
 
+double time_zone = 0.1;
+
 struct Test::Imp
 {
 
@@ -120,7 +122,7 @@ auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
 	double zones[6] {0,0,0,0,0,0};
 	
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones,0.1);
+	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones,time_zone);
 
 	imp_->pd->updateInsertPos(0);
 
@@ -147,7 +149,7 @@ auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 	std::string tool = "UrModel.L6.tool0";
 	std::string wobj = "UrModel.ground.wobj0";
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones,0.1);
+	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones,time_zone);
 
 	imp_->pd->updateInsertPos(0);
 

@@ -7,6 +7,11 @@
 
 #include <aris/plan/plan.hpp>
 
+// 前向声明 scurve.cpp 中未导出的内部函数
+namespace aris::plan {
+	auto s_scurve_smooth(SCurveParam& param) -> void;
+}
+
 namespace {
 
 struct LimitTol {
@@ -184,4 +189,122 @@ TEST(SCurveTest, MakeNodesAndCheckDynamicsSmallDeterministicCase) {
 	EXPECT_GE(ret, 0);
 
 	validate_scurve_profile(scurve);
+}
+
+// 辅助：构造 SCurveParam 并调用 s_scurve_smooth
+// 返回 smooth_Ta_, smooth_Tb_, smooth_vc_
+auto make_param_and_smooth(double T, double Ta, double Tb,
+                             double va, double vb, double vc,
+                             double vc_max, int mode,
+                             double& out_Ta, double& out_Tb, double& out_vc) -> void {
+	aris::plan::SCurveParam p;
+	p.T_ = T; p.Ta_ = Ta; p.Tb_ = Tb;
+	p.va_ = va; p.vb_ = vb; p.vc_ = vc;
+	p.vc_max_ = vc_max; p.mode_ = mode;
+	aris::plan::s_scurve_smooth(p);
+	out_Ta = p.smooth_Ta_;
+	out_Tb = p.smooth_Tb_;
+	out_vc = p.smooth_vc_;
+}
+
+// 路径1: mode=1 → smooth_Ta = Ta-min(Ta,Tb), smooth_Tb = Tb-min(Ta,Tb)
+TEST(SCurveTest, Smooth_Mode1) {
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.5, 0.3, 0, 0, 1.0, 2.0, 1, Ta, Tb, vc);
+	// Ta_smooth = 0.5 - min(0.5,0.3) = 0.2, Tb_smooth = 0.3 - min(0.5,0.3) = 0.0
+	EXPECT_NEAR(Ta, 0.2, 1e-10);
+	EXPECT_NEAR(Tb, 0.0, 1e-10);
+}
+
+// 路径2: vc <= va → 无优化，返回原值
+TEST(SCurveTest, Smooth_VcNotAboveVa) {
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.4, 0.3, 0.5, 0, 0.5, 2.0, 0, Ta, Tb, vc);
+	EXPECT_NEAR(Ta, 0.4, 1e-10);
+	EXPECT_NEAR(Tb, 0.3, 1e-10);
+}
+
+// 路径3: vc <= vb → 无优化，返回原值
+TEST(SCurveTest, Smooth_VcNotAboveVb) {
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.4, 0.3, 0, 0.6, 0.6, 2.0, 0, Ta, Tb, vc);
+	EXPECT_NEAR(Ta, 0.4, 1e-10);
+	EXPECT_NEAR(Tb, 0.3, 1e-10);
+}
+
+// 路径4: Ta+Tb > f*T → solve_velocity_scale 提前返回（原值）
+TEST(SCurveTest, Smooth_NoConstTime) {
+	// T=1.0, f=0.8, 需要 Ta+Tb <= 0.8, 但 Ta+Tb=0.9 > 0.8
+	double Ta, Tb, vc;
+	make_param_and_smooth(1.0, 0.5, 0.4, 0, 0, 0.8, 2.0, 0, Ta, Tb, vc);
+	EXPECT_NEAR(Ta, 0.5, 1e-10);
+	EXPECT_NEAR(Tb, 0.4, 1e-10);
+}
+
+// 路径5: 正常优化 — 有匀速段，D1>0, D>=0, step1 限制 vc_new
+TEST(SCurveTest, Smooth_NormalOptimization) {
+	// T=2.0, Ta=0.2, Tb=0.2, vc=1.0, vc_max=5.0
+	// Ta+Tb=0.4 < 0.8*T=1.6, 满足优化条件
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.2, 0.2, 0, 0, 1.0, 5.0, 0, Ta, Tb, vc);
+	// 优化后 Ta,Tb 应增大（加速更平缓）
+	EXPECT_GE(Ta, 0.2);
+	EXPECT_GE(Tb, 0.2);
+	EXPECT_LE(Ta + Tb, 2.0);
+}
+
+// 路径5b: step2 限制 vc_new（非 step1）→ vc_new/vc_max == a1_new/a1_old == a2_new/a2_old
+TEST(SCurveTest, Smooth_Step2LimitsVc) {
+	// vc_max=2.0 较小，step2 解 vc=1.125 < step1 的 vc_limit_1=1.5
+	// 三个缩放比例应该严格相等
+	double T=2.0, Ta_old=0.2, Tb_old=0.2, va=0, vb=0, vc_old=1.0, vc_max=2.0;
+	double Ta, Tb, vc_new;
+	make_param_and_smooth(T, Ta_old, Tb_old, va, vb, vc_old, vc_max, 0, Ta, Tb, vc_new);
+
+	double a1_old = (vc_old - va) / Ta_old;
+	double a2_old = (vc_old - vb) / Tb_old;
+
+	double k = (vc_new - va) / (a1_old * Ta);           // a1_new/a1_old
+	double ratio_v = vc_new / vc_max;                    // vc_new/vc_max
+	double a1_new = (vc_new - va) / Ta;
+	double a2_new = (vc_new - vb) / Tb;
+
+	EXPECT_NEAR(ratio_v, k, 1e-10);
+	EXPECT_NEAR(a1_new / a1_old, k, 1e-10);
+	EXPECT_NEAR(a2_new / a2_old, k, 1e-10);
+
+	EXPECT_GE(Ta, Ta_old);
+	EXPECT_GE(Tb, Tb_old);
+	EXPECT_LE(Ta + Tb, T);
+}
+
+// 路径6: 正常优化 — va > vb 情况（测试 k 的分支选择）
+TEST(SCurveTest, Smooth_VaGreaterThanVb) {
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.15, 0.25, 0.2, 0, 1.0, 5.0, 0, Ta, Tb, vc);
+	EXPECT_GE(Ta, 0.15);
+	EXPECT_GE(Tb, 0.25);
+	EXPECT_LE(Ta + Tb, 2.0);
+}
+
+// 路径7: D<0（step2 跳过），仅用 step1 的 vc_limit_1
+// vc_max 很小导致二次方程无实根
+TEST(SCurveTest, Smooth_Step2NoSolution) {
+	// vc_max 接近 vc，D 容易 < 0
+	double Ta, Tb, vc;
+	make_param_and_smooth(0.8, 0.4, 0.3, 0, 0.3, 0.86, 1.7, 0, Ta, Tb, vc);
+	// 即使 D<0，也不应崩溃，返回合理值
+	EXPECT_GE(Ta, 0);
+	EXPECT_GE(Tb, 0);
+	EXPECT_LE(Ta + Tb, 0.8);
+}
+
+// 路径8: D1<=0 → vc_limit_1 用 vc_max
+// 极小 a1_avg/a2_avg 使判别式负数
+TEST(SCurveTest, Smooth_Step1DiscNegative) {
+	// 极小 Ta 导致 a1_avg 极大，D1 可能 <= 0
+	double Ta, Tb, vc;
+	make_param_and_smooth(2.0, 0.01, 0.01, 0, 0, 1.0, 5.0, 0, Ta, Tb, vc);
+	EXPECT_GE(Ta, 0.01);
+	EXPECT_GE(Tb, 0.01);
 }

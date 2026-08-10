@@ -624,6 +624,14 @@ namespace aris::plan {
 				auto is_switch_node = tg->isCurrentNodeFinished();
 
 				// time_zone 混合：下一节点使用不同规划器且进入 real_zone 时，同时运行两个规划器并 smoothstep 混合 //
+#ifdef DEBUG_ARIS_MMP
+				static int tz_check = 0;
+				if (tz_check < 3 || get_id_ \!= 1) {
+					std::cerr << "[time_zone_check] tz=" << node.time_zone_ << " get_id=" << get_id_
+						<< " insert_id=" << insert_id_ << " cond=" << (node.time_zone_ > 0.0 && get_id_ + 1 < insert_id_) << std::endl;
+					if (get_id_ \!= 1) tz_check++;
+				}
+#endif
 				if (node.time_zone_ > 0.0 && get_id_ + 1 < insert_id_) {
 					auto& next_node = map_nodes_[(get_id_ + 1) % TW_POOL_SIZE];
 					auto next_tg = get_tg(next_node);
@@ -638,16 +646,37 @@ namespace aris::plan {
 						? next_tg->currentNodeMaxTa()
 						: next_tg->nextMoveNodeMaxTa();
 
+					auto curr_max_tb = curr_tg->currentNodeMaxTb();
+
+#ifdef DEBUG_ARIS_MMP
+					std::cout << "[time_zone] cur_dur=" << cur_duration << " next_dur=" << next_duration
+						<< " curr_max_tb=" << curr_max_tb << " next_max_ta=" << next_max_ta
+						<< " curr_tz=" << node.time_zone_ << " next_tz=" << next_node.time_zone_
+						<< " cur_type=" << static_cast<int>(node.type_)
+						<< " next_type=" << static_cast<int>(next_node.type_)
+						<< " next_isMove=" << next_tg->isCurrentNodeMove()
+						<< " next_isFin=" << next_tg->isCurrentNodeFinished() << std::endl;
+#endif
+
 					double real_tz = std::min({ node.time_zone_, next_node.time_zone_, cur_duration * 0.5, next_duration * 0.5,
-						curr_tg->currentNodeMaxTb(), next_max_ta });
+						curr_max_tb, next_max_ta });
 					double left_s = curr_tg->leftNodeS();
+
+#ifdef DEBUG_ARIS_MMP
+					std::cout << "[time_zone] real_tz=" << real_tz << " left_s=" << left_s
+						<< " diff_tg=" << (next_tg != curr_tg)
+						<< " blend=" << (next_tg != curr_tg && left_s <= real_tz && real_tz > 0.0) << std::endl;
+#endif
 
 					if (next_tg != curr_tg && left_s <= real_tz && real_tz > 0.0) {
 						double zone_t = 1.0 - left_s / real_tz;
 						getNodePos(next_node, trans_prev_p_, trans_prev_p_);
-						double f = zone_t < 0.5 ? 4*zone_t*zone_t*zone_t : 1.0 - 4.0*std::pow(1.0 - zone_t, 3);
+						// double f = zone_t < 0.5 ? 4*zone_t*zone_t*zone_t : 1.0 - 4.0*std::pow(1.0 - zone_t, 3);
+						// for (aris::Size i = 0; i < input_psize_; ++i)
+						// 	p[i] = p[i] * (1.0 - f) + trans_prev_p_[i] * f;
+
 						for (aris::Size i = 0; i < input_psize_; ++i)
-							p[i] = p[i] * (1.0 - f) + trans_prev_p_[i] * f;
+							p[i] = p[i] + trans_prev_p_[i] - node.jointPos()[i];
 					}
 
 					if(is_switch_node) {
@@ -1030,7 +1059,13 @@ namespace aris::plan {
 			}
 
 			// 正常插入指令 //
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[insMoveAbsJ] BEFORE push: ins_node_.tz=" << ins_node_.time_zone_ << " time_zone_param=" << time_zone << " insert_id=" << insert_id_ << std::endl;
+#endif
 			nodes_.push_back(ins_node_);
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[insMoveAbsJ] AFTER push: nodes_.back().tz=" << nodes_.back().time_zone_ << " size=" << nodes_.size() << std::endl;
+#endif
 			std::swap(last_node_, ins_node_);
 
 			insert_id_++;
@@ -1061,6 +1096,9 @@ namespace aris::plan {
 					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
 					break;
 				case MAPNodeType::MoveAbsJ:
+#ifdef DEBUG_ARIS_MMP
+					std::cerr << "[updateIns::MoveAbsJ] node.id=" << node.id_ << " node.tz=" << node.time_zone_ << std::endl;
+#endif
 					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
 					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
 					break;
@@ -1071,6 +1109,13 @@ namespace aris::plan {
 			inv_tg1_.updateInsertPos();
 			inv_tg2_.updateInsertPos();
 			fwd_tg_.updateInsertPos();
+
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[updateIns] insert_id=" << insert_id_ << " map_tz:";
+			for (int _i = 1; _i < insert_id_; ++_i)
+				std::cerr << " [" << _i << "]=" << map_nodes_[_i].time_zone_;
+			std::cerr << std::endl;
+#endif
 
 			// 更新完后清除 nodes_ //
 			nodes_.clear();
@@ -1261,6 +1306,9 @@ namespace aris::plan {
 
 	// 插入新的数据，并重规划 //
 	auto MultimodelPlanner::insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone) -> std::int64_t{
+#ifdef DEBUG_ARIS_MMP
+		std::cerr << "[MMP::insertMoveAbsJ] time_zone=" << time_zone << std::endl;
+#endif
 		return imp_->insMoveAbsJ(joint_p, joint_v, joint_a, joint_j, zone, time_zone);
 	}
 
