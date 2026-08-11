@@ -745,13 +745,13 @@ namespace aris::plan {
 
 			// 初始化 tg 等
 			inv_tg1_.clearAllPos();
-			inv_tg1_.insertInitPos(0, last_node_.eePos());
-
 			inv_tg2_.clearAllPos();
-			inv_tg2_.insertInitPos(0, last_node_.eePos());
-
 			fwd_tg_.clearAllPos();
-			fwd_tg_.insertInitPos(0, last_node_.jointPos());
+
+			// 插入起始节点 //
+			auto tools = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
+			auto wobjs = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
+			insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
 
 			is_.init(last_node_.jointPos());
 			
