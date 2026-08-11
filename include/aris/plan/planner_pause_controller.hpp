@@ -60,18 +60,27 @@ public:
     /// @name 暂停/恢复控制
     /// @{
 
-    /// @brief 请求暂停（平滑减速到零）
+    /// @brief 执行暂停过程（平滑减速到零）
     ///
-    /// 调用后状态从 Running 切换到 Pausing，planner 会将 speed ratio
-    /// 逐步降到 0。当 actualSpeedRatio 到达 0 时自动切换到 Paused。
-    auto pause() -> void;
+    /// 每次调用将状态置为 Pausing，设置 speed ratio 为 0，
+    /// 调用 planner.getNextInput 推进一帧，然后检测是否已完全停止。
+    /// @param input_pos 电机位置（input_psize 维），作为 getNextInput 的输出
+    /// @return 1 表示仍在减速中，0 表示已完全暂停（状态切换为 Paused）
+    auto pause(double* input_pos) -> int;
 
-    /// @brief 请求恢复（平滑加速回目标速度）
+    /// @brief 执行恢复过程（平滑加速回目标速度）
     ///
-    /// 调用后状态从 Paused/Pausing 切换到 Resuming，planner 会将
-    /// speed ratio 恢复到暂停前的值。当 actualSpeedRatio 到达目标
-    /// 时自动切换到 Running。
-    auto resume() -> void;
+    /// 每次调用将状态置为 Resuming，设置 speed ratio 为目标值，
+    /// 调用 planner.getNextInput 推进一帧，然后检测是否已恢复。
+    /// @param input_pos 电机位置（input_psize 维），作为 getNextInput 的输出
+    /// @return 1 表示仍在加速中，0 表示已完全恢复（状态切换为 Running）
+    auto resume(double* input_pos) -> int;
+
+    /// @brief 设置恢复后的目标 speed ratio
+    auto setTargetSpeedRatio(double ratio) -> void;
+
+    /// @brief 获取恢复后的目标 speed ratio
+    auto targetSpeedRatio() const -> double;
 
     /// @}
 

@@ -1870,7 +1870,7 @@ namespace aris::plan {
 	}
 	auto TrajectoryGenerator::leftNodeS()const->double {
 		auto current_node = imp_->current_node_.load();
-		return current_node->s_end_ - imp_->s_;
+		return current_node ? double(current_node->s_end_ - imp_->s_) : 0.0;
 	}
 	auto TrajectoryGenerator::currentNodeDuration()const->double {
 		auto current_node = imp_->current_node_.load();
@@ -1963,7 +1963,7 @@ namespace aris::plan {
 		return 0.0;
 	}
 	auto TrajectoryGenerator::leftTotalS()const->double {
-		return imp_->nodes_.back().s_end_ - imp_->s_;
+		return imp_->nodes_.empty()? 0.0 :double(imp_->nodes_.back().s_end_ - imp_->s_);
 	}
 
 	auto TrajectoryGenerator::allocateMemory() -> void {

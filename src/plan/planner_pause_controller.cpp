@@ -8,29 +8,9 @@ namespace aris::plan {
 struct PlannerPauseController::Imp {
     MultimodelPlanner planner_;
     PlannerState state_{ PlannerState::Idle };
-    double target_speed_ratio_{ 1.0 };  // 暂停前保存的目标 speed ratio
+    double target_speed_ratio_{ 1.0 };  // 恢复时的目标 speed ratio
     double speed_epsilon_{ 1e-6 };       // 判断 speed ratio 是否到位的阈值
-
-    auto updateState() -> void {
-        switch (state_) {
-        case PlannerState::Pausing: {
-            double actual = planner_.actualSpeedRatio();
-            if (actual <= speed_epsilon_) {
-                state_ = PlannerState::Paused;
-            }
-            break;
-        }
-        case PlannerState::Resuming: {
-            double actual = planner_.actualSpeedRatio();
-            if (std::abs(actual - target_speed_ratio_) <= speed_epsilon_) {
-                state_ = PlannerState::Running;
-            }
-            break;
-        }
-        default:
-            break;
-        }
-    }
+    std::vector<double> pause_pos_;      // 暂停时的电机位置
 };
 
 // ─── 状态查询 ────────────────────────────────────────────
@@ -50,24 +30,60 @@ auto PlannerPauseController::isPaused() const -> bool {
 
 // ─── 暂停/恢复控制 ────────────────────────────────────────
 
-auto PlannerPauseController::pause() -> void {
-    if (imp_->state_ == PlannerState::Pausing ||
-        imp_->state_ == PlannerState::Paused) {
-        return;  // 已在暂停流程中
+auto PlannerPauseController::pause(double* input_pos) -> int {
+    // 已经暂停完毕，不再操作 planner（避免副作用）
+    if (imp_->state_ == PlannerState::Paused) {
+        return 0;
     }
-    // 保存当前目标 speed ratio 以便恢复
-    imp_->target_speed_ratio_ = imp_->planner_.targetSpeedRatio();
-    imp_->planner_.setTargetSpeedRatio(0.0);
+
     imp_->state_ = PlannerState::Pausing;
+
+    // 保存暂停时的电机位置
+    auto input_size = imp_->planner_.inputSize();
+    imp_->pause_pos_.assign(input_pos, input_pos + input_size);
+
+    // 设置 speed ratio 为 0，减速到停止
+    imp_->planner_.setTargetSpeedRatio(0.0);
+
+    // 推进一帧
+    imp_->planner_.getNextInput(input_pos);
+
+    // 检测是否已完全暂停
+    if (imp_->planner_.actualSpeedRatio() <= imp_->speed_epsilon_) {
+        imp_->state_ = PlannerState::Paused;
+        return 0;
+    }
+    return 1;
 }
 
-auto PlannerPauseController::resume() -> void {
-    if (imp_->state_ == PlannerState::Running ||
-        imp_->state_ == PlannerState::Resuming) {
-        return;  // 已在运行/恢复中
+auto PlannerPauseController::resume(double* input_pos) -> int {
+    // 已经恢复完毕，不再操作 planner（避免副作用）
+    if (imp_->state_ == PlannerState::Running) {
+        return 0;
     }
-    imp_->planner_.setTargetSpeedRatio(imp_->target_speed_ratio_);
+
     imp_->state_ = PlannerState::Resuming;
+
+    // 设置 speed ratio 为目标值
+    imp_->planner_.setTargetSpeedRatio(imp_->target_speed_ratio_);
+
+    // 推进一帧
+    imp_->planner_.getNextInput(input_pos);
+
+    // 检测是否已完全恢复
+    if (std::abs(imp_->planner_.actualSpeedRatio() - imp_->target_speed_ratio_) <= imp_->speed_epsilon_) {
+        imp_->state_ = PlannerState::Running;
+        return 0;
+    }
+    return 1;
+}
+
+auto PlannerPauseController::setTargetSpeedRatio(double ratio) -> void {
+    imp_->target_speed_ratio_ = ratio;
+}
+
+auto PlannerPauseController::targetSpeedRatio() const -> double {
+    return imp_->target_speed_ratio_;
 }
 
 // ─── 底层规划器访问 ────────────────────────────────────────
@@ -89,7 +105,6 @@ auto PlannerPauseController::allocateMemory() -> void {
 auto PlannerPauseController::init() -> void {
     imp_->planner_.init();
     imp_->state_ = PlannerState::Running;
-    imp_->target_speed_ratio_ = imp_->planner_.targetSpeedRatio();
 }
 
 auto PlannerPauseController::stop() -> void {
@@ -100,13 +115,7 @@ auto PlannerPauseController::stop() -> void {
 // ─── 实时运行 ────────────────────────────────────────────
 
 auto PlannerPauseController::getNextInput(double* p) -> std::int64_t {
-    // 1. 调用底层 planner 获取下一帧
-    auto ret = imp_->planner_.getNextInput(p);
-
-    // 2. 更新暂停/恢复状态机
-    imp_->updateState();
-
-    return ret;
+    return imp_->planner_.getNextInput(p);
 }
 
 PlannerPauseController::~PlannerPauseController() {

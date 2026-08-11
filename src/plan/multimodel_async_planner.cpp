@@ -1378,6 +1378,9 @@ namespace aris::plan {
         }
         return imp_->fwd_tg_.leftNodeS();
     }
+	auto MultimodelPlanner::inputSize() -> int{
+		return imp_->input_psize_;
+	}
 
     MultimodelPlanner::~MultimodelPlanner(){
         stop();
