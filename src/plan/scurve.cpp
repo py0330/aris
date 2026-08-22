@@ -2120,6 +2120,84 @@ namespace aris::plan {
 
     }
 
+    // 构造单节点的 scurve 参数（单节点即整段轨迹；va、vb、t0、mode 固定为 0，vc 带方向符号）
+    // 输入限制见头文件声明：pb_ != pa_ 时需 vc_max_/a_/j_ > 0
+    auto ARIS_API s_scurve_make(Size param_num, SCurveParam *params, double T_min)->int {
+        // 单节点既是起始节点，也是末端节点；va、vb、t0、mode 固定为 0
+        for (Size i = 0; i < param_num; ++i) {
+            params[i].va_ = 0.0;
+            params[i].va_upper_ = 0.0;
+            params[i].va_below_ = 0.0;
+            params[i].vb_max_ = 0.0;
+            params[i].vb_ = 0.0;
+            params[i].vb_upper_ = 0.0;
+            params[i].vb_below_ = 0.0;
+            params[i].t0_ = 0.0;
+            params[i].mode_ = 0;
+        }
+
+        // Step 1：手动计算每个 param 的时间最优 T、vc、Ta、Tb，并取最大 T
+        // va vb 均为 0，此处内联实现 s_scurve_cpt_T_below 的 va=vb=0 简化版本；按 |pt| 计算，vc 带 pt 的符号
+        double T = T_min;
+        for (Size i = 0; i < param_num; ++i) {
+            const double pt = params[i].pb_ - params[i].pa_;
+            const double pt_abs = std::abs(pt);
+            const double sign = pt < 0.0 ? -1.0 : 1.0;
+            const double vc_max = params[i].vc_max_;
+            const double a = params[i].a_;
+            const double j = params[i].j_;
+            const double Z1 = a * a / j;
+
+            double T_below, vc, Ta, Tb;
+            const double v_upper = std::min(Z1, vc_max);
+
+            // 加速度均未达到 a：加加速度受限的对称三角（峰值速度 < a²/j）
+            // 位移 pt_abs = j·T³/32 ⇒ T = cbrt(32·pt_abs/j)，vc = j·T²/16，Ta = Tb = T/2
+            if (pt_abs < s_acc_time(0.0, v_upper, a, j) * v_upper) {
+                T_below = std::cbrt(32.0 * pt_abs / j);
+                vc = j * T_below * T_below / 16.0;
+                Ta = T_below / 2.0;
+                Tb = T_below / 2.0;
+            }
+            // 加速、减速段均达到最大加速度 a（峰值速度在 [a²/j, vc_max]）
+            // pt_abs = v²/a + a·v/j ⇒ v = (-Z1 + √(Z1² + 4a·pt_abs))/2，Ta = Tb = v/a + a/j
+            else if (vc_max >= Z1 && pt_abs < s_acc_time(0.0, vc_max, a, j) * vc_max) {
+                vc = (-Z1 + std::sqrt(Z1 * Z1 + 4.0 * a * pt_abs)) / 2.0;
+                Ta = vc / a + a / j;
+                Tb = Ta;
+                T_below = Ta + Tb;
+            }
+            // 峰值速度达到 vc_max，带匀速段
+            else {
+                vc = vc_max;
+                Ta = s_acc_time(0.0, vc_max, a, j);
+                Tb = Ta;
+                T_below = Ta + Tb + (pt_abs - Ta * vc) / vc;
+            }
+
+            params[i].T_ = T_below;      // 每个 param 的时间最优 T
+            params[i].vc_ = sign * vc;   // 峰值/匀速速度（带 pt 符号）
+            params[i].Ta_ = Ta;          // 加速时长
+            params[i].Tb_ = Tb;          // 减速时长
+            T = std::max(T, T_below);    // 取最大值
+        }
+
+        // Step 2：将每个 param 统一缩放到最大 T，并把缩放后的轨迹参数写入 smooth_*（缩放即替代平滑）
+        // 缩放系数 r = T_own / T ≤ 1：时间 ∝ 1/r，速度 ∝ r，加速度 ∝ r²，加加速度 ∝ r³；零位移维度 r 置 1，不缩放
+        for (Size i = 0; i < param_num; ++i) {
+            const double r = params[i].T_ > 0.0 ? params[i].T_ / T : 1.0;
+            params[i].T_ = T;
+            params[i].smooth_Ta_ = params[i].Ta_ / r;
+            params[i].smooth_Tb_ = params[i].Tb_ / r;
+            params[i].smooth_vc_ = params[i].vc_ * r;
+            params[i].smooth_a_ = params[i].a_ * r * r;
+            params[i].smooth_j1_ = params[i].j_ * r * r * r;
+            params[i].smooth_j2_ = params[i].j_ * r * r * r;
+        }
+
+        return 0;
+    }
+
     // 循环计算每个节点2：
     auto ARIS_API s_scurve_make_nodes(std::list<SCurveNode>::iterator begin_iter, std::list<SCurveNode>::iterator end_iter, double T_min)->int {
         // 设置正确的 pa, 并检查 vc, a, j 等参数的合理性

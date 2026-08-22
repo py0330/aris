@@ -48,6 +48,15 @@ namespace aris::plan{
 		std::unique_ptr<Imp> imp_;
 	};
 
+	/// @brief 规划器暂停/恢复状态
+	enum class PlannerState {
+		Idle,       ///< 未初始化或已停止
+		Running,    ///< 正常运行中
+		Pausing,    ///< 正在减速暂停（speed ratio 趋向 0）
+		Paused,     ///< 已完全暂停
+		Resuming,   ///< 正在加速恢复（speed ratio 趋向目标值）
+	};
+
 	class ARIS_API MultimodelPlanner {
 	public:
 		using TW = std::vector<std::pair<std::string, std::string>>;
@@ -133,6 +142,22 @@ namespace aris::plan{
 		auto setTargetSpeedRatio(double ds) -> void; // 0 <= ds <= 1
 		auto targetSpeedRatio() -> double;
 		auto actualSpeedRatio() -> double;
+
+		// 暂停/恢复控制 //
+		/// @brief 获取当前暂停/恢复状态
+		auto state() const -> PlannerState;
+		/// @brief 是否处于正常运行状态
+		auto isRunning() const -> bool;
+		/// @brief 是否处于暂停状态（含 Pausing/Paused）
+		auto isPaused() const -> bool;
+		/// @brief 执行暂停过程（平滑减速到零），每次调用推进一帧
+		/// @param input_pos 输出电机位置（inputSize 维）
+		/// @return 1 表示仍在减速中，0 表示已完全暂停（状态切换为 Paused）
+		auto pause(double* input_pos) -> int;
+		/// @brief 执行恢复过程（先平滑回到暂停位置，再加速回目标速度）
+		/// @param input_pos 输出电机位置（inputSize 维）
+		/// @return 1 表示仍在恢复中，0 表示已完全恢复（状态切换为 Running）
+		auto resume(double* input_pos) -> int;
 
 
 		////////////////// PART 3 RT operation ////////////////

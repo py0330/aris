@@ -3,6 +3,7 @@
 #include "aris/plan/input_smoother.hpp"
 #include "aris/plan/async_generator.hpp"
 #include "aris/plan/speed_regulator.hpp"
+#include "aris/plan/scurve.hpp"
 #include "aris/plan/multimodel_async_planner.hpp"
 
 #include "aris/core/error.hpp"
@@ -498,6 +499,18 @@ namespace aris::plan {
 		AsyncGenerator ag_;
 		SpeedRegulator sr_;
 
+		// pause/resume 状态机数据 //
+		PlannerState state_{ PlannerState::Idle };
+		double resume_target_ratio_{ 1.0 };
+		double speed_epsilon_{ 1e-10 };
+		std::vector<double> pause_pos_;
+		std::vector<SCurveParam> resume_scurve_params_;
+		std::vector<double> resume_cur_pos_;
+		std::vector<double> resume_max_vel_;
+		std::vector<double> resume_max_acc_;
+		double resume_t_{ 0.0 };
+		double resume_T_{ 0.0 };
+
 		std::vector<char> mem_;
 
 		auto get_next_input(double* p) -> std::int64_t {
@@ -710,6 +723,7 @@ namespace aris::plan {
 		auto stop() -> void {
 			if(is_aysnc_)
 				ag_.stop();
+			state_ = PlannerState::Idle;
 		}
 
 		auto init() -> void {
@@ -761,6 +775,8 @@ namespace aris::plan {
 				ag_.init();
 				ag_.suspend();
 			}
+
+			state_ = PlannerState::Running;
 		}
 		auto resolveToolsAndWobjs(TW& tool_wobjs, MarkerVec& tools, MarkerVec& wobjs) -> void {
 			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(), tools.size())); ++i) {
@@ -1348,6 +1364,7 @@ namespace aris::plan {
 
 	// 调速设置 //
 	auto MultimodelPlanner::setTargetSpeedRatio(double ds) -> void {
+		imp_->resume_target_ratio_ = ds;
 		imp_->sr_.setTargetSpeedRatio(ds);
 	}
 	auto MultimodelPlanner::targetSpeedRatio() -> double {
@@ -1380,6 +1397,99 @@ namespace aris::plan {
     }
 	auto MultimodelPlanner::inputSize() -> int{
 		return imp_->input_psize_;
+	}
+
+	// ─── 暂停/恢复控制 ──────────────────────────────────── //
+
+	auto MultimodelPlanner::state() const -> PlannerState {
+		return imp_->state_;
+	}
+	auto MultimodelPlanner::isRunning() const -> bool {
+		return imp_->state_ == PlannerState::Running;
+	}
+	auto MultimodelPlanner::isPaused() const -> bool {
+		auto s = imp_->state_;
+		return s == PlannerState::Pausing || s == PlannerState::Paused;
+	}
+
+	auto MultimodelPlanner::pause(double* input_pos) -> int {
+		// 已经暂停完毕，不再操作 planner（避免副作用）//
+		if (imp_->state_ == PlannerState::Paused) {
+			std::copy_n(imp_->pause_pos_.data(), imp_->input_psize_, input_pos);
+			return 0;
+		}
+
+		if (imp_->state_ == PlannerState::Running || imp_->state_ == PlannerState::Pausing) {
+			// 设置状态为 Pausing，并推进执行 //
+			imp_->state_ = PlannerState::Pausing;
+			imp_->sr_.setTargetSpeedRatio(0.0);
+			imp_->get_next_input(input_pos);
+
+			// 检测是否已完全暂停 //
+			if (imp_->sr_.actualSpeedRatio() <= imp_->speed_epsilon_) {
+				imp_->state_ = PlannerState::Paused;
+				imp_->pause_pos_.resize(imp_->input_psize_);
+				std::copy_n(input_pos, imp_->input_psize_, imp_->pause_pos_.data());
+				return 0;
+			}
+			return 1;
+		}
+
+		// 如果状态不是 Running 或 Pausing，则无法暂停 //
+		return -1;
+	}
+
+	auto MultimodelPlanner::resume(double* input_pos) -> int {
+		if (imp_->state_ == PlannerState::Paused) {
+			// 设置状态为 Resuming，构建 scurve：从当前位置到暂停位置，当前位置读取 model 的 input //
+			imp_->state_ = PlannerState::Resuming;
+
+			const auto n = imp_->input_psize_;
+			imp_->resume_scurve_params_.resize(n);
+			imp_->resume_cur_pos_.resize(n);
+			imp_->resume_max_vel_.resize(n);
+			imp_->resume_max_acc_.resize(n);
+
+			// 当前位置读取 model 的 input，同时读取电机的速度/加速度上限 //
+			imp_->model_->getSubInputPos(imp_->sub_id_list_.size(), imp_->sub_id_list_.data(), imp_->resume_cur_pos_.data());
+			imp_->model_->getSubMaxInputVel(imp_->sub_id_list_.size(), imp_->sub_id_list_.data(), imp_->resume_max_vel_.data());
+			imp_->model_->getSubMaxInputAcc(imp_->sub_id_list_.size(), imp_->sub_id_list_.data(), imp_->resume_max_acc_.data());
+
+			for (aris::Size i = 0; i < n; ++i) {
+				imp_->resume_scurve_params_[i].pa_ = imp_->resume_cur_pos_[i];
+				imp_->resume_scurve_params_[i].pb_ = imp_->pause_pos_[i];
+				imp_->resume_scurve_params_[i].vc_max_ = imp_->resume_max_vel_[i] > 0.0 ? imp_->resume_max_vel_[i] : 1.0;
+				imp_->resume_scurve_params_[i].a_ = imp_->resume_max_acc_[i] > 0.0 ? imp_->resume_max_acc_[i] : 1.0;
+				imp_->resume_scurve_params_[i].j_ = imp_->resume_scurve_params_[i].a_ * 5.0;
+			}
+
+			aris::plan::s_scurve_make(n, imp_->resume_scurve_params_.data(), 0.001);
+			imp_->resume_t_ = 0.0;
+			imp_->resume_T_ = n > 0 ? imp_->resume_scurve_params_[0].T_ : 0.0;
+
+			// 恢复目标速度比 //
+			imp_->sr_.setTargetSpeedRatio(imp_->resume_target_ratio_);
+			return 1;
+		}
+		else if (imp_->state_ == PlannerState::Resuming) {
+			// 从 scurve 中获取具体位置来 resume //
+			const auto n = imp_->input_psize_;
+			for (aris::Size i = 0; i < n; ++i) {
+				aris::plan::LargeNum p;
+				aris::plan::s_scurve_at(imp_->resume_scurve_params_[i], imp_->resume_t_, &p);
+				input_pos[i] = static_cast<double>(p);
+			}
+			imp_->resume_t_ += dt();
+
+			// 检测是否已完全恢复（scurve 运行结束即回到暂停位置）//
+			if (imp_->resume_t_ >= imp_->resume_T_) {
+				imp_->state_ = PlannerState::Running;
+				return 0;
+			}
+			return 1;
+		}
+
+		return -1;
 	}
 
     MultimodelPlanner::~MultimodelPlanner(){

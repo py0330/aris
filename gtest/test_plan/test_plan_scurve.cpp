@@ -110,6 +110,107 @@ auto validate_scurve_profile(const std::list<aris::plan::SCurveNode> &scurve) ->
 	}
 }
 
+// 辅助：校验单个节点（s_scurve_make 的结果）
+auto validate_single_node(const aris::plan::SCurveParam &param, double T_min) -> void {
+	const double T = param.T_;
+	const double pa = static_cast<double>(param.pa_);
+	const double pb = static_cast<double>(param.pb_);
+	const double pt = pb - pa;
+	const double sign = pt < 0.0 ? -1.0 : 1.0;
+	const LimitTol tol;
+
+	// 固定输出
+	EXPECT_DOUBLE_EQ(param.va_, 0.0);
+	EXPECT_DOUBLE_EQ(param.vb_, 0.0);
+	EXPECT_DOUBLE_EQ(static_cast<double>(param.t0_), 0.0);
+	EXPECT_EQ(param.mode_, 0);
+
+	// T 不小于 T_min
+	EXPECT_GE(T, T_min - 1e-12);
+
+	// vc / smooth_vc 符号与位移一致
+	if (std::abs(pt) > 1e-12) {
+		EXPECT_GT(param.vc_ * sign, 0.0);
+		EXPECT_GT(param.smooth_vc_ * sign, 0.0);
+	}
+
+	// smooth 参数非负且时间分段合法
+	EXPECT_GE(param.smooth_Ta_, -1e-12);
+	EXPECT_GE(param.smooth_Tb_, -1e-12);
+	EXPECT_LE(param.smooth_Ta_ + param.smooth_Tb_, T + 1e-9);
+	if (std::abs(pt) > 1e-12) {
+		EXPECT_GT(param.smooth_a_, 0.0);
+		EXPECT_GT(param.smooth_j1_, 0.0);
+		EXPECT_GT(param.smooth_j2_, 0.0);
+	}
+
+	// 采样并用 p/v/a 的差分校验 v/a/j 的正确性
+	const int steps = 1000;
+	const double dt = T / steps;
+
+	aris::plan::LargeNum p[4];
+	for (int i = 0; i < 4; ++i) {
+		aris::plan::s_scurve_at(param, dt * i, &p[i], nullptr, nullptr, nullptr);
+	}
+
+	for (int k = 4; k <= steps; ++k) {
+		p[0] = p[1];
+		p[1] = p[2];
+		p[2] = p[3];
+
+		const double tt = dt * k;
+		double v, a, j;
+		aris::plan::s_scurve_at(param, tt, &p[3], &v, &a, &j);
+
+		const double pc = static_cast<double>(p[3]);
+		const double pp = static_cast<double>(p[2]);
+		const double ppp = static_cast<double>(p[1]);
+		const double pppp = static_cast<double>(p[0]);
+
+		// 由 p 差分求 v，由 v 差分求 a，由 a 差分求 j
+		const double v_cur = (pc - pp) / dt;
+		const double v_pre = (pp - ppp) / dt;
+		const double v_pre2 = (ppp - pppp) / dt;
+		const double a_cur = (v_cur - v_pre) / dt;
+		const double a_pre = (v_pre - v_pre2) / dt;
+		const double j_cur = (a_cur - a_pre) / dt;
+
+		// 约束幅值
+		EXPECT_LE(std::abs(v), param.vc_max_ + tol.v_tol * std::max(1.0, param.vc_max_));
+		EXPECT_LE(std::abs(a), param.a_ + tol.a_tol * std::max(1.0, param.a_));
+		EXPECT_LE(std::abs(j), param.j_ + tol.j_tol * std::max(1.0, param.j_));
+
+		// 差分一致性：v = dp/dt，a = dv/dt
+		EXPECT_LE(std::abs(v - v_cur), param.a_ * dt + tol.v_tol);
+		EXPECT_LE(std::abs(a - a_cur), param.j_ * dt + tol.a_tol);
+
+		// j 的幅值（由 a 差分得到的 j 也应在约束内）
+		EXPECT_LE(std::abs(j_cur), param.j_ + tol.j_tol * std::max(1.0, param.j_));
+
+		// 位置单调性与方向
+		if (pt > 1e-12) {
+			EXPECT_GE(pc, pa - 1e-6);
+			EXPECT_LE(pc, pb + 1e-6);
+		} else if (pt < -1e-12) {
+			EXPECT_LE(pc, pa + 1e-6);
+			EXPECT_GE(pc, pb - 1e-6);
+		}
+		if (std::abs(pt) > 1e-12 && std::abs(v) > 1e-6) {
+			EXPECT_GT(v * sign, 0.0);
+		}
+	}
+
+	// 起点、终点位置与速度
+	aris::plan::LargeNum p0, p1;
+	double v0, v1;
+	aris::plan::s_scurve_at(param, 0.0, &p0, &v0, nullptr, nullptr);
+	aris::plan::s_scurve_at(param, T, &p1, &v1, nullptr, nullptr);
+	EXPECT_NEAR(static_cast<double>(p0), pa, 1e-6);
+	EXPECT_NEAR(static_cast<double>(p1), pb, 1e-6);
+	EXPECT_NEAR(v0, 0.0, 1e-6);
+	EXPECT_NEAR(v1, 0.0, 1e-6);
+}
+
 } // namespace
 
 TEST(SCurveTest, MakeNodesAndCheckDynamicsSmallDeterministicCase) {
@@ -307,4 +408,110 @@ TEST(SCurveTest, Smooth_Step1DiscNegative) {
 	make_param_and_smooth(2.0, 0.01, 0.01, 0, 0, 1.0, 5.0, 0, Ta, Tb, vc);
 	EXPECT_GE(Ta, 0.01);
 	EXPECT_GE(Tb, 0.01);
+}
+
+// ==================== 单节点 s_scurve_make 测试（多维度） ====================
+
+// 单节点：多维度均正向，位移不同，统一总时长
+TEST(SCurveTest, SingleNodeForward) {
+	aris::plan::SCurveParam p[2];
+	for (auto &param : p) {
+		param.vc_max_ = 2.0;
+		param.a_ = 2.0;
+		param.j_ = 10.0;
+	}
+	p[0].pa_ = 0.0; p[0].pb_ = 1.0;
+	p[1].pa_ = 0.0; p[1].pb_ = 0.5;
+
+	EXPECT_EQ(aris::plan::s_scurve_make(2, p), 0);
+
+	EXPECT_DOUBLE_EQ(p[0].T_, p[1].T_);
+	for (auto &param : p) {
+		validate_single_node(param, 0.001);
+		EXPECT_GT(param.vc_, 0.0);
+		EXPECT_GT(param.smooth_vc_, 0.0);
+	}
+}
+
+// 单节点：多维度均反向，位移不同
+TEST(SCurveTest, SingleNodeBackward) {
+	aris::plan::SCurveParam p[2];
+	for (auto &param : p) {
+		param.vc_max_ = 2.0;
+		param.a_ = 2.0;
+		param.j_ = 10.0;
+	}
+	p[0].pa_ = 1.0; p[0].pb_ = 0.0;
+	p[1].pa_ = 0.5; p[1].pb_ = 0.0;
+
+	EXPECT_EQ(aris::plan::s_scurve_make(2, p), 0);
+
+	EXPECT_DOUBLE_EQ(p[0].T_, p[1].T_);
+	for (auto &param : p) {
+		validate_single_node(param, 0.001);
+		EXPECT_LT(param.vc_, 0.0);
+		EXPECT_LT(param.smooth_vc_, 0.0);
+	}
+}
+
+// 单节点：多维度正反混合，各维度方向符号独立
+TEST(SCurveTest, SingleNodeMixedDirection) {
+	aris::plan::SCurveParam p[2];
+	for (auto &param : p) {
+		param.vc_max_ = 2.0;
+		param.a_ = 2.0;
+		param.j_ = 10.0;
+	}
+	p[0].pa_ = 0.0; p[0].pb_ = 1.0;   // 正向
+	p[1].pa_ = 1.0; p[1].pb_ = 0.5;   // 反向
+
+	EXPECT_EQ(aris::plan::s_scurve_make(2, p), 0);
+
+	EXPECT_DOUBLE_EQ(p[0].T_, p[1].T_);
+	validate_single_node(p[0], 0.001);
+	validate_single_node(p[1], 0.001);
+	EXPECT_GT(p[0].vc_, 0.0);
+	EXPECT_LT(p[1].vc_, 0.0);
+}
+
+// 单节点：多维度中有一维零位移
+TEST(SCurveTest, SingleNodeZeroDisplacement) {
+	aris::plan::SCurveParam p[2];
+	for (auto &param : p) {
+		param.vc_max_ = 2.0;
+		param.a_ = 2.0;
+		param.j_ = 10.0;
+	}
+	p[0].pa_ = 0.0; p[0].pb_ = 1.0;
+	p[1].pa_ = 0.5; p[1].pb_ = 0.5;   // 零位移
+
+	EXPECT_EQ(aris::plan::s_scurve_make(2, p), 0);
+
+	EXPECT_DOUBLE_EQ(p[1].T_, p[0].T_);
+	EXPECT_DOUBLE_EQ(p[1].vc_, 0.0);
+	EXPECT_DOUBLE_EQ(p[1].smooth_vc_, 0.0);
+
+	validate_single_node(p[0], 0.001);
+	validate_single_node(p[1], 0.001);
+}
+
+// 单节点：自定义 T_min 拉长轨迹（多维度）
+TEST(SCurveTest, SingleNodeCustomTmin) {
+	aris::plan::SCurveParam p[2];
+	for (auto &param : p) {
+		param.vc_max_ = 2.0;
+		param.a_ = 2.0;
+		param.j_ = 10.0;
+	}
+	p[0].pa_ = 0.0; p[0].pb_ = 0.01;
+	p[1].pa_ = 0.0; p[1].pb_ = 0.02;
+
+	const double T_min = 0.5;
+	EXPECT_EQ(aris::plan::s_scurve_make(2, p, T_min), 0);
+
+	EXPECT_DOUBLE_EQ(p[0].T_, T_min);
+	EXPECT_DOUBLE_EQ(p[1].T_, T_min);
+
+	validate_single_node(p[0], T_min);
+	validate_single_node(p[1], T_min);
 }
