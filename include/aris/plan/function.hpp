@@ -161,7 +161,7 @@ namespace aris::plan{
 	//          pc : next planned pos
 	//          vc : next planned vel
 	//          ac : next planned acc
-	// total_count : tbd, not finished yet
+	// total_count : left total count
 	// 
 	// 
 	// time: -dt   -dt/2    0    dt/2     dt  
@@ -233,7 +233,10 @@ namespace aris::plan{
 			}
 
 			// 【CASE 1】已经到达目标位置
-			if (s_is_vend(va, (pt - pa) / dt, 0.0, a_max_real, a_min_real, dt, zero_check)) {
+			if (s_is_vend(va, (pt - pa) / dt, 0.0, a_max_real, a_min_real, dt, zero_check)
+				&& (pt - pa) / dt <= v_max + zero_check
+				&& (pt - pa) / dt >= v_min - zero_check) 
+			{
 				pc = pt;
 				vc = (pt - pa) / dt;
 				ac = (vc - va) / dt;
@@ -298,7 +301,7 @@ namespace aris::plan{
 					auto lacc = Tacc * (v_max + va) / 2;
 					auto ldec = Tdec * (v_max + 0) / 2;
 					if (lacc + ldec <= pt - pa) {
-						total_count = static_cast<Size>(Tacc + Tdec + (pt - pa - lacc - ldec)/v_max);
+						total_count = static_cast<Size>((Tacc + Tdec + (pt - pa - lacc - ldec)/v_max) / dt);
 					}
 					else {
 						//auto Tacc = (v_max - va) / a_max;
@@ -356,9 +359,6 @@ namespace aris::plan{
 				double vn = (pt - pa + a_min * (tn * (tn + dt) / 2)) / (tn + dt);
 				double v_next = vn - tn * a_min;
 
-				//std::cout << pt - pa - (v_next * dt + vn * dt + (v_next + vn) / 2 * (tn-dt)) << std::endl;
-
-				//double v_next = -(ndec2 + 1) * dt * a_min;
 				ac = (v_next - va) / dt;
 				vc = va + ac * dt;
 				pc = pa + vc * dt;

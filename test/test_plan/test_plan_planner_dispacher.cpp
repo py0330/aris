@@ -144,10 +144,10 @@ auto expect_motion_finished(
 	if (!finished) {
 		throw std::runtime_error(std::string("PlannerDispacher motion did not finish in expected iterations in ") + scenario);
 	}
-	if (dispacher.tgRet(chanel) < 0) {
+	if (dispacher.plannerAt(chanel).tgRet() < 0) {
 		throw std::runtime_error(std::string("PlannerDispacher tgRet should not be negative in ") + scenario);
 	}
-	auto ik_ret = dispacher.ikRet(chanel);
+	auto ik_ret = dispacher.plannerAt(chanel).ikRet();
 	if (ik_ret < 0) {
 		std::cout << "NOTE: PlannerDispacher ikRet < 0 in " << scenario << ", ikRet=" << ik_ret << std::endl;
 	}
@@ -241,10 +241,10 @@ auto expect_motion_sequence_finished(
 	if (!finished) {
 		throw std::runtime_error(std::string("PlannerDispacher queued motions did not finish in expected iterations in ") + scenario);
 	}
-	if (dispacher.tgRet(chanel) < 0) {
+	if (dispacher.plannerAt(chanel).tgRet() < 0) {
 		throw std::runtime_error(std::string("PlannerDispacher tgRet should not be negative in ") + scenario);
 	}
-	auto ik_ret = dispacher.ikRet(chanel);
+	auto ik_ret = dispacher.plannerAt(chanel).ikRet();
 	if (ik_ret < 0) {
 		std::cout << "NOTE: PlannerDispacher ikRet < 0 in " << scenario << ", ikRet=" << ik_ret << std::endl;
 	}
@@ -339,8 +339,8 @@ auto test_planner_dispacher_locking() -> void {
 		throw std::runtime_error("PlannerDispacher relock count mismatch");
 	}
 
-	dispacher.setTargetSpeedRatio(0, 0.5);
-	if (std::abs(dispacher.targetSpeedRatio(0) - 0.5) > 1e-12) {
+	dispacher.plannerAt(0).setTargetSpeedRatio(0.5);
+	if (std::abs(dispacher.plannerAt(0).targetSpeedRatio() - 0.5) > 1e-12) {
 		throw std::runtime_error("PlannerDispacher target speed ratio mismatch");
 	}
 
@@ -435,12 +435,12 @@ auto test_planner_dispacher_insert_line() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 	tw_pos.at(0) += 0.02;
 
-	auto node_id = dispacher.insertLinePos(0, "", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertLinePos("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	if (node_id <= 0) {
 		throw std::runtime_error("PlannerDispacher insertLinePos should return positive node id");
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "line-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -480,12 +480,12 @@ auto test_planner_dispacher_insert_circle() -> void {
 	tw_mid_pos.at(1) += 0.01;
 	tw_target_pos.at(1) += 0.02;
 
-	auto node_id = dispacher.insertCirclePos(0, "", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertCirclePos("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	if (node_id <= 0) {
 		throw std::runtime_error("PlannerDispacher insertCirclePos should return positive node id");
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "circle-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -521,12 +521,12 @@ auto test_planner_dispacher_insert_movej() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 	tw_pos.at(2) += 0.02;
 
-	auto node_id = dispacher.insertMoveJPos(0, "", "", tw_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
+	auto node_id = dispacher.plannerAt(0).insertMoveJ("", "", tw_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (node_id <= 0) {
 		throw std::runtime_error("PlannerDispacher insertMoveJPos should return positive node id");
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "movej-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -567,12 +567,12 @@ auto test_planner_dispacher_insert_moveabsj() -> void {
 	joint_pos.at(0) += 0.03;
 	joint_pos.at(1) -= 0.02;
 
-	auto node_id = dispacher.insertMoveAbsJPos(0, joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+	auto node_id = dispacher.plannerAt(0).insertMoveAbsJ(joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
 	if (node_id <= 0) {
 		throw std::runtime_error("PlannerDispacher insertMoveAbsJPos should return positive node id");
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "moveabsj-flow test");
 	if (std::abs(final_input.at(0) - joint_pos.at(0)) > 1e-4 || std::abs(final_input.at(1) - joint_pos.at(1)) > 1e-4) {
 		throw std::runtime_error("PlannerDispacher moveabsj-flow final input mismatch");
@@ -616,11 +616,11 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, line_pos.data());
 	line_pos.at(0) += 0.02;
 
-	auto line_id = dispacher.insertLinePos(0, "", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (line_id <= 0) {
 		throw std::runtime_error("PlannerDispacher mixed-flow line insert should return positive node id");
 	}
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), line_id, sub_num, &sub_id, "mixed-flow line test");
 
 	std::vector<double> circle_mid_pos = line_pos;
@@ -628,11 +628,11 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	circle_mid_pos.at(1) += 0.01;
 	circle_target_pos.at(1) += 0.02;
 
-	auto circle_id = dispacher.insertCirclePos(0, "", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (circle_id <= line_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow circle insert should return increasing node id");
 	}
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), circle_id, sub_num, &sub_id, "mixed-flow circle test");
 
 	std::vector<double> movej_pos = circle_target_pos;
@@ -640,11 +640,11 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	movej_pos.at(1) -= 0.02;
 	movej_pos.at(2) += 0.05;
 
-	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
+	auto movej_id = dispacher.plannerAt(0).insertMoveJ("", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (movej_id <= circle_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow movej insert should return increasing node id");
 	}
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), movej_id, sub_num, &sub_id, "mixed-flow movej test");
 
 	std::vector<double> moveabsj_pos(input_pos_size, 0.0);
@@ -652,11 +652,11 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	moveabsj_pos.at(0) += 0.03;
 	moveabsj_pos.at(1) -= 0.02;
 
-	auto moveabsj_id = dispacher.insertMoveAbsJPos(0, moveabsj_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+	auto moveabsj_id = dispacher.plannerAt(0).insertMoveAbsJ(moveabsj_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
 	if (moveabsj_id <= movej_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow moveabsj insert should return increasing node id");
 	}
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), moveabsj_id, sub_num, &sub_id, "mixed-flow moveabsj test");
 	if (std::abs(final_input.at(0) - moveabsj_pos.at(0)) > 1e-4 || std::abs(final_input.at(1) - moveabsj_pos.at(1)) > 1e-4) {
 		throw std::runtime_error("PlannerDispacher mixed-flow moveabsj final input mismatch");
@@ -706,7 +706,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, line_pos.data());
 	line_pos.at(0) += 0.02;
 
-	auto line_id = dispacher.insertLinePos(0, "", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (line_id <= 0) {
 		throw std::runtime_error("PlannerDispacher batch-flow line insert should return positive node id");
 	}
@@ -716,7 +716,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	circle_mid_pos.at(1) += 0.01;
 	circle_target_pos.at(1) += 0.02;
 
-	auto circle_id = dispacher.insertCirclePos(0, "", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (circle_id <= line_id) {
 		throw std::runtime_error("PlannerDispacher batch-flow circle insert should return increasing node id");
 	}
@@ -724,12 +724,12 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	std::vector<double> movej_pos = circle_target_pos;
 	movej_pos.at(2) += 0.02;
 
-	auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
+	auto movej_id = dispacher.plannerAt(0).insertMoveJ("", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 	if (movej_id <= circle_id) {
 		throw std::runtime_error("PlannerDispacher batch-flow movej insert should return increasing node id");
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	auto final_input = expect_motion_sequence_finished(
 		dispacher,
 		0,
@@ -788,7 +788,7 @@ auto test_planner_dispacher_many_points() -> void {
 		line_pos.at(0) += 0.0005;
 		line_pos.at(1) += (i % 2 == 0) ? 0.0002 : -0.0002;
 
-		auto line_id = dispacher.insertLinePos(0, "", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+		auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 		if (line_id <= 0) {
 			throw std::runtime_error("PlannerDispacher many-points line insert should return positive node id");
 		}
@@ -800,7 +800,7 @@ auto test_planner_dispacher_many_points() -> void {
 		circle_target_pos.at(0) += 0.0003;
 		circle_target_pos.at(1) += (i % 3 == 0) ? 0.0004 : -0.0004;
 
-		auto circle_id = dispacher.insertCirclePos(0, "", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+		auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 		if (circle_id <= line_id) {
 			throw std::runtime_error("PlannerDispacher many-points circle insert should return increasing node id");
 		}
@@ -808,7 +808,7 @@ auto test_planner_dispacher_many_points() -> void {
 
 		std::vector<double> movej_pos = circle_target_pos;
 		movej_pos.at(2) += (i % 2 == 0) ? 0.001 : -0.001;
-		auto movej_id = dispacher.insertMoveJPos(0, "", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
+		auto movej_id = dispacher.plannerAt(0).insertMoveJ("", "", movej_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), nullptr);
 		if (movej_id <= circle_id) {
 			throw std::runtime_error("PlannerDispacher many-points movej insert should return increasing node id");
 		}
@@ -816,14 +816,14 @@ auto test_planner_dispacher_many_points() -> void {
 
 		joint_pos.at(0) += (i % 2 == 0) ? 0.0008 : -0.0008;
 		joint_pos.at(1) += (i % 3 == 0) ? 0.0006 : -0.0006;
-		auto moveabsj_id = dispacher.insertMoveAbsJPos(0, joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
+		auto moveabsj_id = dispacher.plannerAt(0).insertMoveAbsJ(joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
 		if (moveabsj_id <= movej_id) {
 			throw std::runtime_error("PlannerDispacher many-points moveabsj insert should return increasing node id");
 		}
 		node_ids.push_back(moveabsj_id);
 	}
 
-	dispacher.updateInsertPos(0);
+	dispacher.plannerAt(0).updateInsertPos();
 	expect_motion_sequence_finished(
 		dispacher,
 		0,
@@ -870,12 +870,12 @@ auto test_planner_dispacher_intentional_failures() -> void {
 		multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 		tw_pos.at(0) += 0.02;
 
-		auto node_id = dispacher.insertLinePos(0, "", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+		auto node_id = dispacher.plannerAt(0).insertLinePos("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 		if (node_id <= 0) {
 			throw std::runtime_error("PlannerDispacher intentional-failure insertLinePos should return positive node id");
 		}
 
-		dispacher.updateInsertPos(0);
+		dispacher.plannerAt(0).updateInsertPos();
 
 		bool saw_expected_fail = false;
 		try {

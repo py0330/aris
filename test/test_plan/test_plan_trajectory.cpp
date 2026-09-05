@@ -543,7 +543,6 @@ auto test_trajectory_4()->void {
 		tg.insertInitPos(10000, init_pe);
 
 		// 插入第一个目标点
-		tg.setTargetDs(30 / 100.0);
 		cmd_id = 1;
 		tg.insertLinePos(cmd_id, pes[insert_pe_id], speed, acc, jerk, zone);
 		insert_pe_id++;

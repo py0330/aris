@@ -38,24 +38,6 @@ namespace aris::plan{
 		auto maxReplanNum()const->int;
 		auto setMaxReplanNum(int max_replan_num = 10) -> void;
 
-		// 规划器内的时间间隔 //
-		auto currentDs()const->double;
-		auto setCurrentDs(double ds)->void;// 不要随便设置，会导致不连续
-
-		auto targetDs()const->double;
-		auto setTargetDs(double ds)->void;
-
-		// 设置时间流逝的加速度
-		auto currentDds()const->double;
-		auto setCurrentDds(double dds)->void;// 不要随便设置，会导致不连续
-
-		auto maxDds()const->double;
-		auto setMaxDds(double max_dds)->void;
-
-		// 设置时间流逝的加加速度
-		auto maxDdds()const->double;
-		auto setMaxDdds(double max_ddds)->void;
-
 		// 剩余的时间长度
 		auto leftNodeS()const->double;
 		auto leftTotalS()const->double;

@@ -122,9 +122,9 @@ auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
 	double zones[6] {0,0,0,0,0,0};
 	
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertMoveAbsJPos(0,end_pos,vels,accs,jerks,zones,time_zone);
+	imp_->pd->plannerAt(0).insertMoveAbsJ(end_pos,vels,accs,jerks,zones,time_zone);
 
-	imp_->pd->updateInsertPos(0);
+	imp_->pd->plannerAt(0).updateInsertPos();
 
 
 
@@ -149,9 +149,9 @@ auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 	std::string tool = "UrModel.L6.tool0";
 	std::string wobj = "UrModel.ground.wobj0";
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
-	imp_->pd->insertLinePos(0,tool,wobj,end_pos,vels,accs,jerks,zones,time_zone);
+	imp_->pd->plannerAt(0).insertLinePos(tool,wobj,end_pos,vels,accs,jerks,zones,time_zone);
 
-	imp_->pd->updateInsertPos(0);
+	imp_->pd->plannerAt(0).updateInsertPos();
 
 
 
@@ -184,7 +184,7 @@ int main() {
 	t.pd()->setChanelSize(2); 
 	t.pd()->setDt(2*1e-3);
 	t.pd()->init();
-	t.pd()->setTargetSpeedRatio(0, 1);
+	t.pd()->plannerAt(0).setTargetSpeedRatio(1);
 
 	t.test_trajectory_aj(cs);
 	t.test_trajectory_l(cs);

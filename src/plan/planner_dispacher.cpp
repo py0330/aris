@@ -46,6 +46,9 @@ namespace aris::plan {
 	auto PlannerDispacher::transferMatrice() -> std::vector<aris::core::Matrix>& {
 		return imp_->transfer_matrice_;
 	}
+	auto PlannerDispacher::plannerAt(int chanel) -> MultimodelPlanner& {
+		return imp_->chanel_data_vec_[chanel]->planner;
+	}
 	auto PlannerDispacher::init() -> void {
 		imp_->chanel_data_vec_.clear();
 		for (int i = 0; i < imp_->chanel_size_; ++i) {
@@ -141,27 +144,36 @@ namespace aris::plan {
 		return -2; // channel was not locked, return -2 to indicate release failed
 	}
 
-	auto PlannerDispacher::insertLinePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertLinePos(tools, wobjs, ee_pos, vel, acc, jerk, zone, time_zone);
-	}
-	auto PlannerDispacher::insertCirclePos(int chanel, std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertCirclePos(tools, wobjs, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
-	}
-	auto PlannerDispacher::insertMoveJPos(int chanel, std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, const std::int64_t *which_root, double time_zone) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.insertMoveJ(tools, wobjs, tw_pos, vel, acc, jerk, zone, which_root, time_zone);
-	}
-    auto PlannerDispacher::insertMoveAbsJPos(int chanel, const double *joint_p, const double *joint_v, const double *joint_a, const double *joint_j, const double *joint_z, double time_zone) -> std::int64_t {
-        return imp_->chanel_data_vec_[chanel]->planner.insertMoveAbsJ(joint_p, joint_v, joint_a, joint_j, joint_z, time_zone);
-    }
-	auto PlannerDispacher::updateInsertPos(int chanel) -> void {
-		imp_->chanel_data_vec_[chanel]->planner.updateInsertPos();
-	}
-
 	auto PlannerDispacher::getNextInput(int chanel, double* p) -> std::int64_t {
 		auto &c = imp_->chanel_data_vec_[chanel];
 		
 		// get input from planner //
-		auto ret = c->planner.getNextInput(c->sub_input_pos_.data());
+		std::int64_t ret = 0;
+		switch (c->planner.state()) {
+		case PlannerState::Uninitialized:
+		case PlannerState::Paused:
+			ret = 0;
+			break;
+		case PlannerState::Idle:
+		case PlannerState::Running:
+			ret = c->planner.runOneStep(c->sub_input_pos_.data());
+			break;
+		case PlannerState::Pausing:
+			ret = c->planner.pauseOneStep(c->sub_input_pos_.data());
+			break;
+		case PlannerState::Resuming:
+			ret = c->planner.resumeOneStep(c->sub_input_pos_.data());
+			break;
+		case PlannerState::Stopping:
+			ret = c->planner.stopOneStep(c->sub_input_pos_.data());
+			break;
+		case PlannerState::MovingToTarget:
+			ret = c->planner.moveToTargetOneStep(c->sub_input_pos_.data());
+			break;
+		default:
+			break;
+		}
+
 		
 		// apply transfer matrix //
 		auto idx = 0;
@@ -179,32 +191,6 @@ namespace aris::plan {
 		}
 
 		return ret;
-	}
-
-	auto PlannerDispacher::tgRet(int chanel) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.tgRet();
-	}
-
-	auto PlannerDispacher::ikRet(int chanel) -> std::int64_t {
-		return imp_->chanel_data_vec_[chanel]->planner.ikRet();
-	}
-
-	auto PlannerDispacher::leftNodeS(int chanel) -> double {
-		return imp_->chanel_data_vec_[chanel]->planner.leftNodeS();
-	}
-
-	auto PlannerDispacher::setTargetSpeedRatio(int chanel, double ds) -> void {
-		imp_->chanel_data_vec_[chanel]->planner.setTargetSpeedRatio(ds);
-	}
-	auto PlannerDispacher::targetSpeedRatio(int chanel) -> double {
-		return imp_->chanel_data_vec_[chanel]->planner.targetSpeedRatio();
-	}
-	auto PlannerDispacher::actualSpeedRatio(int chanel) -> double {
-		return imp_->chanel_data_vec_[chanel]->planner.actualSpeedRatio();
-	}
-
-	auto PlannerDispacher::unusedNodeIds(int chanel) const -> std::vector<std::int64_t> {
-		return imp_->chanel_data_vec_[chanel]->planner.unusedNodeIds();
 	}
 
 	PlannerDispacher::PlannerDispacher() : imp_(new Imp) {}

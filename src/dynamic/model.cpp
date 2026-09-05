@@ -1294,17 +1294,17 @@ namespace aris::dynamic{
 	}
 
 	auto MultiModel::subInverseKinematics(Size sub_num, const Size* sub_id, const double* output, double* input, const std::int64_t *which_root, const double* current_input)const noexcept->int{
-		int out_put_pos = 0, input_pos = 0, root_pos = 0;
+		int output_pos = 0, input_pos = 0, root_pos = 0;
 		for (Size i = 0; i < sub_num; ++i) {
 			if (auto ret = subModels()[sub_id[i]].inverseKinematics(
-				output + out_put_pos,
+				output + output_pos,
 				input + input_pos,
 				which_root ? which_root + root_pos : nullptr,
 				current_input ? current_input + input_pos : nullptr
 			))
 				return ret;
 
-			out_put_pos += subModels()[sub_id[i]].outputSize();
+			output_pos += subModels()[sub_id[i]].outputSize();
 			input_pos += subModels()[sub_id[i]].inputSize();
 			root_pos += subModels()[sub_id[i]].inverseRootSize();
 		}

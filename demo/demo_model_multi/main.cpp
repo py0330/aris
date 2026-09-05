@@ -49,8 +49,8 @@ auto MoveL::prepareNrt()->void{
 		
 	// insert line //
 	pd.tryLockChanel(0, sub_model_);
-	id_ = pd.insertLinePos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
-	pd.updateInsertPos(0);
+	id_ = pd.plannerAt(0).insertLinePos(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+	pd.plannerAt(0).updateInsertPos();
 
 	// controller setting //
 	motor_id_.resize(pd.model().inputSize());
@@ -128,8 +128,8 @@ auto MoveJ::prepareNrt()->void{
 		
 	// insert line //
 	pd.tryLockChanel(0, sub_model_);
-	id_ = pd.insertMoveJPos(0, tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
-	pd.updateInsertPos(0);
+	id_ = pd.plannerAt(0).insertMoveJ(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
+	pd.plannerAt(0).updateInsertPos();
 
 	// controller setting //
 	motor_id_.resize(pd.model().inputSize());
@@ -160,6 +160,29 @@ MoveJ::MoveJ(const std::string & name) {
 		"		<Param name=\"tool\" default=\"0\"/>"
 		"		<Param name=\"wobj\" default=\"0\"/>"
 		"	</GroupParam>"
+		"</Command>");
+}
+
+
+class Stop : public aris::core::CloneObject<Stop, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+
+	virtual ~Stop();
+	explicit Stop(const std::string& name = "Stop");
+	Stop(const Stop& other);
+};
+
+auto Stop::prepareNrt()->void{
+	// 仅请求停止当前正在执行的指令：将 planner 状态置为 Stopping，由原指令的 executeRT 完成平滑减速 //
+	option() = NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+	pd.plannerAt(0).requestStop();
+}
+Stop::~Stop() = default;
+Stop::Stop(const Stop & other) = default;
+Stop::Stop(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"stop\">"
 		"</Command>");
 }
 
@@ -228,7 +251,7 @@ int main(){
 	pd.setDt(1e-3);
 	pd.init();
 
-	pd.setTargetSpeedRatio(0, 1);
+	pd.plannerAt(0).setTargetSpeedRatio(1);
 
 	auto func = [&](){
 		// 构造mvl ，调试一下
@@ -245,6 +268,7 @@ int main(){
 		aris::plan::Plan *plan_ptr = nullptr;
 
 		static int i = 0;
+		bool is_stop_iter = (i == 2);
 		if(i%4 == 0){
 			mvl.parse("mvl --pos={-0.2021530000000000,-0.4767690000000000,0.3464170000000000,1.6681019232520844,-0.3377596075044466,4.8698351322070987,-0.5237349112799544} "
 				"--vel={1000,1000,1000} --acc={100,100,100} --jerk={1000,1000,1000} --zone={0,0,0} "
@@ -276,8 +300,17 @@ int main(){
 		plan_ptr->prepareNrt();
 		plan_ptr->setCount(1);
 
+		// 第 3 次规划（i == 2，即 mvj）执行到 600 count 时，执行一次 stop 指令 //
+		Stop stop;
+		bool stop_executed = false;
+
 		while (auto ret = plan_ptr->executeRT()) {
 			plan_ptr->setCount(plan_ptr->count() + 1);
+
+			if (is_stop_iter && !stop_executed && plan_ptr->count() == 600) {
+				stop.prepareNrt();
+				stop_executed = true;
+			}
 
 			if(plan_ptr->count()%1000 == 0){
 				std::cout << plan_ptr->count() << std::endl;
@@ -293,6 +326,9 @@ int main(){
 				//break;
 			}
 		}
+
+		// 每条指令执行完后释放通道，使下一条指令能重新初始化 planner //
+		plan_ptr->collectNrt();
 
 		std::cout << "mv finished:" << plan_ptr->count() << std::endl;
 
