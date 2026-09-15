@@ -20,6 +20,7 @@ namespace aris::plan{
 		aris::control::Controller *controller_{ nullptr };
 		aris::control::EthercatMaster *ec_master_{ nullptr };
 		aris::server::ControlServer *cs_{ nullptr };
+		std::int32_t chanel_id_{ 0 };
 
 		aris::core::Command cmd_struct_;
 		std::vector<char> cmd_str_;
@@ -62,6 +63,16 @@ namespace aris::plan{
 		if (mat.m() != m || mat.n() != n) THROW_FILE_LINE("invalid matrix size");
 		return mat;
 	}
+	auto Plan::SizeVectorParam(std::string_view param_name)->std::vector<aris::Size>{
+		auto mat = matrixParam(param_name);
+		if ((mat.n() != 1 && mat.m() != 1 && mat.m()*mat.m() > 0 ))
+			THROW_FILE_LINE("invalid expresion for Size vector, it should be a column vector");
+		std::vector<aris::Size> ret(mat.m() * mat.n());
+		for(int i =0;i<mat.m();++i) 
+			for(int j = 0;j<mat.n();++j)
+				ret[i * mat.n() + j] = static_cast<aris::Size>(mat(i, j));
+		return ret;
+	}
 
 	auto Plan::command()noexcept->aris::core::Command & { return imp_->cmd_struct_; }
 	auto Plan::parse(std::string_view cmd_str)->void {
@@ -83,6 +94,9 @@ namespace aris::plan{
 	auto Plan::setController(aris::control::Controller*c)noexcept->void { imp_->controller_ = c; }
 	auto Plan::controller()noexcept->aris::control::Controller* { return imp_->controller_; }
 	
+	auto Plan::setChanelId(std::int32_t chanel_id)noexcept->void { imp_->chanel_id_ = chanel_id; }
+	auto Plan::chanelId()noexcept->std::int32_t { return imp_->chanel_id_; }
+
 	auto Plan::setCmdId(std::int64_t cmd_id)noexcept->void { imp_->command_id_ = cmd_id; }
 	auto Plan::cmdId()noexcept->std::int64_t { return imp_->command_id_; }
 	auto Plan::setCount(std::int64_t count)noexcept->void { imp_->count_ = count; }
@@ -734,7 +748,7 @@ namespace aris::plan{
 			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			// 求正解 //
-			p->kin_ret = model()->solverPool()[1].kinPos();
+			p->kin_ret = modelBase()->forwardKinematics();
 
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
@@ -750,9 +764,9 @@ namespace aris::plan{
 		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(this->param());
 
 		if (count() == 1){
-			for (Size i = 0; i < std::min(controller()->motorPool().size(), model()->motionPool().size()); ++i){
+			for (Size i = 0; i < std::min(controller()->motorPool().size(), modelBase()->inputPosSize()); ++i){
 				controller()->motorPool()[i].setTargetPos(controller()->motorPool().at(i).actualPos());
-				model()->motionPool()[i].setMp(controller()->motorPool().at(i).actualPos());
+				modelBase()->setInputPosAt(i, controller()->motorPool().at(i).actualPos());
 			}
 
 			param->is_rt_waiting_ready_.store(true);
@@ -799,22 +813,22 @@ namespace aris::plan{
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
 	auto Show::prepareNrt()->void{	
-		ee_pos_.resize(model()->outputPosSize());
+		ee_pos_.resize(modelBase()->outputPosSize());
 		for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; 
 	}
 	auto Show::executeRT()->int{
-		model()->getOutputPos(ee_pos_.data());
+		modelBase()->getOutputPos(ee_pos_.data());
 
 		master()->mout() << "controller pos: ";
 		for (auto &m : controller()->motorPool()){
 			master()->mout() << std::setprecision(15) << m.actualPos() << "   ";
 		}
 		master()->mout() << "\nmodel pos     : ";
-		for (int i = 0; i < model()->inputPosSize();++i) {
-			master()->mout() << std::setprecision(15) << model()->inputPosAt(i) << "   ";
+		for (int i = 0; i < modelBase()->inputPosSize();++i) {
+			master()->mout() << std::setprecision(15) << modelBase()->inputPosAt(i) << "   ";
 		}
 		master()->mout() << "\nmodel ee      : ";
-		for (int i = 0; i < model()->outputPosSize(); ++i) {
+		for (int i = 0; i < modelBase()->outputPosSize(); ++i) {
 			master()->mout() << std::setprecision(15) << ee_pos_[i] << "   ";
 		}
 		master()->mout() << std::endl;

@@ -397,6 +397,7 @@ namespace aris::server{
 				ret_plan[i] = plan;
 				plan->setSharedPtrForThis(plan);
 
+				plan->setChanelId(chanel);
 				plan->setCmdId(cmd_id);
 				plan->setCount(0);
 				plan->setBeginGlobalCount(0);

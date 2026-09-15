@@ -40,7 +40,7 @@ auto expect_motion_finished(
 	bool finished = false;
 
 	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.runOneStep(input.data());
+		auto ret = planner.getNextInput(input.data());
 		EXPECT_GE(ret, 0) << "Planner returned negative ret in " << scenario;
 		if (ret < 0) break;
 
@@ -77,46 +77,36 @@ auto insert_standard_line(aris::plan::MultimodelPlanner &planner) -> std::int64_
 	return node;
 }
 
-// 推进 runOneStep 指定步数；任何一步返回负数视为失败
+// 推进 getNextInput 指定步数；任何一步返回负数视为失败
 auto run_steps(aris::plan::MultimodelPlanner &planner, int steps) -> bool {
 	std::vector<double> p(planner.inputSize(), 0.0);
 	for (int i = 0; i < steps; ++i) {
-		if (planner.runOneStep(p.data()) < 0) return false;
+		if (planner.getNextInput(p.data()) < 0) return false;
 	}
 	return true;
 }
 
-// 持续暂停直到返回 0（Paused），paused_pos 为暂停位置
+// 请求暂停并推进 getNextInput 直到 Paused；paused_pos 为暂停位置
 auto pause_until_paused(aris::plan::MultimodelPlanner &planner, std::vector<double> &paused_pos) -> bool {
+	planner.requestPause();
 	std::vector<double> p(planner.inputSize(), 0.0);
 	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.pauseOneStep(p.data());
-		if (ret < 0) return false;
-		if (ret == 0) { paused_pos = p; return true; }
+		planner.getNextInput(p.data());
+		if (planner.state() == aris::plan::PlannerState::Paused) { paused_pos = p; return true; }
 	}
 	return false;
 }
 
-// 持续停止直到返回 0（Uninitialized）；before_final 为停止前最后一步位置，final_pos 为最终位置
+// 请求停止并推进 getNextInput 直到 Uninitialized；before_final 为停止前最后一步位置，final_pos 为最终位置
 auto stop_until_stopped(aris::plan::MultimodelPlanner &planner, std::vector<double> &before_final, std::vector<double> &final_pos) -> bool {
+	planner.requestStop();
 	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.stopOneStep(final_pos.data());
-		if (ret < 0) return false;
-		if (ret == 0) {
+		planner.getNextInput(final_pos.data());
+		if (planner.state() == aris::plan::PlannerState::Uninitialized) {
 			if (i == 0) before_final = final_pos;
 			return true;
 		}
 		before_final = final_pos;
-	}
-	return false;
-}
-
-// 持续移动到目标直到返回 0；final_pos 为最后输出
-auto move_to_target_until_done(aris::plan::MultimodelPlanner &planner, std::vector<double> &final_pos) -> bool {
-	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.moveToTargetOneStep(final_pos.data());
-		if (ret < 0) return false;
-		if (ret == 0) return true;
 	}
 	return false;
 }
@@ -243,26 +233,26 @@ TEST_F(MultimodelPlannerTest, InsertCircleMotionFinishes) {
 	EXPECT_EQ(final_input.size(), static_cast<std::size_t>(multi_model.inputPosSize()));
 }
 
-TEST_F(MultimodelPlannerTest, RunOneStepTransitionsToRunningThenIdle) {
+TEST_F(MultimodelPlannerTest, GetNextInputTransitionsToRunningThenIdle) {
 	ASSERT_GT(insert_standard_line(planner), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 
 	std::vector<double> p(planner.inputSize(), 0.0);
-	auto ret = planner.runOneStep(p.data());
+	auto ret = planner.getNextInput(p.data());
 	ASSERT_GE(ret, 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Running);
 
 	bool finished = false;
 	for (int i = 0; i < 50000; ++i) {
-		ret = planner.runOneStep(p.data());
+		ret = planner.getNextInput(p.data());
 		ASSERT_GE(ret, 0);
 		if (ret == 0) { finished = true; break; }
 	}
 	EXPECT_TRUE(finished);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 
-	// 队列已空：runOneStep 仍返回 0 并保持 Idle
-	EXPECT_EQ(planner.runOneStep(p.data()), 0);
+	// 队列已空：getNextInput 仍返回 0 并保持 Idle
+	EXPECT_EQ(planner.getNextInput(p.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 }
 
@@ -275,9 +265,9 @@ TEST_F(MultimodelPlannerTest, PauseFreezesMotionAndHoldsPosition) {
 	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
 
-	// 已暂停后 pauseOneStep 返回 0 且输出保持不变
-	std::vector<double> p(planner.inputSize(), 0.0);
-	EXPECT_EQ(planner.pauseOneStep(p.data()), 0);
+	// 已暂停后 getNextInput 返回 0 且输出保持不变
+	std::vector<double> p = pause_pos;
+	EXPECT_EQ(planner.getNextInput(p.data()), 0);
 	for (std::size_t i = 0; i < p.size(); ++i) {
 		EXPECT_NEAR(p[i], pause_pos[i], 1e-12);
 	}
@@ -297,21 +287,16 @@ TEST_F(MultimodelPlannerTest, ResumeReturnsToPausePositionThenContinues) {
 	for (auto &v : moved) v += 0.05;
 	multi_model.setSubInputPos(1, &sub_id, moved.data());
 
-	// 首次 resume：Paused → Resuming
-	std::vector<double> final_pos(planner.inputSize(), 0.0);
-	ASSERT_GT(planner.resumeOneStep(final_pos.data()), 0);
+	// 请求恢复：Paused → Resuming
+	ASSERT_EQ(planner.requestResume(), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Resuming);
 
-	// Resuming 状态：run / pause 均不可调用
-	EXPECT_EQ(planner.runOneStep(final_pos.data()), -1);
-	EXPECT_EQ(planner.pauseOneStep(final_pos.data()), -1);
-
-	// 继续恢复直到 Running
+	// 继续推进直到 Running
 	bool resumed = false;
+	std::vector<double> final_pos(planner.inputSize(), 0.0);
 	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.resumeOneStep(final_pos.data());
-		ASSERT_GE(ret, 0);
-		if (ret == 0) { resumed = true; break; }
+		planner.getNextInput(final_pos.data());
+		if (planner.state() == aris::plan::PlannerState::Running) { resumed = true; break; }
 	}
 	ASSERT_TRUE(resumed);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Running);
@@ -325,7 +310,7 @@ TEST_F(MultimodelPlannerTest, ResumeReturnsToPausePositionThenContinues) {
 	bool finished = false;
 	std::vector<double> p(planner.inputSize(), 0.0);
 	for (int i = 0; i < 50000; ++i) {
-		auto ret = planner.runOneStep(p.data());
+		auto ret = planner.getNextInput(p.data());
 		ASSERT_GE(ret, 0);
 		if (ret == 0) { finished = true; break; }
 	}
@@ -348,103 +333,52 @@ TEST_F(MultimodelPlannerTest, StopDeceleratesToZeroVelocity) {
 		EXPECT_NEAR(final_pos[i], before_final[i], 1e-9) << "stop should zero the velocity at dim " << i;
 	}
 
-	// 已停止后 stopOneStep 直接返回 0
+	// 已停止后 getNextInput 直接返回 0
 	std::vector<double> p(planner.inputSize(), 0.0);
-	EXPECT_EQ(planner.stopOneStep(p.data()), 0);
+	EXPECT_EQ(planner.getNextInput(p.data()), 0);
 }
 
-TEST_F(MultimodelPlannerTest, StepFunctionsRejectInvalidStates) {
+TEST_F(MultimodelPlannerTest, RequestFunctionsRejectInvalidStates) {
 	std::vector<double> p(planner.inputSize(), 0.0);
 
-	// init 后 → Idle：resume 不可调用，pause 无操作，stop → Uninitialized
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
-	EXPECT_EQ(planner.resumeOneStep(p.data()), -1);
-	EXPECT_EQ(planner.pauseOneStep(p.data()), 0);
-	EXPECT_EQ(planner.stopOneStep(p.data()), 0);
+	// SetUp 后为 Uninitialized：pause/resume 不可调用
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+	EXPECT_EQ(planner.requestPause(), -1);
+	EXPECT_EQ(planner.requestResume(), -1);
+	EXPECT_EQ(planner.requestStop(), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
-	// Uninitialized：run/pause/resume 均不可调用，stop 为无操作
-	EXPECT_EQ(planner.runOneStep(p.data()), -1);
-	EXPECT_EQ(planner.pauseOneStep(p.data()), -1);
-	EXPECT_EQ(planner.resumeOneStep(p.data()), -1);
-	EXPECT_EQ(planner.stopOneStep(p.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
-
-	// 重新初始化 → Idle
-	planner.init();
+	// 初始化 → Idle
+	ASSERT_EQ(planner.requestInit(), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 
-	// 启动运动 → Running
+	// Idle：resume/pause 不可调用，stop → Uninitialized
+	EXPECT_EQ(planner.requestResume(), -1);
+	EXPECT_EQ(planner.requestPause(), -1);
+	EXPECT_EQ(planner.requestStop(), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+
+	// 重新初始化并启动运动 → Running
+	ASSERT_EQ(planner.requestInit(), 0);
 	ASSERT_GT(insert_standard_line(planner), 0);
-	ASSERT_GT(planner.runOneStep(p.data()), 0);
+	ASSERT_GT(planner.getNextInput(p.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Running);
 
-	// Running：resume 不可调用
-	EXPECT_EQ(planner.resumeOneStep(p.data()), -1);
+	// Running：init 不可调用，resume 视为成功（已在运行）
+	EXPECT_EQ(planner.requestInit(), -1);
+	EXPECT_EQ(planner.requestResume(), 0);
 
 	// 暂停到 Paused
 	std::vector<double> pause_pos;
 	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
 
-	// Paused：run 不可调用
-	EXPECT_EQ(planner.runOneStep(p.data()), -1);
+	// Paused：init 不可调用，pause 视为成功（已暂停）
+	EXPECT_EQ(planner.requestInit(), -1);
+	EXPECT_EQ(planner.requestPause(), 0);
 
 	// 停止（任意状态可停）→ 最终 Uninitialized
 	std::vector<double> before(planner.inputSize(), 0.0), curr(planner.inputSize(), 0.0);
 	ASSERT_TRUE(stop_until_stopped(planner, before, curr));
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
-}
-
-TEST_F(MultimodelPlannerTest, MoveToTargetFromIdleReturnsToIdle) {
-	// 读取当前关节位置作为起点
-	aris::Size sub_id = 0;
-	std::vector<double> start(planner.inputSize(), 0.0);
-	multi_model.getSubInputPos(1, &sub_id, start.data());
-
-	std::vector<double> target = start;
-	for (auto &v : target) v += 0.1;
-	planner.setMoveTarget(target.data());
-
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
-
-	std::vector<double> p(planner.inputSize(), 0.0);
-	EXPECT_GT(planner.moveToTargetOneStep(p.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::MovingToTarget);
-
-	ASSERT_TRUE(move_to_target_until_done(planner, p));
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
-
-	for (std::size_t i = 0; i < target.size(); ++i) {
-		EXPECT_NEAR(p[i], target[i], 1e-3) << "move target mismatch at dim " << i;
-	}
-}
-
-TEST_F(MultimodelPlannerTest, MoveToTargetFromPausedReturnsToPaused) {
-	ASSERT_GT(insert_standard_line(planner), 0);
-	ASSERT_TRUE(run_steps(planner, 200));
-
-	std::vector<double> pause_pos;
-	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
-
-	std::vector<double> target = pause_pos;
-	for (auto &v : target) v += 0.1;
-	planner.setMoveTarget(target.data());
-
-	std::vector<double> p(planner.inputSize(), 0.0);
-	EXPECT_GT(planner.moveToTargetOneStep(p.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::MovingToTarget);
-
-	// MovingToTarget 状态：run/pause/resume 均不可调用
-	EXPECT_EQ(planner.runOneStep(p.data()), -1);
-	EXPECT_EQ(planner.pauseOneStep(p.data()), -1);
-	EXPECT_EQ(planner.resumeOneStep(p.data()), -1);
-
-	ASSERT_TRUE(move_to_target_until_done(planner, p));
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
-
-	for (std::size_t i = 0; i < target.size(); ++i) {
-		EXPECT_NEAR(p[i], target[i], 1e-3) << "move target mismatch at dim " << i;
-	}
 }

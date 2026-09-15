@@ -147,32 +147,8 @@ namespace aris::plan {
 	auto PlannerDispacher::getNextInput(int chanel, double* p) -> std::int64_t {
 		auto &c = imp_->chanel_data_vec_[chanel];
 		
-		// get input from planner //
-		std::int64_t ret = 0;
-		switch (c->planner.state()) {
-		case PlannerState::Uninitialized:
-		case PlannerState::Paused:
-			ret = 0;
-			break;
-		case PlannerState::Idle:
-		case PlannerState::Running:
-			ret = c->planner.runOneStep(c->sub_input_pos_.data());
-			break;
-		case PlannerState::Pausing:
-			ret = c->planner.pauseOneStep(c->sub_input_pos_.data());
-			break;
-		case PlannerState::Resuming:
-			ret = c->planner.resumeOneStep(c->sub_input_pos_.data());
-			break;
-		case PlannerState::Stopping:
-			ret = c->planner.stopOneStep(c->sub_input_pos_.data());
-			break;
-		case PlannerState::MovingToTarget:
-			ret = c->planner.moveToTargetOneStep(c->sub_input_pos_.data());
-			break;
-		default:
-			break;
-		}
+		// get input from planner（状态机调度已移入 MultimodelPlanner::getNextInput）//
+		auto ret = c->planner.getNextInput(c->sub_input_pos_.data());
 
 		
 		// apply transfer matrix //

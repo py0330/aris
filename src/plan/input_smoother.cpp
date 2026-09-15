@@ -747,7 +747,8 @@ namespace aris::plan {
 					
 					auto ds = (s2_ - s1_) / dt_;
 					double l = std::max(last_a_ + k_ * ds, -ds/dt_); // ds 不能小于 0 
-					double r = std::min({ (1.0 - ds) / dt_, (ds-ds0_)/dt_ + max_d3s_ * dt_, max_d2s_ }); // ds 最大不能超过 1
+					double r = std::min({ (1.0 - ds) / dt_, std::max((ds-ds0_)/dt_, 0.0) + max_d3s_ * dt_, max_d2s_ }); // ds 最大不能超过 1
+					//double r = std::min({ (1.0 - ds) / dt_, max_d2s_ }); // 在降速时，可能减加速度很大，导致未来无法加速回来，暂删掉 max_d3s_ 的影响
 
 					// 考虑到 init 时，ii中的数据是缓慢加进来的，因此必须在到达插值区前就可以降速到0
 					// ii 插值区间内的插值函数随着数据的插入可能会改变，因此 T_ 应该小一点
@@ -755,7 +756,7 @@ namespace aris::plan {
 						T_ = std::min(ii_.finalS() - ii_.interpolationSize() * ii_.dt() - s2_, look_head_size_ * dt_);
 					}
 					else {
-						T_ = std::max(ii_.finalS() - s2_, T_); // 至少维持上次的值
+						T_ = std::max((ii_.finalS() - s2_)/std::max(ds, 1e-6), T_); // 至少维持上次的值
 						T_ = std::min(T_, look_head_size_ * dt_); // 最大不能超过前瞻周期
 					}
 
@@ -790,7 +791,8 @@ namespace aris::plan {
 
 					s1_ = s2_;
 					s2_ = s3;
-					ds0_ = (s2_ - s1_)/dt_;
+					//ds0_ = (s2_ - s1_)/dt_;
+					ds0_ = ds;
 				}
 			}
 			

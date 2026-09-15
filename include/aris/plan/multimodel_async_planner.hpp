@@ -64,15 +64,13 @@ namespace aris::plan{
 	/// - Resuming：正在恢复运行（speed ratio 仍为 0），机器人先平滑运动回暂停位置；
 	/// - Error：运行中出现错误。
 	///
-	/// 各操作的可调用状态与结束状态（返回 0 表示进入终态）：
-	/// - runOneStep()：仅在 Idle/Running 下可调用；结束后进入 Idle（返回 0）或 Running；
-	/// - stopOneStep()：任意状态均可调用；结束后进入 Stopping 或 Uninitialized（返回 0）；
-	/// - pauseOneStep()：仅在 Idle/Paused/Pausing/Running 下可调用；
-	///   Idle 下保持不变（返回 0）；其余进入 Paused（返回 0）或 Pausing（返回非 0）；
-	/// - resumeOneStep()：仅在 Paused/Resuming 下可调用；结束后进入 Resuming
-	///   或 Running（返回 0）；
-	/// - moveToTargetOneStep()：仅在 Uninitialized/Idle/Paused/MovingToTarget 下可调用；
-	///   结束后切换回进入前的状态（返回 0）或保持 MovingToTarget（返回非 0）。
+	/// 各操作的语义：
+	/// - getNextInput()：根据当前状态调度到内部 run/pause/resume/stop/moveToTarget
+	///   各 OneStep，并在其返回 0 时切换终态；返回规划器节点 id（0 表示执行完毕）；
+	/// - requestInit()：Uninitialized → Idle；
+	/// - requestStop()：运动状态 → Stopping（平滑减速），静止状态（Idle/Paused）→ Uninitialized；
+	/// - requestPause()：Running → Pausing；
+	/// - requestResume()：Paused → Resuming。
 	enum class PlannerState {
 		Uninitialized,	///< 未初始化（构造后、或停止后）
 		Idle,		///< 已初始化且停止
@@ -167,44 +165,90 @@ namespace aris::plan{
 		auto targetSpeedRatio() -> double;
 		auto actualSpeedRatio() -> double;
 
-		/// @brief 请求停止：将状态机置为 Stopping，由后续 stopOneStep 完成平滑减速
-		auto requestStop() -> void;
+		/// @brief 并发设计（线程模型）
+		///
+		/// 状态机按「最多两个线程、两类角色」设计，线程安全依赖
+		/// `std::atomic<PlannerState> state_` 的 CAS 语义：
+		///
+		/// - onestep 系列（实时线程，串行）：
+		///   `getNextInput`（内部调用 runOneStep / pauseOneStep / resumeOneStep /
+		///   stopOneStep / moveToTargetOneStep 各 OneStep）。由同一个实时控制线程
+		///   循环调用，彼此不会并发执行；
+		///
+		/// - request 系列（非实时线程）：
+		///   `requestInit` / `requestStop` / `requestPause` / `requestResume`。
+		///   由非实时线程调用，且调用方保证同一时刻最多只有一个 request 函数
+		///   在执行——即两个 request 系列函数不可能在不同线程上并发；
+		///
+		/// - 因此系统内最多同时只有两个线程碰撞：一个 request 线程 + 一个
+		///   onestep 线程。
+		///
+		/// 状态切换职责划分（两类函数各管各的边，互不重叠）：
+		///
+		/// 1. 实时循环内的 getNextInput（onestep 调度）负责「运动推进」相关的切换：
+		///    - Idle            → Running        ：首拍 runOneStep 产生运动（ret != 0）
+		///    - Running         → Idle           ：runOneStep 返回 0（轨迹执行完毕）
+		///    - Pausing         → Paused         ：pauseOneStep 返回 0（速度降到 0）
+		///    - Resuming        → Running        ：resumeOneStep 返回 0（恢复完成）
+		///    - Stopping        → Uninitialized  ：stopOneStep 返回 0（停止完成）
+		///    - MovingToTarget  → 进入前状态     ：moveToTargetOneStep 返回 0（到达目标，恢复 return_state_）
+		///    它的终态只可能是：Running、Idle、Paused、Uninitialized
+		///    （过程中可短暂停留在 Pausing / Resuming / Stopping / MovingToTarget）。
+		///
+		/// 2. request 系列（非实时线程）负责「外部请求」相关的切换：
+		///    - Uninitialized          → Idle           ：requestInit
+		///    - Idle                   → Uninitialized  ：requestStop（静止状态直接清除）
+		///    - Paused                 → Uninitialized  ：requestStop（静止状态直接清除）
+		///    - Running                → Stopping       ：requestStop（运动状态平滑停止）
+		///    - MovingToTarget         → Stopping       ：requestStop（运动状态平滑停止）
+		///    - Pausing                → Stopping       ：requestStop（暂停中转为停止）
+		///    - Resuming               → Stopping       ：requestStop（恢复中转为停止）
+		///    - Stopping               → Stopping       ：requestStop（保持停止流程）
+		///    - Error                  → Stopping       ：requestStop（错误状态转为停止）
+		///    - Running                → Pausing        ：requestPause
+		///    - Paused                 → Resuming       ：requestResume
+		///    它的切换结果只可能是：Idle、Stopping、Pausing、Resuming、Uninitialized
+		///    （各 request 函数直接在自己的函数体内用 state_ 的 CAS 完成；
+		///      其中 requestStop 对静止状态直达 Uninitialized，对运动状态切 Stopping）。
+		///
+		/// 同步要点：
+		/// - request 系列的状态写入在各 request 函数内直接使用 state_ 的 CAS；
+		/// - `requestResume` 先构建 resume scurve（写 `resume_from_pos_`、
+		///   `resume_scurve_params_`、`resume_t_`、`resume_T_`），再 CAS 到
+		///   `Resuming`。借助原子操作的 happens-before 关系，保证 onestep 线程
+		///   观察到 Resuming 时这些数据已就绪；
+		/// - 其余 request 函数只做一次 CAS，不触碰 onestep 线程正在读写的位置/
+		///   速度缓冲，因此无需额外加锁。
+		///
+
+		/// @brief 请求初始化：仅将状态机从 Uninitialized 置为 Idle
+		/// @return 0 成功，-1 失败
+		auto requestInit() -> std::int64_t;
+		/// @brief 请求停止：运动状态置为 Stopping（由后续 stopOneStep 平滑减速）；静止状态（Idle/Paused）直接置为 Uninitialized
+		/// @return 0 成功，-1 失败
+		auto requestStop() -> std::int64_t;
 		/// @brief 请求暂停：仅将状态机置为 Pausing
-		auto requestPause() -> void;
+		/// @return 0 成功，-1 失败
+		auto requestPause() -> std::int64_t;
 		/// @brief 请求恢复：仅将状态机置为 Resuming
-		auto requestResume() -> void;
+		/// @return 0 成功，-1 失败
+		auto requestResume() -> std::int64_t;
 
 		////////////////// PART 3 RT operation ////////////////
 		
 		// 暂停/恢复控制 //
 		/// @brief 获取当前暂停/恢复状态
 		auto state() const -> PlannerState;
-		/// @brief 执行一步暂停过程（平滑减速到零），每次调用推进一步
+		/// @brief 根据当前状态执行一步（内部调度到 run/pause/resume/stop/moveToTarget 各 OneStep）
 		/// @param input_pos 输出电机位置（inputSize 维）
-		/// @return 1 表示仍在减速中，0 表示已完全暂停（状态切换为 Paused）
-		auto pauseOneStep(double* input_pos) -> std::int64_t;
-		/// @brief 执行一步恢复过程（先平滑回到暂停位置，再加速回目标速度）
-		/// @param input_pos 输出电机位置（inputSize 维）
-		/// @return 1 表示仍在恢复中，0 表示已完全恢复（状态切换为 Running）
-		auto resumeOneStep(double* input_pos) -> std::int64_t;
-
-
-		// 正常运行 //
-		auto runOneStep(double* p) -> std::int64_t;
-
-		auto stopOneStep(double* p) -> std::int64_t;
-
-
+		/// @return 规划器节点 id，0 表示执行完毕
+		auto getNextInput(double* input_pos) -> std::int64_t;
 
 		// 移动到目标位置 //
 		/// @brief 设置移动目标（关节空间，inputSize 维）
 		auto setMoveTarget(const double* input_pos) -> void;
 		/// @brief 获取移动目标（关节空间，inputSize 维）
 		auto moveTarget() -> const double*;
-		/// @brief 执行一步移动到目标的过程，每次调用推进一步
-		/// @param input_pos 输出电机位置（inputSize 维）
-		/// @return 1 表示仍在运动中，0 表示已到达目标并切换回进入前的状态
-		auto moveToTargetOneStep(double* input_pos) -> std::int64_t;
 
 		// 清除错误 //
 		auto clearError() -> void;
@@ -218,6 +262,11 @@ namespace aris::plan{
 		/// @param chanel 通道
 		/// @return 逆运动学返回值，一般来说 ret < 0 为报错
 		auto ikRet() -> std::int64_t;
+
+		auto currnetId()->std::int64_t;
+		
+		// 
+		auto finalId()->std::int64_t;
 
 		/// @brief 获取当前节点剩余时间
 		/// @return 剩余时间

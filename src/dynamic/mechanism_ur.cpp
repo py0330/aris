@@ -116,12 +116,11 @@ namespace aris::dynamic{
 		// 开始求1轴 //
 		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
 		// 事实上这里可以有2个解
-		//if (W1 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) 
-		//	return -1;
 
 		double xy_square_sum = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]);
 		if (std::abs(W1) > xy_square_sum) return -1;//工作空间以外
 
+		// 【重要】current input 影响选择 //
 		if (xy_square_sum < zero_check) {
 			q[0] = current_q[0];
 		}
@@ -141,8 +140,9 @@ namespace aris::dynamic{
 		s_pe2pm(std::array<double, 6>{0, 0, 0, q[0], 0, 0}.data(), R1_pm, "321");
 		s_inv_pm_dot_pm(R1_pm, D_in_A, R23456_pm);
 		s_pm2pe(R23456_pm, R23456_pe, "232");
-		if (R23456_pe[4] < 1e-6) // 为了去除奇异点，1e-6为测试出来的值
-		{
+		
+		// 【重要】current input 影响选择 //
+		if (R23456_pe[4] < 1e-6) {// 为了去除奇异点，1e-6为测试出来的值
 			R23456_pe[3] = R23456_pe[3] + R23456_pe[5] - current_q[5];
 			R23456_pe[5] = current_q[5];
 		}
@@ -150,10 +150,8 @@ namespace aris::dynamic{
 			R23456_pe[3] = -(R23456_pe[5] - R23456_pe[3] - current_q[5]);
 			R23456_pe[5] = current_q[5];
 		}
-
 		// 选根
-		else if (which_root & 0x02)
-		{
+		else if (which_root & 0x02){
 			R23456_pe[3] = R23456_pe[3] > PI ? R23456_pe[3] - PI : R23456_pe[3] + PI;
 			R23456_pe[4] = 2 * PI - R23456_pe[4];
 			R23456_pe[5] = R23456_pe[5] > PI ? R23456_pe[5] - PI : R23456_pe[5] + PI;
@@ -178,14 +176,12 @@ namespace aris::dynamic{
 			return -2;
 
 
-		if (which_root & 0x01)
-		{
+		if (which_root & 0x01){
 			q[2] = aris::PI + std::acos((L1 * L1 + L2 * L2 - l_square) / (2 * L1 * L2));
 			q[1] = std::acos((l_square + L1 * L1 - L2 * L2) / (2 * l * L1)) - std::atan2(B_pos[2], B_pos[0]);
 			q[3] = R23456_pe[3] - q[1] - q[2];
 		}
-		else
-		{
+		else{
 			q[2] = aris::PI - std::acos((L1 * L1 + L2 * L2 - l_square) / (2 * L1 * L2));
 			q[1] = -std::acos((l_square + L1 * L1 - L2 * L2) / (2 * l * L1)) - std::atan2(B_pos[2], B_pos[0]);
 			q[3] = R23456_pe[3] - q[1] - q[2];

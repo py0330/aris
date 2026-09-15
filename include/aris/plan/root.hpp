@@ -132,6 +132,7 @@ namespace aris::plan{
 		auto uint64Param(std::string_view param_name)->std::uint64_t;
 		auto matrixParam(std::string_view param_name)->aris::core::Matrix;
 		auto matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix;
+		auto SizeVectorParam(std::string_view param_name)->std::vector<aris::Size>;
 
 		// 指令字符串 //
 		auto command()noexcept->aris::core::Command &;
@@ -160,6 +161,8 @@ namespace aris::plan{
 		auto mout()->aris::core::MsgStream & { return master()->mout(); }
 
 		// 规划与统计相关 //
+		auto setChanelId(std::int32_t chanel_id)noexcept->void;
+		auto chanelId()noexcept->std::int32_t;
 		auto setCmdId(std::int64_t cmd_id)noexcept->void;
 		auto cmdId()noexcept->std::int64_t;
 		auto setCount(std::int64_t count)noexcept->void;

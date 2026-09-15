@@ -259,9 +259,12 @@ namespace aris::dynamic{
 			double q2_tem[2];
 			s_sov_theta(-pos_when_q1q2_equal_zero[0], pos_when_q1q2_equal_zero[2], D_in_A[11], q2_tem);
 
-			if (which_root & 0x02) {
+			// 【重要】current input 影响选择 //
+			if(std::abs(-pos_when_q1q2_equal_zero[0]) < 1e-6 && std::abs(pos_when_q1q2_equal_zero[2]) < 1e-6){
+				q[1] = current_input[1];
+			}
+			else if (which_root & 0x02) {
 				q[1] = q2_tem[0];
-				
 			}
 			else{
 				q[1] = q2_tem[1];
@@ -275,7 +278,15 @@ namespace aris::dynamic{
 			double c1 = D_in_A[3];
 			double c2 = D_in_A[7];
 
-			q[0] = std::atan2(b1*c2-b2*c1, c1*a2-c2*a1);
+			// 【重要】current input 影响选择 //
+			// q0 退化：腕心 D 落在基座 z 轴上时 atan2 分子分母都≈0，结果由噪声决定。
+			// 此时用种子 current_input[0] 保持零空间连续（与 q1 奇异点处理一致）//
+			if (std::abs(c1) < 1e-6 && std::abs(c2) < 1e-6) {
+				q[0] = current_input[0];
+			}
+			else {
+				q[0] = std::atan2(b1*c2-b2*c1, c1*a2-c2*a1);
+			}
 		}
 
 		// 求 q5 q6 q7 //
@@ -285,15 +296,24 @@ namespace aris::dynamic{
 		s_mm(3, 3, 3, rm3, tem, rm4);
 		s_mm(3, 3, 3, rm4, ColMajor(3), D_in_A, 4, rm_E_wrt_4, 3);
 		s_rm2re(rm_E_wrt_4, q + 4, "323");
-		if (which_root & 0x04) {
+
+		// 【重要】current input 影响选择 //
+		if (q[5] < 1e-6) {// 为了去除奇异点，1e-6为测试出来的值
+			q[4] = q[4] + q[6] - current_input[6];
+			q[6] = current_input[6];
+		}
+		else if (q[5] > aris::PI - 1e-6) {// 1e-6为测试出来的值
+			q[4] = -(q[6] - q[4] - current_input[6]);
+			q[6] = current_input[6];
+		}
+		else if (which_root & 0x04) {
 			q[4] = q[4] > PI ? q[4] - PI : q[4] + PI;
 			q[5] = 2 * PI - q[5];
 			q[6] = q[6] > PI ? q[6] - PI : q[6] + PI;
 		}
 
 		// 添加所有的偏移 //
-		for (int i = 0; i < 7; ++i)
-		{
+		for (int i = 0; i < 7; ++i){
 			while (q[i] > PI) q[i] -= 2 * PI;
 			while (q[i] < -PI) q[i] += 2 * PI;
 		}
