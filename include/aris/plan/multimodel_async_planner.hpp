@@ -57,16 +57,18 @@ namespace aris::plan{
 	/// - Uninitialized：未初始化（构造后、或停止后）；
 	/// - Idle：已初始化且停止；
 	/// - Running：正常运行中；
-	/// - MovingToTarget：正在运动到目标位置，运动完成后切换回进入前的状态；
 	/// - Stopping：正在减速停止（speed ratio 趋向 0），停止完成后进入 Uninitialized；
 	/// - Pausing：正在减速暂停（speed ratio 趋向 0），降到 0 后进入 Paused；
 	/// - Paused：已完全暂停，机器人可能被移动到其他位置；
 	/// - Resuming：正在恢复运行（speed ratio 仍为 0），机器人先平滑运动回暂停位置；
+	/// - PausedMoving：正在移动到目标（独立管线），完成后回到 Paused；
+	/// - UninitializedMoving：正在移动到目标（独立管线），完成后回到 Uninitialized；
 	/// - Error：运行中出现错误。
 	///
 	/// 各操作的语义：
-	/// - getNextInput()：根据当前状态调度到内部 run/pause/resume/stop/moveToTarget
-	///   各 OneStep，并在其返回 0 时切换终态；返回规划器节点 id（0 表示执行完毕）；
+	/// - getNextInput()：根据当前状态调度到内部 run/pause/resume/stop 各 OneStep
+	///   以及 move-to-target 的专用管线（tg/is/sr），并在其返回 0 时切换终态；
+	///   返回规划器节点 id（0 表示执行完毕）；
 	/// - requestInit()：Uninitialized → Idle；
 	/// - requestStop()：运动状态 → Stopping（平滑减速），静止状态（Idle/Paused）→ Uninitialized；
 	/// - requestPause()：Running → Pausing；
@@ -75,11 +77,12 @@ namespace aris::plan{
 		Uninitialized,	///< 未初始化（构造后、或停止后）
 		Idle,		///< 已初始化且停止
 		Running,	///< 正常运行中
-		MovingToTarget,	///< 正在运动到目标位置，运动完成后切换回进入前的状态
 		Stopping,	///< 正在减速停止（speed ratio 趋向 0），清除当前规划队列
 		Pausing,	///< 正在减速暂停（speed ratio 趋向 0），不清除当前规划队列，后续可恢复运行
 		Paused,		///< 已完全暂停，当前状态下机器人可能移动到其他位置，后续可恢复运行
 		Resuming,	///< 正在恢复运行（speed ratio 仍为0，机器人运动到暂停的位置）
+		PausedMoving,		///< 正在移动到目标（独立管线），完成后回到 Paused
+		UninitializedMoving,	///< 正在移动到目标（独立管线），完成后回到 Uninitialized
 		Error,		///< 运行中出现错误
 	};
 
@@ -166,7 +169,7 @@ namespace aris::plan{
 		///
 		/// - onestep 系列（实时线程，串行）：
 		///   `getNextInput`（内部调用 runOneStep / pauseOneStep / resumeOneStep /
-		///   stopOneStep / moveToTargetOneStep 各 OneStep）。由同一个实时控制线程
+		///   stopOneStep 各 OneStep）。由同一个实时控制线程
 		///   循环调用，彼此不会并发执行；
 		///
 		/// - request 系列（非实时线程）：
@@ -185,18 +188,21 @@ namespace aris::plan{
 		///    - Pausing         → Paused         ：pauseOneStep 返回 0（速度降到 0）
 		///    - Resuming        → Running        ：resumeOneStep 返回 0（恢复完成）
 		///    - Stopping        → Uninitialized  ：stopOneStep 返回 0（停止完成）
-		///    - MovingToTarget  → 进入前状态     ：moveToTargetOneStep 返回 0（到达目标，恢复 return_state_）
+		///    - PausedMoving    → Paused         ：move 专用管线返回 0（到达目标）
+		///    - UninitializedMoving → Uninitialized ：move 专用管线返回 0（到达目标）
 		///    它的终态只可能是：Running、Idle、Paused、Uninitialized
-		///    （过程中可短暂停留在 Pausing / Resuming / Stopping / MovingToTarget）。
+		///    （过程中可短暂停留在 Pausing / Resuming / Stopping /
+		///     PausedMoving / UninitializedMoving）。
 		///
 		/// 2. request 系列（非实时线程）负责「外部请求」相关的切换：
 		///    - Uninitialized          → Idle           ：requestInit
 		///    - Idle                   → Uninitialized  ：requestStop（静止状态直接清除）
 		///    - Paused                 → Uninitialized  ：requestStop（静止状态直接清除）
 		///    - Running                → Stopping       ：requestStop（运动状态平滑停止）
-		///    - MovingToTarget         → Stopping       ：requestStop（运动状态平滑停止）
 		///    - Pausing                → Stopping       ：requestStop（暂停中转为停止）
 		///    - Resuming               → Stopping       ：requestStop（恢复中转为停止）
+		///    - PausedMoving           → Stopping       ：requestStop（移动中转为停止）
+		///    - UninitializedMoving    → Stopping       ：requestStop（移动中转为停止）
 		///    - Stopping               → Stopping       ：requestStop（保持停止流程）
 		///    - Error                  → Stopping       ：requestStop（错误状态转为停止）
 		///    - Running                → Pausing        ：requestPause
@@ -238,16 +244,28 @@ namespace aris::plan{
 		// 暂停/恢复控制 //
 		/// @brief 获取当前暂停/恢复状态
 		auto state() const -> PlannerState;
-		/// @brief 根据当前状态执行一步（内部调度到 run/pause/resume/stop/moveToTarget 各 OneStep）
+		/// @brief 根据当前状态执行一步（内部调度到 run/pause/resume/stop 各 OneStep 及 move 专用管线）
 		/// @param input_pos 输出电机位置（inputSize 维）
 		/// @return 规划器节点 id，0 表示执行完毕
 		auto getNextInput(double* input_pos) -> std::int64_t;
 
-		// 移动到目标位置 //
-		/// @brief 设置移动目标（关节空间，inputSize 维）
-		auto setMoveTarget(const double* input_pos) -> void;
-		/// @brief 获取移动目标（关节空间，inputSize 维）
-		auto moveTarget() -> const double*;
+		// 移动到目标位置（独立管线：专用 tg/is/sr，单指令，不插入主队列）//
+		/// @brief 关节空间移动到目标（MoveAbsJ，zone=0）。
+		/// 仅允许从 Uninitialized（→UninitializedMoving）或 Paused（→PausedMoving）启动；
+		/// 已在 moving 状态时返回 -1（不能重复插入）。
+		/// @param joint_pos 目标关节位置（inputSize 维）
+		/// @param joint_v/joint_a/joint_j 关节速度/加速度/加加速度（inputSize 维）
+		/// @return 1 成功，<0 失败
+		auto moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t;
+
+		/// @brief 笛卡尔直线移动到目标（Line，zone=0），状态约束同 moveToTargetJoint。
+		/// @param tw 工具/工件配对
+		/// @param tw_pos 目标位置（tool/wobj 坐标系，outputPosSize 维）
+		/// @param vel/acc/jerk 末端速度/加速度/加加速度（outputPosMagSize 维）
+		/// @return 1 成功，<0 失败
+		auto moveToTargetLine(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
+		/// @brief 笛卡尔直线移动到目标（字符串工具/工件重载）
+		auto moveToTargetLine(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
 
 		// 清除错误 //
 		auto clearError() -> void;

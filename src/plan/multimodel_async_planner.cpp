@@ -520,12 +520,13 @@ namespace aris::plan {
 		double *this_vel_{nullptr}, *last_vel_{nullptr};
 		double *this_acc_{nullptr};
 
-		// move-to-target 状态机数据 //
-		PlannerState return_state_{ PlannerState::Uninitialized };
-		double* move_target_pos_{ nullptr };
-		SCurveParam* move_scurve_params_{ nullptr };
-		double move_t_{ 0.0 };
-		double move_T_{ 0.0 };
+		// move-to-target 专用管线（独立于主队列，单指令）//
+		// 与主管线一致：move_inv_tg_（笛卡尔，Line）/ move_fwd_tg_（关节，MoveAbsJ）各自只 allocate 一次 //
+		TrajectoryGenerator move_inv_tg_, move_fwd_tg_;
+		InputSmoother move_is_;
+		SpeedRegulator move_sr_;
+		MAPNode move_node_;
+		double* move_input_cache_{ nullptr }; // 反解失败时的关节位置缓存 //
 
 		std::vector<char> mem_;
 
@@ -561,8 +562,7 @@ namespace aris::plan {
 			core::allocMem(mem_size, pause_pos_, input_psize_);
 			core::allocMem(mem_size, resume_from_pos_, input_psize_);
 			core::allocMem(mem_size, resume_scurve_params_, input_psize_);
-			core::allocMem(mem_size, move_target_pos_, input_psize_);
-			core::allocMem(mem_size, move_scurve_params_, input_psize_);
+			core::allocMem(mem_size, move_input_cache_, input_psize_);
 
 			mem_.resize(mem_size, char(0));
 
@@ -588,8 +588,7 @@ namespace aris::plan {
 			pause_pos_ = core::getMem(mem_.data(), pause_pos_);
 			resume_from_pos_ = core::getMem(mem_.data(), resume_from_pos_);
 			resume_scurve_params_ = core::getMem(mem_.data(), resume_scurve_params_);
-			move_target_pos_ = core::getMem(mem_.data(), move_target_pos_);
-			move_scurve_params_ = core::getMem(mem_.data(), move_scurve_params_);
+			move_input_cache_ = core::getMem(mem_.data(), move_input_cache_);
 
 			// 填充不缩放的限幅（原始量纲）//
 			std::fill_n(max_poss_, input_psize_, 1e10);
@@ -640,6 +639,18 @@ namespace aris::plan {
 
 			is_.allocateMemory();
 			sr_.allocateMemory();
+
+			// move 专用管线 //
+			move_is_.setInputSize(input_psize_);
+			move_sr_.setInputSize(input_psize_);
+			move_is_.allocateMemory();
+			move_sr_.allocateMemory();
+
+			move_node_ = MAPNode(0, MAPNodeType::CartesianInitPos, ee_size_, output_psize_, output_vdim_, input_psize_, input_vdim_);
+			move_inv_tg_.setPosTypes(ee_pos_types);
+			move_inv_tg_.allocateMemory();
+			move_fwd_tg_.setPosTypes(input_pos_types);
+			move_fwd_tg_.allocateMemory();
 
 			// 设置回调 //
 			is_.setInputGenerator([this](double* p)->std::int64_t {
@@ -764,8 +775,7 @@ namespace aris::plan {
 				}
 
 				// switch node and return //
-				if(is_switch_node)
-					get_id_.store(current_tg_id + 1);
+				get_id_ = is_switch_node ? current_tg_id + 1 : current_tg_id;
 				return get_id;
 			});
 
@@ -773,8 +783,32 @@ namespace aris::plan {
 			sr_.setInputGenerator([this](double* p)->std::int64_t {
 				return is_.getNextInput(p);
 			});
-			
-			
+
+			// move 专用管线回调：单节点，推进 move_tg_ 并（笛卡尔时）反解输出关节位置 //
+			move_is_.setInputGenerator([this](double* p)->std::int64_t {
+				if (move_node_.type_ == MAPNodeType::Line) {
+					tg_ret_ = move_inv_tg_.getEePosAndMoveDt(tw_pos_);
+					tw_rt_.selectTw(move_node_.tools(), move_node_.wobjs());
+					tw_rt_.setTwPos(tw_pos_);
+					tw_rt_.getEePos(ee_pos_);
+					ik_ret_ = model_->subInverseKinematics(
+						sub_id_list_.size(), sub_id_list_.data(),
+						ee_pos_, p, move_node_.whichInverseRoots(), move_node_.begJointPos());
+					if (ik_ret_ >= 0)
+						std::copy(p, p + input_psize_, move_input_cache_);
+					else
+						std::copy(move_input_cache_, move_input_cache_ + input_psize_, p);
+					return tg_ret_;
+				}
+				else {
+					tg_ret_ = move_fwd_tg_.getEePosAndMoveDt(p);
+					std::copy(p, p + input_psize_, move_input_cache_);
+					return tg_ret_;
+				}
+			});
+			move_sr_.setInputGenerator([this](double* p)->std::int64_t {
+				return move_is_.getNextInput(p);
+			});
 		}
 		auto init() -> void {
 			// ees 相关 //
@@ -932,63 +966,6 @@ namespace aris::plan {
 
 			// 设置：走完 → 0（状态切换为 Running），否则返回暂停时的节点 id //
 			return resume_t_ >= resume_T_ ? 0 : paused_tg_ret_;
-		};
-
-		auto moveToTargetOneStep(double* p) -> std::int64_t {
-			// 检查：仅在 Uninitialized / Idle / Paused / MovingToTarget 下可调用 //
-			if (state_ != PlannerState::Uninitialized && state_ != PlannerState::Idle &&
-				state_ != PlannerState::Paused && state_ != PlannerState::MovingToTarget)
-				return -1;
-
-			// 首次进入：保存原状态，构建从当前位置到目标的 scurve //
-			if (state_ != PlannerState::MovingToTarget) {
-				return_state_ = state_.load();
-				const auto n = input_psize_;
-
-				// 当前位置读取 model 的 input（借用输出缓冲 p）//
-				model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-
-				for (aris::Size i = 0; i < n; ++i) {
-					move_scurve_params_[i].pa_ = p[i];
-					move_scurve_params_[i].pb_ = move_target_pos_[i];
-					move_scurve_params_[i].vc_max_ = max_vels_[i];
-					move_scurve_params_[i].a_ = max_accs_[i];
-					move_scurve_params_[i].j_ = max_jerks_[i];
-				}
-
-				aris::plan::s_scurve_make(n, move_scurve_params_, inv_tg1_.dt());
-				move_t_ = 0.0;
-				move_T_ = n > 0 ? move_scurve_params_[0].T_ : 0.0;
-
-				// 设置：从进入前状态 CAS 到 MovingToTarget（返回非 0）//
-				auto cur = return_state_;
-				state_.compare_exchange_strong(cur, PlannerState::MovingToTarget);
-				return 1;
-			}
-
-			// MovingToTarget：沿 scurve 走一步 //
-			const auto n = input_psize_;
-			for (aris::Size i = 0; i < n; ++i) {
-				aris::plan::LargeNum pos;
-				aris::plan::s_scurve_at(move_scurve_params_[i], move_t_, &pos);
-				p[i] = static_cast<double>(pos);
-			}
-			move_t_ += inv_tg1_.dt();
-
-			// 调用正解更新模型的当前位置 //
-			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-			// 记录最新 input //
-			record_input(p);
-
-			// 设置：走完 → 恢复进入前的状态（返回 0），否则保持 MovingToTarget（返回非 0）//
-			if (move_t_ >= move_T_) {
-				auto cur = PlannerState::MovingToTarget;
-				state_.compare_exchange_strong(cur, return_state_);
-				return 0;
-			}
-			return 1;
 		};
 
 		// 工具和工件解析函数：根据 tool_wobjs 填充 tools 和 wobjs //
@@ -1367,6 +1344,112 @@ namespace aris::plan {
 			ins_id_++;
 			return ins_id;
 		}
+		// move-to-target：独立管线（专用 tg/is/sr），单指令，不插入主队列 //
+		// 仅允许从 Uninitialized（→UninitializedMoving）或 Paused（→PausedMoving）启动；
+		// 已在 moving 状态时返回 -1（不能重复插入）//
+		auto moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState moving_state;
+			if (cur == PlannerState::Uninitialized) moving_state = PlannerState::UninitializedMoving;
+			else if (cur == PlannerState::Paused) moving_state = PlannerState::PausedMoving;
+			else return -1;
+
+			// 构建单条 MoveAbsJ 节点 //
+			move_node_.init();
+			move_node_.id_ = 1;
+			move_node_.type_ = MAPNodeType::MoveAbsJ;
+			std::copy(joint_pos, joint_pos + input_psize_, move_node_.jointPos());
+			std::copy(joint_v, joint_v + input_vdim_, move_node_.jointVel());
+			std::copy(joint_a, joint_a + input_vdim_, move_node_.jointAcc());
+			std::copy(joint_j, joint_j + input_vdim_, move_node_.jointJerk());
+			std::fill_n(move_node_.jointZone(), input_vdim_, 0.0);
+
+			// 起点 = 当前位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begJointPos());
+
+			// 检查目标关节位置是否超出运动范围限制 //
+			for (int i = 0; i < input_psize_; ++i) {
+				if (joint_pos[i] > max_poss_[i] + 1e-10 || joint_pos[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 专用关节 tg：clear 后插入一条 init（当前位置），再插入 MoveAbsJ 目标 //
+			move_fwd_tg_.clearAllPos();
+			move_fwd_tg_.insertInitPos(1, move_node_.begJointPos());
+			move_fwd_tg_.insertLinePos(1, joint_pos, joint_v, joint_a, joint_j, move_node_.jointZone());
+			move_fwd_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr //
+			std::copy(move_node_.begJointPos(), move_node_.begJointPos() + input_psize_, move_input_cache_);
+			move_is_.init(move_node_.begJointPos());
+			move_sr_.init(1.0);
+
+			// 切入 moving 状态 //
+			state_.compare_exchange_strong(cur, moving_state);
+			return 1;
+		}
+		auto moveToTargetLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState moving_state;
+			if (cur == PlannerState::Uninitialized) moving_state = PlannerState::UninitializedMoving;
+			else if (cur == PlannerState::Paused) moving_state = PlannerState::PausedMoving;
+			else return -1;
+
+			// 解析工具/工件 //
+			MarkerVec tools(ee_size_, nullptr), wobjs(ee_size_, nullptr);
+			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
+
+			// 构建单条 Line 节点 //
+			move_node_.init();
+			move_node_.id_ = 1;
+			move_node_.type_ = MAPNodeType::Line;
+			std::copy(tools.begin(), tools.end(), move_node_.tools());
+			std::copy(wobjs.begin(), wobjs.end(), move_node_.wobjs());
+			std::copy(tw_pos, tw_pos + output_psize_, move_node_.twPos());
+			std::copy(vel, vel + output_vdim_, move_node_.twVel());
+			std::copy(acc, acc + output_vdim_, move_node_.twAcc());
+			std::copy(jerk, jerk + output_vdim_, move_node_.twJerk());
+			std::fill_n(move_node_.twZone(), output_vdim_, 0.0);
+
+			// 起点：当前关节/末端位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begJointPos());
+			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begEePos());
+
+			// 反解目标（初值用当前关节，根用当前逆解根）//
+			tw_.selectTw(tools.data(), wobjs.data());
+			tw_.setTwPos(move_node_.twPos());
+			tw_.getEePos(move_node_.eePos());
+			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), move_node_.begEePos(), move_node_.begJointPos(), move_node_.whichInverseRoots());
+			auto ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data(),
+				move_node_.eePos(), move_node_.jointPos(), move_node_.whichInverseRoots(), move_node_.begJointPos());
+			if (ret < 0)
+				return ret;
+			for (int i = 0; i < input_psize_; ++i) {
+				if (move_node_.jointPos()[i] > max_poss_[i] + 1e-10 || move_node_.jointPos()[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 当前 tw 位置作为专用 tg 的 init //
+			std::vector<double> cur_tw(output_psize_);
+			tw_.selectTw(tools.data(), wobjs.data());
+			tw_.setEePos(move_node_.begEePos());
+			tw_.getTwPos(cur_tw.data());
+
+			// 专用笛卡尔 tg：clear 后插入一条 init（当前 tw），再插入 Line 目标 //
+			move_inv_tg_.clearAllPos();
+			move_inv_tg_.insertInitPos(1, cur_tw.data());
+			move_inv_tg_.insertLinePos(1, tw_pos, vel, acc, jerk, move_node_.twZone());
+			move_inv_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
+			std::copy(move_node_.jointPos(), move_node_.jointPos() + input_psize_, move_input_cache_);
+			move_is_.init(move_node_.begJointPos());
+			move_sr_.init(1.0);
+
+			// 切入 moving 状态 //
+			state_.compare_exchange_strong(cur, moving_state);
+			return 1;
+		}
 		auto updateIns() -> void {
 			// 插入数据 //
 			for (auto& node : nodes_) {
@@ -1601,11 +1684,18 @@ namespace aris::plan {
 					state_.compare_exchange_strong(cur1, PlannerState::Uninitialized);
 				}
 				break;
-			case PlannerState::MovingToTarget:
-				ret = moveToTargetOneStep(p);
+			case PlannerState::PausedMoving:
+			case PlannerState::UninitializedMoving:
+				// move-to-target 专用管线：推进 move_sr_（move_is_ → move_tg_）//
+				ret = move_sr_.getNextInput(p);
+				model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
+				model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
+				record_input(p);
 				if (ret == 0) {
-					auto cur = PlannerState::MovingToTarget;
-					state_.compare_exchange_strong(cur, PlannerState::Paused);
+					// 到达目标：回到进入前状态（Paused 或 Uninitialized）//
+					auto cur = state_.load();
+					auto target = (cur == PlannerState::PausedMoving) ? PlannerState::Paused : PlannerState::Uninitialized;
+					state_.compare_exchange_strong(cur, target);
 				}
 				break;
 			default:
@@ -1639,6 +1729,10 @@ namespace aris::plan {
 		imp_->fwd_tg_.setDt(dt);
 		imp_->is_.setDt(dt);
 		imp_->sr_.setDt(dt);
+		imp_->move_inv_tg_.setDt(dt);
+		imp_->move_fwd_tg_.setDt(dt);
+		imp_->move_is_.setDt(dt);
+		imp_->move_sr_.setDt(dt);
 	}
 	auto MultimodelPlanner::dt() -> double {
 		return imp_->inv_tg1_.dt();
@@ -1648,6 +1742,8 @@ namespace aris::plan {
 		imp_->max_pos_mat_ = pos;
 		imp_->is_.setMaxPos(pos);
 		imp_->sr_.setMaxPos(pos);
+		imp_->move_is_.setMaxPos(pos);
+		imp_->move_sr_.setMaxPos(pos);
 	}
 	auto MultimodelPlanner::maxPos() -> aris::core::Matrix {
 		return imp_->is_.maxPos();
@@ -1656,6 +1752,8 @@ namespace aris::plan {
 		imp_->max_vel_mat_ = vel;
 		imp_->is_.setMaxVel(vel);
 		imp_->sr_.setMaxVel(vel);
+		imp_->move_is_.setMaxVel(vel);
+		imp_->move_sr_.setMaxVel(vel);
 	}
 	auto MultimodelPlanner::maxVel() -> aris::core::Matrix {
 		return imp_->is_.maxVel();
@@ -1664,6 +1762,8 @@ namespace aris::plan {
 		imp_->max_acc_mat_ = acc;
 		imp_->is_.setMaxAcc(acc);
 		imp_->sr_.setMaxAcc(acc);
+		imp_->move_is_.setMaxAcc(acc);
+		imp_->move_sr_.setMaxAcc(acc);
 	}
 	auto MultimodelPlanner::maxAcc() -> aris::core::Matrix {
 		return imp_->is_.maxAcc();
@@ -1678,6 +1778,8 @@ namespace aris::plan {
 		imp_->min_pos_mat_ = pos;
 		imp_->is_.setMinPos(pos);
 		imp_->sr_.setMinPos(pos);
+		imp_->move_is_.setMinPos(pos);
+		imp_->move_sr_.setMinPos(pos);
 	}
 	auto MultimodelPlanner::minPos() -> aris::core::Matrix {
 		return imp_->is_.minPos();
@@ -1686,6 +1788,8 @@ namespace aris::plan {
 		imp_->min_vel_mat_ = vel;
 		imp_->is_.setMinVel(vel);
 		imp_->sr_.setMinVel(vel);
+		imp_->move_is_.setMinVel(vel);
+		imp_->move_sr_.setMinVel(vel);
 	}
 	auto MultimodelPlanner::minVel() -> aris::core::Matrix {
 		return imp_->is_.minVel();
@@ -1694,6 +1798,8 @@ namespace aris::plan {
 		imp_->min_acc_mat_ = acc;
 		imp_->is_.setMinAcc(acc);
 		imp_->sr_.setMinAcc(acc);
+		imp_->move_is_.setMinAcc(acc);
+		imp_->move_sr_.setMinAcc(acc);
 	}
 	auto MultimodelPlanner::minAcc() -> aris::core::Matrix {
 		return imp_->is_.minAcc();
@@ -1880,11 +1986,24 @@ namespace aris::plan {
 
 
 
-	auto MultimodelPlanner::setMoveTarget(const double* input_pos) -> void {
-		std::copy_n(input_pos, imp_->input_psize_, imp_->move_target_pos_);
+	auto MultimodelPlanner::moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
+		return imp_->moveToTargetJoint(joint_pos, joint_v, joint_a, joint_j);
 	}
-	auto MultimodelPlanner::moveTarget() -> const double* {
-		return imp_->move_target_pos_;
+	auto MultimodelPlanner::moveToTargetLine(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		return imp_->moveToTargetLine(tw, tw_pos, vel, acc, jerk);
+	}
+	auto MultimodelPlanner::moveToTargetLine(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		auto tool_str_vec = aris::core::split(tools, ';');
+		auto wobj_str_vec = aris::core::split(wobjs, ';');
+
+		TW tw;
+		for (Size i = 0; i < std::max(tool_str_vec.size(), wobj_str_vec.size()); ++i) {
+			auto tool = i < tool_str_vec.size() ? aris::core::trimLR(tool_str_vec[i]) : std::string("");
+			auto wobj = i < wobj_str_vec.size() ? aris::core::trimLR(wobj_str_vec[i]) : std::string("");
+			tw.push_back(std::pair(tool, wobj));
+		}
+
+		return moveToTargetLine(tw, tw_pos, vel, acc, jerk);
 	}
 
 
