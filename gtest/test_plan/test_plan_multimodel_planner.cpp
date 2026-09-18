@@ -318,6 +318,71 @@ TEST_F(MultimodelPlannerTest, ResumeReturnsToPausePositionThenContinues) {
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 }
 
+TEST_F(MultimodelPlannerTest, PauseDuringResumeStopsAndReturnsToPaused) {
+	ASSERT_GT(insert_standard_line(planner), 0);
+	ASSERT_TRUE(run_steps(planner, 200));
+
+	std::vector<double> pause_pos;
+	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
+
+	// 模拟暂停期间机器人被移动
+	aris::Size sub_id = 0;
+	std::vector<double> moved = pause_pos;
+	for (auto &v : moved) v += 0.05;
+	multi_model.setSubInputPos(1, &sub_id, moved.data());
+
+	// 开始恢复：Paused → Resuming
+	ASSERT_EQ(planner.requestResume(), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Resuming);
+
+	// 恢复中推进若干步（机器人正从 moved 位置向 pause_pos 平滑运动）
+	ASSERT_TRUE(run_steps(planner, 300));
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Resuming);
+
+	// 恢复中请求暂停：应成功，Resuming → Pausing
+	ASSERT_EQ(planner.requestPause(), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Pausing);
+
+	// 推进直到重新进入 Paused
+	std::vector<double> mid_pos(planner.inputSize(), 0.0);
+	bool paused = false;
+	for (int i = 0; i < 50000; ++i) {
+		planner.getNextInput(mid_pos.data());
+		if (planner.state() == aris::plan::PlannerState::Paused) { paused = true; break; }
+	}
+	ASSERT_TRUE(paused);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
+
+	// 再次恢复：应从停止位置继续平滑运动回原暂停位置，然后进入 Running
+	ASSERT_EQ(planner.requestResume(), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Resuming);
+
+	std::vector<double> final_pos(planner.inputSize(), 0.0);
+	bool resumed = false;
+	for (int i = 0; i < 50000; ++i) {
+		planner.getNextInput(final_pos.data());
+		if (planner.state() == aris::plan::PlannerState::Running) { resumed = true; break; }
+	}
+	ASSERT_TRUE(resumed);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Running);
+
+	for (std::size_t i = 0; i < final_pos.size(); ++i) {
+		EXPECT_NEAR(final_pos[i], pause_pos[i], 1e-3) << "resume should return to pause position at dim " << i;
+	}
+
+	// 继续运行直到完成
+	bool finished = false;
+	std::vector<double> p(planner.inputSize(), 0.0);
+	for (int i = 0; i < 50000; ++i) {
+		auto ret = planner.getNextInput(p.data());
+		ASSERT_GE(ret, 0);
+		if (ret == 0) { finished = true; break; }
+	}
+	EXPECT_TRUE(finished);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
+}
+
 TEST_F(MultimodelPlannerTest, StopDeceleratesToZeroVelocity) {
 	ASSERT_GT(insert_standard_line(planner), 0);
 	ASSERT_TRUE(run_steps(planner, 200));

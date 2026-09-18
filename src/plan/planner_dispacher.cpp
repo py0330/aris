@@ -138,7 +138,6 @@ namespace aris::plan {
 			return -1; // chanel does not exist, return -1 to indicate release failed
 		if (imp_->chanel_data_vec_[chanel]->lock_count > 0) {
 			imp_->chanel_data_vec_[chanel]->lock_count--;
-			imp_->chanel_data_vec_[chanel]->planner.clearUsedPos();
 			return 0; // successfully released
 		}
 		return -2; // channel was not locked, return -2 to indicate release failed

@@ -148,12 +148,6 @@ namespace aris::plan{
 		// 重规划 //
 		auto updateInsertPos()->void;
 
-		// 删除已经不用的数据 //
-		auto clearUsedPos() -> void;
-
-		// 删除全部数据 //
-		auto clearAllPos() -> void;
-
 		// 当前还剩余的指令数 //
 		auto unusedPosNum() -> int;
 
@@ -206,6 +200,7 @@ namespace aris::plan{
 		///    - Stopping               → Stopping       ：requestStop（保持停止流程）
 		///    - Error                  → Stopping       ：requestStop（错误状态转为停止）
 		///    - Running                → Pausing        ：requestPause
+		///    - Resuming               → Pausing        ：requestPause（恢复中暂停，减速后回 Paused）
 		///    - Paused                 → Resuming       ：requestResume
 		///    它的切换结果只可能是：Idle、Stopping、Pausing、Resuming、Uninitialized
 		///    （各 request 函数直接在自己的函数体内用 state_ 的 CAS 完成；
@@ -217,6 +212,10 @@ namespace aris::plan{
 		///   `resume_scurve_params_`、`resume_t_`、`resume_T_`），再 CAS 到
 		///   `Resuming`。借助原子操作的 happens-before 关系，保证 onestep 线程
 		///   观察到 Resuming 时这些数据已就绪；
+		/// - `requestStop` / `requestPause` 使用循环 CAS 应对实时线程的并发状态切换
+		///   （例如 requestPause 时实时线程恰好把 Resuming 切换为 Running）；
+		///   `requestPause` 在 CAS 前写 `pausing_from_resume_` 标志（Pausing 状态下由
+		///   onestep 线程读取），同样借助 state_ 的 happens-before 保证可见；
 		/// - 其余 request 函数只做一次 CAS，不触碰 onestep 线程正在读写的位置/
 		///   速度缓冲，因此无需额外加锁。
 		///
@@ -227,7 +226,7 @@ namespace aris::plan{
 		/// @brief 请求停止：运动状态置为 Stopping（由后续 stopOneStep 平滑减速）；静止状态（Idle/Paused）直接置为 Uninitialized
 		/// @return 0 成功，-1 失败
 		auto requestStop() -> std::int64_t;
-		/// @brief 请求暂停：仅将状态机置为 Pausing
+		/// @brief 请求暂停：Running / Resuming 置为 Pausing（Resuming 时按当前速度平滑减速到 Paused）
 		/// @return 0 成功，-1 失败
 		auto requestPause() -> std::int64_t;
 		/// @brief 请求恢复：仅将状态机置为 Resuming

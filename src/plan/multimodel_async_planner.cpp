@@ -507,6 +507,7 @@ namespace aris::plan {
 		std::int64_t paused_tg_ret_{0};
 		double resume_target_ratio_{ 1.0 };
 		double speed_epsilon_{ 1e-10 };
+		bool pausing_from_resume_{ false }; // true：Pausing 由 Resuming 触发（走 stopOneStep 的减速逻辑）//
 		double* pause_pos_{ nullptr };
 		double* resume_from_pos_{ nullptr };
 		SCurveParam* resume_scurve_params_{ nullptr };
@@ -1457,16 +1458,26 @@ namespace aris::plan {
 			return 0;
 		}
 		auto requestPause() -> std::int64_t {
-			// 仅 Running 时可暂停 //
-			auto cur = state_.load();
-			if(cur == PlannerState::Pausing || cur == PlannerState::Paused){
-				return 0; // 已在暂停中或已暂停，视为成功 //
-			}
-			else if (cur == PlannerState::Running) {
-				return state_.compare_exchange_strong(cur, PlannerState::Pausing) ? 0 : -1;
-			}
-			else{
-				return -1;
+			// Running / Resuming 时可暂停。实时线程可能恰好把 Resuming 切换为 Running
+			//（resumeOneStep 返回 0 的那一拍），因此这里用循环 CAS（同 requestStop）：
+			// - 若 CAS 时仍是 Resuming → 恢复中暂停（pausing_from_resume_ = true）；
+			// - 若实时线程已抢先切到 Running → 循环重读，按 Running 正常暂停（flag = false）。
+			for (;;) {
+				auto cur = state_.load();
+				if (cur == PlannerState::Pausing || cur == PlannerState::Paused) {
+					return 0; // 已在暂停中或已暂停，视为成功 //
+				}
+				else if (cur == PlannerState::Running || cur == PlannerState::Resuming) {
+					// 在 CAS 之前写 flag，借助 state_ 的原子 CAS 建立 happens-before，
+					// 保证实时线程观察到 Pausing 时 flag 已就绪 //
+					pausing_from_resume_ = (cur == PlannerState::Resuming);
+					if (state_.compare_exchange_strong(cur, PlannerState::Pausing))
+						return 0;
+					// CAS 失败：状态已被实时线程/其它 request 改变，重读后重试 //
+				}
+				else {
+					return -1; // Uninitialized / Idle / Stopping / MovingToTarget / Error 不可暂停 //
+				}
 			}
 		}
 		auto requestResume() -> std::int64_t {
@@ -1537,14 +1548,30 @@ namespace aris::plan {
 				}
 				break;
 			case PlannerState::Pausing:
-				ret = pauseOneStep(p);
-				if (ret == 0) {
-					// 状态可能已被 request 系列函数改变，依次尝试：
-					// Pausing→Paused，失败则 Stopping→Uninitialized //
-					auto cur1 = PlannerState::Pausing;
-					auto cur2 = PlannerState::Stopping;
-					if (!state_.compare_exchange_strong(cur1, PlannerState::Paused)) {
-						state_.compare_exchange_strong(cur2, PlannerState::Uninitialized);
+				if (pausing_from_resume_) {
+					// 恢复中暂停：用当前速度逐维减速到 0（复用 stopOneStep），
+					// pause_pos_ 保持原值，后续 resume 会从当前停止位置继续
+					// 平滑运动回 pause_pos_ //
+					ret = stopOneStep(p);
+					if (ret == 0) {
+						auto cur1 = PlannerState::Pausing;
+						auto cur2 = PlannerState::Stopping;
+						if (!state_.compare_exchange_strong(cur1, PlannerState::Paused)) {
+							state_.compare_exchange_strong(cur2, PlannerState::Uninitialized);
+						}
+						pausing_from_resume_ = false;
+					}
+				}
+				else {
+					ret = pauseOneStep(p);
+					if (ret == 0) {
+						// 状态可能已被 request 系列函数改变，依次尝试：
+						// Pausing→Paused，失败则 Stopping→Uninitialized //
+						auto cur1 = PlannerState::Pausing;
+						auto cur2 = PlannerState::Stopping;
+						if (!state_.compare_exchange_strong(cur1, PlannerState::Paused)) {
+							state_.compare_exchange_strong(cur2, PlannerState::Uninitialized);
+						}
 					}
 				}
 				break;
@@ -1784,26 +1811,6 @@ namespace aris::plan {
 	}
 	auto MultimodelPlanner::requestResume() -> std::int64_t {
 		return imp_->requestResume();
-	}
-
-
-
-
-
-
-
-	// 删除已经不用的数据 //
-	auto MultimodelPlanner::clearUsedPos() -> void {
-		imp_->inv_tg1_.clearUsedPos();
-		imp_->inv_tg2_.clearUsedPos();
-		imp_->fwd_tg_.clearUsedPos();
-	}
-
-	// 删除全部数据 //
-	auto MultimodelPlanner::clearAllPos() -> void {
-		imp_->inv_tg1_.clearAllPos();
-		imp_->inv_tg2_.clearAllPos();
-		imp_->fwd_tg_.clearAllPos();
 	}
 
 	// 当前还剩余的指令数 //
