@@ -250,7 +250,7 @@ TEST_F(PlannerDispacherTest, InsertLineMotion) {
 	multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 	tw_pos.at(0) += 0.02;
 
-	auto node_id = dispacher.plannerAt(0).insertLinePos("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertMoveL("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	EXPECT_GT(node_id, 0) << "Line motion node_id should be positive";
 
 	dispacher.plannerAt(0).updateInsertPos();
@@ -281,7 +281,7 @@ TEST_F(PlannerDispacherTest, InsertCircleMotion) {
 	tw_mid_pos.at(1) += 0.01;
 	tw_target_pos.at(1) += 0.02;
 
-	auto node_id = dispacher.plannerAt(0).insertCirclePos("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertMoveC("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	EXPECT_GT(node_id, 0) << "Circle motion node_id should be positive";
 
 	dispacher.plannerAt(0).updateInsertPos();

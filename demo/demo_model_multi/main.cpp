@@ -49,7 +49,7 @@ auto MoveL::prepareNrt()->void{
 		
 	// insert line //
 	pd.tryLockChanel(0, sub_model_);
-	id_ = pd.plannerAt(0).insertLinePos(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+	id_ = pd.plannerAt(0).insertMoveL(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
 	pd.plannerAt(0).updateInsertPos();
 
 	// controller setting //

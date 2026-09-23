@@ -435,9 +435,9 @@ auto test_planner_dispacher_insert_line() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 	tw_pos.at(0) += 0.02;
 
-	auto node_id = dispacher.plannerAt(0).insertLinePos("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertMoveL("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	if (node_id <= 0) {
-		throw std::runtime_error("PlannerDispacher insertLinePos should return positive node id");
+		throw std::runtime_error("PlannerDispacher insertMoveL should return positive node id");
 	}
 
 	dispacher.plannerAt(0).updateInsertPos();
@@ -480,9 +480,9 @@ auto test_planner_dispacher_insert_circle() -> void {
 	tw_mid_pos.at(1) += 0.01;
 	tw_target_pos.at(1) += 0.02;
 
-	auto node_id = dispacher.plannerAt(0).insertCirclePos("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+	auto node_id = dispacher.plannerAt(0).insertMoveC("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	if (node_id <= 0) {
-		throw std::runtime_error("PlannerDispacher insertCirclePos should return positive node id");
+		throw std::runtime_error("PlannerDispacher insertMoveC should return positive node id");
 	}
 
 	dispacher.plannerAt(0).updateInsertPos();
@@ -616,7 +616,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, line_pos.data());
 	line_pos.at(0) += 0.02;
 
-	auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto line_id = dispacher.plannerAt(0).insertMoveL("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (line_id <= 0) {
 		throw std::runtime_error("PlannerDispacher mixed-flow line insert should return positive node id");
 	}
@@ -628,7 +628,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	circle_mid_pos.at(1) += 0.01;
 	circle_target_pos.at(1) += 0.02;
 
-	auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto circle_id = dispacher.plannerAt(0).insertMoveC("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (circle_id <= line_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow circle insert should return increasing node id");
 	}
@@ -706,7 +706,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	multi_model.getSubOutputPos(sub_num, &sub_id, line_pos.data());
 	line_pos.at(0) += 0.02;
 
-	auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto line_id = dispacher.plannerAt(0).insertMoveL("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (line_id <= 0) {
 		throw std::runtime_error("PlannerDispacher batch-flow line insert should return positive node id");
 	}
@@ -716,7 +716,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 	circle_mid_pos.at(1) += 0.01;
 	circle_target_pos.at(1) += 0.02;
 
-	auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+	auto circle_id = dispacher.plannerAt(0).insertMoveC("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 	if (circle_id <= line_id) {
 		throw std::runtime_error("PlannerDispacher batch-flow circle insert should return increasing node id");
 	}
@@ -788,7 +788,7 @@ auto test_planner_dispacher_many_points() -> void {
 		line_pos.at(0) += 0.0005;
 		line_pos.at(1) += (i % 2 == 0) ? 0.0002 : -0.0002;
 
-		auto line_id = dispacher.plannerAt(0).insertLinePos("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+		auto line_id = dispacher.plannerAt(0).insertMoveL("", "", line_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 		if (line_id <= 0) {
 			throw std::runtime_error("PlannerDispacher many-points line insert should return positive node id");
 		}
@@ -800,7 +800,7 @@ auto test_planner_dispacher_many_points() -> void {
 		circle_target_pos.at(0) += 0.0003;
 		circle_target_pos.at(1) += (i % 3 == 0) ? 0.0004 : -0.0004;
 
-		auto circle_id = dispacher.plannerAt(0).insertCirclePos("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
+		auto circle_id = dispacher.plannerAt(0).insertMoveC("", "", circle_target_pos.data(), circle_mid_pos.data(), cart_vel.data(), cart_acc.data(), cart_jerk.data(), cart_zone.data());
 		if (circle_id <= line_id) {
 			throw std::runtime_error("PlannerDispacher many-points circle insert should return increasing node id");
 		}
@@ -870,9 +870,9 @@ auto test_planner_dispacher_intentional_failures() -> void {
 		multi_model.getSubOutputPos(sub_num, &sub_id, tw_pos.data());
 		tw_pos.at(0) += 0.02;
 
-		auto node_id = dispacher.plannerAt(0).insertLinePos("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
+		auto node_id = dispacher.plannerAt(0).insertMoveL("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 		if (node_id <= 0) {
-			throw std::runtime_error("PlannerDispacher intentional-failure insertLinePos should return positive node id");
+			throw std::runtime_error("PlannerDispacher intentional-failure insertMoveL should return positive node id");
 		}
 
 		dispacher.plannerAt(0).updateInsertPos();

@@ -477,12 +477,20 @@ namespace aris::plan {
 		// config data //
 		aris::dynamic::MultiModel* model_{nullptr};
 		std::vector<aris::Size> sub_id_list_;
+		aris::core::Matrix min_pos_mat_, max_pos_mat_, min_vel_mat_, max_vel_mat_, min_acc_mat_, max_acc_mat_, min_jerk_mat_, max_jerk_mat_;
 		
-		// allocate data //
+		// public data //
 		aris::Size ee_size_{ 0 }, output_psize_{ 0 }, output_vdim_{ 0 }, input_psize_{ 0 }, input_vdim_{ 0 };
-
-		// internal data //
+		double* max_poss_{ nullptr }, * min_poss_{ nullptr }, * max_vels_{ nullptr }, * min_vels_{ nullptr }, * max_accs_{ nullptr }, * min_accs_{ nullptr }, * max_jerks_{ nullptr }, * min_jerks_{ nullptr };
 		aris::dynamic::MotionBase** ees_;
+		std::atomic<PlannerState> state_{ PlannerState::Uninitialized };
+
+		// record data //
+		double *this_input_{ nullptr }, *last_input_{ nullptr }, *last2_input_{ nullptr };
+		double *this_vel_{nullptr}, *last_vel_{nullptr};
+		double *this_acc_{nullptr};
+		
+		// run data //
 		double* ee_pos_{ nullptr }, * tw_pos_{ nullptr };
 		double* node_input_{ nullptr }, * next_node_input_{ nullptr }; // node_input_ 缓存当前的 next_node_input_ 在time_zone 融合时缓存下一node 的pos
 
@@ -491,45 +499,44 @@ namespace aris::plan {
 		MAPNode map_nodes_[TW_POOL_SIZE];
 		std::list<MAPNode> nodes_;
 
-		MAPNode last_node_, ins_node_;
+		MAPNode last_node_, ins_node_, init_node_;
 		ToolWobjSelector tw_, tw_rt_;
 
 		TrajectoryGenerator inv_tg1_, inv_tg2_, fwd_tg_;
 		InputSmoother is_;
 		SpeedRegulator sr_;
 
-		// 不缩放的限幅数据（Matrix 存设置值，指针数组存原始未缩放值）//
-		aris::core::Matrix min_pos_mat_, max_pos_mat_, min_vel_mat_, max_vel_mat_, min_acc_mat_, max_acc_mat_, min_jerk_mat_, max_jerk_mat_;
-		double* max_poss_{ nullptr }, * min_poss_{ nullptr }, * max_vels_{ nullptr }, * min_vels_{ nullptr }, * max_accs_{ nullptr }, * min_accs_{ nullptr }, * max_jerks_{ nullptr }, * min_jerks_{ nullptr };
-
-		// pause/resume 状态机数据 //
-		std::atomic<PlannerState> state_{ PlannerState::Uninitialized };
+		// pause/resume data //
 		std::int64_t paused_tg_ret_{0};
-		double resume_target_ratio_{ 1.0 };
-		double speed_epsilon_{ 1e-10 };
+		double resume_target_ratio_{ 1.0 }, speed_epsilon_{ 1e-10 };
 		bool pausing_from_resume_{ false }; // true：Pausing 由 Resuming 触发（走 stopOneStep 的减速逻辑）//
-		double* pause_pos_{ nullptr };
-		double* resume_from_pos_{ nullptr };
+		double* pause_pos_{ nullptr }, *resume_from_pos_{ nullptr };
 		SCurveParam* resume_scurve_params_{ nullptr };
-		double resume_t_{ 0.0 };
-		double resume_T_{ 0.0 };
+		double resume_t_{ 0.0 }, resume_T_{ 0.0 };
 
-		// stop 状态机数据 //
+		// stop data //
 		double stop_t_{ 0.0 };
-		double *this_input_{ nullptr }, *last_input_{ nullptr }, *last2_input_{ nullptr };
-		double *this_vel_{nullptr}, *last_vel_{nullptr};
-		double *this_acc_{nullptr};
 
-		// move-to-target 专用管线（独立于主队列，单指令）//
-		// 与主管线一致：move_inv_tg_（笛卡尔，Line）/ move_fwd_tg_（关节，MoveAbsJ）各自只 allocate 一次 //
-		TrajectoryGenerator move_inv_tg_, move_fwd_tg_;
-		InputSmoother move_is_;
-		SpeedRegulator move_sr_;
-		MAPNode move_node_;
-		double* move_input_cache_{ nullptr }; // 反解失败时的关节位置缓存 //
+		// goto data //
+		TrajectoryGenerator goto_inv_tg_, goto_fwd_tg_;
+		InputSmoother goto_is_;
+		SpeedRegulator goto_sr_;
+		double* goto_input_cache_{ nullptr }; // 反解失败时的关节位置缓存 //
+		bool goto_line_{ false };                    // true：笛卡尔（Line/Circle）；false：关节（MoveJ/MoveAbsJ）//
+		aris::dynamic::Marker** goto_tools_{ nullptr }, **goto_wobjs_{ nullptr };  // Line 的 tool/wobj（反解 tw→ee 用）//
+		std::int64_t* goto_which_roots_{ nullptr };  // Line 的反解根号 //
+		double* goto_beg_joint_{ nullptr };          // Line 反解初值（起始关节）//
+		// goto 管线工作缓冲（预分配于 mem 块，避免每次 goto 重复分配）//
+		double* goto_joint_zone_{ nullptr };         // MoveAbsJ 的 zone（零填）//
+		double* goto_tw_zone_{ nullptr };            // Line 的 zone（零填）//
+		double* goto_beg_ee_{ nullptr };             // Line 起始末端位置 //
+		double* goto_cur_tw_{ nullptr };             // Line 起始 tw（tg init）//
+		double* goto_target_ee_{ nullptr };          // Line 目标末端位置（反解输入）//
+		double* goto_target_joint_{ nullptr };       // Line 目标关节（反解输出）//
 
 		std::vector<char> mem_;
 
+		////////////// NRT //////////////
 		auto allocateMemory() -> void {
 			// allocate datas //
 			ee_size_ = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
@@ -562,7 +569,17 @@ namespace aris::plan {
 			core::allocMem(mem_size, pause_pos_, input_psize_);
 			core::allocMem(mem_size, resume_from_pos_, input_psize_);
 			core::allocMem(mem_size, resume_scurve_params_, input_psize_);
-			core::allocMem(mem_size, move_input_cache_, input_psize_);
+			core::allocMem(mem_size, goto_input_cache_, input_psize_);
+			core::allocMem(mem_size, goto_beg_joint_, input_psize_);
+			core::allocMem(mem_size, goto_joint_zone_, input_vdim_);
+			core::allocMem(mem_size, goto_tw_zone_, output_vdim_);
+			core::allocMem(mem_size, goto_beg_ee_, output_psize_);
+			core::allocMem(mem_size, goto_cur_tw_, output_psize_);
+			core::allocMem(mem_size, goto_target_ee_, output_psize_);
+			core::allocMem(mem_size, goto_target_joint_, input_psize_);
+			core::allocMem(mem_size, goto_which_roots_, ee_size_);
+			core::allocMem(mem_size, goto_tools_, ee_size_);
+			core::allocMem(mem_size, goto_wobjs_, ee_size_);
 
 			mem_.resize(mem_size, char(0));
 
@@ -588,7 +605,17 @@ namespace aris::plan {
 			pause_pos_ = core::getMem(mem_.data(), pause_pos_);
 			resume_from_pos_ = core::getMem(mem_.data(), resume_from_pos_);
 			resume_scurve_params_ = core::getMem(mem_.data(), resume_scurve_params_);
-			move_input_cache_ = core::getMem(mem_.data(), move_input_cache_);
+			goto_input_cache_ = core::getMem(mem_.data(), goto_input_cache_);
+			goto_beg_joint_ = core::getMem(mem_.data(), goto_beg_joint_);
+			goto_joint_zone_ = core::getMem(mem_.data(), goto_joint_zone_);
+			goto_tw_zone_ = core::getMem(mem_.data(), goto_tw_zone_);
+			goto_beg_ee_ = core::getMem(mem_.data(), goto_beg_ee_);
+			goto_cur_tw_ = core::getMem(mem_.data(), goto_cur_tw_);
+			goto_target_ee_ = core::getMem(mem_.data(), goto_target_ee_);
+			goto_target_joint_ = core::getMem(mem_.data(), goto_target_joint_);
+			goto_which_roots_ = core::getMem(mem_.data(), goto_which_roots_);
+			goto_tools_ = core::getMem(mem_.data(), goto_tools_);
+			goto_wobjs_ = core::getMem(mem_.data(), goto_wobjs_);
 
 			// 填充不缩放的限幅（原始量纲）//
 			std::fill_n(max_poss_, input_psize_, 1e10);
@@ -615,6 +642,7 @@ namespace aris::plan {
 			}
 			last_node_ = MAPNode(0, MAPNodeType::CartesianInitPos, ee_size_, output_psize_, output_vdim_, input_psize_, input_vdim_);
 			ins_node_ = MAPNode(0, MAPNodeType::CartesianInitPos, ee_size_, output_psize_, output_vdim_, input_psize_, input_vdim_);
+			init_node_ = MAPNode(0, MAPNodeType::CartesianInitPos, ee_size_, output_psize_, output_vdim_, input_psize_, input_vdim_);
 
 			tw_.setModel(*model_);
 			tw_.setSubModelId(sub_id_list_);
@@ -639,18 +667,6 @@ namespace aris::plan {
 
 			is_.allocateMemory();
 			sr_.allocateMemory();
-
-			// move 专用管线 //
-			move_is_.setInputSize(input_psize_);
-			move_sr_.setInputSize(input_psize_);
-			move_is_.allocateMemory();
-			move_sr_.allocateMemory();
-
-			move_node_ = MAPNode(0, MAPNodeType::CartesianInitPos, ee_size_, output_psize_, output_vdim_, input_psize_, input_vdim_);
-			move_inv_tg_.setPosTypes(ee_pos_types);
-			move_inv_tg_.allocateMemory();
-			move_fwd_tg_.setPosTypes(input_pos_types);
-			move_fwd_tg_.allocateMemory();
 
 			// 设置回调 //
 			is_.setInputGenerator([this](double* p)->std::int64_t {
@@ -783,32 +799,6 @@ namespace aris::plan {
 			sr_.setInputGenerator([this](double* p)->std::int64_t {
 				return is_.getNextInput(p);
 			});
-
-			// move 专用管线回调：单节点，推进 move_tg_ 并（笛卡尔时）反解输出关节位置 //
-			move_is_.setInputGenerator([this](double* p)->std::int64_t {
-				if (move_node_.type_ == MAPNodeType::Line) {
-					tg_ret_ = move_inv_tg_.getEePosAndMoveDt(tw_pos_);
-					tw_rt_.selectTw(move_node_.tools(), move_node_.wobjs());
-					tw_rt_.setTwPos(tw_pos_);
-					tw_rt_.getEePos(ee_pos_);
-					ik_ret_ = model_->subInverseKinematics(
-						sub_id_list_.size(), sub_id_list_.data(),
-						ee_pos_, p, move_node_.whichInverseRoots(), move_node_.begJointPos());
-					if (ik_ret_ >= 0)
-						std::copy(p, p + input_psize_, move_input_cache_);
-					else
-						std::copy(move_input_cache_, move_input_cache_ + input_psize_, p);
-					return tg_ret_;
-				}
-				else {
-					tg_ret_ = move_fwd_tg_.getEePosAndMoveDt(p);
-					std::copy(p, p + input_psize_, move_input_cache_);
-					return tg_ret_;
-				}
-			});
-			move_sr_.setInputGenerator([this](double* p)->std::int64_t {
-				return move_is_.getNextInput(p);
-			});
 		}
 		auto init() -> void {
 			// ees 相关 //
@@ -855,122 +845,16 @@ namespace aris::plan {
 			// 插入起始节点，后续 update 时会初始化 tg //
 			auto tools = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
 			auto wobjs = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
-			insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
+			insertInitNode(tools.data(), wobjs.data(), MAPNodeType::JointInitPos);
 
 			is_.init(last_node_.jointPos());
 			
 			sr_.init(1.0);
 		}
 
-
-		// 记录最新 input，并用差分计算速度/加速度：
-		// 位置：把新数据写入最旧缓冲区 last2_input_，再轮换三个指针；
-		// 速度：差分 (this_input - last_input)/dt 写入最旧速度缓冲区 last_vel_，再轮换指针；
-		// 加速度：差分 (this_vel - last_vel)/dt
-		auto record_input(const double* p) -> void {
-			// 位置 //
-			std::copy(p, p + input_psize_, last2_input_);
-			std::swap(last2_input_, last_input_);
-			std::swap(last_input_, this_input_);
-
-			// 速度 //
-			const double dt = inv_tg1_.dt();
-			for (aris::Size i = 0; i < input_psize_; ++i)
-				last_vel_[i] = (this_input_[i] - last_input_[i]) / dt;
-			std::swap(this_vel_, last_vel_);
-
-			// 加速度 //
-			for (aris::Size i = 0; i < input_psize_; ++i)
-				this_acc_[i] = (this_vel_[i] - last_vel_[i]) / dt;
-		};
-
-		// realtime 步进函数 //
-		auto runOneStep(double* p) -> std::int64_t {
-			// 原始推进 //
-			auto ret = sr_.getNextInput(p);
-
-			// 调用正解更新模型的当前位置 //
-			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-			// 记录最新 input //
-			record_input(p);
-
-			return ret;
-		};
-		auto stopOneStep(double* p) -> std::int64_t {
-			// 每维在速度域用 s_follow_x 减速一步：
-			//   位置 pa = 当前速度 this_vel_，速度 va = 当前加速度 this_acc_，目标 pt = 0（速度降为 0）；
-			//   速度上限 v_max/v_min = 加速度上限，加速度上限 a_max/a_min = jerk 上限；
-			//   输出 pc = 下一速度，vc = 下一加速度，ac = 下一 jerk；
-			//   位置由速度积分递增：p = this_input_ + v_new * dt //
-			bool all_stopped = true;
-			for (aris::Size i = 0; i < input_psize_; ++i) {
-				double v_new, a_new, j_new;
-				aris::Size total_count;
-				s_follow_x(this_vel_[i], this_acc_[i], 0.0,
-					max_accs_[i], -max_accs_[i], max_jerks_[i], -max_jerks_[i],
-					inv_tg1_.dt(), 1e-10, v_new, a_new, j_new, total_count);
-				p[i] = this_input_[i] + v_new * inv_tg1_.dt();
-				if (total_count != 0)
-					all_stopped = false;
-			}
-
-			// 调用正解更新模型的当前位置 //
-			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-			// 记录最新 input //
-			record_input(p);
-
-			// return 
-			return all_stopped ? 0 : 1;
-		};
-		auto pauseOneStep(double* p) -> std::int64_t {
-			// Running / Pausing：推进暂停 //
-			sr_.setTargetSpeedRatio(0.0);
-			
-			// 原始推进 //
-			paused_tg_ret_ = sr_.getNextInput(p);
-			
-			// 调用正解更新模型的当前位置 //
-			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-			// 记录最新 input //
-			record_input(p);
-
-			// 速度降到 0 → 已完全暂停：记录暂停位置并返回 0（状态切换为 Paused）//
-			if (sr_.actualSpeedRatio() <= speed_epsilon_) {
-				std::copy(p, p + input_psize_, pause_pos_);
-				return 0;
-			}
-			return paused_tg_ret_;
-		};
-		auto resumeOneStep(double* p) -> std::int64_t {
-			// Resuming：沿 scurve 走一步 //
-			const auto n = input_psize_;
-			for (aris::Size i = 0; i < n; ++i) {
-				aris::plan::LargeNum pos;
-				aris::plan::s_scurve_at(resume_scurve_params_[i], resume_t_, &pos);
-				p[i] = static_cast<double>(pos);
-			}
-			resume_t_ += inv_tg1_.dt();
-
-			// 调用正解更新模型的当前位置 //
-			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-
-			// 记录最新 input //
-			record_input(p);
-
-			// 设置：走完 → 0（状态切换为 Running），否则返回暂停时的节点 id //
-			return resume_t_ >= resume_T_ ? 0 : paused_tg_ret_;
-		};
-
-		// 工具和工件解析函数：根据 tool_wobjs 填充 tools 和 wobjs //
-		auto resolveToolsAndWobjs(TW& tool_wobjs, MarkerVec& tools, MarkerVec& wobjs) -> void {
-			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(), tools.size())); ++i) {
+		// 工具和工件解析函数：根据 tool_wobjs 填充 tools 和 wobjs（裸指针数组，长度 ee_size_）//
+		auto resolveToolsAndWobjs(TW& tool_wobjs, aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs) -> void {
+			for (int i = 0; i < static_cast<int>(std::min(tool_wobjs.size(), static_cast<std::size_t>(ee_size_))); ++i) {
 				tools[i] = model_->findTool(tool_wobjs[i].first);
 				wobjs[i] = model_->findWobj(tool_wobjs[i].second);
 
@@ -993,511 +877,8 @@ namespace aris::plan {
 			}
 		}
 		
-		// run 系列prepare函数 //
-		auto insertInitNode(MarkerVec& tools, MarkerVec& wobjs, MAPNodeType init_type, int cartesian_planner_idx = 0) -> void {
-			// 初始化为上一个节点的数据 //
-			ins_node_.init();
-			std::copy(last_node_.mem_.begin(), last_node_.mem_.end(), ins_node_.mem_.begin());
-			
-			// 填入本节点信息 //
-			ins_node_.id_ = ins_id_.load();
-			ins_node_.type_ = init_type;
-			ins_node_.cartesian_planner_idx_ = cartesian_planner_idx;
-			std::copy(tools.begin(), tools.end(), ins_node_.tools());
-			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-
-			// 填入 tw 信息 //
-			if (tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
-				THROW_FILE_LINE("invalid last tool and wobj");
-			tw_.setTwPos(last_node_.twPos());
-			if (tw_.selectTw(tools.data(), wobjs.data()))
-				THROW_FILE_LINE("invalid tool and wobj");
-			tw_.getTwPos(ins_node_.twPos());
-
-			// 填入 whichroot 信息 //
-			if(last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
-				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
-				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
-			}
-			else {
-				std::copy(last_node_.whichForwardRoots(), last_node_.whichForwardRoots() + sub_id_list_.size(), ins_node_.whichForwardRoots());
-				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots());
-			}
-
-			// 插入 //
-			nodes_.push_back(ins_node_);
-			std::swap(last_node_, ins_node_);
-		}
-		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
-			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
-			auto state = state_.load();
-			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
-				return -1;
-			
-			auto ins_id = ins_id_.load();
-			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
-			
-			// 获取坐标系 //
-			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
-			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
-
-			// 计算 cartesian_planner_idx //
-			int cartesian_idx = 0;
-			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
-				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
-				if (!last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) {
-					cartesian_idx = 1 - last_node_.cartesian_planner_idx_; // 切换规划器
-				} else {
-					cartesian_idx = last_node_.cartesian_planner_idx_; // 保持
-				}
-			} else {
-				// 从关节空间来，默认使用 inv_tg1_ (0)
-				cartesian_idx = 0;
-			}
-
-			// 查看是否插入 INIT //
-			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
-				|| !last_node_.isSameTools(tools.data())
-				|| !last_node_.isSameWobjs(wobjs.data())) 
-			{
-				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos, cartesian_idx);
-			}
-
-			// 更新 last_tw_pos_ 等 //
-			ins_node_.init();
-			ins_node_.id_ = ins_id;
-			ins_node_.type_ = MAPNodeType::Line;
-			ins_node_.cartesian_planner_idx_ = cartesian_idx;
-			ins_node_.time_zone_ = time_zone;
-			std::copy(tools.begin(), tools.end(), ins_node_.tools());
-			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
-			std::copy(vel, vel + output_vdim_, ins_node_.twVel());
-			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
-			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
-			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
-
-			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
-			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
-			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
-
-			// 做反解计算 //
-			{
-				tw_.selectTw(tools.data(), wobjs.data());
-				tw_.setTwPos(ins_node_.twPos());
-				tw_.getEePos(ins_node_.eePos());
-
-				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
-				
-				// ik 求解末端，初值采用 begJointPos
-				auto ret = model_->subInverseKinematics(
-					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
-				
-				if(ret < 0)
-					return ret;
-
-				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
-				for (int i = 0; i < input_psize_; ++i) {
-					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
-						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
-						return -2;
-				}
-
-				// 根据求出的末端，计算它在用的哪组解
-				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
-
-			}
-			
-
-			// 正常插入指令 //
-			nodes_.push_back(ins_node_);
-			std::swap(last_node_, ins_node_);
-
-			ins_id_++;
-			return ins_id;
-		}
-		auto insCircle(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
-			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
-			auto state = state_.load();
-			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
-				return -1;
-
-			auto ins_id = ins_id_.load();
-			auto ee_size = model_->subOutputSize(sub_id_list_.size(), sub_id_list_.data());
-
-			// 获取坐标系 //
-			Imp::MarkerVec tools(ee_size, nullptr), wobjs(ee_size, nullptr);
-			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
-
-			// 计算 cartesian_planner_idx //
-			int cartesian_idx = 0;
-			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
-				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
-				if (!last_node_.isSameTools(tools.data()) || !last_node_.isSameWobjs(wobjs.data())) {
-					cartesian_idx = 1 - last_node_.cartesian_planner_idx_; // 切换规划器
-				} else {
-					cartesian_idx = last_node_.cartesian_planner_idx_; // 保持
-				}
-			} else {
-				// 从关节空间来，默认使用 inv_tg1_ (0)
-				cartesian_idx = 0;
-			}
-			
-			// 查看是否插入 INIT //
-			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
-				|| !last_node_.isSameTools(tools.data())
-				|| !last_node_.isSameWobjs(wobjs.data())) 
-			{
-				insertInitNode(tools, wobjs, MAPNodeType::CartesianInitPos, cartesian_idx);
-			}
-
-			// 更新 last_tw_pos_ 等 //
-			ins_node_.init();
-			ins_node_.id_ = ins_id;
-			ins_node_.type_ = MAPNodeType::Circle;
-			ins_node_.cartesian_planner_idx_ = cartesian_idx;
-			ins_node_.time_zone_ = time_zone;
-			std::copy(tools.begin(), tools.end(), ins_node_.tools());
-			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
-			std::copy(tw_mid_pos, tw_mid_pos + output_psize_, ins_node_.midPos());
-			std::copy(vel, vel + output_vdim_, ins_node_.twVel());
-			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
-			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
-			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
-
-			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
-			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
-			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
-
-			{
-				tw_.selectTw(tools.data(), wobjs.data());
-				tw_.setTwPos(ins_node_.twPos());
-				tw_.getEePos(ins_node_.eePos());
-
-				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
-				
-				// ik 求解末端，初值采用 begJointPos
-				auto ret = model_->subInverseKinematics(
-					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
-				
-				if(ret < 0)
-					return ret;
-
-				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
-				for (int i = 0; i < input_psize_; ++i) {
-					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
-						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
-						return -2;
-				}
-
-				// 根据求出的末端，计算它在用的哪组解
-				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
-
-			}
-			
-
-			// 正常插入指令 //
-			nodes_.push_back(ins_node_);
-			std::swap(last_node_, ins_node_);
-
-			ins_id_++;
-			return ins_id;
-		}
-		auto insMoveJ(TW& tool_wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root, double time_zone = 0.0) -> std::int64_t {
-			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
-			auto state = state_.load();
-			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
-				return -1;
-
-			auto ins_id = ins_id_.load();
-
-			// 获取坐标系 //
-			Imp::MarkerVec tools(ee_size_, nullptr), wobjs(ee_size_, nullptr);
-			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
-
-			// 查看是否插入 INIT //
-			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) {
-				insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
-			}
-
-			// 更新 last_tw_pos_ 等 //
-			ins_node_.init();
-			ins_node_.id_ = ins_id;
-			ins_node_.type_ = MAPNodeType::MoveJ;
-			ins_node_.time_zone_ = time_zone;
-			std::copy(tools.begin(), tools.end(), ins_node_.tools());
-			std::copy(wobjs.begin(), wobjs.end(), ins_node_.wobjs());
-			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
-			std::copy(joint_v, joint_v + input_vdim_, ins_node_.jointVel());
-			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
-			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
-			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
-
-			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
-			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
-			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
-
-			{
-				tw_.selectTw(tools.data(), wobjs.data());
-				tw_.setTwPos(ins_node_.twPos());
-				tw_.getEePos(ins_node_.eePos());
-
-				// 用上一个节点的 whichInverseRoots 作为本节点的初值，若 which_root 不为空，则使用 which_root 作为本节点的初值
-				if(which_root != nullptr){
-					std::copy(which_root, which_root + sub_id_list_.size(), ins_node_.whichInverseRoots());
-				}
-				else{
-					std::fill(ins_node_.whichInverseRoots(), ins_node_.whichInverseRoots() + sub_id_list_.size(), -1);
-				}
-
-				// ik 求解末端，初值采用 begJointPos
-				auto ret = model_->subInverseKinematics(
-					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
-				
-				if(ret < 0)
-					return ret;
-
-				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
-				for (int i = 0; i < input_psize_; ++i) {
-					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
-						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
-						return -2;
-				}
-
-				// 根据求出的末端，计算它在用的哪组解
-				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
-
-				
-			}
-
-			// 正常插入指令 //
-			nodes_.push_back(ins_node_);
-			std::swap(last_node_, ins_node_);
-
-			ins_id_++;
-			return ins_id;
-		}
-		auto insMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone = 0.0) -> std::int64_t {
-			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
-			auto state = state_.load();
-			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
-				return -1;
-
-			auto ins_id = ins_id_.load();
-			
-			// 如果运动方式有变化，重新插入 INIT //
-			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) 
-			{
-				auto tools = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
-				auto wobjs = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
-				insertInitNode(tools, wobjs, MAPNodeType::JointInitPos);
-			}
-
-			// 更新 last_tw_pos_ 等 //
-			ins_node_.init();
-			ins_node_.id_ = ins_id;
-			ins_node_.type_ = MAPNodeType::MoveAbsJ;
-			ins_node_.time_zone_ = time_zone;
-			std::copy(joint_p, joint_p + input_psize_, ins_node_.jointPos());
-			std::copy(joint_v, joint_v + input_vdim_, ins_node_.jointVel());
-			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
-			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
-			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
-
-			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
-			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
-			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
-
-			{
-				std::copy(last_node_.whichForwardRoots(), last_node_.whichForwardRoots() + sub_id_list_.size(), ins_node_.whichForwardRoots());
-				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots());
-				
-				auto ret = model_->subForwardKinematics(
-					sub_id_list_.size(), sub_id_list_.data(),
-					ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots(), ins_node_.jointPos());
-
-				if(ret < 0)
-					return ret;
-
-				// 检查目标关节位置是否超出运动范围限制，超限则返回 -2 //
-				for (int i = 0; i < input_psize_; ++i) {
-					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
-						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
-						return -2;
-				}
-			}
-
-			// 正常插入指令 //
-#ifdef DEBUG_ARIS_MMP
-			std::cerr << "[insMoveAbsJ] BEFORE push: ins_node_.tz=" << ins_node_.time_zone_ << " time_zone_param=" << time_zone << " insert_id=" << ins_id_ << std::endl;
-#endif
-			nodes_.push_back(ins_node_);
-#ifdef DEBUG_ARIS_MMP
-			std::cerr << "[insMoveAbsJ] AFTER push: nodes_.back().tz=" << nodes_.back().time_zone_ << " size=" << nodes_.size() << std::endl;
-#endif
-			std::swap(last_node_, ins_node_);
-
-			ins_id_++;
-			return ins_id;
-		}
-		// move-to-target：独立管线（专用 tg/is/sr），单指令，不插入主队列 //
-		// 仅允许从 Uninitialized（→UninitializedMoving）或 Paused（→PausedMoving）启动；
-		// 已在 moving 状态时返回 -1（不能重复插入）//
-		auto moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
-			auto cur = state_.load();
-			PlannerState moving_state;
-			if (cur == PlannerState::Uninitialized) moving_state = PlannerState::UninitializedMoving;
-			else if (cur == PlannerState::Paused) moving_state = PlannerState::PausedMoving;
-			else return -1;
-
-			// 构建单条 MoveAbsJ 节点 //
-			move_node_.init();
-			move_node_.id_ = 1;
-			move_node_.type_ = MAPNodeType::MoveAbsJ;
-			std::copy(joint_pos, joint_pos + input_psize_, move_node_.jointPos());
-			std::copy(joint_v, joint_v + input_vdim_, move_node_.jointVel());
-			std::copy(joint_a, joint_a + input_vdim_, move_node_.jointAcc());
-			std::copy(joint_j, joint_j + input_vdim_, move_node_.jointJerk());
-			std::fill_n(move_node_.jointZone(), input_vdim_, 0.0);
-
-			// 起点 = 当前位置 //
-			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begJointPos());
-
-			// 检查目标关节位置是否超出运动范围限制 //
-			for (int i = 0; i < input_psize_; ++i) {
-				if (joint_pos[i] > max_poss_[i] + 1e-10 || joint_pos[i] < min_poss_[i] - 1e-10)
-					return -2;
-			}
-
-			// 专用关节 tg：clear 后插入一条 init（当前位置），再插入 MoveAbsJ 目标 //
-			move_fwd_tg_.clearAllPos();
-			move_fwd_tg_.insertInitPos(1, move_node_.begJointPos());
-			move_fwd_tg_.insertLinePos(1, joint_pos, joint_v, joint_a, joint_j, move_node_.jointZone());
-			move_fwd_tg_.updateInsertPos();
-
-			// 初始化专用 is / sr //
-			std::copy(move_node_.begJointPos(), move_node_.begJointPos() + input_psize_, move_input_cache_);
-			move_is_.init(move_node_.begJointPos());
-			move_sr_.init(1.0);
-
-			// 切入 moving 状态 //
-			state_.compare_exchange_strong(cur, moving_state);
-			return 1;
-		}
-		auto moveToTargetLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
-			auto cur = state_.load();
-			PlannerState moving_state;
-			if (cur == PlannerState::Uninitialized) moving_state = PlannerState::UninitializedMoving;
-			else if (cur == PlannerState::Paused) moving_state = PlannerState::PausedMoving;
-			else return -1;
-
-			// 解析工具/工件 //
-			MarkerVec tools(ee_size_, nullptr), wobjs(ee_size_, nullptr);
-			resolveToolsAndWobjs(tool_wobjs, tools, wobjs);
-
-			// 构建单条 Line 节点 //
-			move_node_.init();
-			move_node_.id_ = 1;
-			move_node_.type_ = MAPNodeType::Line;
-			std::copy(tools.begin(), tools.end(), move_node_.tools());
-			std::copy(wobjs.begin(), wobjs.end(), move_node_.wobjs());
-			std::copy(tw_pos, tw_pos + output_psize_, move_node_.twPos());
-			std::copy(vel, vel + output_vdim_, move_node_.twVel());
-			std::copy(acc, acc + output_vdim_, move_node_.twAcc());
-			std::copy(jerk, jerk + output_vdim_, move_node_.twJerk());
-			std::fill_n(move_node_.twZone(), output_vdim_, 0.0);
-
-			// 起点：当前关节/末端位置 //
-			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begJointPos());
-			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), move_node_.begEePos());
-
-			// 反解目标（初值用当前关节，根用当前逆解根）//
-			tw_.selectTw(tools.data(), wobjs.data());
-			tw_.setTwPos(move_node_.twPos());
-			tw_.getEePos(move_node_.eePos());
-			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), move_node_.begEePos(), move_node_.begJointPos(), move_node_.whichInverseRoots());
-			auto ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data(),
-				move_node_.eePos(), move_node_.jointPos(), move_node_.whichInverseRoots(), move_node_.begJointPos());
-			if (ret < 0)
-				return ret;
-			for (int i = 0; i < input_psize_; ++i) {
-				if (move_node_.jointPos()[i] > max_poss_[i] + 1e-10 || move_node_.jointPos()[i] < min_poss_[i] - 1e-10)
-					return -2;
-			}
-
-			// 当前 tw 位置作为专用 tg 的 init //
-			std::vector<double> cur_tw(output_psize_);
-			tw_.selectTw(tools.data(), wobjs.data());
-			tw_.setEePos(move_node_.begEePos());
-			tw_.getTwPos(cur_tw.data());
-
-			// 专用笛卡尔 tg：clear 后插入一条 init（当前 tw），再插入 Line 目标 //
-			move_inv_tg_.clearAllPos();
-			move_inv_tg_.insertInitPos(1, cur_tw.data());
-			move_inv_tg_.insertLinePos(1, tw_pos, vel, acc, jerk, move_node_.twZone());
-			move_inv_tg_.updateInsertPos();
-
-			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
-			std::copy(move_node_.jointPos(), move_node_.jointPos() + input_psize_, move_input_cache_);
-			move_is_.init(move_node_.begJointPos());
-			move_sr_.init(1.0);
-
-			// 切入 moving 状态 //
-			state_.compare_exchange_strong(cur, moving_state);
-			return 1;
-		}
-		auto updateIns() -> void {
-			// 插入数据 //
-			for (auto& node : nodes_) {
-				switch (node.type_) {
-				case MAPNodeType::CartesianInitPos:
-					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertInitPos(node.id_, node.eePos());
-					break;
-				case MAPNodeType::Line:
-					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertLinePos(node.id_, node.twPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
-					break;
-				case MAPNodeType::Circle:
-					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertCirclePos(node.id_, node.twPos(), node.midPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
-					break;
-				case MAPNodeType::JointInitPos:
-					fwd_tg_.insertInitPos(node.id_, node.jointPos());
-					break;
-				case MAPNodeType::MoveJ:
-					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
-					break;
-				case MAPNodeType::MoveAbsJ:
-#ifdef DEBUG_ARIS_MMP
-					std::cerr << "[updateIns::MoveAbsJ] node.id=" << node.id_ << " node.tz=" << node.time_zone_ << std::endl;
-#endif
-					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
-					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
-					break;
-				}
-			}
-
-			// 批量插入后统一重规划提交
-			inv_tg1_.updateInsertPos();
-			inv_tg2_.updateInsertPos();
-			fwd_tg_.updateInsertPos();
-
-#ifdef DEBUG_ARIS_MMP
-			std::cerr << "[updateIns] insert_id=" << ins_id_ << " map_tz:";
-			for (int _i = 1; _i < ins_id_; ++_i)
-				std::cerr << " [" << _i << "]=" << map_nodes_[_i].time_zone_;
-			std::cerr << std::endl;
-#endif
-
-			// 更新完后清除 nodes_ //
-			nodes_.clear();
-		}
-
+		// run-resume-stop 系列 config //
+		
 		// request 状态机请求函数 //
 		// 并发设计：request 系列由 NRT 线程调用，同一时刻最多一个 request 在执行；
 		// onestep 系列由 RT 线程串行调用。最多只有一个 request 线程 + 一个 onestep
@@ -1559,7 +940,7 @@ namespace aris::plan {
 					// CAS 失败：状态已被实时线程/其它 request 改变，重读后重试 //
 				}
 				else {
-					return -1; // Uninitialized / Idle / Stopping / MovingToTarget / Error 不可暂停 //
+					return -1; // Uninitialized / Idle / Stopping / Goto / Error 不可暂停 //
 				}
 			}
 		}
@@ -1596,6 +977,672 @@ namespace aris::plan {
 			state_.store(PlannerState::Resuming);
 			return 0;
 		}
+
+		// run 系列指令插入 //
+		auto insertInitNode(aris::dynamic::Marker** tools, aris::dynamic::Marker** wobjs, MAPNodeType init_type, int cartesian_planner_idx = 0) -> void {
+			// 在独立的 init_node_ 中构建：tools/wobjs 可能指向 ins_node_ 自身，
+			// 用 init_node_ 作为构建缓冲，避免 ins_node_.init() 清空源数据 //
+			init_node_.init();
+			std::copy(last_node_.mem_.begin(), last_node_.mem_.end(), init_node_.mem_.begin());
+
+			// 填入本节点信息 //
+			init_node_.id_ = ins_id_.load();
+			init_node_.type_ = init_type;
+			init_node_.cartesian_planner_idx_ = cartesian_planner_idx;
+			std::copy(tools, tools + ee_size_, init_node_.tools());
+			std::copy(wobjs, wobjs + ee_size_, init_node_.wobjs());
+
+			// 填入 tw 信息 //
+			if (tw_.selectTw(last_node_.tools(), last_node_.wobjs()))
+				THROW_FILE_LINE("invalid last tool and wobj");
+			tw_.setTwPos(last_node_.twPos());
+			if (tw_.selectTw(init_node_.tools(), init_node_.wobjs()))
+				THROW_FILE_LINE("invalid tool and wobj");
+			tw_.getTwPos(init_node_.twPos());
+
+			// 填入 whichroot 信息 //
+			if(last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
+				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), init_node_.whichInverseRoots());
+				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), init_node_.jointPos(), init_node_.eePos(), init_node_.whichForwardRoots());
+			}
+			else {
+				std::copy(last_node_.whichForwardRoots(), last_node_.whichForwardRoots() + sub_id_list_.size(), init_node_.whichForwardRoots());
+				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), init_node_.eePos(), init_node_.jointPos(), init_node_.whichInverseRoots());
+			}
+
+			// 插入 //
+			nodes_.push_back(init_node_);
+			std::swap(last_node_, init_node_);
+		}
+		auto insLine(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
+			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
+			auto state = state_.load();
+			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
+				return -1;
+
+			auto ins_id = ins_id_.load();
+
+			// init & 获取坐标系 //
+			ins_node_.init();
+
+			// 获取坐标系（直接写入 ins_node_ 的 tools/wobjs）//
+			resolveToolsAndWobjs(tool_wobjs, ins_node_.tools(), ins_node_.wobjs());
+
+			// 计算 cartesian_planner_idx //
+			int cartesian_idx = 0;
+			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
+				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
+				cartesian_idx = !last_node_.isSameTools(ins_node_.tools()) || !last_node_.isSameWobjs(ins_node_.wobjs()) 
+					? 1 - last_node_.cartesian_planner_idx_ : last_node_.cartesian_planner_idx_;
+			} else {
+				// 从关节空间来，默认使用 inv_tg1_ (0)
+				cartesian_idx = 0;
+			}
+
+			// 查看是否插入 INIT //
+			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
+				|| !last_node_.isSameTools(ins_node_.tools())
+				|| !last_node_.isSameWobjs(ins_node_.wobjs())) 
+			{
+				insertInitNode(ins_node_.tools(), ins_node_.wobjs(), MAPNodeType::CartesianInitPos, cartesian_idx);
+			}
+
+			// 更新 last_tw_pos_ 等 //
+			ins_node_.id_ = ins_id;
+			ins_node_.type_ = MAPNodeType::Line;
+			ins_node_.cartesian_planner_idx_ = cartesian_idx;
+			ins_node_.time_zone_ = time_zone;
+			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
+			std::copy(vel, vel + output_vdim_, ins_node_.twVel());
+			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
+			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
+			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
+
+			// 做反解计算 //
+			{
+				tw_.selectTw(ins_node_.tools(), ins_node_.wobjs());
+				tw_.setTwPos(ins_node_.twPos());
+				tw_.getEePos(ins_node_.eePos());
+
+				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
+
+				// ik 求解末端，初值采用 begJointPos
+				auto ret = model_->subInverseKinematics(
+					sub_id_list_.size(), sub_id_list_.data(),
+					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
+
+				if(ret < 0)
+					return ret;
+
+				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
+				for (int i = 0; i < input_psize_; ++i) {
+					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
+						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
+						return -2;
+				}
+
+				// 根据求出的末端，计算它在用的哪组解
+				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
+
+			}
+
+			// 正常插入指令 //
+			nodes_.push_back(ins_node_);
+			std::swap(last_node_, ins_node_);
+
+			ins_id_++;
+			return ins_id;
+		}
+		auto insCircle(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t {
+			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
+			auto state = state_.load();
+			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
+				return -1;
+
+			auto ins_id = ins_id_.load();
+
+			// init & 获取坐标系 //
+			ins_node_.init();
+
+			// 获取坐标系（直接写入 ins_node_ 的 tools/wobjs）//
+			resolveToolsAndWobjs(tool_wobjs, ins_node_.tools(), ins_node_.wobjs());
+
+			// 计算 cartesian_planner_idx //
+			int cartesian_idx = 0;
+			if (last_node_.type_ == MAPNodeType::Line || last_node_.type_ == MAPNodeType::Circle || last_node_.type_ == MAPNodeType::CartesianInitPos) {
+				// 从笛卡尔空间来，判断 tool/wobj 是否变化 //
+				cartesian_idx = !last_node_.isSameTools(ins_node_.tools()) || !last_node_.isSameWobjs(ins_node_.wobjs()) 
+					? 1 - last_node_.cartesian_planner_idx_ : last_node_.cartesian_planner_idx_;
+			} else {
+				// 从关节空间来，默认使用 inv_tg1_ (0)
+				cartesian_idx = 0;
+			}
+
+			// 查看是否插入 INIT //
+			if ((last_node_.type_ != MAPNodeType::Line && last_node_.type_ != MAPNodeType::Circle && last_node_.type_ != MAPNodeType::CartesianInitPos)
+				|| !last_node_.isSameTools(ins_node_.tools())
+				|| !last_node_.isSameWobjs(ins_node_.wobjs())) 
+			{
+				insertInitNode(ins_node_.tools(), ins_node_.wobjs(), MAPNodeType::CartesianInitPos, cartesian_idx);
+			}
+
+			// 更新 last_tw_pos_ 等 //
+			ins_node_.id_ = ins_id;
+			ins_node_.type_ = MAPNodeType::Circle;
+			ins_node_.cartesian_planner_idx_ = cartesian_idx;
+			ins_node_.time_zone_ = time_zone;
+			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
+			std::copy(tw_mid_pos, tw_mid_pos + output_psize_, ins_node_.midPos());
+			std::copy(vel, vel + output_vdim_, ins_node_.twVel());
+			std::copy(acc, acc + output_vdim_, ins_node_.twAcc());
+			std::copy(jerk, jerk + output_vdim_, ins_node_.twJerk());
+			std::copy(zone, zone + output_vdim_, ins_node_.twZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
+
+			{
+				tw_.selectTw(ins_node_.tools(), ins_node_.wobjs());
+				tw_.setTwPos(ins_node_.twPos());
+				tw_.getEePos(ins_node_.eePos());
+
+				std::copy(last_node_.whichInverseRoots(), last_node_.whichInverseRoots() + sub_id_list_.size(), ins_node_.whichInverseRoots());
+
+				// ik 求解末端，初值采用 begJointPos
+				auto ret = model_->subInverseKinematics(
+					sub_id_list_.size(), sub_id_list_.data(),
+					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
+
+				if(ret < 0)
+					return ret;
+
+				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
+				for (int i = 0; i < input_psize_; ++i) {
+					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
+						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
+						return -2;
+				}
+
+				// 根据求出的末端，计算它在用的哪组解
+				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
+
+			}
+
+			// 正常插入指令 //
+			nodes_.push_back(ins_node_);
+			std::swap(last_node_, ins_node_);
+
+			ins_id_++;
+			return ins_id;
+		}
+		auto insMoveJ(TW& tool_wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root, double time_zone = 0.0) -> std::int64_t {
+			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
+			auto state = state_.load();
+			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
+				return -1;
+
+			auto ins_id = ins_id_.load();
+
+			// init & 获取坐标系 //
+			ins_node_.init();
+
+			// 获取坐标系（直接写入 ins_node_ 的 tools/wobjs）//
+			resolveToolsAndWobjs(tool_wobjs, ins_node_.tools(), ins_node_.wobjs());
+
+			// 查看是否插入 INIT //
+			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) {
+				insertInitNode(ins_node_.tools(), ins_node_.wobjs(), MAPNodeType::JointInitPos);
+			}
+
+			// 更新 last_tw_pos_ 等 //
+			ins_node_.id_ = ins_id;
+			ins_node_.type_ = MAPNodeType::MoveJ;
+			ins_node_.time_zone_ = time_zone;
+			std::copy(tw_pos, tw_pos + output_psize_, ins_node_.twPos());
+			std::copy(joint_v, joint_v + input_vdim_, ins_node_.jointVel());
+			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
+			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
+			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
+
+			{
+				tw_.selectTw(ins_node_.tools(), ins_node_.wobjs());
+				tw_.setTwPos(ins_node_.twPos());
+				tw_.getEePos(ins_node_.eePos());
+
+				// 用上一个节点的 whichInverseRoots 作为本节点的初值，若 which_root 不为空，则使用 which_root 作为本节点的初值
+				if(which_root != nullptr){
+					std::copy(which_root, which_root + sub_id_list_.size(), ins_node_.whichInverseRoots());
+				}
+				else{
+					std::fill(ins_node_.whichInverseRoots(), ins_node_.whichInverseRoots() + sub_id_list_.size(), -1);
+				}
+
+				// ik 求解末端，初值采用 begJointPos
+				auto ret = model_->subInverseKinematics(
+					sub_id_list_.size(), sub_id_list_.data(),
+					ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots(), ins_node_.begJointPos());
+				
+				if(ret < 0)
+					return ret;
+
+				// 检查反解得到的关节位置是否超出运动范围限制，超限则返回 -2 //
+				for (int i = 0; i < input_psize_; ++i) {
+					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
+						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
+						return -2;
+				}
+
+				// 根据求出的末端，计算它在用的哪组解
+				model_->getSubWhichForwardRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots());
+			}
+
+			// 正常插入指令 //
+			nodes_.push_back(ins_node_);
+			std::swap(last_node_, ins_node_);
+
+			ins_id_++;
+			return ins_id;
+		}
+		auto insMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone = 0.0) -> std::int64_t {
+			// 根据当前状态判断可行性，state在 rt 线程只可能在以下几个状态间流转，因此并发不影响判断结果 //
+			auto state = state_.load();
+			if(state != PlannerState::Idle && state != PlannerState::Running && state != PlannerState::Paused && state != PlannerState::Pausing && state != PlannerState::Resuming && requestInit() != 0)
+				return -1;
+
+			auto ins_id = ins_id_.load();
+			
+			// 如果运动方式有变化，重新插入 INIT //
+			if ((last_node_.type_ != MAPNodeType::MoveJ && last_node_.type_ != MAPNodeType::MoveAbsJ && last_node_.type_ != MAPNodeType::JointInitPos)) 
+			{
+				auto tools = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
+				auto wobjs = std::vector<aris::dynamic::Marker*>(ee_size_, nullptr);
+				insertInitNode(tools.data(), wobjs.data(), MAPNodeType::JointInitPos);
+			}
+
+			// 更新 last_tw_pos_ 等 //
+			ins_node_.init();
+			ins_node_.id_ = ins_id;
+			ins_node_.type_ = MAPNodeType::MoveAbsJ;
+			ins_node_.time_zone_ = time_zone;
+			std::copy(joint_p, joint_p + input_psize_, ins_node_.jointPos());
+			std::copy(joint_v, joint_v + input_vdim_, ins_node_.jointVel());
+			std::copy(joint_a, joint_a + input_vdim_, ins_node_.jointAcc());
+			std::copy(joint_j, joint_j + input_vdim_, ins_node_.jointJerk());
+			std::copy(zone, zone + input_vdim_, ins_node_.jointZone());
+
+			// 记录 init 位置（last_node_ 结束时的位置作为本节点初值）//
+			std::copy(last_node_.eePos(), last_node_.eePos() + output_psize_, ins_node_.begEePos());
+			std::copy(last_node_.jointPos(), last_node_.jointPos() + input_psize_, ins_node_.begJointPos());
+
+			{
+				std::copy(last_node_.whichForwardRoots(), last_node_.whichForwardRoots() + sub_id_list_.size(), ins_node_.whichForwardRoots());
+				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), ins_node_.eePos(), ins_node_.jointPos(), ins_node_.whichInverseRoots());
+				
+				auto ret = model_->subForwardKinematics(
+					sub_id_list_.size(), sub_id_list_.data(),
+					ins_node_.jointPos(), ins_node_.eePos(), ins_node_.whichForwardRoots(), ins_node_.jointPos());
+
+				if(ret < 0)
+					return ret;
+
+				// 检查目标关节位置是否超出运动范围限制，超限则返回 -2 //
+				for (int i = 0; i < input_psize_; ++i) {
+					if (ins_node_.jointPos()[i] > max_poss_[i] + 1e-10
+						|| ins_node_.jointPos()[i] < min_poss_[i] - 1e-10)
+						return -2;
+				}
+			}
+
+			// 正常插入指令 //
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[insMoveAbsJ] BEFORE push: ins_node_.tz=" << ins_node_.time_zone_ << " time_zone_param=" << time_zone << " insert_id=" << ins_id_ << std::endl;
+#endif
+			nodes_.push_back(ins_node_);
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[insMoveAbsJ] AFTER push: nodes_.back().tz=" << nodes_.back().time_zone_ << " size=" << nodes_.size() << std::endl;
+#endif
+			std::swap(last_node_, ins_node_);
+
+			ins_id_++;
+			return ins_id;
+		}
+		auto updateIns() -> void {
+			// 插入数据 //
+			for (auto& node : nodes_) {
+				switch (node.type_) {
+				case MAPNodeType::CartesianInitPos:
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertInitPos(node.id_, node.eePos());
+					break;
+				case MAPNodeType::Line:
+					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertLinePos(node.id_, node.twPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
+					break;
+				case MAPNodeType::Circle:
+					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
+					(node.cartesian_planner_idx_ == 0 ? inv_tg1_ : inv_tg2_).insertCirclePos(node.id_, node.twPos(), node.midPos(), node.twVel(), node.twAcc(), node.twJerk(), node.twZone());
+					break;
+				case MAPNodeType::JointInitPos:
+					fwd_tg_.insertInitPos(node.id_, node.jointPos());
+					break;
+				case MAPNodeType::MoveJ:
+					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
+					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
+					break;
+				case MAPNodeType::MoveAbsJ:
+#ifdef DEBUG_ARIS_MMP
+					std::cerr << "[updateIns::MoveAbsJ] node.id=" << node.id_ << " node.tz=" << node.time_zone_ << std::endl;
+#endif
+					map_nodes_[node.id_ % TW_POOL_SIZE] = node;
+					fwd_tg_.insertLinePos(node.id_, node.jointPos(), node.jointVel(), node.jointAcc(), node.jointJerk(), node.jointZone());
+					break;
+				}
+			}
+
+			// 批量插入后统一重规划提交
+			inv_tg1_.updateInsertPos();
+			inv_tg2_.updateInsertPos();
+			fwd_tg_.updateInsertPos();
+
+#ifdef DEBUG_ARIS_MMP
+			std::cerr << "[updateIns] insert_id=" << ins_id_ << " map_tz:";
+			for (int _i = 1; _i < ins_id_; ++_i)
+				std::cerr << " [" << _i << "]=" << map_nodes_[_i].time_zone_;
+			std::cerr << std::endl;
+#endif
+
+			// 更新完后清除 nodes_ //
+			nodes_.clear();
+		}
+
+		// goto 管线 config //
+		auto configGotoPipeline() -> void {
+			const auto dt = inv_tg1_.dt();
+
+			// 工作缓冲：zone 每次零填；其余缓冲在 goto 前都会被覆盖填充 //
+			std::fill_n(goto_joint_zone_, input_vdim_, 0.0);
+			std::fill_n(goto_tw_zone_, output_vdim_, 0.0);
+			std::fill_n(goto_tools_, ee_size_, nullptr);
+			std::fill_n(goto_wobjs_, ee_size_, nullptr);
+
+			// 专用 tg：与主管线相同的位置类型，allocate 后 clear 再插 init + goto 节点 //
+			std::vector<aris::dynamic::PosType> ee_pos_types(ee_size_);
+			model_->getSubOutputPosTypes(sub_id_list_.size(), sub_id_list_.data(), ee_pos_types.data());
+			std::vector<aris::dynamic::PosType> input_pos_types(model_->subInputSize(sub_id_list_.size(), sub_id_list_.data()));
+			model_->getSubInputPosTypes(sub_id_list_.size(), sub_id_list_.data(), input_pos_types.data());
+
+			goto_inv_tg_.setPosTypes(ee_pos_types);
+			goto_inv_tg_.setDt(dt);
+			goto_inv_tg_.allocateMemory();
+			goto_fwd_tg_.setPosTypes(input_pos_types);
+			goto_fwd_tg_.setDt(dt);
+			goto_fwd_tg_.allocateMemory();
+
+			// 专用 is / sr：从主管线 is_ 拷贝限幅，allocate 后设置回调 //
+			goto_is_.setInputSize(input_psize_);
+			goto_is_.setDt(dt);
+			goto_is_.setMaxPos(is_.maxPos());
+			goto_is_.setMinPos(is_.minPos());
+			goto_is_.setMaxVel(is_.maxVel());
+			goto_is_.setMinVel(is_.minVel());
+			goto_is_.setMaxAcc(is_.maxAcc());
+			goto_is_.setMinAcc(is_.minAcc());
+			goto_is_.allocateMemory();
+
+			goto_sr_.setInputSize(input_psize_);
+			goto_sr_.setDt(dt);
+			goto_sr_.setMaxPos(is_.maxPos());
+			goto_sr_.setMinPos(is_.minPos());
+			goto_sr_.setMaxVel(is_.maxVel());
+			goto_sr_.setMinVel(is_.minVel());
+			goto_sr_.setMaxAcc(is_.maxAcc());
+			goto_sr_.setMinAcc(is_.minAcc());
+			goto_sr_.allocateMemory();
+
+			// 回调：单节点，推进 goto_tg_ 并（笛卡尔时）反解输出关节位置 //
+			goto_is_.setInputGenerator([this](double* p)->std::int64_t {
+				if (goto_line_) {
+					tg_ret_ = goto_inv_tg_.getEePosAndMoveDt(tw_pos_);
+					tw_rt_.selectTw(goto_tools_, goto_wobjs_);
+					tw_rt_.setTwPos(tw_pos_);
+					tw_rt_.getEePos(ee_pos_);
+					ik_ret_ = model_->subInverseKinematics(
+						sub_id_list_.size(), sub_id_list_.data(),
+						ee_pos_, p, goto_which_roots_, goto_beg_joint_);
+					if (ik_ret_ >= 0)
+						std::copy(p, p + input_psize_, goto_input_cache_);
+					else
+						std::copy(goto_input_cache_, goto_input_cache_ + input_psize_, p);
+					return tg_ret_;
+				}
+				else {
+					tg_ret_ = goto_fwd_tg_.getEePosAndMoveDt(p);
+					std::copy(p, p + input_psize_, goto_input_cache_);
+					return tg_ret_;
+				}
+			});
+			goto_sr_.setInputGenerator([this](double* p)->std::int64_t {
+				return goto_is_.getNextInput(p);
+			});
+		}
+		auto gotoJ(TW& tool_wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState goto_state;
+			if (cur == PlannerState::Uninitialized) goto_state = PlannerState::UninitializedGoto;
+			else if (cur == PlannerState::Paused) goto_state = PlannerState::PausedGoto;
+			else return -1;
+
+			configGotoPipeline();
+			goto_line_ = false;
+
+			// 解析工具/工件 //
+			resolveToolsAndWobjs(tool_wobjs, goto_tools_, goto_wobjs_);
+
+			// 起点：当前关节/末端位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_joint_);
+			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_);
+
+			// 反解目标（tw → ee → joint；根号用 which_root 或当前逆解根）//
+			tw_.selectTw(goto_tools_, goto_wobjs_);
+			tw_.setTwPos(tw_pos);
+			tw_.getEePos(goto_target_ee_);
+			if (which_root != nullptr) {
+				std::copy(which_root, which_root + sub_id_list_.size(), goto_which_roots_);
+			}
+			else {
+				model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_, goto_beg_joint_, goto_which_roots_);
+			}
+			auto ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data(),
+				goto_target_ee_, goto_target_joint_, goto_which_roots_, goto_beg_joint_);
+			if (ret < 0)
+				return ret;
+			for (int i = 0; i < input_psize_; ++i) {
+				if (goto_target_joint_[i] > max_poss_[i] + 1e-10 || goto_target_joint_[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 专用关节 tg：clear 后插入一条 init（当前位置），再插入关节目标（zone=0）//
+			goto_fwd_tg_.clearAllPos();
+			goto_fwd_tg_.insertInitPos(1, goto_beg_joint_);
+			goto_fwd_tg_.insertLinePos(1, goto_target_joint_, joint_v, joint_a, joint_j, goto_joint_zone_);
+			goto_fwd_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr（缓存用目标关节）//
+			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
+			goto_is_.init(goto_beg_joint_);
+			goto_sr_.init(resume_target_ratio_*0.1);
+
+			// 切入 goto 状态 //
+			state_.compare_exchange_strong(cur, goto_state);
+			return 1;
+		}
+		auto gotoAbsJ(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState goto_state;
+			if (cur == PlannerState::Uninitialized) goto_state = PlannerState::UninitializedGoto;
+			else if (cur == PlannerState::Paused) goto_state = PlannerState::PausedGoto;
+			else return -1;
+
+			configGotoPipeline();
+			goto_line_ = false;
+
+			// 起点 = 当前位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_joint_);
+
+			// 检查目标关节位置是否超出运动范围限制 //
+			for (int i = 0; i < input_psize_; ++i) {
+				if (joint_pos[i] > max_poss_[i] + 1e-10 || joint_pos[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 专用关节 tg：clear 后插入一条 init（当前位置），再插入 MoveAbsJ 目标（zone=0）//
+			goto_fwd_tg_.clearAllPos();
+			goto_fwd_tg_.insertInitPos(1, goto_beg_joint_);
+			goto_fwd_tg_.insertLinePos(1, joint_pos, joint_v, joint_a, joint_j, goto_joint_zone_);
+			goto_fwd_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr //
+			std::copy(goto_beg_joint_, goto_beg_joint_ + input_psize_, goto_input_cache_);
+			goto_is_.init(goto_beg_joint_);
+			goto_sr_.init(resume_target_ratio_*0.1);
+
+			// 切入 goto 状态 //
+			state_.compare_exchange_strong(cur, goto_state);
+			return 1;
+		}
+		auto gotoL(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState goto_state;
+			if (cur == PlannerState::Uninitialized) goto_state = PlannerState::UninitializedGoto;
+			else if (cur == PlannerState::Paused) goto_state = PlannerState::PausedGoto;
+			else return -1;
+
+			configGotoPipeline();
+			goto_line_ = true;
+
+			// 解析工具/工件（直接写入成员缓冲，供 RT 反解使用）//
+			resolveToolsAndWobjs(tool_wobjs, goto_tools_, goto_wobjs_);
+
+			// 起点：当前关节/末端位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_joint_);
+			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_);
+
+			// 反解目标（初值用当前关节，根用当前逆解根）//
+			tw_.selectTw(goto_tools_, goto_wobjs_);
+			tw_.setTwPos(tw_pos);
+			tw_.getEePos(goto_target_ee_);
+			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_, goto_beg_joint_, goto_which_roots_);
+			auto ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data(),
+				goto_target_ee_, goto_target_joint_, goto_which_roots_, goto_beg_joint_);
+			if (ret < 0)
+				return ret;
+			for (int i = 0; i < input_psize_; ++i) {
+				if (goto_target_joint_[i] > max_poss_[i] + 1e-10 || goto_target_joint_[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 当前 tw 位置作为专用 tg 的 init //
+			tw_.selectTw(goto_tools_, goto_wobjs_);
+			tw_.setEePos(goto_beg_ee_);
+			tw_.getTwPos(goto_cur_tw_);
+
+			// 专用笛卡尔 tg：clear 后插入一条 init（当前 tw），再插入 Line 目标（zone=0）//
+			goto_inv_tg_.clearAllPos();
+			goto_inv_tg_.insertInitPos(1, goto_cur_tw_);
+			goto_inv_tg_.insertLinePos(1, tw_pos, vel, acc, jerk, goto_tw_zone_);
+			goto_inv_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
+			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
+			goto_is_.init(goto_beg_joint_);
+			goto_sr_.init(resume_target_ratio_*0.1);
+
+			// 切入 goto 状态 //
+			state_.compare_exchange_strong(cur, goto_state);
+			return 1;
+		}
+		auto gotoC(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+			auto cur = state_.load();
+			PlannerState goto_state;
+			if (cur == PlannerState::Uninitialized) goto_state = PlannerState::UninitializedGoto;
+			else if (cur == PlannerState::Paused) goto_state = PlannerState::PausedGoto;
+			else return -1;
+
+			configGotoPipeline();
+			goto_line_ = true;
+
+			// 解析工具/工件（直接写入成员缓冲，供 RT 反解使用）//
+			resolveToolsAndWobjs(tool_wobjs, goto_tools_, goto_wobjs_);
+
+			// 起点：当前关节/末端位置 //
+			model_->getSubInputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_joint_);
+			model_->getSubOutputPos(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_);
+
+			// 反解目标（初值用当前关节，根用当前逆解根）//
+			tw_.selectTw(goto_tools_, goto_wobjs_);
+			tw_.setTwPos(tw_pos);
+			tw_.getEePos(goto_target_ee_);
+			model_->getSubWhichInverseRoot(sub_id_list_.size(), sub_id_list_.data(), goto_beg_ee_, goto_beg_joint_, goto_which_roots_);
+			auto ret = model_->subInverseKinematics(sub_id_list_.size(), sub_id_list_.data(),
+				goto_target_ee_, goto_target_joint_, goto_which_roots_, goto_beg_joint_);
+			if (ret < 0)
+				return ret;
+			for (int i = 0; i < input_psize_; ++i) {
+				if (goto_target_joint_[i] > max_poss_[i] + 1e-10 || goto_target_joint_[i] < min_poss_[i] - 1e-10)
+					return -2;
+			}
+
+			// 当前 tw 位置作为专用 tg 的 init //
+			tw_.selectTw(goto_tools_, goto_wobjs_);
+			tw_.setEePos(goto_beg_ee_);
+			tw_.getTwPos(goto_cur_tw_);
+
+			// 专用笛卡尔 tg：clear 后插入一条 init（当前 tw），再插入 Circle 目标（zone=0）//
+			goto_inv_tg_.clearAllPos();
+			goto_inv_tg_.insertInitPos(1, goto_cur_tw_);
+			goto_inv_tg_.insertCirclePos(1, tw_pos, tw_mid_pos, vel, acc, jerk, goto_tw_zone_);
+			goto_inv_tg_.updateInsertPos();
+
+			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
+			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
+			goto_is_.init(goto_beg_joint_);
+			goto_sr_.init(resume_target_ratio_*0.1);
+
+			// 切入 goto 状态 //
+			state_.compare_exchange_strong(cur, goto_state);
+			return 1;
+		}
+
+		////////////// RT //////////////
+		
+		// 记录最新 input，并用差分计算速度/加速度：
+		// 位置：把新数据写入最旧缓冲区 last2_input_，再轮换三个指针；
+		// 速度：差分 (this_input - last_input)/dt 写入最旧速度缓冲区 last_vel_，再轮换指针；
+		// 加速度：差分 (this_vel - last_vel)/dt
+		auto record_input(const double* p) -> void {
+			// 位置 //
+			std::copy(p, p + input_psize_, last2_input_);
+			std::swap(last2_input_, last_input_);
+			std::swap(last_input_, this_input_);
+
+			// 速度 //
+			const double dt = inv_tg1_.dt();
+			for (aris::Size i = 0; i < input_psize_; ++i)
+				last_vel_[i] = (this_input_[i] - last_input_[i]) / dt;
+			std::swap(this_vel_, last_vel_);
+
+			// 加速度 //
+			for (aris::Size i = 0; i < input_psize_; ++i)
+				this_acc_[i] = (this_vel_[i] - last_vel_[i]) / dt;
+		};
 
 		// 实时步进入口：根据当前状态分发到各 OneStep，并在其返回 0 时切换终态 //
 		auto getNextInput(double* p) -> std::int64_t {
@@ -1684,25 +1731,85 @@ namespace aris::plan {
 					state_.compare_exchange_strong(cur1, PlannerState::Uninitialized);
 				}
 				break;
-			case PlannerState::PausedMoving:
-			case PlannerState::UninitializedMoving:
-				// move-to-target 专用管线：推进 move_sr_（move_is_ → move_tg_）//
-				ret = move_sr_.getNextInput(p);
-				model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
-				model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
-				record_input(p);
+			case PlannerState::PausedGoto:
+			case PlannerState::UninitializedGoto:
+				ret = gotoOneStep(p);
 				if (ret == 0) {
 					// 到达目标：回到进入前状态（Paused 或 Uninitialized）//
 					auto cur = state_.load();
-					auto target = (cur == PlannerState::PausedMoving) ? PlannerState::Paused : PlannerState::Uninitialized;
+					auto target = (cur == PlannerState::PausedGoto) ? PlannerState::Paused : PlannerState::Uninitialized;
 					state_.compare_exchange_strong(cur, target);
 				}
 				break;
 			default:
 				break;
 			}
+			// 统一：正解更新模型 + 记录 input //
+			model_->setSubInputPos(sub_id_list_.size(), sub_id_list_.data(), p);
+			model_->subForwardKinematics(sub_id_list_.size(), sub_id_list_.data());
+			record_input(p);
 			return ret;
 		}
+
+		// run-resume-stop 系列步进函数 //
+		auto runOneStep(double* p) -> std::int64_t {
+			// 原始推进 //
+			return sr_.getNextInput(p);
+		};
+		auto stopOneStep(double* p) -> std::int64_t {
+			// 每维在速度域用 s_follow_x 减速一步：
+			//   位置 pa = 当前速度 this_vel_，速度 va = 当前加速度 this_acc_，目标 pt = 0（速度降为 0）；
+			//   速度上限 v_max/v_min = 加速度上限，加速度上限 a_max/a_min = jerk 上限；
+			//   输出 pc = 下一速度，vc = 下一加速度，ac = 下一 jerk；
+			//   位置由速度积分递增：p = this_input_ + v_new * dt //
+			bool all_stopped = true;
+			for (aris::Size i = 0; i < input_psize_; ++i) {
+				double v_new, a_new, j_new;
+				aris::Size total_count;
+				s_follow_x(this_vel_[i], this_acc_[i], 0.0,
+					max_accs_[i], -max_accs_[i], max_jerks_[i], -max_jerks_[i],
+					inv_tg1_.dt(), 1e-10, v_new, a_new, j_new, total_count);
+				p[i] = this_input_[i] + v_new * inv_tg1_.dt();
+				if (total_count != 0)
+					all_stopped = false;
+			}
+
+			// return 
+			return all_stopped ? 0 : 1;
+		};
+		auto pauseOneStep(double* p) -> std::int64_t {
+			// Running / Pausing：推进暂停 //
+			sr_.setTargetSpeedRatio(0.0);
+			
+			// 原始推进 //
+			paused_tg_ret_ = sr_.getNextInput(p);
+
+			// 速度降到 0 → 已完全暂停：记录暂停位置并返回 0（状态切换为 Paused）//
+			if (sr_.actualSpeedRatio() <= speed_epsilon_) {
+				std::copy(p, p + input_psize_, pause_pos_);
+				return 0;
+			}
+			return paused_tg_ret_;
+		};
+		auto resumeOneStep(double* p) -> std::int64_t {
+			// Resuming：沿 scurve 走一步 //
+			const auto n = input_psize_;
+			for (aris::Size i = 0; i < n; ++i) {
+				aris::plan::LargeNum pos;
+				aris::plan::s_scurve_at(resume_scurve_params_[i], resume_t_, &pos);
+				p[i] = static_cast<double>(pos);
+			}
+			resume_t_ += inv_tg1_.dt();
+
+			// 设置：走完 → 0（状态切换为 Running），否则返回暂停时的节点 id //
+			return resume_t_ >= resume_T_ ? 0 : paused_tg_ret_;
+		};
+
+		// goto 系列步进函数 //
+		auto gotoOneStep(double* p) -> std::int64_t {
+			// 推进 goto 专用管线（goto_sr_ → goto_is_ → goto_tg_）//
+			return goto_sr_.getNextInput(p);
+		};
 	};
 
 	////////////////// PART 1 config ////////////////
@@ -1729,10 +1836,6 @@ namespace aris::plan {
 		imp_->fwd_tg_.setDt(dt);
 		imp_->is_.setDt(dt);
 		imp_->sr_.setDt(dt);
-		imp_->move_inv_tg_.setDt(dt);
-		imp_->move_fwd_tg_.setDt(dt);
-		imp_->move_is_.setDt(dt);
-		imp_->move_sr_.setDt(dt);
 	}
 	auto MultimodelPlanner::dt() -> double {
 		return imp_->inv_tg1_.dt();
@@ -1742,8 +1845,6 @@ namespace aris::plan {
 		imp_->max_pos_mat_ = pos;
 		imp_->is_.setMaxPos(pos);
 		imp_->sr_.setMaxPos(pos);
-		imp_->move_is_.setMaxPos(pos);
-		imp_->move_sr_.setMaxPos(pos);
 	}
 	auto MultimodelPlanner::maxPos() -> aris::core::Matrix {
 		return imp_->is_.maxPos();
@@ -1752,8 +1853,6 @@ namespace aris::plan {
 		imp_->max_vel_mat_ = vel;
 		imp_->is_.setMaxVel(vel);
 		imp_->sr_.setMaxVel(vel);
-		imp_->move_is_.setMaxVel(vel);
-		imp_->move_sr_.setMaxVel(vel);
 	}
 	auto MultimodelPlanner::maxVel() -> aris::core::Matrix {
 		return imp_->is_.maxVel();
@@ -1762,8 +1861,6 @@ namespace aris::plan {
 		imp_->max_acc_mat_ = acc;
 		imp_->is_.setMaxAcc(acc);
 		imp_->sr_.setMaxAcc(acc);
-		imp_->move_is_.setMaxAcc(acc);
-		imp_->move_sr_.setMaxAcc(acc);
 	}
 	auto MultimodelPlanner::maxAcc() -> aris::core::Matrix {
 		return imp_->is_.maxAcc();
@@ -1778,8 +1875,6 @@ namespace aris::plan {
 		imp_->min_pos_mat_ = pos;
 		imp_->is_.setMinPos(pos);
 		imp_->sr_.setMinPos(pos);
-		imp_->move_is_.setMinPos(pos);
-		imp_->move_sr_.setMinPos(pos);
 	}
 	auto MultimodelPlanner::minPos() -> aris::core::Matrix {
 		return imp_->is_.minPos();
@@ -1788,8 +1883,6 @@ namespace aris::plan {
 		imp_->min_vel_mat_ = vel;
 		imp_->is_.setMinVel(vel);
 		imp_->sr_.setMinVel(vel);
-		imp_->move_is_.setMinVel(vel);
-		imp_->move_sr_.setMinVel(vel);
 	}
 	auto MultimodelPlanner::minVel() -> aris::core::Matrix {
 		return imp_->is_.minVel();
@@ -1798,8 +1891,6 @@ namespace aris::plan {
 		imp_->min_acc_mat_ = acc;
 		imp_->is_.setMinAcc(acc);
 		imp_->sr_.setMinAcc(acc);
-		imp_->move_is_.setMinAcc(acc);
-		imp_->move_sr_.setMinAcc(acc);
 	}
 	auto MultimodelPlanner::minAcc() -> aris::core::Matrix {
 		return imp_->is_.minAcc();
@@ -1839,10 +1930,10 @@ namespace aris::plan {
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {	
+	auto MultimodelPlanner::insertMoveL(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {	
 		return imp_->insLine(tw, ee_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto MultimodelPlanner::insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+	auto MultimodelPlanner::insertMoveL(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -1853,14 +1944,14 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return insertLinePos(tw, ee_pos, vel, acc, jerk, zone, time_zone);
+		return insertMoveL(tw, ee_pos, vel, acc, jerk, zone, time_zone);
 	}
 
 	// 插入新的数据，并重规划 //
-	auto MultimodelPlanner::insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+	auto MultimodelPlanner::insertMoveC(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
 		return imp_->insCircle(tw, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
 	}
-	auto MultimodelPlanner::insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
+	auto MultimodelPlanner::insertMoveC(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone) -> std::int64_t {
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -1871,7 +1962,7 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return insertCirclePos(tw, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
+		return insertMoveC(tw, ee_pos, mid_pos, vel, acc, jerk, zone, time_zone);
 	}
 
 	// 插入新的数据，并重规划 //
@@ -1939,6 +2030,7 @@ namespace aris::plan {
 	auto MultimodelPlanner::setTargetSpeedRatio(double ds) -> void {
 		imp_->resume_target_ratio_ = ds;
 		imp_->sr_.setTargetSpeedRatio(ds);
+		imp_->goto_sr_.setTargetSpeedRatio(ds*0.1);
 	}
 	auto MultimodelPlanner::targetSpeedRatio() -> double {
 		return imp_->sr_.targetSpeedRatio();
@@ -1986,13 +2078,10 @@ namespace aris::plan {
 
 
 
-	auto MultimodelPlanner::moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
-		return imp_->moveToTargetJoint(joint_pos, joint_v, joint_a, joint_j);
+	auto MultimodelPlanner::gotoJ(TW& tw, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root) -> std::int64_t {
+		return imp_->gotoJ(tw, tw_pos, joint_v, joint_a, joint_j, which_root);
 	}
-	auto MultimodelPlanner::moveToTargetLine(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
-		return imp_->moveToTargetLine(tw, tw_pos, vel, acc, jerk);
-	}
-	auto MultimodelPlanner::moveToTargetLine(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+	auto MultimodelPlanner::gotoJ(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root) -> std::int64_t {
 		auto tool_str_vec = aris::core::split(tools, ';');
 		auto wobj_str_vec = aris::core::split(wobjs, ';');
 
@@ -2003,7 +2092,42 @@ namespace aris::plan {
 			tw.push_back(std::pair(tool, wobj));
 		}
 
-		return moveToTargetLine(tw, tw_pos, vel, acc, jerk);
+		return gotoJ(tw, tw_pos, joint_v, joint_a, joint_j, which_root);
+	}
+	auto MultimodelPlanner::gotoAbsJ(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
+		return imp_->gotoAbsJ(joint_pos, joint_v, joint_a, joint_j);
+	}
+	auto MultimodelPlanner::gotoL(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		return imp_->gotoL(tw, tw_pos, vel, acc, jerk);
+	}
+	auto MultimodelPlanner::gotoL(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		auto tool_str_vec = aris::core::split(tools, ';');
+		auto wobj_str_vec = aris::core::split(wobjs, ';');
+
+		TW tw;
+		for (Size i = 0; i < std::max(tool_str_vec.size(), wobj_str_vec.size()); ++i) {
+			auto tool = i < tool_str_vec.size() ? aris::core::trimLR(tool_str_vec[i]) : std::string("");
+			auto wobj = i < wobj_str_vec.size() ? aris::core::trimLR(wobj_str_vec[i]) : std::string("");
+			tw.push_back(std::pair(tool, wobj));
+		}
+
+		return gotoL(tw, tw_pos, vel, acc, jerk);
+	}
+	auto MultimodelPlanner::gotoC(TW& tw, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		return imp_->gotoC(tw, tw_pos, tw_mid_pos, vel, acc, jerk);
+	}
+	auto MultimodelPlanner::gotoC(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
+		auto tool_str_vec = aris::core::split(tools, ';');
+		auto wobj_str_vec = aris::core::split(wobjs, ';');
+
+		TW tw;
+		for (Size i = 0; i < std::max(tool_str_vec.size(), wobj_str_vec.size()); ++i) {
+			auto tool = i < tool_str_vec.size() ? aris::core::trimLR(tool_str_vec[i]) : std::string("");
+			auto wobj = i < wobj_str_vec.size() ? aris::core::trimLR(wobj_str_vec[i]) : std::string("");
+			tw.push_back(std::pair(tool, wobj));
+		}
+
+		return gotoC(tw, tw_pos, tw_mid_pos, vel, acc, jerk);
 	}
 
 

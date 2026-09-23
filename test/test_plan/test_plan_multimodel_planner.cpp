@@ -268,12 +268,12 @@ auto test_multimodel_async_planner_1() -> void {
 	for (int i = 0; i < PE_SIZE; ++i) {
 		std::vector<std::pair<std::string, std::string>> tw;
 		tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
-		auto id = mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+		auto id = mmp.insertMoveL(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	}
 	{
 		std::vector<std::pair<std::string, std::string>> tw;
 		tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
-		mmp.insertCirclePos(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE-1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
+		mmp.insertMoveC(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE-1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
 	}
 	mmp.updateInsertPos();
 
@@ -370,9 +370,9 @@ auto test_multimodel_async_planner_two_arm() -> void {
 			std::pair<std::string, std::string>({ std::string(""),std::string("") })
 		};
 		//std::vector<std::pair<std::string, std::string>> tw{ std::pair<std::string, std::string>({ std::string("LeftArm.L7.tool0"),std::string("LeftArm.ground.wobj0") }), std::pair<std::string, std::string>({ std::string(""),std::string("") }) };
-		auto id = mmp.insertLinePos(tw, ee2, v, a, j, z);
-		id = mmp.insertLinePos(tw, ee1, v, a, j, z);
-		id = mmp.insertLinePos(tw, ee2, v, a, j, z);
+		auto id = mmp.insertMoveL(tw, ee2, v, a, j, z);
+		id = mmp.insertMoveL(tw, ee1, v, a, j, z);
+		id = mmp.insertMoveL(tw, ee2, v, a, j, z);
 	}
 
 	//aris::dynamic::dsp(1, 7, ee2);
@@ -382,12 +382,12 @@ auto test_multimodel_async_planner_two_arm() -> void {
 	//for (int i = 0; i < PE_SIZE; ++i) {
 	//	std::vector<std::pair<std::string, std::string>> tw;
 	//	tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
-	//	auto id = mmp.insertLinePos(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
+	//	auto id = mmp.insertMoveL(tw, pes[i % PE_SIZE], vels[i % PE_SIZE], accs[i % PE_SIZE], jerks[i % PE_SIZE], zones[i % PE_SIZE]);
 	//}
 	//{
 	//	std::vector<std::pair<std::string, std::string>> tw;
 	//	tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
-	//	mmp.insertCirclePos(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE - 1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
+	//	mmp.insertMoveC(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE - 1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
 	//}
 	mmp.updateInsertPos();
 

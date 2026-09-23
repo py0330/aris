@@ -70,7 +70,7 @@ auto MoveL::prepareNrt()->void{
 
 	// insert line //
 	if (int64Param("resume") == -1) {
-		planner_node_id_ = pd.plannerAt(0).insertLinePos(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
+		planner_node_id_ = pd.plannerAt(0).insertMoveL(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
 		std::cout << "insert line id: " << planner_node_id_ << std::endl;
 		if(planner_node_id_ < 0) 
 			THROW_FILE_LINE("insert line failed");
@@ -233,6 +233,257 @@ MoveJ::MoveJ(const std::string & name) {
 		"		<Param name=\"tool\" default=\"0\"/>"
 		"		<Param name=\"wobj\" default=\"0\"/>"
 		"		<Param name=\"resume\" default=\"-1\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
+
+// goto 系列：独立管线（专用 tg/is/sr，zone=0），不插入主队列。
+// 仅允许从 Uninitialized 或 Paused 状态启动；执行期间由 executeRT 驱动 getNextInput，
+// 返回 0 表示到达目标（状态回到 Uninitialized / Paused）。
+class GotoL : public aris::core::CloneObject<GotoL, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+
+	virtual ~GotoL();
+	explicit GotoL(const std::string& name = "GotoL");
+	GotoL(const GotoL& other);
+
+private:
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
+};
+auto GotoL::prepareNrt()->void{
+	sub_model_ = {1};
+
+	// 目标位姿 p（tool/wobj 坐标系），末端速度/加速度/加加速度 v,a,j //
+	auto pos_mtx = matrixParam("pos");
+	auto vel_mtx = matrixParam("vel");
+	auto acc_mtx = matrixParam("acc");
+	auto jerk_mtx = matrixParam("jerk");
+
+	// tool & wobj //
+	auto tools = stringParam("tool");
+	auto wobjs = stringParam("wobj");
+
+	if (tools.size() > 0 && tools.front() == '{' && tools.back() == '}') {
+		tools.erase(tools.begin());
+		tools.erase(tools.end() - 1);
+	}
+	if (wobjs.size() > 0 && wobjs.front() == '{' && wobjs.back() == '}') {
+		wobjs.erase(wobjs.begin());
+		wobjs.erase(wobjs.end() - 1);
+	}
+
+	// goto 直线目标（独立管线，zone=0）//
+	if (pd.plannerAt(0).gotoL(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data()) < 0)
+		THROW_FILE_LINE("gotoL failed (planner must be Uninitialized or Paused)");
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
+}
+auto GotoL::executeRT()->int{
+	double p[100];
+	auto ret = pd.getNextInput(0, p);
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), p);
+	return ret; // 0 = 到达目标；>0 = 继续 goto；<0 = 错误
+}
+GotoL::~GotoL() = default;
+GotoL::GotoL(const GotoL & other) = default;
+GotoL::GotoL(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"gotol\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"vel\" default=\"{0.5,0.5,0.5}\"/>"
+		"		<Param name=\"acc\" default=\"{3.0,3.0,3.0}\"/>"
+		"		<Param name=\"jerk\" default=\"{5.0,5.0,5.0}\"/>"
+		"		<Param name=\"tool\" default=\"\"/>"
+		"		<Param name=\"wobj\" default=\"\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
+class GotoC : public aris::core::CloneObject<GotoC, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+
+	virtual ~GotoC();
+	explicit GotoC(const std::string& name = "GotoC");
+	GotoC(const GotoC& other);
+
+private:
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
+};
+auto GotoC::prepareNrt()->void{
+	sub_model_ = {1};
+
+	// 目标位姿 p 与中间位姿 mid（tool/wobj 坐标系），末端速度/加速度/加加速度 v,a,j //
+	auto pos_mtx = matrixParam("pos");
+	auto mid_mtx = matrixParam("mid");
+	auto vel_mtx = matrixParam("vel");
+	auto acc_mtx = matrixParam("acc");
+	auto jerk_mtx = matrixParam("jerk");
+
+	// tool & wobj //
+	auto tools = stringParam("tool");
+	auto wobjs = stringParam("wobj");
+
+	if (tools.size() > 0 && tools.front() == '{' && tools.back() == '}') {
+		tools.erase(tools.begin());
+		tools.erase(tools.end() - 1);
+	}
+	if (wobjs.size() > 0 && wobjs.front() == '{' && wobjs.back() == '}') {
+		wobjs.erase(wobjs.begin());
+		wobjs.erase(wobjs.end() - 1);
+	}
+
+	// goto 圆弧目标（独立管线，zone=0）//
+	if (pd.plannerAt(0).gotoC(tools, wobjs, pos_mtx.data(), mid_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data()) < 0)
+		THROW_FILE_LINE("gotoC failed (planner must be Uninitialized or Paused)");
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
+}
+auto GotoC::executeRT()->int{
+	double p[100];
+	auto ret = pd.getNextInput(0, p);
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), p);
+	return ret; // 0 = 到达目标；>0 = 继续 goto；<0 = 错误
+}
+GotoC::~GotoC() = default;
+GotoC::GotoC(const GotoC & other) = default;
+GotoC::GotoC(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"gotoc\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"mid\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"vel\" default=\"{0.5,0.5,0.5}\"/>"
+		"		<Param name=\"acc\" default=\"{3.0,3.0,3.0}\"/>"
+		"		<Param name=\"jerk\" default=\"{5.0,5.0,5.0}\"/>"
+		"		<Param name=\"tool\" default=\"\"/>"
+		"		<Param name=\"wobj\" default=\"\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
+class GotoJ : public aris::core::CloneObject<GotoJ, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+
+	virtual ~GotoJ();
+	explicit GotoJ(const std::string& name = "GotoJ");
+	GotoJ(const GotoJ& other);
+
+private:
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
+};
+auto GotoJ::prepareNrt()->void{
+	sub_model_ = {1};
+
+	// 目标位姿 p（tool/wobj 坐标系），关节速度/加速度/加加速度 v,a,j //
+	auto pos_mtx = matrixParam("pos");
+	auto vel_mtx = matrixParam("vel");
+	auto acc_mtx = matrixParam("acc");
+	auto jerk_mtx = matrixParam("jerk");
+
+	// tool & wobj //
+	auto tools = stringParam("tool");
+	auto wobjs = stringParam("wobj");
+
+	if (tools.size() > 0 && tools.front() == '{' && tools.back() == '}') {
+		tools.erase(tools.begin());
+		tools.erase(tools.end() - 1);
+	}
+	if (wobjs.size() > 0 && wobjs.front() == '{' && wobjs.back() == '}') {
+		wobjs.erase(wobjs.begin());
+		wobjs.erase(wobjs.end() - 1);
+	}
+
+	// goto 关节空间目标（MoveJ：反解目标位姿后做关节插补，独立管线，zone=0）//
+	if (pd.plannerAt(0).gotoJ(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data()) < 0)
+		THROW_FILE_LINE("gotoJ failed (planner must be Uninitialized or Paused)");
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
+}
+auto GotoJ::executeRT()->int{
+	double p[100];
+	auto ret = pd.getNextInput(0, p);
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), p);
+	return ret; // 0 = 到达目标；>0 = 继续 goto；<0 = 错误
+}
+GotoJ::~GotoJ() = default;
+GotoJ::GotoJ(const GotoJ & other) = default;
+GotoJ::GotoJ(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"gotoj\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"vel\" default=\"{0.5,0.5,0.5,0.5,0.5,0.5,0.5}\"/>"
+		"		<Param name=\"acc\" default=\"{3.0,3.0,3.0,3.0,3.0,3.0,3.0}\"/>"
+		"		<Param name=\"jerk\" default=\"{5.0,5.0,5.0,5.0,5.0,5.0,5.0}\"/>"
+		"		<Param name=\"tool\" default=\"\"/>"
+		"		<Param name=\"wobj\" default=\"\"/>"
+		"	</GroupParam>"
+		"</Command>");
+}
+
+class GotoAbsJ : public aris::core::CloneObject<GotoAbsJ, aris::plan::Plan>{
+public:
+	auto virtual prepareNrt()->void override;
+	auto virtual executeRT()->int override;
+
+	virtual ~GotoAbsJ();
+	explicit GotoAbsJ(const std::string& name = "GotoAbsJ");
+	GotoAbsJ(const GotoAbsJ& other);
+
+private:
+	std::vector<aris::Size> sub_model_;
+	std::vector<aris::Size> motor_id_;
+};
+auto GotoAbsJ::prepareNrt()->void{
+	sub_model_ = {1};
+
+	// 目标关节位置 p，关节速度/加速度/加加速度 v,a,j //
+	auto pos_mtx = matrixParam("pos");
+	auto vel_mtx = matrixParam("vel");
+	auto acc_mtx = matrixParam("acc");
+	auto jerk_mtx = matrixParam("jerk");
+
+	// goto 绝对关节角目标（MoveAbsJ，独立管线，zone=0）//
+	if (pd.plannerAt(0).gotoAbsJ(pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data()) < 0)
+		THROW_FILE_LINE("gotoAbsJ failed (planner must be Uninitialized or Paused)");
+
+	// controller setting //
+	motor_id_.resize(pd.model().inputSize());
+	pd.model().getSubInputMotionIds(sub_model_.size(), sub_model_.data(), motor_id_.data());
+}
+auto GotoAbsJ::executeRT()->int{
+	double p[100];
+	auto ret = pd.getNextInput(0, p);
+	this->controller()->setMotorTargetPosById(motor_id_.size(), motor_id_.data(), p);
+	return ret; // 0 = 到达目标；>0 = 继续 goto；<0 = 错误
+}
+GotoAbsJ::~GotoAbsJ() = default;
+GotoAbsJ::GotoAbsJ(const GotoAbsJ & other) = default;
+GotoAbsJ::GotoAbsJ(const std::string & name) {
+	aris::core::fromXmlString(command(),
+		"<Command name=\"gotoabj\">"
+		"	<GroupParam>"
+		"		<Param name=\"pos\" default=\"{0,0,0,0,0,0,0}\"/>"
+		"		<Param name=\"vel\" default=\"{0.5,0.5,0.5,0.5,0.5,0.5,0.5}\"/>"
+		"		<Param name=\"acc\" default=\"{3.0,3.0,3.0,3.0,3.0,3.0,3.0}\"/>"
+		"		<Param name=\"jerk\" default=\"{5.0,5.0,5.0,5.0,5.0,5.0,5.0}\"/>"
 		"	</GroupParam>"
 		"</Command>");
 }
@@ -449,6 +700,10 @@ int main(int argc, char *argv[]){
     plan_root->planPool().add<aris::plan::Show>();
     plan_root->planPool().add<MoveL>();
 	plan_root->planPool().add<MoveJ>();
+	plan_root->planPool().add<GotoL>();
+	plan_root->planPool().add<GotoC>();
+	plan_root->planPool().add<GotoJ>();
+	plan_root->planPool().add<GotoAbsJ>();
 	plan_root->planPool().add<Stop>();
 	plan_root->planPool().add<Pause>();
 	plan_root->planPool().add<Resume>();

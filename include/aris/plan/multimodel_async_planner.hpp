@@ -61,13 +61,13 @@ namespace aris::plan{
 	/// - Pausing：正在减速暂停（speed ratio 趋向 0），降到 0 后进入 Paused；
 	/// - Paused：已完全暂停，机器人可能被移动到其他位置；
 	/// - Resuming：正在恢复运行（speed ratio 仍为 0），机器人先平滑运动回暂停位置；
-	/// - PausedMoving：正在移动到目标（独立管线），完成后回到 Paused；
-	/// - UninitializedMoving：正在移动到目标（独立管线），完成后回到 Uninitialized；
+	/// - PausedGoto：正在 goto 目标（独立管线），完成后回到 Paused；
+	/// - UninitializedGoto：正在 goto 目标（独立管线），完成后回到 Uninitialized；
 	/// - Error：运行中出现错误。
 	///
 	/// 各操作的语义：
 	/// - getNextInput()：根据当前状态调度到内部 run/pause/resume/stop 各 OneStep
-	///   以及 move-to-target 的专用管线（tg/is/sr），并在其返回 0 时切换终态；
+	///   以及 goto 的专用管线（tg/is/sr），并在其返回 0 时切换终态；
 	///   返回规划器节点 id（0 表示执行完毕）；
 	/// - requestInit()：Uninitialized → Idle；
 	/// - requestStop()：运动状态 → Stopping（平滑减速），静止状态（Idle/Paused）→ Uninitialized；
@@ -81,8 +81,8 @@ namespace aris::plan{
 		Pausing,	///< 正在减速暂停（speed ratio 趋向 0），不清除当前规划队列，后续可恢复运行
 		Paused,		///< 已完全暂停，当前状态下机器人可能移动到其他位置，后续可恢复运行
 		Resuming,	///< 正在恢复运行（speed ratio 仍为0，机器人运动到暂停的位置）
-		PausedMoving,		///< 正在移动到目标（独立管线），完成后回到 Paused
-		UninitializedMoving,	///< 正在移动到目标（独立管线），完成后回到 Uninitialized
+		PausedGoto,		///< 正在 goto 目标（独立管线），完成后回到 Paused
+		UninitializedGoto,	///< 正在 goto 目标（独立管线），完成后回到 Uninitialized
 		Error,		///< 运行中出现错误
 	};
 
@@ -134,12 +134,12 @@ namespace aris::plan{
 		auto init() -> void;
 		
 		// 插入新的数据 //
-		auto insertLinePos(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
-		auto insertLinePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
+		auto insertMoveL(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
+		auto insertMoveL(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
 		// 插入新的数据 //
-		auto insertCirclePos(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
-		auto insertCirclePos(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
+		auto insertMoveC(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
+		auto insertMoveC(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
 		// 插入新的数据 //
 		auto insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr, double time_zone = 0.0) -> std::int64_t;
@@ -188,11 +188,11 @@ namespace aris::plan{
 		///    - Pausing         → Paused         ：pauseOneStep 返回 0（速度降到 0）
 		///    - Resuming        → Running        ：resumeOneStep 返回 0（恢复完成）
 		///    - Stopping        → Uninitialized  ：stopOneStep 返回 0（停止完成）
-		///    - PausedMoving    → Paused         ：move 专用管线返回 0（到达目标）
-		///    - UninitializedMoving → Uninitialized ：move 专用管线返回 0（到达目标）
+		///    - PausedGoto    → Paused         ：goto 专用管线返回 0（到达目标）
+		///    - UninitializedGoto → Uninitialized ：goto 专用管线返回 0（到达目标）
 		///    它的终态只可能是：Running、Idle、Paused、Uninitialized
 		///    （过程中可短暂停留在 Pausing / Resuming / Stopping /
-		///     PausedMoving / UninitializedMoving）。
+		///     PausedGoto / UninitializedGoto）。
 		///
 		/// 2. request 系列（非实时线程）负责「外部请求」相关的切换：
 		///    - Uninitialized          → Idle           ：requestInit
@@ -201,8 +201,8 @@ namespace aris::plan{
 		///    - Running                → Stopping       ：requestStop（运动状态平滑停止）
 		///    - Pausing                → Stopping       ：requestStop（暂停中转为停止）
 		///    - Resuming               → Stopping       ：requestStop（恢复中转为停止）
-		///    - PausedMoving           → Stopping       ：requestStop（移动中转为停止）
-		///    - UninitializedMoving    → Stopping       ：requestStop（移动中转为停止）
+		///    - PausedGoto           → Stopping       ：requestStop（goto 中转为停止）
+		///    - UninitializedGoto    → Stopping       ：requestStop（goto 中转为停止）
 		///    - Stopping               → Stopping       ：requestStop（保持停止流程）
 		///    - Error                  → Stopping       ：requestStop（错误状态转为停止）
 		///    - Running                → Pausing        ：requestPause
@@ -244,28 +244,49 @@ namespace aris::plan{
 		// 暂停/恢复控制 //
 		/// @brief 获取当前暂停/恢复状态
 		auto state() const -> PlannerState;
-		/// @brief 根据当前状态执行一步（内部调度到 run/pause/resume/stop 各 OneStep 及 move 专用管线）
+		/// @brief 根据当前状态执行一步（内部调度到 run/pause/resume/stop 各 OneStep 及 goto 专用管线）
 		/// @param input_pos 输出电机位置（inputSize 维）
 		/// @return 规划器节点 id，0 表示执行完毕
 		auto getNextInput(double* input_pos) -> std::int64_t;
 
-		// 移动到目标位置（独立管线：专用 tg/is/sr，单指令，不插入主队列）//
-		/// @brief 关节空间移动到目标（MoveAbsJ，zone=0）。
-		/// 仅允许从 Uninitialized（→UninitializedMoving）或 Paused（→PausedMoving）启动；
-		/// 已在 moving 状态时返回 -1（不能重复插入）。
+		// goto 目标位置（独立管线：专用 tg/is/sr，单指令，不插入主队列）//
+		// 仅允许从 Uninitialized（→UninitializedGoto）或 Paused（→PausedGoto）启动；
+		// 已在 goto 状态时返回 -1（不能重复插入）。
+
+		/// @brief 关节空间 goto 目标（MoveJ：给定 TW 位姿，反解出目标关节后做关节插补，zone=0）。
+		/// @param tw 工具/工件配对
+		/// @param tw_pos 目标位姿（tool/wobj 坐标系，outputPosSize 维）
+		/// @param joint_v/joint_a/joint_j 关节速度/加速度/加加速度（inputSize 维）
+		/// @param which_root 指定反解根号（nullptr 表示沿用当前逆解根）
+		/// @return 1 成功，<0 失败
+		auto gotoJ(TW& tw, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root = nullptr) -> std::int64_t;
+		/// @brief 关节空间 goto 目标（字符串工具/工件重载）
+		auto gotoJ(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root = nullptr) -> std::int64_t;
+
+		/// @brief 绝对关节角 goto 目标（MoveAbsJ，zone=0）。
 		/// @param joint_pos 目标关节位置（inputSize 维）
 		/// @param joint_v/joint_a/joint_j 关节速度/加速度/加加速度（inputSize 维）
 		/// @return 1 成功，<0 失败
-		auto moveToTargetJoint(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t;
+		auto gotoAbsJ(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t;
 
-		/// @brief 笛卡尔直线移动到目标（Line，zone=0），状态约束同 moveToTargetJoint。
+		/// @brief 笛卡尔直线 goto 目标（Line，zone=0）。
 		/// @param tw 工具/工件配对
 		/// @param tw_pos 目标位置（tool/wobj 坐标系，outputPosSize 维）
 		/// @param vel/acc/jerk 末端速度/加速度/加加速度（outputPosMagSize 维）
 		/// @return 1 成功，<0 失败
-		auto moveToTargetLine(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
-		/// @brief 笛卡尔直线移动到目标（字符串工具/工件重载）
-		auto moveToTargetLine(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
+		auto gotoL(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
+		/// @brief 笛卡尔直线 goto 目标（字符串工具/工件重载）
+		auto gotoL(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
+
+		/// @brief 笛卡尔圆弧 goto 目标（Circle，zone=0）。
+		/// @param tw 工具/工件配对
+		/// @param tw_pos 目标位置（tool/wobj 坐标系，outputPosSize 维）
+		/// @param tw_mid_pos 中间位置（tool/wobj 坐标系，outputPosSize 维）
+		/// @param vel/acc/jerk 末端速度/加速度/加加速度（outputPosMagSize 维）
+		/// @return 1 成功，<0 失败
+		auto gotoC(TW& tw, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
+		/// @brief 笛卡尔圆弧 goto 目标（字符串工具/工件重载）
+		auto gotoC(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
 
 		// 清除错误 //
 		auto clearError() -> void;

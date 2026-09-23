@@ -72,7 +72,7 @@ auto insert_standard_line(aris::plan::MultimodelPlanner &planner) -> std::int64_
 	double acc[2]{ 1.0, 1.0 };
 	double jerk[2]{ 10.0, 10.0 };
 	double zone[2]{ 0.0, 0.0 };
-	auto node = planner.insertLinePos(tw, target_ee, vel, acc, jerk, zone);
+	auto node = planner.insertMoveL(tw, target_ee, vel, acc, jerk, zone);
 	planner.updateInsertPos();
 	return node;
 }
@@ -200,7 +200,7 @@ TEST_F(MultimodelPlannerTest, InsertLineMotionFinishes) {
 	double jerk[2]{ 10.0, 10.0 };
 	double zone[2]{ 0.0, 0.0 };
 
-	auto node = planner.insertLinePos(tw, target_ee, vel, acc, jerk, zone);
+	auto node = planner.insertMoveL(tw, target_ee, vel, acc, jerk, zone);
 	EXPECT_GT(node, 0);
 
 	planner.updateInsertPos();
@@ -225,7 +225,7 @@ TEST_F(MultimodelPlannerTest, InsertCircleMotionFinishes) {
 	double jerk[2]{ 10.0, 10.0 };
 	double zone[2]{ 0.0, 0.0 };
 
-	auto node = planner.insertCirclePos(tw, target_ee, mid_ee, vel, acc, jerk, zone);
+	auto node = planner.insertMoveC(tw, target_ee, mid_ee, vel, acc, jerk, zone);
 	EXPECT_GT(node, 0);
 
 	planner.updateInsertPos();
@@ -403,8 +403,8 @@ TEST_F(MultimodelPlannerTest, StopDeceleratesToZeroVelocity) {
 	EXPECT_EQ(planner.getNextInput(p.data()), 0);
 }
 
-TEST_F(MultimodelPlannerTest, MoveToTargetJointReachesTarget) {
-	// SetUp 后为 Uninitialized：move 应切入 UninitializedMoving，完成后回到 Uninitialized
+TEST_F(MultimodelPlannerTest, GotoAbsJReachesTarget) {
+	// SetUp 后为 Uninitialized：goto 应切入 UninitializedGoto，完成后回到 Uninitialized
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
 	aris::Size sub_id = 0;
@@ -418,8 +418,8 @@ TEST_F(MultimodelPlannerTest, MoveToTargetJointReachesTarget) {
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.moveToTargetJoint(target.data(), v.data(), a.data(), j.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedMoving);
+	ASSERT_GT(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 驱动直到完成
 	std::vector<double> p(planner.inputSize(), 0.0);
@@ -433,28 +433,28 @@ TEST_F(MultimodelPlannerTest, MoveToTargetJointReachesTarget) {
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
 	for (std::size_t i = 0; i < target.size(); ++i) {
-		EXPECT_NEAR(p[i], target[i], 1e-3) << "joint move target mismatch at dim " << i;
+		EXPECT_NEAR(p[i], target[i], 1e-3) << "joint goto target mismatch at dim " << i;
 	}
 }
 
-TEST_F(MultimodelPlannerTest, MoveToTargetLineReachesTarget) {
+TEST_F(MultimodelPlannerTest, GotoJReachesTarget) {
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
 	std::vector<std::pair<std::string, std::string>> tw{
 		{ "PumaModel.EE.tool0", "PumaModel.ground.wobj0" }
 	};
 	double target_tw[6]{ 0.45, 0.1, 0.75, aris::PI / 4.0, aris::PI / 2.0, aris::PI / 4.0 };
-	double vel[2]{ 0.2, 0.2 };
-	double acc[2]{ 1.0, 1.0 };
-	double jerk[2]{ 10.0, 10.0 };
+	std::vector<double> jv(planner.inputSize(), 1.0);
+	std::vector<double> ja(planner.inputSize(), 2.0);
+	std::vector<double> jj(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.moveToTargetLine(tw, target_tw, vel, acc, jerk), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedMoving);
+	ASSERT_GT(planner.gotoJ(tw, target_tw, jv.data(), ja.data(), jj.data()), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
-	// 驱动直到完成
+	// 驱动直到完成（关节空间插补，放宽步数上限）
 	std::vector<double> p(planner.inputSize(), 0.0);
 	bool finished = false;
-	for (int i = 0; i < 50000; ++i) {
+	for (int i = 0; i < 300000; ++i) {
 		auto ret = planner.getNextInput(p.data());
 		ASSERT_GE(ret, 0);
 		if (ret == 0) { finished = true; break; }
@@ -487,11 +487,120 @@ TEST_F(MultimodelPlannerTest, MoveToTargetLineReachesTarget) {
 	selector.getTwPos(tw_actual);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(tw_actual[i], target_tw[i], 1e-3) << "line move tw position mismatch at dim " << i;
+		EXPECT_NEAR(tw_actual[i], target_tw[i], 1e-3) << "joint goto tw position mismatch at dim " << i;
 	}
 }
 
-TEST_F(MultimodelPlannerTest, MoveToTargetFromPausedReturnsToPaused) {
+TEST_F(MultimodelPlannerTest, GotoLReachesTarget) {
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+
+	std::vector<std::pair<std::string, std::string>> tw{
+		{ "PumaModel.EE.tool0", "PumaModel.ground.wobj0" }
+	};
+	double target_tw[6]{ 0.45, 0.1, 0.75, aris::PI / 4.0, aris::PI / 2.0, aris::PI / 4.0 };
+	double vel[2]{ 0.2, 0.2 };
+	double acc[2]{ 1.0, 1.0 };
+	double jerk[2]{ 10.0, 10.0 };
+
+	ASSERT_GT(planner.gotoL(tw, target_tw, vel, acc, jerk), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
+
+	// 驱动直到完成（goto 管线默认以主管线 10% 的速率运行，因此这里放宽步数上限）
+	std::vector<double> p(planner.inputSize(), 0.0);
+	bool finished = false;
+	for (int i = 0; i < 300000; ++i) {
+		auto ret = planner.getNextInput(p.data());
+		ASSERT_GE(ret, 0);
+		if (ret == 0) { finished = true; break; }
+	}
+	EXPECT_TRUE(finished);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+
+	// 用正解 + 选择器检查末端是否到达目标 tw 位置
+	aris::Size sub_id = 0;
+	multi_model.setSubInputPos(1, &sub_id, p.data());
+	multi_model.subForwardKinematics(1, &sub_id);
+
+	double ee_pos[6]{};
+	multi_model.getSubOutputPos(1, &sub_id, ee_pos);
+
+	auto *tool = multi_model.findMarker("PumaModel.EE.tool0");
+	auto *wobj = multi_model.findMarker("PumaModel.ground.wobj0");
+	ASSERT_NE(tool, nullptr);
+	ASSERT_NE(wobj, nullptr);
+
+	aris::plan::ToolWobjSelector selector;
+	selector.setModel(multi_model);
+	selector.setSubModelId({ 0 });
+	aris::dynamic::Marker *tools[1]{ tool };
+	aris::dynamic::Marker *wobjs[1]{ wobj };
+	ASSERT_EQ(selector.selectTw(tools, wobjs), 0);
+
+	double tw_actual[6]{};
+	selector.setEePos(ee_pos);
+	selector.getTwPos(tw_actual);
+
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(tw_actual[i], target_tw[i], 1e-3) << "line goto tw position mismatch at dim " << i;
+	}
+}
+
+TEST_F(MultimodelPlannerTest, GotoCReachesTarget) {
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+
+	std::vector<std::pair<std::string, std::string>> tw{
+		{ "PumaModel.EE.tool0", "PumaModel.ground.wobj0" }
+	};
+	double mid_tw[6]{ 0.45, 0.0, 0.70, aris::PI / 4.0, aris::PI / 2.0, aris::PI / 4.0 };
+	double target_tw[6]{ 0.45, -0.1, 0.75, aris::PI / 4.0, aris::PI / 2.0, aris::PI / 4.0 };
+	double vel[2]{ 0.2, 0.2 };
+	double acc[2]{ 1.0, 1.0 };
+	double jerk[2]{ 10.0, 10.0 };
+
+	ASSERT_GT(planner.gotoC(tw, target_tw, mid_tw, vel, acc, jerk), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
+
+	// 驱动直到完成（goto 管线默认以主管线 10% 的速率运行，因此这里放宽步数上限）
+	std::vector<double> p(planner.inputSize(), 0.0);
+	bool finished = false;
+	for (int i = 0; i < 300000; ++i) {
+		auto ret = planner.getNextInput(p.data());
+		ASSERT_GE(ret, 0);
+		if (ret == 0) { finished = true; break; }
+	}
+	EXPECT_TRUE(finished);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
+
+	// 用正解 + 选择器检查末端是否到达目标 tw 位置
+	aris::Size sub_id = 0;
+	multi_model.setSubInputPos(1, &sub_id, p.data());
+	multi_model.subForwardKinematics(1, &sub_id);
+
+	double ee_pos[6]{};
+	multi_model.getSubOutputPos(1, &sub_id, ee_pos);
+
+	auto *tool = multi_model.findMarker("PumaModel.EE.tool0");
+	auto *wobj = multi_model.findMarker("PumaModel.ground.wobj0");
+	ASSERT_NE(tool, nullptr);
+	ASSERT_NE(wobj, nullptr);
+
+	aris::plan::ToolWobjSelector selector;
+	selector.setModel(multi_model);
+	selector.setSubModelId({ 0 });
+	aris::dynamic::Marker *tools[1]{ tool };
+	aris::dynamic::Marker *wobjs[1]{ wobj };
+	ASSERT_EQ(selector.selectTw(tools, wobjs), 0);
+
+	double tw_actual[6]{};
+	selector.setEePos(ee_pos);
+	selector.getTwPos(tw_actual);
+
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(tw_actual[i], target_tw[i], 1e-3) << "circle goto tw position mismatch at dim " << i;
+	}
+}
+
+TEST_F(MultimodelPlannerTest, GotoFromPausedReturnsToPaused) {
 	ASSERT_GT(insert_standard_line(planner), 0);
 	ASSERT_TRUE(run_steps(planner, 200));
 
@@ -499,15 +608,15 @@ TEST_F(MultimodelPlannerTest, MoveToTargetFromPausedReturnsToPaused) {
 	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
 
-	// 从 Paused 启动 move：应切入 PausedMoving，完成后回到 Paused
+	// 从 Paused 启动 goto：应切入 PausedGoto，完成后回到 Paused
 	std::vector<double> target = pause_pos;
 	for (auto &v : target) v += 0.1;
 	std::vector<double> v(planner.inputSize(), 1.0);
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.moveToTargetJoint(target.data(), v.data(), a.data(), j.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::PausedMoving);
+	ASSERT_GT(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::PausedGoto);
 
 	std::vector<double> p(planner.inputSize(), 0.0);
 	bool done = false;
@@ -520,11 +629,11 @@ TEST_F(MultimodelPlannerTest, MoveToTargetFromPausedReturnsToPaused) {
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
 
 	for (std::size_t i = 0; i < target.size(); ++i) {
-		EXPECT_NEAR(p[i], target[i], 1e-3) << "paused move target mismatch at dim " << i;
+		EXPECT_NEAR(p[i], target[i], 1e-3) << "paused goto target mismatch at dim " << i;
 	}
 }
 
-TEST_F(MultimodelPlannerTest, MoveToTargetRejectsWhileMoving) {
+TEST_F(MultimodelPlannerTest, GotoRejectsWhileGoto) {
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
 	aris::Size sub_id = 0;
@@ -540,11 +649,11 @@ TEST_F(MultimodelPlannerTest, MoveToTargetRejectsWhileMoving) {
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.moveToTargetJoint(target1.data(), v.data(), a.data(), j.data()), 0);
-	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedMoving);
+	ASSERT_GT(planner.gotoAbsJ(target1.data(), v.data(), a.data(), j.data()), 0);
+	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
-	// 已在 moving 状态：再次 move 应失败
-	EXPECT_LT(planner.moveToTargetJoint(target2.data(), v.data(), a.data(), j.data()), 0);
+	// 已在 goto 状态：再次 goto 应失败
+	EXPECT_LT(planner.gotoAbsJ(target2.data(), v.data(), a.data(), j.data()), 0);
 
 	std::vector<std::pair<std::string, std::string>> tw{
 		{ "PumaModel.EE.tool0", "PumaModel.ground.wobj0" }
@@ -553,7 +662,7 @@ TEST_F(MultimodelPlannerTest, MoveToTargetRejectsWhileMoving) {
 	double vel[2]{ 0.2, 0.2 };
 	double acc[2]{ 1.0, 1.0 };
 	double jerk[2]{ 10.0, 10.0 };
-	EXPECT_LT(planner.moveToTargetLine(tw, target_tw, vel, acc, jerk), 0);
+	EXPECT_LT(planner.gotoL(tw, target_tw, vel, acc, jerk), 0);
 }
 
 TEST_F(MultimodelPlannerTest, RequestFunctionsRejectInvalidStates) {
