@@ -2040,6 +2040,10 @@ namespace aris::plan {
 	}
 
 	////////////////// PART 3 RT operation ////////////////
+	auto MultimodelPlanner::getPausedPos(double *input)->void{
+		std::copy_n(imp_->pause_pos_, imp_->input_psize_, input);
+	}
+	
 	auto MultimodelPlanner::tgRet() -> std::int64_t {
         return imp_->tg_ret_;
     }

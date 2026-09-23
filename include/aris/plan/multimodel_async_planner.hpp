@@ -288,6 +288,8 @@ namespace aris::plan{
 		/// @brief 笛卡尔圆弧 goto 目标（字符串工具/工件重载）
 		auto gotoC(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
 
+		auto getPausedPos(double *input)->void;
+
 		// 清除错误 //
 		auto clearError() -> void;
 
