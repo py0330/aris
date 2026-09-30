@@ -22,6 +22,7 @@ namespace aris::dynamic
 	auto createModelPuma5(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
+		model->setMechanismType("Puma5");
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

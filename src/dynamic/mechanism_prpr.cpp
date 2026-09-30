@@ -68,6 +68,7 @@ namespace aris::dynamic {
 	};
 	auto createModelPrpr(const PrprParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+		model->setMechanismType("Prpr");
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b }));
 

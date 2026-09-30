@@ -22,6 +22,7 @@ namespace aris::dynamic
 	auto createModelSevenAxis3(const SevenAxisParam3 &param)->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
+		model->setMechanismType("SevenAxis3");
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

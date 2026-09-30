@@ -351,6 +351,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
 
 		model->setName("ScaraModel");
+		model->setMechanismType("Scara");
 		
 		////////////////////////////  DH  /////////////////////////////
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b }));
@@ -596,6 +597,7 @@ namespace aris::dynamic{
 	};
 	auto createModelPlanarScara(const ScaraParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+		model->setMechanismType("PlanarScara");
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b }));
 

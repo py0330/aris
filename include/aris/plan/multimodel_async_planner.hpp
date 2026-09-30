@@ -151,16 +151,14 @@ namespace aris::plan{
 		// 重规划 //
 		auto updateInsertPos()->void;
 
-		// 当前还剩余的指令数 //
-		auto unusedPosNum() -> int;
-
-		// 返回当前所有的节点 id //
-		auto unusedNodeIds()const -> std::vector<std::int64_t>;
-
 		// 调速设置 //
 		auto setTargetSpeedRatio(double ds) -> void; // 0 <= ds <= 1
 		auto targetSpeedRatio() -> double;
 		auto actualSpeedRatio() -> double;
+
+		// goto 管线速度比（相对主管线的比例，默认 0.1）//
+		auto setGotoSpeedRatio(double ratio) -> void;
+		auto gotoSpeedRatio() -> double;
 
 		/// @brief 并发设计（线程模型）
 		///

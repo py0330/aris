@@ -503,6 +503,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 		
 		model->setName("PumaModel");
+		model->setMechanismType("Puma");
 
 		////////////////////////////  DH  /////////////////////////////
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a1, param.a2, param.d3, param.a3, param.d4 }));

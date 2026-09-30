@@ -21,6 +21,7 @@ namespace aris::dynamic
 	auto createModelSerial3Axis(const Serial3Param &param)->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
+		model->setMechanismType("Serial3Axis");
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

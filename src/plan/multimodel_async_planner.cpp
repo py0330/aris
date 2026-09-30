@@ -509,6 +509,7 @@ namespace aris::plan {
 		// pause/resume data //
 		std::int64_t paused_tg_ret_{0};
 		double resume_target_ratio_{ 1.0 }, speed_epsilon_{ 1e-10 };
+		double goto_speed_ratio_{ 0.1 }; // goto 管线速度比（相对主管线的比例）//
 		bool pausing_from_resume_{ false }; // true：Pausing 由 Resuming 触发（走 stopOneStep 的减速逻辑）//
 		double* pause_pos_{ nullptr }, *resume_from_pos_{ nullptr };
 		SCurveParam* resume_scurve_params_{ nullptr };
@@ -1389,22 +1390,22 @@ namespace aris::plan {
 			// 专用 is / sr：从主管线 is_ 拷贝限幅，allocate 后设置回调 //
 			goto_is_.setInputSize(input_psize_);
 			goto_is_.setDt(dt);
-			goto_is_.setMaxPos(is_.maxPos());
-			goto_is_.setMinPos(is_.minPos());
-			goto_is_.setMaxVel(is_.maxVel());
-			goto_is_.setMinVel(is_.minVel());
-			goto_is_.setMaxAcc(is_.maxAcc());
-			goto_is_.setMinAcc(is_.minAcc());
+			goto_is_.setMaxPos(max_pos_mat_);
+			goto_is_.setMinPos(min_pos_mat_);
+			goto_is_.setMaxVel(max_vel_mat_);
+			goto_is_.setMinVel(min_vel_mat_);
+			goto_is_.setMaxAcc(max_acc_mat_);
+			goto_is_.setMinAcc(min_acc_mat_);
 			goto_is_.allocateMemory();
 
 			goto_sr_.setInputSize(input_psize_);
 			goto_sr_.setDt(dt);
-			goto_sr_.setMaxPos(is_.maxPos());
-			goto_sr_.setMinPos(is_.minPos());
-			goto_sr_.setMaxVel(is_.maxVel());
-			goto_sr_.setMinVel(is_.minVel());
-			goto_sr_.setMaxAcc(is_.maxAcc());
-			goto_sr_.setMinAcc(is_.minAcc());
+			goto_sr_.setMaxPos(max_pos_mat_);
+			goto_sr_.setMinPos(min_pos_mat_);
+			goto_sr_.setMaxVel(max_vel_mat_);
+			goto_sr_.setMinVel(min_vel_mat_);
+			goto_sr_.setMaxAcc(max_acc_mat_);
+			goto_sr_.setMinAcc(min_acc_mat_);
 			goto_sr_.allocateMemory();
 
 			// 回调：单节点，推进 goto_tg_ 并（笛卡尔时）反解输出关节位置 //
@@ -1478,11 +1479,10 @@ namespace aris::plan {
 			// 初始化专用 is / sr（缓存用目标关节）//
 			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
 			goto_is_.init(goto_beg_joint_);
-			goto_sr_.init(resume_target_ratio_*0.1);
+			goto_sr_.init(resume_target_ratio_*goto_speed_ratio_);
 
 			// 切入 goto 状态 //
-			state_.compare_exchange_strong(cur, goto_state);
-			return 1;
+			return state_.compare_exchange_strong(cur, goto_state) ? 0 : -1;
 		}
 		auto gotoAbsJ(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t {
 			auto cur = state_.load();
@@ -1512,11 +1512,10 @@ namespace aris::plan {
 			// 初始化专用 is / sr //
 			std::copy(goto_beg_joint_, goto_beg_joint_ + input_psize_, goto_input_cache_);
 			goto_is_.init(goto_beg_joint_);
-			goto_sr_.init(resume_target_ratio_*0.1);
+			goto_sr_.init(resume_target_ratio_*goto_speed_ratio_);
 
 			// 切入 goto 状态 //
-			state_.compare_exchange_strong(cur, goto_state);
-			return 1;
+			return state_.compare_exchange_strong(cur, goto_state) ? 0 : -1;
 		}
 		auto gotoL(TW& tool_wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
 			auto cur = state_.load();
@@ -1563,11 +1562,10 @@ namespace aris::plan {
 			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
 			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
 			goto_is_.init(goto_beg_joint_);
-			goto_sr_.init(resume_target_ratio_*0.1);
+			goto_sr_.init(resume_target_ratio_*goto_speed_ratio_);
 
 			// 切入 goto 状态 //
-			state_.compare_exchange_strong(cur, goto_state);
-			return 1;
+			return state_.compare_exchange_strong(cur, goto_state) ? 0 : -1;
 		}
 		auto gotoC(TW& tool_wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t {
 			auto cur = state_.load();
@@ -1614,11 +1612,10 @@ namespace aris::plan {
 			// 初始化专用 is / sr（缓存用目标关节，保证反解失败时有值）//
 			std::copy(goto_target_joint_, goto_target_joint_ + input_psize_, goto_input_cache_);
 			goto_is_.init(goto_beg_joint_);
-			goto_sr_.init(resume_target_ratio_*0.1);
+			goto_sr_.init(resume_target_ratio_*goto_speed_ratio_);
 
 			// 切入 goto 状态 //
-			state_.compare_exchange_strong(cur, goto_state);
-			return 1;
+			return state_.compare_exchange_strong(cur, goto_state) ? 0 : -1;
 		}
 
 		////////////// RT //////////////
@@ -2010,33 +2007,26 @@ namespace aris::plan {
 		return imp_->requestResume();
 	}
 
-	// 当前还剩余的指令数 //
-	auto MultimodelPlanner::unusedPosNum() -> int {
-		return imp_->inv_tg1_.unusedPosNum() + imp_->inv_tg2_.unusedPosNum() + imp_->fwd_tg_.unusedPosNum();
-	}
-
-	// 返回当前所有的节点 id //
-	auto MultimodelPlanner::unusedNodeIds()const -> std::vector<std::int64_t> {
-		auto ids = imp_->inv_tg1_.unusedNodeIds();
-		auto ids2 = imp_->inv_tg2_.unusedNodeIds();
-		auto fwd_ids = imp_->fwd_tg_.unusedNodeIds();
-		ids.insert(ids.end(), ids2.begin(), ids2.end());
-		ids.insert(ids.end(), fwd_ids.begin(), fwd_ids.end());
-		std::sort(ids.begin(), ids.end());
-		return ids;
-	}
-
 	// 调速设置 //
 	auto MultimodelPlanner::setTargetSpeedRatio(double ds) -> void {
 		imp_->resume_target_ratio_ = ds;
 		imp_->sr_.setTargetSpeedRatio(ds);
-		imp_->goto_sr_.setTargetSpeedRatio(ds*0.1);
+		imp_->goto_sr_.setTargetSpeedRatio(ds*imp_->goto_speed_ratio_);
 	}
 	auto MultimodelPlanner::targetSpeedRatio() -> double {
 		return imp_->sr_.targetSpeedRatio();
 	}
 	auto MultimodelPlanner::actualSpeedRatio() -> double {
 		return imp_->sr_.actualSpeedRatio();
+	}
+
+	// goto 管线速度比 //
+	auto MultimodelPlanner::setGotoSpeedRatio(double ratio) -> void {
+		imp_->goto_speed_ratio_ = ratio;
+		imp_->goto_sr_.setTargetSpeedRatio(imp_->resume_target_ratio_*ratio);
+	}
+	auto MultimodelPlanner::gotoSpeedRatio() -> double {
+		return imp_->goto_speed_ratio_;
 	}
 
 	////////////////// PART 3 RT operation ////////////////
@@ -2077,10 +2067,6 @@ namespace aris::plan {
 	auto MultimodelPlanner::getNextInput(double* p) -> std::int64_t {
 		return imp_->getNextInput(p);
 	}
-
-
-
-
 
 	auto MultimodelPlanner::gotoJ(TW& tw, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root) -> std::int64_t {
 		return imp_->gotoJ(tw, tw_pos, joint_v, joint_a, joint_j, which_root);

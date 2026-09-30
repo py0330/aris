@@ -20,6 +20,7 @@ namespace aris::dynamic
 	auto createModelStewart()->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
+		model->setMechanismType("Stewart");
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

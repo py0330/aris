@@ -23,6 +23,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		model->setName("OffsetSevenAxis");
+		model->setMechanismType("SevenAxis2");
 
 		////////////////////////////  DH  /////////////////////////////
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.a2, param.d3, param.d5 }));
@@ -182,29 +183,38 @@ namespace aris::dynamic{
 	
 
 
-	auto sevenAxisInverse(const void* para, const double *ee_pos, const double *current_input, std::int64_t which_root, double *input)->int
-	{
-		// 七轴机器人构型：
-		//
-		//      EE
-		//      |        z
-		//     ---       y      ---
-		//      |        z       |
-		//                       d5
-		//                       |
-		//     ---       y      ---                                                            
-		//                       |
-		//                       d3
-		//      |        z       |   
-		//     ---       y      ---
-		//      |        z    
-		//     BASE
-		//
-		//  A 坐标系为前3轴的交点， z 轴和 1 轴平行， y 轴和 2 轴平行
-		//  D 坐标系为 5 6 7 三根轴的交点，零位下与 A 坐标系方向一致
-		//  
-		//  
+	auto sevenAxisInverse(const void* para, const double *ee_pos, const double *current_input, std::int64_t which_root, double *input)->int{
+		// 带有偏移的七轴机器人反解
 		// 
+		//        z
+		//        ^  y  
+		//        | /
+		//     EE *----> x  
+		//        *
+		//        | z7
+		//        *
+		//        *
+		//    --- o y6
+		//     .  *
+		//     .  *
+		//    d5  | z5
+		//     .  *
+		//     .  *
+		//    --- o *** a2 *** * ---
+		//        y4           *  .
+		//                     *  .
+		//                  z3 | d3
+		//                     *  .
+		//        y2           *  .        
+		//    --- o *** a2 *** * ---
+		//     .  | z1
+		//     .  *      
+		//    d1  *
+		//     .  z
+		//     .  ^ y
+		//     .  |/
+		//    --- *----> x
+		//        O
 		auto& param = *reinterpret_cast<const SevenAxisParam2*>(para);
 		const double* ee_pm = ee_pos;
 		const double axis_angle = ee_pos[16];

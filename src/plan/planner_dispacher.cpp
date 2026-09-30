@@ -90,8 +90,8 @@ namespace aris::plan {
 
 
 		// If the same channel is already locked with the same submodels, allow re-entrant lock.
-		if (imp_->chanel_data_vec_[chanel]->lock_count > 0
-			&& imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
+		// or if submodel_ids does not change, just increase the lock count and return the new lock count.
+		if (imp_->chanel_data_vec_[chanel]->submodel_ids == submodel_ids) {
 			imp_->chanel_data_vec_[chanel]->lock_count++;
 			return imp_->chanel_data_vec_[chanel]->lock_count;
 		}

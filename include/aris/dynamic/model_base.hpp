@@ -2,6 +2,7 @@
 #define ARIS_DYNAMIC_MODEL_BASE_H_
 
 #include <cstdint>
+#include <string>
 
 #include <aris/dynamic/kinematics.hpp>
 
@@ -187,6 +188,14 @@ namespace aris::dynamic{
 		/// @brief 有状态正动力学求解（结果回写内部输出力）。
 		/// @return 成功返回值 >=0，失败返回值 < 0
 		auto virtual forwardDynamics()noexcept->int { return -1; }
+
+		// mechanism type //
+		/// @brief 获取机构类型。
+		/// @return 机构类型字符串（如 "SevenAxis" / "UR" / "Stewart"），未知时返回 "UNKNOWN"。
+		auto mechanismType()const noexcept->const std::string& { return mechanism_type_; }
+		/// @brief 设置机构类型。
+		/// @param mechanism_type 机构类型字符串（如 "SevenAxis" / "UR" / "Stewart"）。
+		auto setMechanismType(const std::string& mechanism_type)->void { mechanism_type_ = mechanism_type; }
 
 		// singular check //
 		// ---------------------------------------------------------------------
@@ -420,6 +429,9 @@ namespace aris::dynamic{
 		/// @brief 初始化模型内部资源与状态。
 		/// @details 派生类可在此完成缓存分配、尺寸检查、参数预计算等操作。
 		auto virtual init()->void {};
+
+	private:
+		std::string mechanism_type_{ "UNKNOWN" };
 	};
 }
 

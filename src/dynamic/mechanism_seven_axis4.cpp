@@ -43,6 +43,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		model->setName("OffsetSevenAxis");
+		model->setMechanismType("SevenAxis4");
 
 		////////////////////////////  DH  /////////////////////////////
 		//model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.d1, param.d3, param.d5, param.a6 }));

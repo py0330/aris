@@ -492,6 +492,7 @@ namespace aris::dynamic {
 	}
 	auto ARIS_API createModelDelta(const DeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+		model->setMechanismType("Delta");
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ 
 			param.ax1, param.ay1, param.az1, param.b1, param.c1, param.d1, param.ex1, param.ey1, param.ez1, param.theta1, param.f1,
@@ -1033,6 +1034,7 @@ namespace aris::dynamic {
 	}*/
 	auto ARIS_API createModelPlanarDelta(const PlanarDeltaFullParam &param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+		model->setMechanismType("PlanarDelta");
 
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({
 			param.a1, param.b1, param.c1,

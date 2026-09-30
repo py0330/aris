@@ -149,6 +149,9 @@ namespace aris::dynamic{
 
 	ARIS_REGISTRATION
 	{
-
+		aris::core::class_<ModelBase>("ModelBase")
+			.prop("name", &ModelBase::setName, &ModelBase::name)
+			.prop("mechanism_type", &ModelBase::setMechanismType, &ModelBase::mechanismType)
+			;
 	}
 }

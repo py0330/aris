@@ -1782,10 +1782,6 @@ namespace aris::dynamic{
 	MultiModel& MultiModel::operator=(MultiModel&&) = default;
 
 	ARIS_REGISTRATION{
-		aris::core::class_<ModelBase>("ModelBase")
-			.prop("name", &ModelBase::setName, &ModelBase::name)
-			;
-
 		typedef Environment&(Model::*EnvironmentFunc)();
 		typedef aris::core::PointerArray<Variable,          Element> &(Model::*VarablePoolFunc)();
 		typedef aris::core::PointerArray<Part,              Element> &(Model::*PartPoolFunc)();

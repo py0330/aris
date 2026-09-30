@@ -241,6 +241,7 @@ namespace aris::dynamic {
 
 	auto createModelAbenics(const AbenicsParam& param)->std::unique_ptr<aris::dynamic::Model> {
 		std::unique_ptr<aris::dynamic::Model> model(new aris::dynamic::Model);
+		model->setMechanismType("Abenics");
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

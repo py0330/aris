@@ -362,6 +362,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 		
 		model->setName("WaferMachineModel");
+		model->setMechanismType("WaferMachine");
 
 		////////////////////////////  DH  /////////////////////////////
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b, param.c }));
@@ -499,6 +500,7 @@ namespace aris::dynamic{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		model->setName("WaferMachineModelTwoArms");
+		model->setMechanismType("WaferMachineTwoArms");
 
 		////////////////////////////  DH  /////////////////////////////
 		model->variablePool().add<aris::dynamic::MatrixVariable>("dh", aris::core::Matrix({ param.a, param.b, param.c }));
