@@ -235,29 +235,25 @@ namespace aris::dynamic{
 	
 	auto Model::inverseKinematics(const double* output, double* input, const std::int64_t *which_root, const double *current_input)const noexcept->int {
 		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
-			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
-			return inv->kinPosPure(output, input, which_root ? *which_root : -1, current_input);
+			return c_inv->kinPosPure(output, input, which_root ? *which_root : -1, current_input);
 		}
 		return -1;
 	}
 	auto Model::forwardKinematics(const double* input, double* output, const std::int64_t *which_root, const double* current_input)const noexcept->int {
 		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
-			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
-			return fwd->kinPosPure(input, output, which_root ? *which_root : -1, current_input);
+			return c_fwd->kinPosPure(input, output, which_root ? *which_root : -1, current_input);
 		}
 		return -1;
 	}
 	auto Model::inverseKinematicsVel(const double* output, double* input)const noexcept->int {
 		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseKinematicSolver*>(&solverPool()[0])) {
-			auto inv = const_cast<aris::dynamic::InverseKinematicSolver*>(c_inv);
-			return inv->kinVelPure(output, input);
+			return c_inv->kinVelPure(output, input);
 		}
 		return -1;
 	}
 	auto Model::forwardKinematicsVel(const double* input, double* output)const noexcept->int {
 		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
-			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
-			return fwd->kinVelPure(input, output);
+			return c_fwd->kinVelPure(input, output);
 		}
 		return -1;
 	}
@@ -273,8 +269,7 @@ namespace aris::dynamic{
 	}
 	auto Model::forwardKinematicsAcc(const double* input, double* output)const noexcept->int {
 		if (auto c_fwd = dynamic_cast<const aris::dynamic::ForwardKinematicSolver*>(&solverPool()[1])) {
-			auto fwd = const_cast<aris::dynamic::ForwardKinematicSolver*>(c_fwd);
-			int ret = fwd->dynAccAndFcePure(input, imp_->input_output_mem_);
+			int ret = c_fwd->dynAccAndFcePure(input, imp_->input_output_mem_);
 			aris::dynamic::s_vc(outputAccSize(), imp_->input_output_mem_ + inputFceSize(), output);
 			return ret;
 		}
@@ -282,8 +277,7 @@ namespace aris::dynamic{
 	}
 	auto Model::inverseDynamics(const double* input_a, double* input_f)const noexcept->int {
 		if (auto c_inv = dynamic_cast<const aris::dynamic::InverseDynamicSolver*>(&solverPool()[2])) {
-			auto inv = const_cast<aris::dynamic::InverseDynamicSolver*>(c_inv);
-			int ret = inv->dynAccAndFcePure(input_a, imp_->input_output_mem_);
+			int ret = c_inv->dynAccAndFcePure(input_a, imp_->input_output_mem_);
 			aris::dynamic::s_vc(inputFceSize(), imp_->input_output_mem_, input_f);
 			return ret;
 		}

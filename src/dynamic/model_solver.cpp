@@ -1882,7 +1882,6 @@ namespace aris::dynamic{
 		}
 	}
 
-
 	auto UniversalSolver::kinPosPure(const double* motion_pos, double* answer, std::int64_t which_root, const double* current_answer)const->int {
 		const_cast<UniversalSolver*>(this)->kinPosSetActiveMotionPos(motion_pos);
 		if (auto ret = const_cast<UniversalSolver*>(this)->kinPosCompute())
@@ -2425,7 +2424,6 @@ namespace aris::dynamic{
 
 		UniversalSolver::allocateMemory();
 	}
-
 	auto InverseKinematicSolver::dynAccAndFce()->int{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->motionPool())m.updA();
@@ -2480,19 +2478,7 @@ namespace aris::dynamic{
 		for (auto &f : model()->forcePool())f.activate(true);
 		UniversalSolver::allocateMemory();
 	}
-	// auto ForwardDynamicSolver::kinPos()->int{
-	// 	UniversalSolver::kinPos();
-	// 	if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updP();
-	// 	return error() < maxError() ? 0 : -1;
-	// }
-	// auto ForwardDynamicSolver::kinVel()->int
-	// {
-	// 	UniversalSolver::kinVel();
-	// 	for (auto &m : model()->generalMotionPool())m.updV();
-	// 	return 0;
-	// }
-	auto ForwardDynamicSolver::dynAccAndFce()->int
-	{
+	auto ForwardDynamicSolver::dynAccAndFce()->int{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->motionPool())m.updA();
 		for (auto &m : model()->generalMotionPool())m.updA();
@@ -2502,8 +2488,7 @@ namespace aris::dynamic{
 	ForwardDynamicSolver::ForwardDynamicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardDynamicSolver);
 
-	auto InverseDynamicSolver::allocateMemory()->void
-	{
+	auto InverseDynamicSolver::allocateMemory()->void {
 		HelpResetRAII help_reset(this->model());
 		
 		for (auto &m : model()->motionPool())m.activate(true);
@@ -2511,20 +2496,7 @@ namespace aris::dynamic{
 		for (auto &f : model()->forcePool())f.activate(false);
 		UniversalSolver::allocateMemory();
 	}
-	// auto InverseDynamicSolver::kinPos()->int
-	// {
-	// 	UniversalSolver::kinPos();
-	// 	if (error() < maxError())for (auto &m : model()->motionPool())m.updP();
-	// 	return error() < maxError() ? 0 : -1;
-	// }
-	// auto InverseDynamicSolver::kinVel()->int
-	// {
-	// 	UniversalSolver::kinVel();
-	// 	for (auto &m : model()->motionPool())m.updV();
-	// 	return 0;
-	// }
-	auto InverseDynamicSolver::dynAccAndFce()->int
-	{
+	auto InverseDynamicSolver::dynAccAndFce()->int{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->motionPool())m.updA();
 		for (auto &m : model()->generalMotionPool())m.updA();

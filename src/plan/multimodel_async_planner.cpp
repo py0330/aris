@@ -851,6 +851,8 @@ namespace aris::plan {
 			is_.init(last_node_.jointPos());
 			
 			sr_.init(1.0);
+
+			state_.store(PlannerState::Uninitialized);
 		}
 
 		// 工具和工件解析函数：根据 tool_wobjs 填充 tools 和 wobjs（裸指针数组，长度 ee_size_）//

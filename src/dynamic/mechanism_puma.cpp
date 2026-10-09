@@ -499,6 +499,79 @@ namespace aris::dynamic{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
+	// Puma 正解求解器（仿照 PumaInverseKinematicSolver，只实现 kinPosPure；当前为框架，TODO 处待实现）//
+	struct PumaForwardKinematicSolver::Imp {
+		PumaParamLocal puma_param;
+		GeneralMotion* EE{ nullptr };
+
+		// 运动链与杆件链：从 EE->makJ->fatherPart（基座）到 EE->makI->fatherPart（末端）//
+		std::vector<Motion*> motion_chain_;
+		std::vector<Part*> part_chain_;
+
+		// 递归：从当前 part 出发，沿运动链找到通往 end_part 的路径 //
+		auto findChain(Model* model, Part* end_part, std::vector<Part*>& parts, std::vector<Motion*>& motions) -> bool {
+			auto* current = parts.back();
+			if (current == end_part) return true;
+
+			for (auto& mot : model->motionPool()) {
+				auto* p_i = &mot.makI()->fatherPart();
+				auto* p_j = &mot.makJ()->fatherPart();
+				auto* next = (p_i == current) ? p_j : ((p_j == current) ? p_i : nullptr);
+				if (!next) continue;
+				if (std::find(parts.begin(), parts.end(), next) != parts.end()) continue; // 避免环 //
+
+				parts.push_back(next);
+				motions.push_back(&mot);
+				if (findChain(model, end_part, parts, motions)) return true;
+				parts.pop_back();
+				motions.pop_back();
+			}
+			return false;
+		}
+
+		// 推测运动链与杆件链 //
+		auto deduceChain(Model* model) -> void {
+			motion_chain_.clear();
+			part_chain_.clear();
+
+			auto* start_part = &EE->makJ()->fatherPart();
+			auto* end_part = &EE->makI()->fatherPart();
+
+			part_chain_.push_back(start_part);
+			findChain(model, end_part, part_chain_, motion_chain_);
+		}
+
+		auto deducePumaParam(Model* model) -> void {
+			EE = dynamic_cast<GeneralMotion*>(&model->generalMotionPool().at(0));
+
+			// TODO: 从模型中推导 puma 几何参数，与 PumaInverseKinematicSolver::Imp::deducePumaParam 一致
+			//       （d1~d5、pm_A_in_Ground、pm_EE_in_D、mp_offset/mp_factor）
+
+			// 推测运动链与杆件链 //
+			deduceChain(model);
+		}
+	};
+	auto PumaForwardKinematicSolver::allocateMemory()->void {
+		ForwardKinematicSolver::allocateMemory();
+		imp_->deducePumaParam(model());
+	}
+	auto PumaForwardKinematicSolver::kinPosPure(const double* input, double* output, std::int64_t which_root, const double* current_answer)const->int {
+		// TODO: 实现 puma 解析正解
+		//   输入 input：6 个电机位置 mp
+		//   输出 output：末端位姿（imp_->EE->posType() 格式）
+		//   步骤：
+		//     1. mp → 理论关节角 q[i] = mot.mp2mpInternal(input[i]) / puma_param.mp_factor[i] + puma_param.mp_offset[i]
+		//     2. 由 q 计算末端 pm：ee_pm = pm_A_in_Ground * D_in_A * pm_EE_in_D
+		//     3. s_pm2pos(ee_pm, imp_->EE->posType(), output)
+		return -1;
+	}
+	PumaForwardKinematicSolver::~PumaForwardKinematicSolver() = default;
+	PumaForwardKinematicSolver::PumaForwardKinematicSolver() :ForwardKinematicSolver(1, 0.0), imp_(new Imp) {
+		setWhichRoot(0);
+		setRootNumber(1);
+	}
+	ARIS_DEFINE_BIG_FOUR_CPP(PumaForwardKinematicSolver);
+
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 		
@@ -637,7 +710,7 @@ namespace aris::dynamic{
 
 		////////////////////////////  SOLVERS  /////////////////////////////
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::PumaForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 		inverse_kinematic.setWhichRoot(8);
@@ -654,6 +727,10 @@ namespace aris::dynamic{
 	ARIS_REGISTRATION{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
+			;
+
+		aris::core::class_<PumaForwardKinematicSolver>("PumaForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
 			;
 	}
 }
