@@ -34,6 +34,7 @@
 #include <aris/dynamic/mechanism_serial_3axis.hpp>
 #include <aris/dynamic/mechanism_puma_5axis.hpp>
 #include <aris/dynamic/mechanism_rppr.hpp>
+#include <aris/dynamic/mechanism_rppp.hpp>
 #include <aris/dynamic/mechanism_prpr.hpp>
 #include <aris/dynamic/mechanism_abenics.hpp>
 #include <aris/dynamic/mechanism_wafer_machine.hpp>

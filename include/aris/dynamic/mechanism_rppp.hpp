@@ -1,0 +1,33 @@
+#ifndef ARIS_DYNAMIC_MECHANISM_RPPP_H_
+#define ARIS_DYNAMIC_MECHANISM_RPPP_H_
+
+#include <array>
+#include <aris/dynamic/model_solver.hpp>
+
+namespace aris::dynamic{
+	/// @defgroup dynamic_model_group 动力学建模模块
+	/// @{
+	///
+	struct ARIS_API RpppParam{
+		// TOOL 0, by default is 321 type
+		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		std::string tool0_pe_type;
+
+		// BASE wrt REF, by default is 321 type 
+		double base2ref_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		std::string base2ref_pe_type;
+
+		// inertia vector, size must be 4
+		std::vector<std::array<double, 10> > iv_vec;
+
+		// mot friction vector, size must be 4
+		std::vector<std::array<double, 3> > mot_frc_vec;
+	};
+
+	auto ARIS_API createModelRppp(const RpppParam &param)->std::unique_ptr<aris::dynamic::Model>;
+
+	///
+	/// @}
+}
+
+#endif
