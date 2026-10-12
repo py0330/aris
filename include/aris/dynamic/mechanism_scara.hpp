@@ -60,7 +60,7 @@ namespace aris::dynamic{
 		// 暂时未启用 //
 		double pitch{ 0.0 };
 	};
-	class ARIS_API ScaraForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
+	class ARIS_API ScaraForwardKinematicSolver :public aris::dynamic::SerialForwardKinematicSolver {
 	public:
 		auto virtual kinPos()->int override {
 			// link1~4 //

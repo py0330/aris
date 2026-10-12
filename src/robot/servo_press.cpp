@@ -48,7 +48,7 @@ namespace aris::robot
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<InverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::SerialForwardKinematicSolver>();
 
 		inverse_kinematic.allocateMemory();
 		forward_kinematic.allocateMemory();

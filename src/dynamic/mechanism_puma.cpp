@@ -499,155 +499,6 @@ namespace aris::dynamic{
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
-	// Puma 正解求解器（仿照 PumaInverseKinematicSolver，只实现 kinPosPure；当前为框架，TODO 处待实现）//
-	struct PumaForwardKinematicSolver::Imp {
-
-		// 基座侧 marker（fatherPart 位于 ground）与末端侧 marker //
-		Marker* base_mak_{ nullptr };
-		Marker* tool_mak_{ nullptr };
-
-		// 运动链：长度 n_，motion_chain_ 与 is_positive_install_ 指向 mem_pool_ 中的数组 //
-		aris::Size n_{ 0 };
-		Motion** motion_chain_{ nullptr };
-		bool* is_positive_install_{ nullptr };
-		std::vector<char> mem_pool_;
-
-		// 递归：从 current 出发，沿运动链找到通往 end_part 的路径，结果写入 motion_chain_[0..n) //
-		auto findChain(Model* model, Part* current, Part* end_part, aris::Size depth, aris::Size& n) -> bool {
-			if (current == end_part) { n = depth; return true; }
-
-			for (auto& mot : model->motionPool()) {
-				auto* p_i = &mot.makI()->fatherPart();
-				auto* p_j = &mot.makJ()->fatherPart();
-				auto* next = (p_i == current) ? p_j : ((p_j == current) ? p_i : nullptr);
-				if (!next) continue;
-
-				// 已在链中的 motion：刚走过的（回溯）跳过；否则构成环 → 并联机构，直接抛错 //
-				aris::Size found = depth;
-				for (aris::Size i = 0; i < depth; ++i) {
-					if (motion_chain_[i] == &mot) { found = i; break; }
-				}
-				if (found < depth) {
-					if (found == depth - 1) continue;
-					THROW_FILE_LINE(std::string("parallel mechanism detected: motion chain contains a loop at \"") + current->name() + "\"");
-				}
-
-				motion_chain_[depth] = &mot;
-				is_positive_install_[depth] = (next == p_i); // p_j → p_i 为正安装 //
-				if (findChain(model, next, end_part, depth + 1, n)) return true;
-			}
-			return false;
-		}
-
-		// 推测运动链（在 allocateMemory 中调用）//
-		auto deduceChain(Model* model) -> void {
-			auto EE = dynamic_cast<GeneralMotion*>(&model->generalMotionPool().at(0));
-
-			auto* ground = &model->ground();
-			auto* makI_part = &EE->makI()->fatherPart();
-			auto* makJ_part = &EE->makJ()->fatherPart();
-
-			// 判断 EE 的哪个 marker 位于基座（ground）上 //
-			if (makJ_part == ground) {
-				base_mak_ = EE->makJ();
-				tool_mak_ = EE->makI();
-			}
-			else if (makI_part == ground) {
-				base_mak_ = EE->makI();
-				tool_mak_ = EE->makJ();
-			}
-			else {
-				// 都不在 ground 上时，默认 makJ 为基座侧 //
-				base_mak_ = EE->makJ();
-				tool_mak_ = EE->makI();
-			}
-
-			auto* start_part = &base_mak_->fatherPart();
-			auto* end_part = &tool_mak_->fatherPart();
-
-			// 采用 allocateMemory 的 mem_pool 范式分配运动链数组（长度上界为 motion 总数）//
-			auto mot_num = model->motionPool().size();
-
-			aris::Size mem_size = 0;
-			core::allocMem(mem_size, motion_chain_, mot_num);
-			core::allocMem(mem_size, is_positive_install_, mot_num);
-			mem_pool_.resize(mem_size);
-			motion_chain_ = core::getMem(mem_pool_.data(), motion_chain_);
-			is_positive_install_ = core::getMem(mem_pool_.data(), is_positive_install_);
-
-			// 找链 //
-			aris::Size n = 0;
-			if (!findChain(model, start_part, end_part, 0, n)) {
-				THROW_FILE_LINE(std::string("failed to deduce motion chain from \"") + start_part->name() + "\" to \"" + end_part->name() + "\"");
-			}
-			n_ = n;
-		}
-	};
-	auto PumaForwardKinematicSolver::allocateMemory()->void {
-		ForwardKinematicSolver::allocateMemory();
-		imp_->deduceChain(model());
-	}
-	auto PumaForwardKinematicSolver::kinPosPure(const double* input, double* output, std::int64_t which_root, const double* current_answer)const->int {
-		auto EE = dynamic_cast<const GeneralMotion*>(&model()->generalMotionPool().at(0));
-		
-		// 依次沿 motion_chain_ 正推末端位姿（局部计算，不修改模型状态）//
-		const auto n = imp_->n_;
-
-		// 基座 part 位姿（基座侧 marker 的 fatherPart，固定不动）//
-		double base_pm[16], parent_pm[16];
-		s_vc(16, *imp_->base_mak_->fatherPart().pm(), base_pm);
-		s_vc(16, base_pm, parent_pm);
-
-		for (std::size_t i = 0; i < n; ++i) {
-			auto* mot = imp_->motion_chain_[i];
-			const bool positive = imp_->is_positive_install_[i];
-
-			// 父/子侧 mak 的 prtPm（正安装：makJ 在父、makI 在子；反安装相反）//
-			const double* parent_mak_prt = positive ? *mot->makJ()->prtPm() : *mot->makI()->prtPm();
-			const double* child_mak_prt = positive ? *mot->makI()->prtPm() : *mot->makJ()->prtPm();
-
-			// 父 mak 全局位姿 = 父 part 位姿 * 父 mak prtPm //
-			double parent_mak_pm[16];
-			s_pm_dot_pm(parent_pm, parent_mak_prt, parent_mak_pm);
-
-			// 关节相对位姿：makI 相对 makJ（motion 的 cptPmFromP，已含零位偏移与系数）//
-			double pm_rot[16];
-			mot->cptPmFromP(&input[mot->id()], pm_rot);
-			if (!positive) s_inv_pm(pm_rot, pm_rot); // 反安装：父侧为 makI、子侧为 makJ，取逆 //
-
-			// 子 mak 全局位姿 = 父 mak 全局位姿 * 旋转 //
-			double child_mak_pm[16];
-			s_pm_dot_pm(parent_mak_pm, pm_rot, child_mak_pm);
-
-			// 子 part 位姿 = 子 mak 全局位姿 * inv(子 mak prtPm)，覆盖 parent_pm 作为下一拍的父 part //
-			s_pm_dot_inv_pm(child_mak_pm, child_mak_prt, parent_pm);
-		}
-
-		// 末端位姿 = EE->makI 相对 EE->makJ 的位姿（tool 相对 wobj）//
-		// 基座侧 mak 用 base_pm（固定），末端侧 mak 用正推得到的 parent_pm //
-		double base_mak_pm[16], tool_mak_pm[16];
-		s_pm_dot_pm(base_pm, *imp_->base_mak_->prtPm(), base_mak_pm);
-		s_pm_dot_pm(parent_pm, *imp_->tool_mak_->prtPm(), tool_mak_pm);
-
-		double pm_i2j[16];
-		if (imp_->base_mak_ == EE->makJ()) {
-			s_inv_pm_dot_pm(base_mak_pm, tool_mak_pm, pm_i2j); // makJ 在基座：inv(makJ) * makI //
-		}
-		else {
-			s_inv_pm_dot_pm(tool_mak_pm, base_mak_pm, pm_i2j); // makI 在基座：inv(makJ) * makI //
-		}
-
-		s_pm2pos(pm_i2j, EE->posType(), output);
-
-		return 0;
-	}
-	PumaForwardKinematicSolver::~PumaForwardKinematicSolver() = default;
-	PumaForwardKinematicSolver::PumaForwardKinematicSolver() :ForwardKinematicSolver(100, 1e-10), imp_(new Imp) {
-		setWhichRoot(0);
-		setRootNumber(1);
-	}
-	ARIS_DEFINE_BIG_FOUR_CPP(PumaForwardKinematicSolver);
-
 	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 		
@@ -786,7 +637,7 @@ namespace aris::dynamic{
 
 		////////////////////////////  SOLVERS  /////////////////////////////
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<aris::dynamic::PumaForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::SerialForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 		inverse_kinematic.setWhichRoot(8);
@@ -803,10 +654,6 @@ namespace aris::dynamic{
 	ARIS_REGISTRATION{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			;
-
-		aris::core::class_<PumaForwardKinematicSolver>("PumaForwardKinematicSolver")
-			.inherit<ForwardKinematicSolver>()
 			;
 	}
 }

@@ -2396,6 +2396,156 @@ namespace aris::dynamic{
 	ForwardKinematicSolver::ForwardKinematicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardKinematicSolver);
 
+	struct SerialForwardKinematicSolver::Imp {
+		// 每条 EE（GeneralMotion）对应一条运动链 //
+		struct Chain {
+			MotionBase* ee_{ nullptr };			// EE //
+			Marker* base_mak_{ nullptr };		// EE 的 makJ（wobj 侧）//
+			Marker* tool_mak_{ nullptr };		// EE 的 makI（tool 侧）//
+			aris::Size n_{ 0 };
+			aris::Size* motion_index_{ nullptr };	// 运动链上各 motion 在 motionPool 中的下标 //
+			bool* is_positive_install_{ nullptr };
+		};
+
+		aris::Size ee_num_{ 0 };				// EE 数量 //
+		Chain* chains_{ nullptr };				// 长度为 ee_num_，位于 mem_pool_ 中 //
+		aris::Size* motion_index_{ nullptr };	// 扁平：ee_num_ * mot_num，位于 mem_pool_ 中 //
+		bool* is_positive_install_{ nullptr };	// 扁平：ee_num_ * mot_num，位于 mem_pool_ 中 //
+		std::vector<char> mem_pool_;
+
+		// 递归：从 current 出发，沿运动链找到通往 end_part 的路径，结果写入 chain->motion_chain_[0..n) //
+		auto findChain(Model* model, Chain* chain, Part* current, Part* end_part, aris::Size depth, aris::Size& n) -> bool {
+			if (current == end_part) { n = depth; return true; }
+
+			for (aris::Size mot_index = 0; mot_index < model->motionPool().size(); ++mot_index) {
+				auto& mot = model->motionPool().at(mot_index);
+				auto* p_i = &mot.makI()->fatherPart();
+				auto* p_j = &mot.makJ()->fatherPart();
+				auto* next = (p_i == current) ? p_j : ((p_j == current) ? p_i : nullptr);
+				if (!next) continue;
+
+				// 已在链中的 motion：刚走过的（回溯）跳过；否则构成环 → 并联机构，直接抛错 //
+				aris::Size found = depth;
+				for (aris::Size i = 0; i < depth; ++i) {
+					if (chain->motion_index_[i] == mot_index) { found = i; break; }
+				}
+				if (found < depth) {
+					if (found == depth - 1) continue;
+					THROW_FILE_LINE(std::string("parallel mechanism detected: motion chain contains a loop at \"") + current->name() + "\"");
+				}
+
+				chain->motion_index_[depth] = mot_index;
+				chain->is_positive_install_[depth] = (next == p_i); // p_j → p_i 为正安装 //
+				if (findChain(model, chain, next, end_part, depth + 1, n)) return true;
+			}
+			return false;
+		}
+
+		// 推测所有 EE 的运动链（在 allocateMemory 中调用）//
+		auto deduceChain(Model* model) -> void {
+			// 每个 general motion 都是一个 EE //
+			ee_num_ = model->generalMotionPool().size();
+
+			auto mot_num = model->motionPool().size();
+
+			// 所有内存统一放入 mem_pool_：Chain 数组 + 扁平的 motion_chain_ 与 is_positive_install_ //
+			aris::Size mem_size = 0;
+			core::allocMem(mem_size, chains_, ee_num_);
+			core::allocMem(mem_size, motion_index_, ee_num_ * mot_num);
+			core::allocMem(mem_size, is_positive_install_, ee_num_ * mot_num);
+			mem_pool_.resize(mem_size);
+			chains_ = core::getMem(mem_pool_.data(), chains_);
+			motion_index_ = core::getMem(mem_pool_.data(), motion_index_);
+			is_positive_install_ = core::getMem(mem_pool_.data(), is_positive_install_);
+
+			// 逐条找链 //
+			aris::Size k = 0;
+			for (auto& gm : model->generalMotionPool()) {
+				auto& chain = chains_[k];
+				chain.ee_ = &gm;
+				chain.base_mak_ = gm.makJ();
+				chain.tool_mak_ = gm.makI();
+				chain.motion_index_ = motion_index_ + k * mot_num;
+				chain.is_positive_install_ = is_positive_install_ + k * mot_num;
+
+				auto* start_part = &chain.base_mak_->fatherPart();
+				auto* end_part = &chain.tool_mak_->fatherPart();
+
+				aris::Size n = 0;
+				if (!findChain(model, &chain, start_part, end_part, 0, n)) {
+					THROW_FILE_LINE(std::string("failed to deduce motion chain from \"") + start_part->name() + "\" to \"" + end_part->name() + "\"");
+				}
+				chain.n_ = n;
+				++k;
+			}
+		}
+	};
+	auto SerialForwardKinematicSolver::allocateMemory()->void {
+		ForwardKinematicSolver::allocateMemory();
+		imp_->deduceChain(model());
+	}
+	auto SerialForwardKinematicSolver::kinPosPure(const double* input, double* output, std::int64_t which_root, const double* current_answer)const->int {
+		// 对每个 EE（GeneralMotion）依次正推末端位姿，输出按 generalMotionPool 顺序排列 //
+		aris::Size out_pos = 0;
+		for (aris::Size k = 0; k < imp_->ee_num_; ++k) {
+			const auto& chain = imp_->chains_[k];
+			auto* EE = chain.ee_;
+
+			// 依次沿 chain.motion_chain_ 正推末端位姿（局部计算，不修改模型状态）//
+			const auto n = chain.n_;
+
+			// 从单位阵开始正推（基座 part 位姿在最终相对位姿中被抵消，无需 base_pm）//
+			double parent_pm[16];
+			s_eye(4, parent_pm);
+
+			for (std::size_t i = 0; i < n; ++i) {
+				const auto mot_index = chain.motion_index_[i];
+				const auto& mot = model()->motionPool().at(mot_index);
+				const bool positive = chain.is_positive_install_[i];
+
+				// 父/子侧 mak 的 prtPm（正安装：makJ 在父、makI 在子；反安装相反）//
+				const double* parent_mak_prt = positive ? *mot.makJ()->prtPm() : *mot.makI()->prtPm();
+				const double* child_mak_prt = positive ? *mot.makI()->prtPm() : *mot.makJ()->prtPm();
+
+				// 父 mak 全局位姿 = 父 part 位姿 * 父 mak prtPm //
+				double parent_mak_pm[16];
+				s_pm_dot_pm(parent_pm, parent_mak_prt, parent_mak_pm);
+
+				// 关节相对位姿：makI 相对 makJ（motion 的 cptPmFromP，已含零位偏移与系数）//
+				double pm_rot[16];
+				mot.cptPmFromP(&input[mot_index], pm_rot);
+				if (!positive) s_inv_pm(pm_rot, pm_rot); // 反安装：父侧为 makI、子侧为 makJ，取逆 //
+
+				// 子 mak 全局位姿 = 父 mak 全局位姿 * 旋转 //
+				double child_mak_pm[16];
+				s_pm_dot_pm(parent_mak_pm, pm_rot, child_mak_pm);
+
+				// 子 part 位姿 = 子 mak 全局位姿 * inv(子 mak prtPm)，覆盖 parent_pm 作为下一拍的父 part //
+				s_pm_dot_inv_pm(child_mak_pm, child_mak_prt, parent_pm);
+			}
+
+			// 末端位姿 = EE->makI 相对 EE->makJ 的位姿（tool 相对 wobj）//
+			// 基座 part 位姿已在相对运算中抵消，直接用 mak 的 prtPm //
+			// pm_i2j = inv(makJ_prt) * T_chain * makI_prt //
+			double tool_mak_pm[16];
+			s_pm_dot_pm(parent_pm, *chain.tool_mak_->prtPm(), tool_mak_pm);
+
+			double pm_i2j[16];
+			s_inv_pm_dot_pm(*chain.base_mak_->prtPm(), tool_mak_pm, pm_i2j);
+
+			s_pm2pos(pm_i2j, EE->posType(), output + out_pos);
+			out_pos += EE->pSize();
+		}
+
+		return 0;
+	}
+	SerialForwardKinematicSolver::~SerialForwardKinematicSolver() = default;
+	SerialForwardKinematicSolver::SerialForwardKinematicSolver() :ForwardKinematicSolver(100, 1e-10), imp_(new Imp) {
+		setWhichRoot(0);
+		setRootNumber(1);
+	}
+	ARIS_DEFINE_BIG_FOUR_CPP(SerialForwardKinematicSolver);
+
 	struct InverseKinematicSolver::Imp{
 		double* J_{ nullptr }, * ci_{ nullptr };
 		std::vector<char> mem_pool_;
@@ -2521,6 +2671,10 @@ namespace aris::dynamic{
 
 		aris::core::class_<ForwardKinematicSolver>("ForwardKinematicSolver")
 			.inherit<UniversalSolver>()
+			;
+
+		aris::core::class_<SerialForwardKinematicSolver>("SerialForwardKinematicSolver")
+			.inherit<ForwardKinematicSolver>()
 			;
 
 		aris::core::class_<InverseKinematicSolver>("InverseKinematicSolver")

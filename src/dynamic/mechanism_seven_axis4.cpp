@@ -186,7 +186,7 @@ namespace aris::dynamic{
 
 		////////////////////////////  SOLVERS  /////////////////////////////
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver4>();
-		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::SerialForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 		inverse_kinematic.imp_->seven_axis_param = param;

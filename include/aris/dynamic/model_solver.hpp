@@ -120,6 +120,22 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	// 通用串联机构正解求解器：自动沿 EE->makJ 到 EE->makI 的运动链正推末端位姿 //
+	// 支持多条运动链，即树状机构的求解
+	// kinPosPure() 只计算末端位姿，不更新 model 状态，【保证线程安全】
+	class ARIS_API SerialForwardKinematicSolver :public ForwardKinematicSolver{
+	public:
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPosPure(const double *input, double *output, std::int64_t which_root, const double* current_answer = nullptr)const->int override;
+
+		virtual ~SerialForwardKinematicSolver();
+		explicit SerialForwardKinematicSolver();
+		ARIS_DECLARE_BIG_FOUR(SerialForwardKinematicSolver);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 	class ARIS_API InverseKinematicSolver :public UniversalSolver{
 	public:
 		auto virtual allocateMemory()->void override;

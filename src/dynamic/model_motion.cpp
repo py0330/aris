@@ -265,7 +265,7 @@ namespace aris::dynamic{
 
 		// for pitch //
 		if (axis() > 2 && pitch()) {
-			pm_i2j[3 + axis() * 4] += pitch() * mp_internal / 2 / PI;
+			pm_i2j[3 + (axis() - 3) * 4] += pitch() * mp_internal / 2 / PI;
 		}
 	}
 	auto Motion::cptPError(const double* p1, const double* p2)->double {

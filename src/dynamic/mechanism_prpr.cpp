@@ -140,7 +140,7 @@ namespace aris::dynamic {
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PrprInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<aris::dynamic::ForwardKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::SerialForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 

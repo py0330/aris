@@ -89,21 +89,7 @@ namespace aris::dynamic{
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class ARIS_API PumaForwardKinematicSolver :public aris::dynamic::ForwardKinematicSolver {
-	public:
-		auto virtual allocateMemory()->void override;
-		auto virtual kinPosPure(const double *input, double *output, std::int64_t which_root, const double* current_answer = nullptr)const->int override;
-
-		virtual ~PumaForwardKinematicSolver();
-		explicit PumaForwardKinematicSolver();
-		ARIS_DECLARE_BIG_FOUR(PumaForwardKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
 	auto ARIS_API createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>;
-
 
 	///
 	/// @}
