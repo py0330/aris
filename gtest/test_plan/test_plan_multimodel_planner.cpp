@@ -73,7 +73,7 @@ auto insert_standard_line(aris::plan::MultimodelPlanner &planner) -> std::int64_
 	double jerk[2]{ 10.0, 10.0 };
 	double zone[2]{ 0.0, 0.0 };
 	auto node = planner.insertMoveL(tw, target_ee, vel, acc, jerk, zone);
-	planner.updateInsertPos();
+	planner.requestUpdateInsert();
 	return node;
 }
 
@@ -203,7 +203,7 @@ TEST_F(MultimodelPlannerTest, InsertLineMotionFinishes) {
 	auto node = planner.insertMoveL(tw, target_ee, vel, acc, jerk, zone);
 	EXPECT_GT(node, 0);
 
-	planner.updateInsertPos();
+	planner.requestUpdateInsert();
 	auto final_input = expect_motion_finished(planner, multi_model, node, "line-motion");
 	EXPECT_EQ(final_input.size(), static_cast<std::size_t>(multi_model.inputPosSize()));
 }
@@ -228,7 +228,7 @@ TEST_F(MultimodelPlannerTest, InsertCircleMotionFinishes) {
 	auto node = planner.insertMoveC(tw, target_ee, mid_ee, vel, acc, jerk, zone);
 	EXPECT_GT(node, 0);
 
-	planner.updateInsertPos();
+	planner.requestUpdateInsert();
 	auto final_input = expect_motion_finished(planner, multi_model, node, "circle-motion");
 	EXPECT_EQ(final_input.size(), static_cast<std::size_t>(multi_model.inputPosSize()));
 }
@@ -418,7 +418,7 @@ TEST_F(MultimodelPlannerTest, GotoAbsJReachesTarget) {
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
+	ASSERT_EQ(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 驱动直到完成
@@ -448,7 +448,7 @@ TEST_F(MultimodelPlannerTest, GotoJReachesTarget) {
 	std::vector<double> ja(planner.inputSize(), 2.0);
 	std::vector<double> jj(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.gotoJ(tw, target_tw, jv.data(), ja.data(), jj.data()), 0);
+	ASSERT_EQ(planner.gotoJ(tw, target_tw, jv.data(), ja.data(), jj.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 驱动直到完成（关节空间插补，放宽步数上限）
@@ -502,7 +502,7 @@ TEST_F(MultimodelPlannerTest, GotoLReachesTarget) {
 	double acc[2]{ 1.0, 1.0 };
 	double jerk[2]{ 10.0, 10.0 };
 
-	ASSERT_GT(planner.gotoL(tw, target_tw, vel, acc, jerk), 0);
+	ASSERT_EQ(planner.gotoL(tw, target_tw, vel, acc, jerk), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 驱动直到完成（goto 管线默认以主管线 10% 的速率运行，因此这里放宽步数上限）
@@ -557,7 +557,7 @@ TEST_F(MultimodelPlannerTest, GotoCReachesTarget) {
 	double acc[2]{ 1.0, 1.0 };
 	double jerk[2]{ 10.0, 10.0 };
 
-	ASSERT_GT(planner.gotoC(tw, target_tw, mid_tw, vel, acc, jerk), 0);
+	ASSERT_EQ(planner.gotoC(tw, target_tw, mid_tw, vel, acc, jerk), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 驱动直到完成（goto 管线默认以主管线 10% 的速率运行，因此这里放宽步数上限）
@@ -615,7 +615,7 @@ TEST_F(MultimodelPlannerTest, GotoFromPausedReturnsToPaused) {
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
+	ASSERT_EQ(planner.gotoAbsJ(target.data(), v.data(), a.data(), j.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::PausedGoto);
 
 	std::vector<double> p(planner.inputSize(), 0.0);
@@ -649,7 +649,7 @@ TEST_F(MultimodelPlannerTest, GotoRejectsWhileGoto) {
 	std::vector<double> a(planner.inputSize(), 2.0);
 	std::vector<double> j(planner.inputSize(), 20.0);
 
-	ASSERT_GT(planner.gotoAbsJ(target1.data(), v.data(), a.data(), j.data()), 0);
+	ASSERT_EQ(planner.gotoAbsJ(target1.data(), v.data(), a.data(), j.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::UninitializedGoto);
 
 	// 已在 goto 状态：再次 goto 应失败
@@ -675,8 +675,8 @@ TEST_F(MultimodelPlannerTest, RequestFunctionsRejectInvalidStates) {
 	EXPECT_EQ(planner.requestStop(), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
-	// 初始化 → Idle
-	ASSERT_EQ(planner.requestInit(), 0);
+	// 激活（空 requestUpdateInsert 完成运行管线配置并切到 Idle）
+	planner.requestUpdateInsert();
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Idle);
 
 	// Idle：resume/pause 不可调用，stop → Uninitialized
@@ -685,14 +685,12 @@ TEST_F(MultimodelPlannerTest, RequestFunctionsRejectInvalidStates) {
 	EXPECT_EQ(planner.requestStop(), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Uninitialized);
 
-	// 重新初始化并启动运动 → Running
-	ASSERT_EQ(planner.requestInit(), 0);
+	// 重新激活并启动运动 → Running
 	ASSERT_GT(insert_standard_line(planner), 0);
 	ASSERT_GT(planner.getNextInput(p.data()), 0);
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Running);
 
-	// Running：init 不可调用，resume 视为成功（已在运行）
-	EXPECT_EQ(planner.requestInit(), -1);
+	// Running：resume 视为成功（已在运行）
 	EXPECT_EQ(planner.requestResume(), 0);
 
 	// 暂停到 Paused
@@ -700,8 +698,7 @@ TEST_F(MultimodelPlannerTest, RequestFunctionsRejectInvalidStates) {
 	ASSERT_TRUE(pause_until_paused(planner, pause_pos));
 	EXPECT_EQ(planner.state(), aris::plan::PlannerState::Paused);
 
-	// Paused：init 不可调用，pause 视为成功（已暂停）
-	EXPECT_EQ(planner.requestInit(), -1);
+	// Paused：pause 视为成功（已暂停）
 	EXPECT_EQ(planner.requestPause(), 0);
 
 	// 停止（任意状态可停）→ 最终 Uninitialized

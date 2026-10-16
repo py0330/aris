@@ -50,7 +50,8 @@ auto MoveL::prepareNrt()->void{
 	// insert line //
 	pd.tryLockChanel(0, sub_model_);
 	id_ = pd.plannerAt(0).insertMoveL(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
-	pd.plannerAt(0).updateInsertPos();
+	if (pd.plannerAt(0).requestUpdateInsert() < 0)
+		THROW_FILE_LINE("insert line failed");
 
 	// controller setting //
 	motor_id_.resize(pd.model().inputSize());
@@ -129,7 +130,8 @@ auto MoveJ::prepareNrt()->void{
 	// insert line //
 	pd.tryLockChanel(0, sub_model_);
 	id_ = pd.plannerAt(0).insertMoveJ(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
-	pd.plannerAt(0).updateInsertPos();
+	if (pd.plannerAt(0).requestUpdateInsert() < 0)
+		THROW_FILE_LINE("insert movej failed");
 
 	// controller setting //
 	motor_id_.resize(pd.model().inputSize());

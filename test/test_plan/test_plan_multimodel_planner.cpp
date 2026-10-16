@@ -275,7 +275,7 @@ auto test_multimodel_async_planner_1() -> void {
 		tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
 		mmp.insertMoveC(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE-1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
 	}
-	mmp.updateInsertPos();
+	mmp.requestUpdateInsert();
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;
@@ -389,7 +389,7 @@ auto test_multimodel_async_planner_two_arm() -> void {
 	//	tw.push_back(std::make_pair<std::string, std::string>("PumaModel.EE.tool0-", "PumaModel.ground.wobj0-"));
 	//	mmp.insertMoveC(tw, pes[PE_SIZE - 3], pes[PE_SIZE - 2], vels[PE_SIZE - 1], accs[PE_SIZE - 1], jerks[PE_SIZE - 1], zones[PE_SIZE - 1]);
 	//}
-	mmp.updateInsertPos();
+	mmp.requestUpdateInsert();
 
 	// 打印数据 //
 	std::vector<double> vec, v_vec, a_vec;

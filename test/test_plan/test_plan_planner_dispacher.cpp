@@ -440,7 +440,7 @@ auto test_planner_dispacher_insert_line() -> void {
 		throw std::runtime_error("PlannerDispacher insertMoveL should return positive node id");
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "line-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -485,7 +485,7 @@ auto test_planner_dispacher_insert_circle() -> void {
 		throw std::runtime_error("PlannerDispacher insertMoveC should return positive node id");
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "circle-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -526,7 +526,7 @@ auto test_planner_dispacher_insert_movej() -> void {
 		throw std::runtime_error("PlannerDispacher insertMoveJPos should return positive node id");
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "movej-flow test");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -572,7 +572,7 @@ auto test_planner_dispacher_insert_moveabsj() -> void {
 		throw std::runtime_error("PlannerDispacher insertMoveAbsJPos should return positive node id");
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "moveabsj-flow test");
 	if (std::abs(final_input.at(0) - joint_pos.at(0)) > 1e-4 || std::abs(final_input.at(1) - joint_pos.at(1)) > 1e-4) {
 		throw std::runtime_error("PlannerDispacher moveabsj-flow final input mismatch");
@@ -620,7 +620,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	if (line_id <= 0) {
 		throw std::runtime_error("PlannerDispacher mixed-flow line insert should return positive node id");
 	}
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), line_id, sub_num, &sub_id, "mixed-flow line test");
 
 	std::vector<double> circle_mid_pos = line_pos;
@@ -632,7 +632,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	if (circle_id <= line_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow circle insert should return increasing node id");
 	}
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), circle_id, sub_num, &sub_id, "mixed-flow circle test");
 
 	std::vector<double> movej_pos = circle_target_pos;
@@ -644,7 +644,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	if (movej_id <= circle_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow movej insert should return increasing node id");
 	}
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), movej_id, sub_num, &sub_id, "mixed-flow movej test");
 
 	std::vector<double> moveabsj_pos(input_pos_size, 0.0);
@@ -656,7 +656,7 @@ auto test_planner_dispacher_mixed_sequence() -> void {
 	if (moveabsj_id <= movej_id) {
 		throw std::runtime_error("PlannerDispacher mixed-flow moveabsj insert should return increasing node id");
 	}
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), moveabsj_id, sub_num, &sub_id, "mixed-flow moveabsj test");
 	if (std::abs(final_input.at(0) - moveabsj_pos.at(0)) > 1e-4 || std::abs(final_input.at(1) - moveabsj_pos.at(1)) > 1e-4) {
 		throw std::runtime_error("PlannerDispacher mixed-flow moveabsj final input mismatch");
@@ -729,7 +729,7 @@ auto test_planner_dispacher_batch_sequence() -> void {
 		throw std::runtime_error("PlannerDispacher batch-flow movej insert should return increasing node id");
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	auto final_input = expect_motion_sequence_finished(
 		dispacher,
 		0,
@@ -823,7 +823,7 @@ auto test_planner_dispacher_many_points() -> void {
 		node_ids.push_back(moveabsj_id);
 	}
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_sequence_finished(
 		dispacher,
 		0,
@@ -875,7 +875,7 @@ auto test_planner_dispacher_intentional_failures() -> void {
 			throw std::runtime_error("PlannerDispacher intentional-failure insertMoveL should return positive node id");
 		}
 
-		dispacher.plannerAt(0).updateInsertPos();
+		dispacher.plannerAt(0).requestUpdateInsert();
 
 		bool saw_expected_fail = false;
 		try {

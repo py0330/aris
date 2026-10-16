@@ -69,7 +69,6 @@ namespace aris::plan{
 	/// - getNextInput()：根据当前状态调度到内部 run/pause/resume/stop 各 OneStep
 	///   以及 goto 的专用管线（tg/is/sr），并在其返回 0 时切换终态；
 	///   返回规划器节点 id（0 表示执行完毕）；
-	/// - requestInit()：Uninitialized → Idle；
 	/// - requestStop()：运动状态 → Stopping（平滑减速），静止状态（Idle/Paused）→ Uninitialized；
 	/// - requestPause()：Running → Pausing；
 	/// - requestResume()：Paused → Resuming。
@@ -133,23 +132,25 @@ namespace aris::plan{
 		// init之后才可以 insert 及 run //
 		auto init() -> void;
 		
-		// 插入新的数据 //
+		// 插入新的数据（分配节点 id 并入队，返回该节点 id；状态判断在 requestUpdateInsert）//
 		auto insertMoveL(TW& tw, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 		auto insertMoveL(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
-		// 插入新的数据 //
+		// 插入新的数据（分配节点 id 并入队，返回该节点 id；状态判断在 requestUpdateInsert）//
 		auto insertMoveC(TW& tw, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 		auto insertMoveC(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* mid_pos, const double* vel, const double* acc, const double* jerk, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
-		// 插入新的数据 //
+		// 插入新的数据（分配节点 id 并入队，返回该节点 id；状态判断在 requestUpdateInsert）//
 		auto insertMoveJ(TW& tw, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr, double time_zone = 0.0) -> std::int64_t;
 		auto insertMoveJ(std::string_view tools, std::string_view wobjs, const double* ee_pos, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, const std::int64_t *which_root = nullptr, double time_zone = 0.0) -> std::int64_t;
 
-		// 插入新的数据 //
+		// 插入新的数据（分配节点 id 并入队，返回该节点 id；状态判断在 requestUpdateInsert）//
 		auto insertMoveAbsJ(const double* joint_p, const double* joint_v, const double* joint_a, const double* joint_j, const double* zone, double time_zone = 0.0) -> std::int64_t;
 
-		// 重规划 //
-		auto updateInsertPos()->void;
+		// 请求更新插入（重规划）：状态判断、解析与 TG 插入（完成后推进 ins_id_）。
+		// 负责在 Uninitialized 状态下完成冷启动：配置运行管线并切换到 Idle（如需）；
+		// 返回 0 成功；-1 表示状态不可插入（节点保留待后续 update）或某节点正/反解失败 //
+		auto requestUpdateInsert()->std::int64_t;
 
 		// 调速设置 //
 		auto setTargetSpeedRatio(double ds) -> void; // 0 <= ds <= 1
@@ -171,7 +172,7 @@ namespace aris::plan{
 		///   循环调用，彼此不会并发执行；
 		///
 		/// - request 系列（非实时线程）：
-		///   `requestInit` / `requestStop` / `requestPause` / `requestResume`。
+		///   `requestStop` / `requestPause` / `requestResume`。
 		///   由非实时线程调用，且调用方保证同一时刻最多只有一个 request 函数
 		///   在执行——即两个 request 系列函数不可能在不同线程上并发；
 		///
@@ -193,7 +194,6 @@ namespace aris::plan{
 		///     PausedGoto / UninitializedGoto）。
 		///
 		/// 2. request 系列（非实时线程）负责「外部请求」相关的切换：
-		///    - Uninitialized          → Idle           ：requestInit
 		///    - Idle                   → Uninitialized  ：requestStop（静止状态直接清除）
 		///    - Paused                 → Uninitialized  ：requestStop（静止状态直接清除）
 		///    - Running                → Stopping       ：requestStop（运动状态平滑停止）
@@ -224,9 +224,6 @@ namespace aris::plan{
 		///   速度缓冲，因此无需额外加锁。
 		///
 
-		/// @brief 请求初始化：仅将状态机从 Uninitialized 置为 Idle
-		/// @return 0 成功，-1 失败
-		auto requestInit() -> std::int64_t;
 		/// @brief 请求停止：运动状态置为 Stopping（由后续 stopOneStep 平滑减速）；静止状态（Idle/Paused）直接置为 Uninitialized
 		/// @return 0 成功，-1 失败
 		auto requestStop() -> std::int64_t;
@@ -256,7 +253,7 @@ namespace aris::plan{
 		/// @param tw_pos 目标位姿（tool/wobj 坐标系，outputPosSize 维）
 		/// @param joint_v/joint_a/joint_j 关节速度/加速度/加加速度（inputSize 维）
 		/// @param which_root 指定反解根号（nullptr 表示沿用当前逆解根）
-		/// @return 1 成功，<0 失败
+		/// @return 0 成功，<0 失败
 		auto gotoJ(TW& tw, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root = nullptr) -> std::int64_t;
 		/// @brief 关节空间 goto 目标（字符串工具/工件重载）
 		auto gotoJ(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* joint_v, const double* joint_a, const double* joint_j, const std::int64_t *which_root = nullptr) -> std::int64_t;
@@ -264,14 +261,14 @@ namespace aris::plan{
 		/// @brief 绝对关节角 goto 目标（MoveAbsJ，zone=0）。
 		/// @param joint_pos 目标关节位置（inputSize 维）
 		/// @param joint_v/joint_a/joint_j 关节速度/加速度/加加速度（inputSize 维）
-		/// @return 1 成功，<0 失败
+		/// @return 0 成功，<0 失败
 		auto gotoAbsJ(const double* joint_pos, const double* joint_v, const double* joint_a, const double* joint_j) -> std::int64_t;
 
 		/// @brief 笛卡尔直线 goto 目标（Line，zone=0）。
 		/// @param tw 工具/工件配对
 		/// @param tw_pos 目标位置（tool/wobj 坐标系，outputPosSize 维）
 		/// @param vel/acc/jerk 末端速度/加速度/加加速度（outputPosMagSize 维）
-		/// @return 1 成功，<0 失败
+		/// @return 0 成功，<0 失败
 		auto gotoL(TW& tw, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
 		/// @brief 笛卡尔直线 goto 目标（字符串工具/工件重载）
 		auto gotoL(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
@@ -281,7 +278,7 @@ namespace aris::plan{
 		/// @param tw_pos 目标位置（tool/wobj 坐标系，outputPosSize 维）
 		/// @param tw_mid_pos 中间位置（tool/wobj 坐标系，outputPosSize 维）
 		/// @param vel/acc/jerk 末端速度/加速度/加加速度（outputPosMagSize 维）
-		/// @return 1 成功，<0 失败
+		/// @return 0 成功，<0 失败
 		auto gotoC(TW& tw, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;
 		/// @brief 笛卡尔圆弧 goto 目标（字符串工具/工件重载）
 		auto gotoC(std::string_view tools, std::string_view wobjs, const double* tw_pos, const double* tw_mid_pos, const double* vel, const double* acc, const double* jerk) -> std::int64_t;

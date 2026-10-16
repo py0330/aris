@@ -253,7 +253,7 @@ TEST_F(PlannerDispacherTest, InsertLineMotion) {
 	auto node_id = dispacher.plannerAt(0).insertMoveL("", "", tw_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	EXPECT_GT(node_id, 0) << "Line motion node_id should be positive";
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "line-motion");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -284,7 +284,7 @@ TEST_F(PlannerDispacherTest, InsertCircleMotion) {
 	auto node_id = dispacher.plannerAt(0).insertMoveC("", "", tw_target_pos.data(), tw_mid_pos.data(), vel.data(), acc.data(), jerk.data(), zone.data());
 	EXPECT_GT(node_id, 0) << "Circle motion node_id should be positive";
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "circle-motion");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -312,7 +312,7 @@ TEST_F(PlannerDispacherTest, InsertMoveJMotion) {
 	auto node_id = dispacher.plannerAt(0).insertMoveJ("", "", tw_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data(), &which_root);
 	EXPECT_GT(node_id, 0) << "MoveJ motion node_id should be positive";
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "movej-motion");
 
 	auto release_ret = dispacher.releaseChanel(0);
@@ -352,7 +352,7 @@ TEST_F(PlannerDispacherTest, InsertMoveAbsJMotion) {
 	auto node_id = dispacher.plannerAt(0).insertMoveAbsJ(joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
 	EXPECT_GT(node_id, 0) << "MoveAbsJ motion node_id should be positive";
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 	auto final_input = expect_motion_finished(dispacher, 0, multi_model.inputPosSize(), node_id, sub_num, &sub_id, "moveabsj-motion");
 	
 	EXPECT_NEAR(final_input.at(0), joint_pos.at(0), 1e-4) << "Final joint 0 position mismatch";
@@ -382,6 +382,9 @@ TEST_F(PlannerDispacherTest, TransferMatrixAppliedOnOutput) {
 	dispacher.transferMatrice().clear();
 	dispacher.transferMatrice().emplace_back(input_pos_size, input_pos_size, mat_data.data());
 
+	// 当前语义：submodel id 不变时重入锁只增加锁定重数，不会重新绑定 transfer matrix。
+	// 因此重置 dispacher 使通道回到未锁定状态，再锁定即可绑定新矩阵。
+	dispacher.init();
 	lock_ret = dispacher.tryLockChanel(0, { 0 });
 	ASSERT_EQ(lock_ret, 1);
 
@@ -397,7 +400,7 @@ TEST_F(PlannerDispacherTest, TransferMatrixAppliedOnOutput) {
 	auto node_id = dispacher.plannerAt(0).insertMoveAbsJ(joint_pos.data(), joint_vel.data(), joint_acc.data(), joint_jerk.data(), joint_zone.data());
 	ASSERT_GT(node_id, 0);
 
-	dispacher.plannerAt(0).updateInsertPos();
+	dispacher.plannerAt(0).requestUpdateInsert();
 
 	std::vector<double> output(input_pos_size, 0.0);
 	std::vector<double> raw_input(input_pos_size, 0.0);

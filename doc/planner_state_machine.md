@@ -7,7 +7,7 @@ stateDiagram-v2
     [*] --> Uninitialized : 构造 / 停止完成
 
     %% 初始化
-    Uninitialized --> Idle : requestInit()
+    Uninitialized --> Idle : requestUpdateInsert()
 
     %% 正常运行（getNextInput 内部 runOneStep 推进）
     Idle --> Running : getNextInput（有数据）

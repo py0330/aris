@@ -72,10 +72,8 @@ auto MoveL::prepareNrt()->void{
 	if (int64Param("resume") == -1) {
 		planner_node_id_ = pd.plannerAt(0).insertMoveL(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data());
 		std::cout << "insert line id: " << planner_node_id_ << std::endl;
-		if(planner_node_id_ < 0) 
+		if (pd.plannerAt(0).requestUpdateInsert() < 0)
 			THROW_FILE_LINE("insert line failed");
-		
-		pd.plannerAt(0).updateInsertPos();
 
 		// 清理已执行过的指令，并保存当前指令文本与节点 id，供 resume 重新下发 //
 		clean_saved_cmds();
@@ -195,9 +193,8 @@ auto MoveJ::prepareNrt()->void{
 	// insert line //
 	if (int64Param("resume") == -1) {
 		id_ = pd.plannerAt(0).insertMoveJ(tools, wobjs, pos_mtx.data(), vel_mtx.data(), acc_mtx.data(), jerk_mtx.data(), zone_mtx.data(), nullptr);
-		if (id_ < 0)
+		if (pd.plannerAt(0).requestUpdateInsert() < 0)
 			THROW_FILE_LINE("insert movej failed");
-		pd.plannerAt(0).updateInsertPos();
 
 		// 清理已执行过的指令，并保存当前指令文本与节点 id，供 resume 重新下发 //
 		clean_saved_cmds();

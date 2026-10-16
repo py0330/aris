@@ -124,7 +124,8 @@ auto Test::test_trajectory_aj(aris::server::ControlServer& cs)->void {
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
 	imp_->pd->plannerAt(0).insertMoveAbsJ(end_pos,vels,accs,jerks,zones,time_zone);
 
-	imp_->pd->plannerAt(0).updateInsertPos();
+	if(imp_->pd->plannerAt(0).requestUpdateInsert() < 0)
+		std::cout << "failed update insert" << std::endl;
 
 
 
@@ -151,7 +152,8 @@ auto Test::test_trajectory_l(aris::server::ControlServer& cs)->void {
 	auto ch_lock_ret = imp_->pd->tryLockChanel(0,{0});
 	imp_->pd->plannerAt(0).insertMoveL(tool,wobj,end_pos,vels,accs,jerks,zones,time_zone);
 
-	imp_->pd->plannerAt(0).updateInsertPos();
+	if (imp_->pd->plannerAt(0).requestUpdateInsert() < 0)
+		std::cout << "failed update insert" << std::endl;
 
 
 
