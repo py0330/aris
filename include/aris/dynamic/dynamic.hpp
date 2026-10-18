@@ -31,6 +31,7 @@
 #include <aris/dynamic/mechanism_seven_axis2.hpp>
 #include <aris/dynamic/mechanism_seven_axis3.hpp>
 #include <aris/dynamic/mechanism_seven_axis4.hpp>
+#include <aris/dynamic/mechanism_seven_axis5.hpp>
 #include <aris/dynamic/mechanism_serial_3axis.hpp>
 #include <aris/dynamic/mechanism_puma_5axis.hpp>
 #include <aris/dynamic/mechanism_rppr.hpp>
